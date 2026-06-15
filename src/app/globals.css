@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #4a4c54;
+  --primary: #0b2c6b;
+  --accent: #d9a441;
+  --secondary: #f5f7fa;
+  --muted: #64748b;
+  --border: #e6eaf0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --font-sans: var(--font-jakarta-sans), "Segoe UI", sans-serif;
+  --font-secondary: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta-sans), "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  letter-spacing: 0;
+}
