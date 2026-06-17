@@ -48,7 +48,7 @@ const STEP_CONTEXT_EN = [
 
 export default function InsightPage() {
   const locale = useLocale();
-  const [step, setStep] = useState(-1);
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     email: "", company: "", employees: "", name: "",
     role: "", whatsapp: "", challenge: "", target: "",

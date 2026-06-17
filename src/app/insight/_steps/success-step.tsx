@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Check, Mail, ArrowRight, Bell } from "lucide-react";
-import { localizePath } from "@/i18n/config";
 import { useLocale } from "@/i18n/use-locale";
 
 interface SuccessStepProps {
@@ -103,7 +102,7 @@ export function SuccessStep({ name, company }: SuccessStepProps) {
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href={localizePath("/", locale)}
+            href="https://binahub.id"
             className="group flex h-16 items-center justify-center gap-3 rounded-[12px] bg-[#0B2C6B] px-12 text-[11px] font-bold uppercase tracking-[0.2em] text-white shadow-xl shadow-[#0B2C6B]/20 transition-all hover:bg-black"
           >
             {copy.home} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
