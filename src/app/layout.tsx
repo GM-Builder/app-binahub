@@ -19,6 +19,18 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "BinaHub App",
   description: "Operational platform for BinaHub services",
+  openGraph: {
+    title: "BinaHub App",
+    description: "Operational platform for BinaHub services",
+    siteName: "BinaHub",
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BinaHub App",
+    description: "Operational platform for BinaHub services",
+  },
 };
 
 export default function RootLayout({
