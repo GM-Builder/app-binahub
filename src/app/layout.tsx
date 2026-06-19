@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { ApiFetchBridge } from "@/components/api-fetch-bridge";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -40,7 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className={`${jakartaSans.variable} ${inter.variable} h-full scroll-smooth antialiased`}>
-      <body className="flex min-h-full flex-col selection:bg-[#0B2C6B] selection:text-white">{children}</body>
+      <body className="flex min-h-full flex-col selection:bg-[#0B2C6B] selection:text-white">
+        <ApiFetchBridge />
+        {children}
+      </body>
     </html>
   );
 }
