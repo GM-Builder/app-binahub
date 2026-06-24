@@ -16,7 +16,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  demoTeamScores,
   getTotalScore,
   masmindoCriteria,
   type TeamScore,
@@ -26,7 +25,7 @@ import { supabase } from "@/lib/supabase";
 const colors = ["#0B2C6B", "#D9A441", "#4A6FA5", "#7C8DA7", "#B8A15A", "#233B63"];
 
 export function TeamStatisticsDashboard() {
-  const [items, setItems] = useState<TeamScore[]>(demoTeamScores);
+  const [items, setItems] = useState<TeamScore[]>([]);
   const [team, setTeam] = useState("all");
   const [loading, setLoading] = useState(true);
 

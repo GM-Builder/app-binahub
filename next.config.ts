@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts", "framer-motion"],
+  },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+  },
 };
 
 export default nextConfig;

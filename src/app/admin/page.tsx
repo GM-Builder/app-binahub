@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LogOut, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -15,6 +16,7 @@ import { DashboardSkeleton, ModuleHero, NotificationBadge } from "./_components/
 import { TAB_META, tabs } from "./_lib/constants";
 import { isProjectCompleted } from "./_lib/utils";
 import type { DashboardData } from "./_lib/types";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -225,26 +227,41 @@ export default function AdminDashboardPage() {
           </nav>
           <div className="mt-6 border-t border-white/10 pt-4">
             <p className="mb-2 px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/34">
-              Role Preview
+              Sistem Transformasi
             </p>
-            <a
+            <Link
+              href="/admin/engagements"
+              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
+            >
+              Program
+            </Link>
+            <Link
+              href="/admin/rbac"
+              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
+            >
+              Matriks Izin
+            </Link>
+            <p className="mb-2 mt-4 px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/34">
+              Pratinjau Peran
+            </p>
+            <Link
               href="/client/dashboard"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
-              Client View
-            </a>
-            <a
+              Tampilan Peserta
+            </Link>
+            <Link
               href="/facilitator/dashboard"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
-              Facilitator View
-            </a>
-            <a
+              Tampilan Fasilitator
+            </Link>
+            <Link
               href="/facilitator/statistics"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
-              Team Statistics
-            </a>
+              Statistik Tim
+            </Link>
           </div>
           <button
             onClick={handleLogout}

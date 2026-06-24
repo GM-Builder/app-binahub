@@ -13,39 +13,51 @@ export default function BinaImpactEntryPage() {
 
   useEffect(() => {
     let alive = true;
+    let timeout: NodeJS.Timeout;
 
     async function checkAccess() {
-      const clientResponse = await fetch("/api/client/session");
-      if (clientResponse.ok) {
-        router.replace("/client/binaimpact");
-        return;
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
 
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (token) {
-        const facilitatorResponse = await fetch("/api/facilitator/session", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (facilitatorResponse.ok) {
+        if (!alive) return;
+
+        const role = session?.user?.app_metadata?.role || session?.user?.user_metadata?.role;
+
+        if (role === "client") {
+          router.replace("/client/binaimpact");
+          return;
+        }
+
+        if (role === "facilitator" || role === "admin") {
           router.replace("/facilitator/binaimpact");
           return;
         }
+      } catch (err) {
+        console.error("Session check error:", err);
       }
 
       if (alive) setChecking(false);
     }
 
+    timeout = setTimeout(() => {
+      if (alive) setChecking(false);
+    }, 5000);
+
     void checkAccess();
+
     return () => {
       alive = false;
+      clearTimeout(timeout);
     };
   }, [router]);
 
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA] text-sm font-semibold text-[#0B2C6B]">
-        Memeriksa akses...
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#0B2C6B] border-t-transparent"></div>
+          <p>Memeriksa akses...</p>
+        </div>
       </main>
     );
   }

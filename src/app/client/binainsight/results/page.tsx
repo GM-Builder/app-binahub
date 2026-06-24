@@ -5,9 +5,9 @@ export default function BinaInsightResultsPage() {
   return (
     <AppShell role="client" eyebrow="BinaInsight" title="Hasil Assessment">
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Overall Score" value="4.1" detail="Demo result until scoring is connected." />
-        <StatCard label="Readiness" value="High" detail="Assessment output will feed the report engine." />
-        <StatCard label="Next Step" value="Review" detail="Facilitator can add notes after submission." />
+        <StatCard label="Skor Keseluruhan" value="—" detail="Skor akan muncul setelah assessment selesai." />
+        <StatCard label="Kesiapan" value="—" detail="Hasil assessment akan memberi umpan ke mesin laporan." />
+        <StatCard label="Langkah Selanjutnya" value="Tinjau" detail="Fasilitator dapat menambah catatan setelah pengiriman." />
       </div>
     </AppShell>
   );

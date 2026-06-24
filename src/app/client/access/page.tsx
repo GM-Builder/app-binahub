@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AlertCircle, ArrowLeft, ArrowRight, KeyRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export default function ClientAccessPage() {
   const router = useRouter();
@@ -17,22 +19,49 @@ export default function ClientAccessPage() {
     setLoading(true);
     setError("");
 
-    const response = await fetch("/api/client/access", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const json = await response.json();
+    try {
+      const response = await fetch("/api/client/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code.trim().toUpperCase() }),
+      });
 
-    if (!response.ok || !json.success) {
-      setError(json.error || "Kode akses tidak valid.");
+      const json = await response.json();
+
+      if (!response.ok || !json.success) {
+        const msg = json.error || "Kode akses tidak valid.";
+        setError(msg);
+        toast.error(msg);
+        setLoading(false);
+        return;
+      }
+
+      if (json.session?.access_token && json.session?.refresh_token) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: json.session.access_token,
+          refresh_token: json.session.refresh_token,
+        });
+
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          setError("Gagal membuat sesi. Coba lagi.");
+          toast.error("Gagal membuat sesi.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      toast.success(`Selamat datang, ${json.client?.companyName || "Client"}!`);
+
+      const nextPath = new URLSearchParams(window.location.search).get("next") || "/client/dashboard";
+      router.push(nextPath.startsWith("/") ? nextPath : "/client/dashboard");
+    } catch (err) {
+      console.error("Client access error:", err);
+      const msg = "Gagal menghubungi server. Pastikan backend sudah aktif.";
+      setError(msg);
+      toast.error(msg);
       setLoading(false);
-      return;
     }
-
-    const nextPath = new URLSearchParams(window.location.search).get("next") || "/client/dashboard";
-    router.push(nextPath.startsWith("/") ? nextPath : "/client/dashboard");
-    router.refresh();
   };
 
   return (
