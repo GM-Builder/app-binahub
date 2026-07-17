@@ -217,7 +217,7 @@ export function LandingStep({ onStart }: LandingStepProps) {
           <div className="relative">
             <div className="group relative flex aspect-[4/4.5] items-center justify-center overflow-hidden rounded-[16px] border border-black/[0.05] bg-[#F5F7FA] p-6 md:p-10">
               <Image
-                src="/asset/Play.png"
+                src="/asset/play.png"
                 alt="Team Analysis"
                 fill
                 sizes="(max-width: 768px) 100vw, 40vw"

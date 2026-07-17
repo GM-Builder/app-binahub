@@ -82,8 +82,7 @@ export function PixelIcon({ type, size = 40 }: PixelIconProps) {
   }, [type, size, isPng]);
 
   if (isPng) {
-    const typeStr = type as string;
-    const filename = typeStr === "insights" ? "insights" : typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
+    const filename = type as string;
     return (
       <Image
         src={`/asset/${filename}.png`}
