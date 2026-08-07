@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
     const token = sessionData.session?.access_token;
 
     if (!token) {
-      router.replace("/admin/login");
+      router.replace("/login");
       return;
     }
 
@@ -52,7 +52,7 @@ export default function AdminDashboardPage() {
       setError(json.error || "Gagal memuat dashboard admin.");
       setLoading(false);
       if (response.status === 401 || response.status === 403) {
-        router.replace("/admin/login");
+        router.replace("/login");
       }
       return;
     }
@@ -122,7 +122,7 @@ export default function AdminDashboardPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.replace("/admin/login");
+    router.replace("/login");
   };
 
   const newAssessmentCount = useMemo(() => {
@@ -141,7 +141,7 @@ export default function AdminDashboardPage() {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) {
-      router.replace("/admin/login");
+      router.replace("/login");
       throw new Error("Sesi admin tidak ditemukan.");
     }
 

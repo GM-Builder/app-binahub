@@ -73,12 +73,12 @@ export default function BinaImpactEntryPage() {
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <AccessCard
-            href="/client/access?next=/client/binaimpact"
+            href="/login"
             icon={<UserRound size={24} />}
             label="Client"
           />
           <AccessCard
-            href="/facilitator/login?next=/facilitator/binaimpact"
+            href="/login"
             icon={<UsersRound size={24} />}
             label="Fasilitator"
           />

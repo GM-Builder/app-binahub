@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-export type AppRole = "admin" | "facilitator" | "client";
+export type AppRole = "admin" | "facilitator" | "client" | "peserta";
 
 const ROLE_LOGIN_PATHS: Record<AppRole, string> = {
-  admin: "/admin/login",
-  facilitator: "/facilitator/login",
-  client: "/client/access",
+  admin: "/login",
+  facilitator: "/login",
+  client: "/login",
+  peserta: "/login",
 };
 
 export function AdminAuthGate({ children }: { children: React.ReactNode }) {
@@ -24,7 +25,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
       const token = sessionData.session?.access_token;
 
       if (!token) {
-        if (alive) router.replace("/admin/login");
+        if (alive) router.replace("/login");
         return;
       }
 
@@ -34,13 +35,13 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
         });
 
         if (!response.ok) {
-          if (alive) router.replace("/admin/login");
+          if (alive) router.replace("/login");
           return;
         }
 
         if (alive) setAllowed(true);
       } catch {
-        if (alive) router.replace("/admin/login");
+        if (alive) router.replace("/login");
       }
     }
 
@@ -69,6 +70,7 @@ const ROLE_SESSION_ENDPOINTS: Record<AppRole, string> = {
   admin: "/api/admin/session",
   facilitator: "/api/facilitator/session",
   client: "/api/client/session",
+  peserta: "/api/auth/role",
 };
 
 export function PermissionGate({ children, allowedRoles, fallback }: PermissionGateProps) {

@@ -16,7 +16,7 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
       const token = data.session?.access_token;
 
       if (!token) {
-        router.replace("/facilitator/login");
+        router.replace("/login");
         return;
       }
 
@@ -25,7 +25,7 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
       });
 
       if (!response.ok) {
-        router.replace("/facilitator/login");
+        router.replace("/login");
         return;
       }
 

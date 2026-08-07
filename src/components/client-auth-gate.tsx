@@ -23,7 +23,7 @@ export function ClientAuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (alive) router.replace("/client/access");
+      if (alive) router.replace("/login");
     }
 
     void checkAccess();
