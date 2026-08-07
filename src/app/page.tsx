@@ -18,29 +18,14 @@ export default function LandingPage() {
   const [info, setInfo] = useState("");
 
   useEffect(() => {
+    // If already logged in, go to /home
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
-        redirectToRole(data.session.access_token);
+        setRedirecting(true);
+        router.replace("/home");
       }
     });
-  }, []);
-
-  const redirectToRole = async (token: string) => {
-    setRedirecting(true);
-    try {
-      const res = await fetch("/api/auth/role", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && data.redirectTo) {
-        router.push(data.redirectTo);
-      } else {
-        setRedirecting(false);
-      }
-    } catch {
-      setRedirecting(false);
-    }
-  };
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +55,9 @@ export default function LandingPage() {
         }
 
         if (data.session) {
-          await redirectToRole(data.session.access_token);
+          setRedirecting(true);
+          router.replace("/home");
+          return;
         }
       } else {
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -85,7 +72,9 @@ export default function LandingPage() {
         }
 
         if (data.session) {
-          await redirectToRole(data.session.access_token);
+          setRedirecting(true);
+          router.replace("/home");
+          return;
         }
       }
     } catch {
@@ -99,7 +88,7 @@ export default function LandingPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#0B2C6B]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-[#D9A441]" />
-          <p className="text-sm text-white/70">Memuat dashboard...</p>
+          <p className="text-sm text-white/70">Memuat...</p>
         </div>
       </div>
     );
@@ -107,7 +96,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#0B2C6B] via-[#0B2C6B] to-[#071B3D]">
-      {/* Decorative grid overlay */}
       <div
         className="absolute inset-0 opacity-[0.04]"
         style={{
@@ -117,9 +105,7 @@ export default function LandingPage() {
         }}
       />
 
-      {/* Content */}
       <div className="relative flex-1 flex flex-col items-center justify-center px-4 py-8">
-        {/* Logo + Tagline */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold tracking-tight text-white">
             Bina<span className="text-[#D9A441]">Hub</span>
@@ -129,10 +115,8 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* Auth Card */}
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            {/* Tabs */}
             <div className="flex border-b border-black/[0.06]">
               <button
                 onClick={() => { setMode("signin"); setError(""); setInfo(""); }}
@@ -156,9 +140,8 @@ export default function LandingPage() {
               </button>
             </div>
 
-            {/* Form */}
             <div className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
                 {mode === "signup" && (
                   <div>
                     <label className="text-xs font-medium text-[#0B2C6B] mb-1.5 block">Nama Lengkap</label>
@@ -166,6 +149,7 @@ export default function LandingPage() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A4C54]/40" />
                       <input
                         type="text"
+                        autoComplete="name"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
@@ -182,6 +166,7 @@ export default function LandingPage() {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A4C54]/40" />
                     <input
                       type="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -197,6 +182,7 @@ export default function LandingPage() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A4C54]/40" />
                     <input
                       type={showPassword ? "text" : "password"}
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -244,13 +230,12 @@ export default function LandingPage() {
 
               {mode === "signup" && (
                 <p className="text-center text-[11px] text-[#4A4C54]/60 mt-4">
-                  Dengan mendaftar, Anda membuat akun peserta. Role dapat diubah oleh admin sesuai kebutuhan.
+                  Dengan mendaftar, Anda membuat akun peserta. Role dapat diubah oleh admin.
                 </p>
               )}
             </div>
           </div>
 
-          {/* Footer */}
           <p className="text-center text-xs text-white/40 mt-6">
             © 2026 BinaHub. People Transformation & Future Capability Partner.
           </p>

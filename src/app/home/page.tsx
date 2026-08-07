@@ -2,10 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Loader2, LogOut, ArrowUpRight, Sparkles } from "lucide-react";
+import { Loader2, LogOut, ArrowUpRight, Sparkles, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ServiceMegaGrid } from "@/components/service-mega-grid";
+
+const ADMIN_EMAILS = ["admin@binahub.id"];
+const FACILITATOR_EMAILS = ["facilitator@binahub.id", "fasilitator@binahub.id"];
+
+function resolveRole(email: string, metadataRole?: string, profilesRole?: string): string {
+  const lowerEmail = email.trim().toLowerCase();
+
+  // 1. profiles table role (most authoritative)
+  if (profilesRole && profilesRole !== "peserta" && profilesRole !== "client") {
+    return profilesRole;
+  }
+
+  // 2. app_metadata / user_metadata
+  if (metadataRole && (metadataRole === "admin" || metadataRole === "facilitator")) {
+    return metadataRole;
+  }
+
+  // 3. email allowlist
+  if (ADMIN_EMAILS.includes(lowerEmail)) return "admin";
+  if (FACILITATOR_EMAILS.includes(lowerEmail)) return "facilitator";
+
+  // 4. profiles table default
+  if (profilesRole) return profilesRole;
+
+  return "peserta";
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -19,24 +44,39 @@ export default function HomePage() {
 
   const checkAuth = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
         router.replace("/");
         return;
       }
 
-      const res = await fetch("/api/auth/role", {
-        headers: { Authorization: `Bearer ${session.session.access_token}` },
-      });
-      const data = await res.json();
+      const session = sessionData.session;
+      const email = session.user?.email || "";
+      const metadataRole =
+        (session.user?.app_metadata?.role as string) ||
+        (session.user?.user_metadata?.role as string) ||
+        "";
 
-      if (data.success) {
-        setUserName(data.fullName || "Pengguna");
-        setRole(data.role || "peserta");
-      } else {
-        router.replace("/");
-        return;
+      // Try fetching role from API (non-blocking, best-effort)
+      let profilesRole = "";
+      let fullName = session.user?.user_metadata?.full_name || "";
+
+      try {
+        const res = await fetch("/api/auth/role", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const data = await res.json();
+        if (data.success) {
+          profilesRole = data.role;
+          fullName = data.fullName || fullName;
+        }
+      } catch {
+        // API not available — use fallback
       }
+
+      const resolvedRole = resolveRole(email, metadataRole, profilesRole);
+      setRole(resolvedRole);
+      setUserName(fullName || email.split("@")[0]);
     } catch {
       router.replace("/");
       return;
@@ -64,6 +104,69 @@ export default function HomePage() {
     admin: "Admin",
     client: "Client",
   };
+
+  const dashboards: Record<string, { href: string; label: string; desc: string }[]> = {
+    peserta: [
+      {
+        href: "/peserta/dashboard",
+        label: "Dashboard Peserta",
+        desc: "Lihat hasil observasi tim dan skor T-BOS Anda.",
+      },
+    ],
+    facilitator: [
+      {
+        href: "/fasilitator/tbos",
+        label: "T-BOS Observasi",
+        desc: "Input observasi perilaku tim selama mission.",
+      },
+      {
+        href: "/fasilitator/tbos/observations",
+        label: "Riwayat Observasi",
+        desc: "Lihat dan edit observasi yang sudah disubmit.",
+      },
+      {
+        href: "/facilitator/dashboard",
+        label: "Dashboard Fasilitator",
+        desc: "Program, peserta, evidence, dan laporan.",
+      },
+    ],
+    admin: [
+      {
+        href: "/admin/dashboard",
+        label: "Intelligence Hub",
+        desc: "Dashboard utama: assessment, leads, inquiry, project.",
+      },
+      {
+        href: "/admin/tbos",
+        label: "T-BOS Dashboard",
+        desc: "Radar chart, heatmap, ranking, dan executive summary.",
+      },
+      {
+        href: "/admin/organizations",
+        label: "Organisasi",
+        desc: "Kelola data organisasi dan pengguna.",
+      },
+      {
+        href: "/admin/assessments",
+        label: "Assessment",
+        desc: "Kelola hasil assessment dan proposal.",
+      },
+      {
+        href: "/admin/engagements",
+        label: "Program",
+        desc: "Kelola engagement dan kode akses klien.",
+      },
+    ],
+    client: [
+      {
+        href: "/client/dashboard",
+        label: "Dashboard Client",
+        desc: "Program transformasi dan kemampuan tim Anda.",
+      },
+    ],
+  };
+
+  const dashList = dashboards[role] || dashboards.peserta;
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
@@ -121,6 +224,30 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Dashboard Access */}
+        <div className="bg-white rounded-2xl border border-black/[0.04] p-4 mb-6">
+          <div className="grid sm:grid-cols-2 gap-3">
+            {dashList.map((dash) => (
+              <a
+                key={dash.href}
+                href={dash.href}
+                className="flex items-center justify-between p-4 rounded-xl bg-[#0B2C6B]/[0.03] border border-[#0B2C6B]/10 hover:border-[#D9A441]/50 hover:bg-[#0B2C6B]/[0.05] transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#0B2C6B] flex items-center justify-center shrink-0">
+                    <LayoutDashboard className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0B2C6B]">{dash.label}</p>
+                    <p className="text-xs text-[#4A4C54] mt-0.5">{dash.desc}</p>
+                  </div>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-[#0B2C6B]/40 group-hover:text-[#D9A441] transition-colors shrink-0" />
+              </a>
+            ))}
+          </div>
+        </div>
+
         {/* Service Grid */}
         <div className="bg-white rounded-2xl border border-black/[0.04] p-6 sm:p-8">
           <div className="mb-6">
@@ -131,53 +258,7 @@ export default function HomePage() {
           </div>
           <ServiceMegaGrid />
         </div>
-
-        {/* Dashboard Access */}
-        <div className="mt-6 bg-white rounded-2xl border border-black/[0.04] p-6">
-          <h3 className="text-base font-bold text-[#0B2C6B] mb-4">Dashboard Saya</h3>
-          <DashboardCard role={role} />
-        </div>
       </main>
     </div>
-  );
-}
-
-function DashboardCard({ role }: { role: string }) {
-  const dashboards: Record<string, { href: string; label: string; desc: string }> = {
-    peserta: {
-      href: "/peserta/dashboard",
-      label: "Dashboard Peserta",
-      desc: "Lihat hasil observasi tim dan skor T-BOS Anda.",
-    },
-    facilitator: {
-      href: "/fasilitator/tbos",
-      label: "Dashboard Fasilitator",
-      desc: "Input observasi perilaku tim dan lihat riwayat.",
-    },
-    admin: {
-      href: "/admin/tbos",
-      label: "Dashboard Admin",
-      desc: "Pantau seluruh tim, radar chart, heatmap, dan ranking.",
-    },
-    client: {
-      href: "/client/dashboard",
-      label: "Dashboard Client",
-      desc: "Program transformasi dan kemampuan tim Anda.",
-    },
-  };
-
-  const dash = dashboards[role] || dashboards.peserta;
-
-  return (
-    <a
-      href={dash.href}
-      className="flex items-center justify-between p-4 rounded-xl bg-[#0B2C6B]/[0.03] border border-[#0B2C6B]/10 hover:border-[#D9A441]/50 hover:bg-[#0B2C6B]/[0.05] transition-all group"
-    >
-      <div>
-        <p className="text-sm font-semibold text-[#0B2C6B]">{dash.label}</p>
-        <p className="text-xs text-[#4A4C54] mt-0.5">{dash.desc}</p>
-      </div>
-      <ArrowUpRight className="w-5 h-5 text-[#0B2C6B]/40 group-hover:text-[#D9A441] transition-colors" />
-    </a>
   );
 }
