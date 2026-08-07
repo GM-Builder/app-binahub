@@ -21,6 +21,7 @@ import {
   RadioTower,
   ShieldCheck,
   Target,
+  Trophy,
   UsersRound,
   X,
 } from "lucide-react";
@@ -30,6 +31,10 @@ import { supabase } from "@/lib/supabase";
 import { HelpSidebar } from "@/components/help-sidebar";
 
 const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNode }[]> = {
+  peserta: [
+    { href: "/peserta/dashboard", label: "Dashboard", icon: <Home size={16} /> },
+    { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
+  ],
   client: [
     { href: "/client/dashboard", label: "Dashboard", icon: <Home size={16} /> },
     { href: "/client/engagements", label: "Program", icon: <ClipboardCheck size={16} /> },
@@ -43,10 +48,13 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
     { href: "/admin/dashboard", label: "Dashboard", icon: <Home size={16} /> },
     { href: "/admin/organizations", label: "Organisasi", icon: <UsersRound size={16} /> },
     { href: "/admin/assessments", label: "Assessment", icon: <ClipboardList size={16} /> },
+    { href: "/admin/tbos", label: "T-BOS", icon: <Trophy size={16} /> },
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   facilitator: [
     { href: "/facilitator/dashboard", label: "Dashboard", icon: <Home size={16} /> },
+    { href: "/fasilitator/tbos", label: "T-BOS Observasi", icon: <ClipboardCheck size={16} /> },
+    { href: "/fasilitator/tbos/observations", label: "Riwayat Observasi", icon: <Eye size={16} /> },
     { href: "/facilitator/engagements", label: "Program Saya", icon: <ArrowUpRight size={16} /> },
     { href: "/facilitator/participants", label: "Peserta", icon: <UsersRound size={16} /> },
     { href: "/facilitator/evidence", label: "Pengamatan", icon: <Eye size={16} /> },

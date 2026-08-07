@@ -1,11 +1,12 @@
-export const roles = ["admin", "client", "facilitator"] as const;
+export const roles = ["admin", "client", "facilitator", "peserta"] as const;
 
 export type Role = (typeof roles)[number];
 
 export const roleHome: Record<Role, string> = {
   admin: "/admin/dashboard",
   client: "/client/dashboard",
-  facilitator: "/facilitator/dashboard",
+  facilitator: "/fasilitator/tbos",
+  peserta: "/peserta/dashboard",
 };
 
 export function isRole(value: string | null | undefined): value is Role {

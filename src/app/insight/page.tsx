@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, AlertTriangle, X } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { PixelIcon, type IconType } from "@/components/pixel-icon";
 import { FormData } from "./_types";
 import { DIMENSIONS, QUESTIONS } from "./questions";
 import { LandingStep } from "./_steps/landing-step";
@@ -14,7 +15,7 @@ import { QuestionsStep } from "./_steps/questions-step";
 import { OpenQuestionsStep } from "./_steps/open-questions-step";
 import { ContactStep } from "./_steps/contact-step";
 import { SuccessStep } from "./_steps/success-step";
-import { PixelIcon, type IconType } from "@/components/pixel-icon";
+
 import { localizePath } from "@/i18n/config";
 import { useLocale } from "@/i18n/use-locale";
 
@@ -402,7 +403,6 @@ function LoadingOverlay({ locale }: { locale: "id" | "en" }) {
 }
 
 function PixelLoader() {
-  // Dino Runner Style with 8 Ecosystem Pillars
   const pillars: IconType[] = [
     "insights", "lab", "coach", "journey",
     "play", "academy", "impact", "works"
@@ -410,11 +410,9 @@ function PixelLoader() {
 
   return (
     <div className="relative w-[320px] h-[160px] flex items-center justify-center">
-      {/* Soft Background Glow - Darker for visibility */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B2C6B]/[0.12] to-transparent blur-3xl" />
       
       <div className="relative w-full h-[120px] overflow-hidden flex items-end pb-2 border-b-2 border-[#0B2C6B]/10">
-        {/* Infinite scrolling pillars (8 Ecosystem Icons) */}
         <motion.div 
           animate={{ x: [0, -600] }}
           transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
@@ -427,8 +425,7 @@ function PixelLoader() {
             </div>
           ))}
         </motion.div>
-        
-        {/* Running/Bouncing Character (About Icon) */}
+
         <motion.div
           animate={{ y: [0, -30, 0] }}
           transition={{ repeat: Infinity, duration: 0.45, ease: "easeInOut" }}
@@ -437,7 +434,6 @@ function PixelLoader() {
           <PixelIcon type="about" size={56} />
         </motion.div>
 
-        {/* Speed Lines */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {SPEED_LINES.map((line, i) => (
             <motion.div
