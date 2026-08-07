@@ -1,4 +1,4 @@
-export const tabs = ["Overview", "Automation Center", "Assessment", "Kontak & Leads", "Inquiry Masuk", "Associate Network", "Project Assignment"] as const;
+export const tabs = ["Overview", "Automation Center", "Assessment", "Kontak & Leads", "Inquiry Masuk", "T-BOS"] as const;
 
 export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: string; description: string }> = {
   Overview: {
@@ -26,15 +26,10 @@ export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: s
     title: "Tindak lanjuti inquiry dengan konteks jelas",
     description: "Prioritaskan inquiry baru, kirim follow-up bertahap, dan ubah status saat percakapan bergerak.",
   },
-  "Associate Network": {
-    eyebrow: "Talent pool",
-    title: "Kelola data associate yang siap dimatching",
-    description: "Lengkapi profil, kategori, availability, CV, LinkedIn, dan status agar matching project lebih akurat.",
-  },
-  "Project Assignment": {
-    eyebrow: "Delivery operations",
-    title: "Pantau assignment, sesi, availability, dan dokumen",
-    description: "Kelola hubungan associate dengan program aktif sampai sesi, evaluasi, dan dokumen kerja sama rapi.",
+  "T-BOS": {
+    eyebrow: "Team Behavioral Observation",
+    title: "Dashboard observasi perilaku tim",
+    description: "Pantau skor 8 dimensi perilaku tim lintas mission: radar chart, heatmap, ranking, batch comparison, dan executive summary.",
   },
 };
 
