@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, LogOut, Users, Trophy, Target, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AppShell } from "@/components/app-shell";
+import { fetchParticipantTeamInfo } from "@/modules/tbos/api-client";
 
 export default function PesertaDashboardPage() {
   const router = useRouter();
@@ -26,30 +27,27 @@ export default function PesertaDashboardPage() {
 
   const checkAuth = async () => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData.session;
+      if (!session) {
         router.push("/login");
         return;
       }
 
-      const res = await fetch("/api/auth/role", {
-        headers: { Authorization: `Bearer ${session.session.access_token}` },
-      });
-      const data = await res.json();
+      const userId = session.user.id;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, role")
+        .eq("id", userId)
+        .maybeSingle();
 
-      if (data.success) {
-        if (data.role !== "peserta") {
-          router.push(data.redirectTo);
-          return;
-        }
-        setUserName(data.fullName || "Peserta");
-      } else {
-        router.push("/login");
-        return;
-      }
-    } catch {
-      router.push("/login");
-      return;
+      const name = profile?.full_name || session.user.user_metadata?.full_name || session.user.email || "Peserta";
+      setUserName(name);
+
+      const info = await fetchParticipantTeamInfo(userId);
+      setTeamInfo(info);
+    } catch (err) {
+      console.error("[Peserta Dashboard] Error loading session or team info:", err);
     } finally {
       setLoading(false);
     }

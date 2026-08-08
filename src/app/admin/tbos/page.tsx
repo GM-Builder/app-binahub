@@ -1,10 +1,29 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Loader2, Radar as RadarIcon, Grid3x3, Trophy, BarChart3, Users, FileText, Download, FileSpreadsheet, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import {
+  Loader2,
+  Radar as RadarIcon,
+  Grid3x3,
+  Trophy,
+  BarChart3,
+  Users,
+  FileText,
+  Download,
+  FileSpreadsheet,
+  RefreshCw,
+  Plus,
+  Lock,
+  Eye,
+  Check,
+  X,
+  ClipboardList,
+} from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { generateDashboardData } from "@/modules/tbos/scoring";
+import { createTeam } from "@/modules/tbos/api-client";
 import type { TbosObservation, TbosDashboardData } from "@/modules/tbos/types";
 import { TbosRadarChart } from "./_components/radar-chart";
 import { TbosHeatmap } from "./_components/heatmap";
@@ -39,47 +58,22 @@ function TbosDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Create Team Modal State
+  const [showAddTeamModal, setShowAddTeamModal] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamBatch, setNewTeamBatch] = useState<"Batch 1" | "Batch 2">("Batch 1");
+  const [creatingTeam, setCreatingTeam] = useState(false);
+  const [createTeamError, setCreateTeamError] = useState("");
+  const [createTeamSuccess, setCreateTeamSuccess] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/tbos/dashboard");
-      const data = await res.json();
-
-      if (data.success) {
-        const observations: TbosObservation[] = data.observations.map((obs: any) => ({
-          id: obs.id,
-          teamId: obs.teamId,
-          teamName: obs.teamName,
-          missionId: obs.missionId,
-          missionCode: obs.missionCode,
-          missionName: obs.missionName,
-          profileId: obs.profileId,
-          facilitatorName: obs.facilitatorName,
-          batch: obs.batch,
-          observedAt: obs.observedAt,
-          submittedAt: obs.submittedAt,
-          status: obs.status,
-          notes: obs.notes,
-          scores: obs.scores.map((s: any) => ({
-            dimensionCode: s.dimensionCode,
-            dimensionName: s.dimensionName,
-            levelValue: s.levelValue,
-            levelLabel: s.levelLabel,
-          })),
-        }));
-
-        const teams = data.teams.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          batch: t.batch,
-        }));
-
-        const computed = generateDashboardData(teams, observations);
-        setDashboardData(computed);
-      } else {
-        setError(data.error || "Gagal memuat data dashboard.");
-      }
+      const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
+      const { teams, observations } = await fetchDashboardRawData();
+      const computed = generateDashboardData(teams, observations);
+      setDashboardData(computed);
     } catch {
-      setError("Gagal terhubung ke server.");
+      setError("Gagal memuat data dashboard.");
     } finally {
       setLoading(false);
     }
@@ -108,6 +102,34 @@ function TbosDashboardContent() {
     setLastUpdated(new Date());
   }, [dashboardData]);
 
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTeamName.trim()) {
+      setCreateTeamError("Nama tim tidak boleh kosong.");
+      return;
+    }
+
+    setCreatingTeam(true);
+    setCreateTeamError("");
+    const res = await createTeam({
+      name: newTeamName.trim(),
+      batch: newTeamBatch,
+    });
+
+    if (res.success) {
+      setCreateTeamSuccess(true);
+      setNewTeamName("");
+      setTimeout(() => {
+        setCreateTeamSuccess(false);
+        setShowAddTeamModal(false);
+        fetchData();
+      }, 1000);
+    } else {
+      setCreateTeamError(res.error || "Gagal membuat tim.");
+    }
+    setCreatingTeam(false);
+  };
+
   const summary = dashboardData?.executiveSummary;
 
   if (loading) {
@@ -128,35 +150,98 @@ function TbosDashboardContent() {
 
   if (!dashboardData || dashboardData.teams.length === 0) {
     return (
-      <div className="text-center py-20">
-        <p className="text-sm text-[#4A4C54]">Belum ada data observasi.</p>
+      <div className="text-center py-20 bg-white rounded-2xl border border-black/[0.04] p-8 max-w-xl mx-auto">
+        <Users className="w-12 h-12 text-[#0B2C6B]/40 mx-auto mb-4" />
+        <h3 className="text-base font-bold text-[#0B2C6B] mb-2">Belum Ada Data Tim T-BOS</h3>
+        <p className="text-sm text-[#4A4C54] mb-6">
+          Mulai dengan menambahkan tim dan batch peserta untuk diobservasi oleh fasilitator.
+        </p>
+        <button
+          onClick={() => setShowAddTeamModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Tambah Tim Pertama
+        </button>
+
+        {showAddTeamModal && (
+          <AddTeamModal
+            name={newTeamName}
+            setName={setNewTeamName}
+            batch={newTeamBatch}
+            setBatch={setNewTeamBatch}
+            loading={creatingTeam}
+            error={createTeamError}
+            success={createTeamSuccess}
+            onSubmit={handleCreateTeam}
+            onClose={() => setShowAddTeamModal(false)}
+          />
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Real-time indicator */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
+      {/* Quick Action Navigation & Real-time indicator */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white p-4 rounded-2xl border border-black/[0.04] shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
           </span>
-          <span className="text-xs text-[#4A4C54]">
-            Auto-refresh 30s
+          <span className="text-xs font-medium text-[#4A4C54]">
+            Auto-refresh (30s)
             {lastUpdated && (
-              <> • Update: {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</>
+              <span className="text-[#0B2C6B] font-semibold ml-1">
+                • {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
             )}
           </span>
+          <button
+            onClick={() => {
+              fetchData();
+              setLastUpdated(new Date());
+            }}
+            title="Refresh data sekarang"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Refresh
+          </button>
         </div>
-        <button
-          onClick={() => { fetchData(); setLastUpdated(new Date()); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
-        </button>
+
+        {/* Quick Admin Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowAddTeamModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Tambah Tim
+          </button>
+          <Link
+            href="/fasilitator/tbos/observations"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#0B2C6B] bg-[#0B2C6B]/[0.04] text-xs font-semibold hover:bg-[#0B2C6B]/[0.08] transition-colors"
+          >
+            <Lock className="w-3.5 h-3.5 text-[#D9A441]" />
+            Kelola & Kunci Observasi
+          </Link>
+          <Link
+            href="/fasilitator/tbos"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            Form Observasi
+          </Link>
+          <Link
+            href="/peserta/dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Tampilan Peserta
+          </Link>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -213,6 +298,129 @@ function TbosDashboardContent() {
         {activeTab === "ranking" && <TbosRanking teams={dashboardData.teams} />}
         {activeTab === "batch" && <TbosBatchComparison comparisons={dashboardData.batchComparisons} />}
       </div>
+
+      {/* Tambah Tim Modal */}
+      {showAddTeamModal && (
+        <AddTeamModal
+          name={newTeamName}
+          setName={setNewTeamName}
+          batch={newTeamBatch}
+          setBatch={setNewTeamBatch}
+          loading={creatingTeam}
+          error={createTeamError}
+          success={createTeamSuccess}
+          onSubmit={handleCreateTeam}
+          onClose={() => setShowAddTeamModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddTeamModal({
+  name,
+  setName,
+  batch,
+  setBatch,
+  loading,
+  error,
+  success,
+  onSubmit,
+  onClose,
+}: {
+  name: string;
+  setName: (v: string) => void;
+  batch: "Batch 1" | "Batch 2";
+  setBatch: (v: "Batch 1" | "Batch 2") => void;
+  loading: boolean;
+  error: string;
+  success: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06]">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-[#0B2C6B]" />
+            <h3 className="text-base font-bold text-[#0B2C6B]">Tambah Tim Baru</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-black/[0.04] text-[#4A4C54]">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-xs text-green-700 flex items-center gap-2">
+              <Check className="w-4 h-4 text-green-600" />
+              Tim berhasil ditambahkan!
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+              Nama Tim
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Contoh: Team Alpha, Bravo 1"
+              maxLength={50}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+              Batch Program
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {(["Batch 1", "Batch 2"] as const).map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setBatch(b)}
+                  className={`py-2.5 px-3 rounded-xl border text-sm font-semibold transition-colors ${
+                    batch === b
+                      ? "bg-[#0B2C6B] text-white border-[#0B2C6B]"
+                      : "bg-white text-[#4A4C54] border-black/10 hover:border-[#0B2C6B]/30"
+                  }`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-black/10 text-sm font-semibold text-[#4A4C54] hover:bg-black/[0.02] transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={loading || success}
+              className="flex-1 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Simpan Tim
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -243,8 +451,23 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
   const handleExportCsv = async () => {
     setExporting("csv");
     try {
-      const res = await fetch("/api/tbos/export?format=csv");
-      const blob = await res.blob();
+      const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
+      const { observations } = await fetchDashboardRawData();
+
+      const headers = ["ID", "Team", "Batch", "Mission", "Facilitator", "Observed Date", "Status", "Notes"];
+      const rows = observations.map((o) => [
+        o.id,
+        `"${o.teamName}"`,
+        `"${o.batch}"`,
+        `"${o.missionName}"`,
+        `"${o.facilitatorName}"`,
+        o.observedAt,
+        o.status,
+        `"${(o.notes || "").replace(/"/g, '""')}"`,
+      ]);
+
+      const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -254,6 +477,7 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
     } catch (err) {
       console.error("[T-BOS] CSV export failed:", err);
     } finally {
+      setExporting("null" as any);
       setExporting(null);
     }
   };

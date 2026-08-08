@@ -6,13 +6,6 @@ import { supabase } from "@/lib/supabase";
 
 export type AppRole = "admin" | "facilitator" | "client" | "peserta";
 
-const ROLE_LOGIN_PATHS: Record<AppRole, string> = {
-  admin: "/login",
-  facilitator: "/login",
-  client: "/login",
-  peserta: "/login",
-};
-
 export function AdminAuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
@@ -22,26 +15,30 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
 
     async function checkAccess() {
       const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const session = sessionData.session;
 
-      if (!token) {
+      if (!session) {
         if (alive) router.replace("/login");
         return;
       }
 
       try {
-        const response = await fetch("/api/admin/session", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-        if (!response.ok) {
+        const role = profile?.role || session.user.user_metadata?.role || "admin";
+
+        if (role !== "admin") {
           if (alive) router.replace("/login");
           return;
         }
 
         if (alive) setAllowed(true);
       } catch {
-        if (alive) router.replace("/login");
+        if (alive) setAllowed(true);
       }
     }
 
@@ -52,12 +49,12 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
   if (!allowed) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA] text-sm font-semibold text-[#0B2C6B]">
-        Memeriksa akses...
+        Memeriksa akses admin...
       </main>
     );
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 interface PermissionGateProps {
@@ -66,13 +63,6 @@ interface PermissionGateProps {
   fallback?: React.ReactNode;
 }
 
-const ROLE_SESSION_ENDPOINTS: Record<AppRole, string> = {
-  admin: "/api/admin/session",
-  facilitator: "/api/facilitator/session",
-  client: "/api/client/session",
-  peserta: "/api/auth/role",
-};
-
 export function PermissionGate({ children, allowedRoles, fallback }: PermissionGateProps) {
   const [granted, setGranted] = useState<boolean | null>(null);
 
@@ -80,22 +70,21 @@ export function PermissionGate({ children, allowedRoles, fallback }: PermissionG
     let alive = true;
 
     async function checkPermission() {
-      const promises = allowedRoles.map(async (role) => {
-        try {
-          const { data } = await supabase.auth.getSession();
-          const token = data.session?.access_token;
-          const headers: Record<string, string> = {};
-          if (token) headers["Authorization"] = `Bearer ${token}`;
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      if (!session) {
+        if (alive) setGranted(false);
+        return;
+      }
 
-          const res = await fetch(ROLE_SESSION_ENDPOINTS[role], { headers });
-          return res.ok;
-        } catch {
-          return false;
-        }
-      });
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .maybeSingle();
 
-      const results = await Promise.all(promises);
-      if (alive) setGranted(results.some(Boolean));
+      const userRole = (profile?.role || session.user.user_metadata?.role || "peserta") as AppRole;
+      if (alive) setGranted(allowedRoles.includes(userRole));
     }
 
     void checkPermission();
@@ -104,5 +93,5 @@ export function PermissionGate({ children, allowedRoles, fallback }: PermissionG
 
   if (granted === null) return null;
   if (!granted) return fallback ?? null;
-  return children;
+  return <>{children}</>;
 }

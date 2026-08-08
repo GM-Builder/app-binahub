@@ -1,14 +1,15 @@
 # T-BOS (BinaPlay) — Roles & Permissions
 
-Status: Draft — detail teknis dari PRD Bagian 3, diupdate dengan alur signup/role-assignment (ADR-009).
+Status: ✅ Final — diselaraskan dengan ADR-009, RLS migration `0010`, dan `roles.ts`.
 
 ## 1. Roles
 
 | Role | Deskripsi | Bagaimana didapat |
 |---|---|---|
-| Peserta | Akun umum, default untuk semua yang signup | Otomatis saat signup |
-| Fasilitator | Input observasi untuk mission yang menjadi tanggung jawabnya | Di-assign oleh Admin (bukan self-service) |
-| Admin / Program Manager | Melihat seluruh dashboard & rekap lintas tim/batch, assign role fasilitator | ⚠️ Belum dijelaskan bagaimana admin pertama dibuat — biasanya lewat seed data/manual di database, perlu dikonfirmasi |
+| Peserta | Akun umum peserta, default untuk semua user baru | Otomatis saat signup |
+| Client | Perwakilan klien / manajemen | Di-assign oleh Admin |
+| Fasilitator | Input observasi untuk mission yang menjadi tanggung jawabnya | Di-assign oleh Admin |
+| Admin / Program Manager | Melihat seluruh dashboard, rekap, export, lock/unlock observasi, assign roles | Seed data / DB admin setup |
 
 ## 2. Alur Signup → Jadi Fasilitator
 
@@ -16,39 +17,38 @@ Status: Draft — detail teknis dari PRD Bagian 3, diupdate dengan alur signup/r
 User signup (Supabase Auth) → role default "peserta"
         |
         v
-Admin buka panel admin → assign role "fasilitator" ke user tsb
+Admin buka panel admin → assign role "facilitator" ke user tsb
         |
         v
-Sesi aktif user di-invalidate (force logout)
+Sesi aktif user di-invalidate (force logout via API / Supabase Admin)
         |
         v
-User login lagi → sistem baca role terbaru → auto-redirect ke dashboard fasilitator
+User login lagi → sistem baca role terbaru dari profiles → auto-redirect ke /fasilitator/tbos
 ```
 
 ## 3. Permission Matrix
 
-| Aksi | Peserta | Fasilitator | Admin | Super Admin |
+| Aksi | Peserta | Client | Fasilitator | Admin |
 |---|---|---|---|---|
-| Lihat form observasi mission miliknya | - | ✅ | ✅ | ✅ |
-| Lihat form observasi mission lain | - | ❌ | ✅ (read-only) | ✅ |
-| Submit observasi | - | ✅ (mission miliknya saja) | ❌ | ❌ |
-| Edit observasi dalam window revisi | - | ✅ (punya sendiri) | ✅ (override, tercatat di audit log) | ✅ |
-| Lock observasi | - | ❌ (otomatis/admin) | ✅ | ✅ |
-| Lihat dashboard (radar, heatmap, ranking) | ❌ | ❌ (⚠️ konfirmasi — mungkin fasilitator ingin lihat tim yang dia observasi saja) | ✅ | ✅ |
-| Kelola master data mission/dimensi/mapping | ❌ | ❌ (⚠️ atau ✅, perlu dikonfirmasi) | ❌ (⚠️ atau ✅, perlu dikonfirmasi) | ✅ |
-| Assign fasilitator ke mission | ❌ | ❌ | ✅ | ✅ |
-| Assign role fasilitator ke user | ❌ | ❌ | ✅ | ✅ |
+| Lihat form observasi mission miliknya | ❌ | ❌ | ✅ | ✅ |
+| Lihat form observasi mission lain | ❌ | ❌ | ❌ | ✅ |
+| Submit observasi | ❌ | ❌ | ✅ (mission miliknya saja) | ❌ |
+| Edit observasi dalam revision window | ❌ | ❌ | ✅ (punya sendiri) | ✅ (override, tercatat di audit log) |
+| Lock / Unlock observasi | ❌ | ❌ | ❌ | ✅ |
+| Lihat dashboard admin (radar, heatmap, ranking) | ❌ | ❌ | ❌ | ✅ |
+| Lihat dashboard peserta (skor tim sendiri) | ✅ | ❌ | ❌ | ❌ |
+| Assign fasilitator ke mission (`tbos_facilitator_missions`) | ❌ | ❌ | ❌ | ✅ |
+| Assign role fasilitator ke user | ❌ | ❌ | ❌ | ✅ |
 
 ## 4. Dashboard Peserta
 
-⚠️ **Belum ada spesifikasi.** PRD T-BOS awal tidak menyebutkan apa yang dilihat peserta di dashboard mereka (skor tim sendiri? riwayat mission yang diikuti?). Karena role `peserta` sekarang jadi bagian resmi dari alur login, halaman dashboard peserta perlu didefinisikan — minimal placeholder "belum ada fitur" kalau memang belum prioritas di MVP.
+Diakses via `/peserta/dashboard`. Peserta yang terdaftar di `tbos_team_members` dapat melihat:
+- Ranking tim di batch
+- Skor tim (overall team score)
+- Jumlah mission selesai
+- Rincian 8 dimensi perilaku
 
 ## 5. Enforcement
 
-- Pembatasan **wajib di level API/server**, bukan hanya UI — supaya fasilitator tidak bisa submit observasi untuk mission lain lewat manipulasi request.
-- Mapping fasilitator ↔ mission (`facilitator_missions` di DATA-MODEL.md) jadi sumber kebenaran untuk validasi ini.
-
-## 6. Open Question
-
-- Apakah fasilitator perlu lihat progress/skor tim yang **sudah** dia observasi (read-only, sebagai feedback), atau benar-benar tidak ada akses dashboard sama sekali? PRD asli belum eksplisit soal ini.
-- Bagaimana admin pertama (yang bisa assign role fasilitator) dibuat? Manual seed di database, atau ada mekanisme lain?
+- Enforced di **level Database RLS** (migration `0010_fix_tbos_rls_and_roles.sql`).
+- Mapping fasilitator ↔ mission (`tbos_facilitator_missions`) di-query langsung saat memuat daftar mission.

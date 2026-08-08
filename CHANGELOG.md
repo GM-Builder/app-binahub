@@ -3,6 +3,36 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-08-08
+
+### Added — PRD v0.4, Cross-Repo API Alignment, Admin Workflow & SLJ Auth Redesign
+
+#### PRD v0.4 & Architecture Sync
+- Mengadopsi **PRD v0.4** (*Modular Operational Platform*): Arsitektur generik 7-layer Evidence/Capability dari v0.3 diturunkan menjadi visi jangka panjang; platform kini berfokus pada fondasi bersama (Auth, Role, Shell Dashboard) yang menaungi modul-modul independen (BinaInsight, BinaImpact, T-BOS).
+- Mengupdate **ADR.md**: 4 ADR disinkronkan dengan status implementasi aktual (ADR-005: Rata-rata skor final, ADR-006: Offline-first localStorage draft/queue, ADR-007: Fase MVP, ADR-010: Rombak Landing/PRD v0.4 — semuanya berstatus ✅ Final).
+- Mengupdate **ARCHITECTURE.md**: Status diubah dari "Draft" menjadi "Active", risiko PRD v0.3 ditandai resolved, pertimbangan teknis diperbarui, dan pola `ApiFetchBridge` → `binahub-api` didokumentasikan secara resmi.
+
+#### Cross-Repo API Alignment (`app-binahub` ↔ `binahub-api`)
+- **Fix Teams Field Mismatch**: Backend `binahub-api` pada `GET /api/tbos/teams` kini mentransformasikan relasi `tbos_team_members` menjadi `members`, sehingga nama anggota tim tampil sempurna di UI fasilitator.
+- **Route Baru Participant Team Info**: Menambahkan route `GET /api/tbos/participant/team-info` di `binahub-api` untuk menghitung skor tim, dimensi unggulan, dimensi perbaikan, serta peringkat batch secara server-side tanpa memerlukan hak akses admin.
+- **Client Helper `createTeam()`**: Menambahkan method `createTeam()` pada `src/modules/tbos/api-client.ts` untuk mempermudah pembuatan tim via `POST /api/tbos/teams`.
+
+#### Admin Workflow & UI/UX Enhancements
+- **Modal Tambah Tim Baru**: Menambahkan dialog modal di `/admin/tbos` sehingga admin dapat mendaftarkan tim dan batch baru secara instan tanpa query manual ke database.
+- **Quick Action Bar**: Header `/admin/tbos` dilengkapi bar navigasi cepat menuju *Kelola & Kunci Observasi* (`/fasilitator/tbos/observations`), *Form Observasi Fasilitator* (`/fasilitator/tbos`), *Dashboard Peserta* (`/peserta/dashboard`), serta tombol ekspor PDF & CSV.
+- **Sidebar Navigasi Terpadu**: Sidebar `/admin/page.tsx` disinkronkan dengan tautan lengkap ke *T-BOS Analytics*, *Manajemen User & Role*, *Workflow Observasi*, dan *Dashboard Peserta*.
+
+#### Modernisasi UI/UX Signin & Signup (Selaras dengan `slj-binahub`)
+- **Latar Belakang & Atmosfer Visual**: Mengimplementasikan background grid halus dengan *radial gradient mask* dan *ambient glowing orbs* bernuansa Gold (`#D9A441`) & Navy (`#0B2C6B`).
+- **Elevated Glassmorphic Card**: Kontainer form modern berpadu *backdrop-blur*, border halus, dan bayangan lembut.
+- **Google One-Click Sign-In**: Opsi login/daftar instan dengan logo resmi Google berwarna.
+- **Dual-Mode Switcher**: Tab segment Masuk / Daftar Baru yang responsif dan mulus.
+- **Alur Pemulihan Password (Forgot Password)**: Mode reset password terintegrasi menggunakan `supabase.auth.resetPasswordForEmail()`.
+- **Persetujuan Legal**: Checkbox persetujuan Syarat & Ketentuan serta Kebijakan Privasi pada form pendaftaran.
+- **Rute URL Terpadu**: Menambahkan handler halaman untuk `/login`, `/register`, dan `/forgot-password`.
+
+---
+
 ## [0.3.1] - 2026-08-07
 
 ### Added — ADR-009, Peserta Dashboard, Team Members, Filters

@@ -2,60 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowLeft, Lock, Unlock, Edit3, Save, X, History, Clock, Check } from "lucide-react";
+import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check } from "lucide-react";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";
-
-interface ObservationScore {
-  dimensionId: string;
-  dimensionCode: string;
-  dimensionName: string;
-  levelValue: number;
-}
-
-interface Observation {
-  id: string;
-  teamId: string;
-  teamName: string;
-  missionId: string;
-  missionCode: string;
-  missionName: string;
-  profileId: string;
-  facilitatorName: string;
-  batch: string;
-  observedAt: string;
-  submittedAt: string;
-  status: "draft" | "submitted" | "locked";
-  notes: string | null;
-  lockedAt: string | null;
-  lockedBy: string | null;
-  revisionDeadline: string | null;
-  canEdit: boolean;
-  scores: ObservationScore[];
-}
-
-interface AuditEntry {
-  id: string;
-  actorId: string;
-  actorRole: string;
-  actorName: string;
-  action: string;
-  previousStatus: string | null;
-  newStatus: string | null;
-  changes: any;
-  createdAt: string;
-}
-
-interface ObservationDetail extends Observation {
-  auditLog: AuditEntry[];
-  dimensions: {
-    id: string;
-    code: string;
-    name: string;
-    levels: { level_value: number; level_label: string; description: string }[];
-  }[];
-}
+import {
+  fetchObservations,
+  fetchObservationDetail,
+  updateObservation,
+  toggleLockObservation,
+  TbosDbObservation,
+  TbosDbObservationDetail,
+} from "@/modules/tbos/api-client";
 
 export default function TbosObservationsListPage() {
   return (
@@ -66,30 +25,40 @@ export default function TbosObservationsListPage() {
 }
 
 function TbosObservationsContent() {
-  const [observations, setObservations] = useState<Observation[]>([]);
+  const [observations, setObservations] = useState<TbosDbObservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  const fetchObservations = useCallback(async () => {
+  const loadObservations = useCallback(async () => {
     try {
-      const res = await fetch("/api/tbos/observations");
-      const data = await res.json();
-      if (data.success) {
-        setObservations(data.observations);
-      } else {
-        setError(data.error || "Gagal memuat observasi.");
-      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id || "";
+      setCurrentUserId(userId);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const adminRole = profile?.role === "admin";
+      setIsAdmin(adminRole);
+
+      const obsList = await fetchObservations(userId, adminRole);
+      setObservations(obsList);
     } catch {
-      setError("Gagal terhubung ke server.");
+      setError("Gagal memuat observasi.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchObservations();
-  }, [fetchObservations]);
+    loadObservations();
+  }, [loadObservations]);
 
   if (loading) {
     return (
@@ -116,7 +85,7 @@ function TbosObservationsContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[#0B2C6B]">Riwayat Observasi</h2>
         <span className="text-xs text-[#4A4C54]">{observations.length} observasi</span>
@@ -167,8 +136,10 @@ function TbosObservationsContent() {
         {selectedId && (
           <ObservationDetailPanel
             observationId={selectedId}
+            userId={currentUserId}
+            isAdmin={isAdmin}
             onClose={() => setSelectedId(null)}
-            onUpdated={fetchObservations}
+            onUpdated={loadObservations}
           />
         )}
       </AnimatePresence>
@@ -192,14 +163,18 @@ function StatusBadge({ status }: { status: string }) {
 
 function ObservationDetailPanel({
   observationId,
+  userId,
+  isAdmin,
   onClose,
   onUpdated,
 }: {
   observationId: string;
+  userId: string;
+  isAdmin: boolean;
   onClose: () => void;
   onUpdated: () => void;
 }) {
-  const [detail, setDetail] = useState<ObservationDetail | null>(null);
+  const [detail, setDetail] = useState<TbosDbObservationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -207,12 +182,10 @@ function ObservationDetailPanel({
   const [editedNotes, setEditedNotes] = useState("");
   const [actionError, setActionError] = useState("");
 
-  const fetchDetail = useCallback(async () => {
+  const loadDetail = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tbos/observations/${observationId}`);
-      const data = await res.json();
-      if (data.success) {
-        const obs = data.observation;
+      const obs = await fetchObservationDetail(observationId, userId, isAdmin);
+      if (obs) {
         setDetail(obs);
         setEditedNotes(obs.notes || "");
         const scoreMap: Record<string, number> = {};
@@ -220,17 +193,19 @@ function ObservationDetailPanel({
           scoreMap[s.dimensionId] = s.levelValue;
         }
         setEditedScores(scoreMap);
+      } else {
+        setActionError("Observasi tidak ditemukan.");
       }
     } catch {
       setActionError("Gagal memuat detail.");
     } finally {
       setLoading(false);
     }
-  }, [observationId]);
+  }, [observationId, userId, isAdmin]);
 
   useEffect(() => {
-    fetchDetail();
-  }, [fetchDetail]);
+    loadDetail();
+  }, [loadDetail]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -240,25 +215,23 @@ function ObservationDetailPanel({
         dimensionId,
         levelValue,
       }));
-      const res = await fetch(`/api/tbos/observations/${observationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "edit",
-          notes: editedNotes,
-          scores,
-        }),
+
+      const res = await updateObservation(observationId, {
+        notes: editedNotes,
+        scores,
+        actorId: userId,
+        actorRole: isAdmin ? "admin" : "facilitator",
       });
-      const data = await res.json();
-      if (data.success) {
+
+      if (res.success) {
         setEditing(false);
-        fetchDetail();
+        loadDetail();
         onUpdated();
       } else {
-        setActionError(data.error || "Gagal menyimpan.");
+        setActionError(res.error || "Gagal menyimpan.");
       }
     } catch {
-      setActionError("Gagal terhubung ke server.");
+      setActionError("Gagal menyimpan data.");
     } finally {
       setSaving(false);
     }
@@ -267,20 +240,15 @@ function ObservationDetailPanel({
   const handleLockUnlock = async (action: "lock" | "unlock") => {
     setActionError("");
     try {
-      const res = await fetch(`/api/tbos/observations/${observationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchDetail();
+      const res = await toggleLockObservation(observationId, action, userId);
+      if (res.success) {
+        loadDetail();
         onUpdated();
       } else {
-        setActionError(data.error || "Gagal.");
+        setActionError(res.error || "Gagal.");
       }
     } catch {
-      setActionError("Gagal terhubung ke server.");
+      setActionError("Gagal mengubah status lock.");
     }
   };
 
@@ -317,20 +285,22 @@ function ObservationDetailPanel({
           {detail && (
             <div className="flex items-center gap-2">
               <StatusBadge status={detail.status} />
-              {detail.status === "locked" ? (
-                <button
-                  onClick={() => handleLockUnlock("unlock")}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100"
-                >
-                  <Unlock className="w-3.5 h-3.5" /> Unlock
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleLockUnlock("lock")}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100"
-                >
-                  <Lock className="w-3.5 h-3.5" /> Lock
-                </button>
+              {isAdmin && (
+                detail.status === "locked" ? (
+                  <button
+                    onClick={() => handleLockUnlock("unlock")}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100"
+                  >
+                    <Unlock className="w-3.5 h-3.5" /> Unlock
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleLockUnlock("lock")}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100"
+                  >
+                    <Lock className="w-3.5 h-3.5" /> Lock
+                  </button>
+                )
               )}
             </div>
           )}
@@ -435,7 +405,7 @@ function ObservationDetailPanel({
 
                 <div className="space-y-2">
                   {detail.scores.map((score) => {
-                    const dim = detail.dimensions?.find((d) => d.id === score.dimensionId);
+                    const dim = detail.dimensions?.find((d) => d.id === score.dimensionId || d.code === score.dimensionCode);
                     const currentLevel = editing
                       ? editedScores[score.dimensionId] || score.levelValue
                       : score.levelValue;

@@ -236,6 +236,18 @@ export default function AdminDashboardPage() {
               Sistem Transformasi
             </p>
             <Link
+              href="/admin/tbos"
+              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
+            >
+              T-BOS Analytics
+            </Link>
+            <Link
+              href="/admin/users"
+              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
+            >
+              Manajemen User & Role
+            </Link>
+            <Link
               href="/admin/engagements"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
@@ -248,25 +260,25 @@ export default function AdminDashboardPage() {
               Matriks Izin
             </Link>
             <p className="mb-2 mt-4 px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/34">
-              Pratinjau Peran
+              Workflow & Observasi
             </p>
             <Link
-              href="/client/dashboard"
+              href="/fasilitator/tbos"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
-              Tampilan Peserta
+              Form Observasi T-BOS
             </Link>
             <Link
-              href="/facilitator/dashboard"
+              href="/fasilitator/tbos/observations"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
-              Tampilan Fasilitator
+              Kelola & Kunci Observasi
             </Link>
             <Link
-              href="/facilitator/statistics"
+              href="/peserta/dashboard"
               className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
             >
-              Statistik Tim
+              Dashboard Peserta
             </Link>
           </div>
           <button

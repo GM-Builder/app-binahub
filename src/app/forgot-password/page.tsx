@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/?mode=signin");
+    router.replace("/?mode=forgot");
   }, [router]);
 
   return null;

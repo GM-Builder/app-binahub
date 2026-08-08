@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
-export type AppRole = "admin" | "facilitator" | "client";
+export type AppRole = "admin" | "facilitator" | "client" | "peserta";
 
 type AuthError = {
   error: string;
@@ -56,7 +56,7 @@ export function getUserRole(user: User): AppRole | null {
     .trim()
     .toLowerCase();
 
-  if (role === "admin" || role === "facilitator" || role === "client") {
+  if (role === "admin" || role === "facilitator" || role === "client" || role === "peserta") {
     return role;
   }
 

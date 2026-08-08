@@ -1,6 +1,6 @@
 # T-BOS (BinaPlay) — Architecture
 
-Status: Draft — sebagian keputusan masih asumsi, perlu dikonfirmasi (ditandai ⚠️)
+Status: Active — keputusan arsitektur utama sudah dikonfirmasi dan diimplementasi. Lihat ADR.md untuk daftar lengkap.
 
 ## 1. Ringkasan
 
@@ -31,13 +31,10 @@ T-BOS adalah aplikasi web untuk fasilitator mengisi observasi perilaku tim selam
 - **Tambah baru**: skema login diubah jadi role-based auto-redirect (ADR-009) — saat ini kemungkinan user masih pilih dashboard manual di frontend, perlu diganti jadi otomatis berdasarkan role tersimpan di database.
 - **Tambah baru**: tabel-tabel T-BOS sendiri (lihat DATA-MODEL.md) dengan prefix `tbos_`, mengikuti pola BinaImpact yang pakai prefix `impact_`.
 - **Rombak**: landing page app.binahub.id dan dashboard fasilitator existing (ADR-010) untuk mengakomodasi T-BOS.
-- **Timpa**: PRD.md dan dokumen lain di repo app-binahub yang mencerminkan arah lama (ADR-010) — lihat §3.1 soal risiko ini.
 
-### 3.1 Catatan Risiko: Menimpa PRD.md Existing
+### 3.1 Catatan: PRD v0.4 Menggantikan v0.3
 
-Repo app-binahub punya `PRD.md` (v0.3) yang mengusulkan arsitektur generik "Evidence-Based Transformation OS" (Tenant → Engagement → Evidence → Capability → Behavior → Outcome) untuk **seluruh platform**, bukan cuma T-BOS. PRD itu juga secara eksplisit men-defer/membuang konsep "Mission system".
-
-Karena PRD tsb belum diimplementasi di kode (kode aktual masih scaffolding sesuai README & ROADMAP.md), menimpanya risikonya rendah secara teknis — tapi ini tetap keputusan **arsitektur platform-wide**, bukan cuma keputusan T-BOS. Kalau ada pihak lain di tim yang menulis atau merujuk PRD v0.3 itu untuk modul lain di luar T-BOS, perlu dikoordinasikan dulu sebelum ditimpa.
+✅ **Resolved.** PRD.md sudah di-update ke v0.4 — arsitektur generik 7-layer Evidence/Capability dari v0.3 diturunkan jadi visi jangka panjang (Bagian 9 PRD v0.4), bukan fondasi wajib. Platform sekarang modular per layanan, selaras dengan prinsip yang sudah ada di ROADMAP.md.
 
 ## 4. High-Level Component
 
@@ -56,6 +53,7 @@ Karena PRD tsb belum diimplementasi di kode (kode aktual masih scaffolding sesua
 
 ## 5. Pertimbangan Teknis Kunci
 
-- **Offline-first**: fasilitator input di lapangan, koneksi bisa tidak stabil. Perlu strategi cache lokal (misal localStorage/IndexedDB) + sync saat online kembali. Belum diputuskan implementasinya.
-- **Role-based access**: fasilitator hanya lihat mission miliknya. Perlu mapping fasilitator ↔ mission di level auth/permission, bukan cuma UI filter.
-- **Real-time dashboard**: apakah dashboard perlu update real-time (Supabase Realtime) atau cukup refresh manual — belum diputuskan.
+- **Offline-first**: ✅ Diimplementasi via localStorage (ADR-006). Auto-save draft, antrian offline, dan flush otomatis saat online kembali. Bukan full PWA/Service Worker.
+- **Role-based access**: ✅ Diimplementasi. Fasilitator hanya melihat mission yang di-assign via `tbos_facilitator_missions`. Backend (`binahub-api`) memvalidasi akses lewat JWT + tabel assignment.
+- **API Architecture**: Frontend (`app-binahub`) tidak mengakses Supabase langsung — semua operasi data dikirim ke `binahub-api` via HTTP fetch. `ApiFetchBridge` di root layout otomatis meng-intercept `/api/*` calls, mengarahkan ke backend, dan menyisipkan auth token.
+- **Real-time dashboard**: Auto-refresh setiap 30 detik via `setInterval` di client (bukan Supabase Realtime). Cukup untuk kebutuhan saat ini.

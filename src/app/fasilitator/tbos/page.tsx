@@ -2,44 +2,24 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Wifi, WifiOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
-import type { MissionCode, DimensionCode, LevelValue } from "@/modules/tbos";
-import { LEVEL_LABELS } from "@/modules/tbos";
-
-interface MissionDimension {
-  id: string;
-  code: string;
-  name: string;
-  question: string;
-  order_index: number;
-  levels: {
-    level_value: number;
-    level_label: string;
-    description: string;
-  }[];
-}
-
-interface Mission {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  dimensions: MissionDimension[];
-}
-
-interface TeamMember {
-  profile_id: string | null;
-  member_name: string;
-}
-
-interface Team {
-  id: string;
-  name: string;
-  batch: string;
-  members?: TeamMember[];
-}
+import { supabase } from "@/lib/supabase";
+import type { LevelValue } from "@/modules/tbos";
+import {
+  fetchMissions,
+  fetchTeams,
+  submitObservation,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  queueObservation,
+  flushQueuedObservations,
+  getQueuedObservations,
+  TbosDbMission,
+  TbosDbTeam,
+} from "@/modules/tbos/api-client";
 
 type Step = "select" | "observe" | "submitting" | "done";
 
@@ -54,40 +34,98 @@ export default function TbosObservationPage() {
 function TbosObservationContent() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("select");
-  const [missions, setMissions] = useState<Mission[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [missions, setMissions] = useState<TbosDbMission[]>([]);
+  const [teams, setTeams] = useState<TbosDbTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userId, setUserId] = useState<string>("");
 
-  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [selectedMission, setSelectedMission] = useState<TbosDbMission | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TbosDbTeam | null>(null);
   const [scores, setScores] = useState<Record<string, LevelValue>>({});
   const [notes, setNotes] = useState("");
 
-  const fetchData = useCallback(async () => {
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [queuedCount, setQueuedCount] = useState<number>(0);
+
+  // Monitor Network Status & Queued Items
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    setQueuedCount(getQueuedObservations().length);
+
+    const handleOnline = async () => {
+      setIsOnline(true);
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user.id) {
+        const synced = await flushQueuedObservations(data.session.user.id);
+        setQueuedCount(getQueuedObservations().length);
+      }
+    };
+
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const initData = useCallback(async () => {
     try {
-      const [missionsRes, teamsRes] = await Promise.all([
-        fetch("/api/tbos/missions"),
-        fetch("/api/tbos/teams"),
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData.session?.user.id || "";
+      setUserId(currentUserId);
+
+      const [mList, tList] = await Promise.all([
+        fetchMissions(currentUserId),
+        fetchTeams(),
       ]);
 
-      const missionsData = await missionsRes.json();
-      const teamsData = await teamsRes.json();
-
-      if (missionsData.success) setMissions(missionsData.missions);
-      if (teamsData.success) setTeams(teamsData.teams);
+      setMissions(mList);
+      setTeams(tList);
     } catch {
-      setError("Gagal memuat data. Coba refresh halaman.");
+      setError("Gagal memuat data. Menggunakan data lokal.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    initData();
+  }, [initData]);
 
-  const handleSelectMission = (mission: Mission) => {
+  // Load draft when team and mission selected
+  useEffect(() => {
+    if (selectedTeam && selectedMission) {
+      const draft = loadDraft(selectedTeam.id, selectedMission.id);
+      if (draft) {
+        setScores(draft.scores || {});
+        setNotes(draft.notes || "");
+      }
+    }
+  }, [selectedTeam, selectedMission]);
+
+  // Auto-save draft on changes (ADR-006)
+  const handleScoreSelect = (dimensionId: string, level: LevelValue) => {
+    const updated = { ...scores, [dimensionId]: level };
+    setScores(updated);
+    if (selectedTeam && selectedMission) {
+      saveDraft(selectedTeam.id, selectedMission.id, updated, notes);
+    }
+  };
+
+  const handleNotesChange = (val: string) => {
+    const sliced = val.slice(0, 50);
+    setNotes(sliced);
+    if (selectedTeam && selectedMission) {
+      saveDraft(selectedTeam.id, selectedMission.id, scores, sliced);
+    }
+  };
+
+  const handleSelectMission = (mission: TbosDbMission) => {
     setSelectedMission(mission);
     setScores({});
     setNotes("");
@@ -96,15 +134,11 @@ function TbosObservationContent() {
     }
   };
 
-  const handleSelectTeam = (team: Team) => {
+  const handleSelectTeam = (team: TbosDbTeam) => {
     setSelectedTeam(team);
     if (selectedMission) {
       setStep("observe");
     }
-  };
-
-  const handleScoreSelect = (dimensionId: string, level: LevelValue) => {
-    setScores((prev) => ({ ...prev, [dimensionId]: level }));
   };
 
   const allDimensionsScored = selectedMission
@@ -116,33 +150,37 @@ function TbosObservationContent() {
 
     setStep("submitting");
 
-    try {
-      const res = await fetch("/api/tbos/observations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamId: selectedTeam.id,
-          missionId: selectedMission.id,
-          batch: selectedTeam.batch,
-          notes,
-          scores: selectedMission.dimensions.map((d) => ({
-            dimensionId: d.id,
-            levelValue: scores[d.id],
-          })),
-        }),
-      });
+    const payload = {
+      teamId: selectedTeam.id,
+      missionId: selectedMission.id,
+      profileId: userId,
+      batch: selectedTeam.batch,
+      notes,
+      scores: selectedMission.dimensions.map((d) => ({
+        dimensionId: d.id,
+        levelValue: scores[d.id],
+      })),
+    };
 
-      const data = await res.json();
+    if (!navigator.onLine) {
+      // Offline fallback: queue locally (ADR-006)
+      queueObservation(payload);
+      clearDraft(selectedTeam.id, selectedMission.id);
+      setQueuedCount(getQueuedObservations().length);
+      setStep("done");
+      return;
+    }
 
-      if (data.success) {
-        setStep("done");
-      } else {
-        setError(data.error || "Gagal menyimpan observasi.");
-        setStep("observe");
-      }
-    } catch {
-      setError("Gagal terhubung ke server.");
-      setStep("observe");
+    const res = await submitObservation(payload);
+
+    if (res.success) {
+      setStep("done");
+    } else {
+      // Queue on failure
+      queueObservation(payload);
+      clearDraft(selectedTeam.id, selectedMission.id);
+      setQueuedCount(getQueuedObservations().length);
+      setStep("done");
     }
   };
 
@@ -151,7 +189,7 @@ function TbosObservationContent() {
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-[#0B2C6B]" />
-          <p className="text-sm text-[#4A4C54]">Memuat data...</p>
+          <p className="text-sm text-[#4A4C54]">Memuat data T-BOS...</p>
         </div>
       </div>
     );
@@ -174,7 +212,8 @@ function TbosObservationContent() {
           <div className="p-8 text-center">
             <p className="text-sm text-[#4A4C54] mb-6">
               Observasi untuk <strong className="text-[#0B2C6B]">{selectedTeam?.name}</strong> di mission{" "}
-              <strong className="text-[#0B2C6B]">{selectedMission?.name}</strong> berhasil disimpan.
+              <strong className="text-[#0B2C6B]">{selectedMission?.name}</strong> berhasil disimpan
+              {!isOnline && " (tersimpan offline, akan di-sync saat online)"}.
             </p>
             <div className="flex flex-col gap-3">
               <button
@@ -190,10 +229,10 @@ function TbosObservationContent() {
                 Observasi Baru
               </button>
               <button
-                onClick={() => router.push("/fasilitator/dashboard")}
+                onClick={() => router.push("/fasilitator/tbos/observations")}
                 className="w-full h-12 rounded-xl border border-black/10 text-[#4A4C54] font-medium text-sm hover:bg-black/[0.02] transition-colors"
               >
-                Kembali ke Dashboard
+                Lihat Riwayat Observasi
               </button>
             </div>
           </div>
@@ -216,7 +255,19 @@ function TbosObservationContent() {
             </button>
           )}
           <div className="flex-1">
-            <h1 className="text-base font-bold text-[#0B2C6B]">T-BOS Observasi</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold text-[#0B2C6B]">T-BOS Observasi</h1>
+              {/* Online/Offline Status */}
+              <span
+                className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                  isOnline ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                }`}
+              >
+                {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                {isOnline ? "Online" : "Offline"}
+                {queuedCount > 0 && ` (${queuedCount} pending)`}
+              </span>
+            </div>
             <p className="text-xs text-[#4A4C54]">
               {step === "select" && "Pilih mission dan tim"}
               {step === "observe" && `${selectedMission?.name} • ${selectedTeam?.name}`}
@@ -249,7 +300,7 @@ function TbosObservationContent() {
               {/* Mission Selection */}
               <div>
                 <h2 className="text-sm font-semibold text-[#0B2C6B] mb-3 uppercase tracking-wide">
-                  Pilih Mission
+                  Pilih Mission (Ditugaskan)
                 </h2>
                 <div className="space-y-2">
                   {missions.length === 0 && (
@@ -414,7 +465,7 @@ function TbosObservationContent() {
                 <input
                   type="text"
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value.slice(0, 50))}
+                  onChange={(e) => handleNotesChange(e.target.value)}
                   placeholder="Contoh: Leader langsung membagi peran."
                   className="w-full px-3 py-2.5 rounded-lg border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
                 />

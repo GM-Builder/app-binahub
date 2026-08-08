@@ -13,23 +13,31 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
 
     async function checkAccess() {
       const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const session = data.session;
 
-      if (!token) {
-        router.replace("/login");
+      if (!session) {
+        if (alive) router.replace("/login");
         return;
       }
 
-      const response = await fetch("/api/facilitator/session", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-      if (!response.ok) {
-        router.replace("/login");
-        return;
+        const role = profile?.role || session.user.user_metadata?.role || "facilitator";
+
+        if (role !== "facilitator" && role !== "admin") {
+          if (alive) router.replace("/login");
+          return;
+        }
+
+        if (alive) setAllowed(true);
+      } catch {
+        if (alive) setAllowed(true); // Allow fallback if session exists
       }
-
-      if (alive) setAllowed(true);
     }
 
     void checkAccess();
@@ -41,11 +49,10 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
   if (!allowed) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA] text-sm font-semibold text-[#0B2C6B]">
-        Memeriksa akses...
+        Memeriksa akses fasilitator...
       </main>
     );
   }
 
-  return children;
+  return <>{children}</>;
 }
-

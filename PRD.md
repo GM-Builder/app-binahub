@@ -1,525 +1,154 @@
-# PRD v0.3
+# PRD v0.4
 
-# BinaHub Transformation Operating System (Practical Architecture Version)
+# BinaHub App — Modular Operational Platform (Practical Architecture Version)
 
 Status: Ready for System Design & Engineering Breakdown
-Focus: MVP → Scalable System Foundation
+Supersedes: PRD v0.3 ("Evidence-Based Transformation Operating System")
+Perubahan utama dari v0.3: arsitektur generik 7-layer (Tenant → Engagement → Evidence → Capability → Behavior → Outcome) diturunkan jadi visi jangka panjang, bukan fondasi wajib. MVP sekarang modular per layanan.
 
 ---
 
-# 1. Product Vision (disederhanakan tapi tetap kuat)
+# 1. Product Vision
 
-BinaHub adalah sistem yang membantu organisasi:
+BinaHub App (`app.binahub.id`) adalah **hub operasional** yang menyatukan workflow terautentikasi dari berbagai layanan BinaHub — BinaInsight, BinaImpact, T-BOS (BinaPlay), dan layanan berikutnya — di satu platform dengan satu sistem login.
 
-> Mengelola perjalanan perubahan manusia dari aktivitas nyata → bukti → insight → keputusan.
+Setiap layanan punya kebutuhan data dan alur kerja sendiri. Platform ini menyediakan **fondasi bersama** (autentikasi, role, shell dashboard), bukan memaksa semua layanan mengikuti satu model data generik.
 
 ---
 
-## North Star (disederhanakan)
+## North Star
 
-Bukan:
+Bukan jumlah assessment/training/report yang dihasilkan satu modul, tapi:
 
-* jumlah assessment
-* jumlah training
-* jumlah report
-
-Tetapi:
-
-```text id="n4v2pz"
-Jumlah individu yang memiliki peningkatan capability terukur berbasis evidence dalam periode tertentu
+```
+Jumlah layanan BinaHub yang berjalan penuh di app.binahub.id
+dengan pengalaman login & navigasi yang konsisten
 ```
 
----
-
-# 2. Core Principle (yang wajib ditaati sistem)
-
-## 1. Work-first, not AI-first
-
-Sistem harus berjalan tanpa AI.
-
-AI hanya lapisan interpretasi.
+Metrik dampak per layanan (peningkatan capability, skor tim, dsb) tetap penting, tapi diukur **per modul**, belum digeneralisasi lintas modul — lihat Bagian 9 soal Evidence/Capability sebagai visi jangka panjang, bukan syarat MVP.
 
 ---
 
-## 2. Evidence is the source of truth
+# 2. Core Principle
 
-Tidak ada “skor opini” tanpa evidence.
+## 1. Modular-first, bukan Engine-first
 
----
+Setiap modul (BinaInsight, BinaImpact, T-BOS, dst) punya skema data sendiri (tabel prefixed, misal `impact_*`, `tbos_*`). **Jangan bangun abstraksi generik lintas modul sebelum ada ≥2-3 modul yang terbukti butuh pola yang sama persis.** Ini prinsip yang sudah dipegang di `ROADMAP.md` platform ini — PRD v0.4 menegaskannya sebagai aturan wajib, bukan sekadar rekomendasi.
 
-## 3. Capability is derived, not input
+## 2. Reuse fondasi, bukan reuse abstraksi bisnis
 
-Capability tidak diisi manual sebagai primary data.
+Yang di-reuse antar modul: Supabase Auth, tabel `profiles` + role, layout shell dashboard per role. Yang **tidak** di-reuse secara paksa: model data spesifik-domain satu modul ke modul lain.
 
----
+## 3. Work-first, not AI-first
+
+Sistem harus berjalan tanpa AI. AI (Bima AI) tetap sebagai lapisan interpretasi opsional di masa depan (Bagian 9), bukan prasyarat.
 
 ## 4. Everything must map to a real workflow
 
-Tidak ada konsep yang tidak punya action nyata di UI.
+Tidak ada konsep yang tidak punya action nyata di UI — prinsip ini dipertahankan dari v0.3.
 
 ---
 
-# 3. Core System Architecture (FINAL SIMPLIFIED MODEL)
+# 3. Core System Architecture (MVP — Modular)
 
-Ini versi yang lebih implementable.
+## LAYER 1 — Auth & Role (Single-Org)
 
----
-
-## LAYER 1 — Tenant & Organization Layer
-
-```text id="0c7x2q"
-Tenant
-└── Organization
+```
+auth.users (Supabase Auth)
+└── profiles (role: peserta | facilitator | admin | client*)
 ```
 
-### Fungsi:
+* Multi-tenant/multi-organization (isolasi banyak klien, billing) **ditunda** — lihat Bagian 9. Saat ini platform melayani satu organisasi (BinaHub sendiri) dan program-programnya.
+* `*` Role `client` sudah dipakai BinaInsight/BinaImpact untuk konsumen assessment eksternal. Role `peserta` baru diperkenalkan lewat T-BOS untuk anggota tim internal program. **Perlu dikonfirmasi**: apakah `client` dan `peserta` digabung jadi satu role, atau tetap dua role terpisah dengan konteks beda (lihat Bagian 8, Open Item).
 
-* isolasi data
-* multi client
-* billing future-ready
+## LAYER 2 — Role-Based Access (Auto-Redirect)
 
----
+* Signup lewat satu portal, default role = `peserta`/`client` (akun umum).
+* Admin meng-assign role lain (`facilitator`, dst) lewat panel admin — bukan self-service.
+* Perubahan role memicu force-logout; login berikutnya otomatis diarahkan ke dashboard sesuai role terbaru (tidak ada pilihan manual di frontend).
 
-## LAYER 2 — Work Layer (INI YANG PENTING SEKALI)
+## LAYER 3 — Product Modules
 
-```text id="9x8d3m"
-Organization
-└── Engagement
-```
-
-### Engagement adalah unit kerja utama
-
-Contoh:
-
-* Assessment Project
-* Leadership Program
-* Coaching Program
-* Transformation Program
+Setiap modul berdiri di atas Layer 1 & 2, dengan skema data dan halaman sendiri. Lihat Bagian 4.
 
 ---
 
-### Engagement Status (STATE MACHINE)
+# 4. Product Modules (Current Scope)
 
-```text id="k2p9qz"
-Draft
-Active
-In Progress
-Review
-Completed
-Archived
-```
+## MODULE 1 — Authentication & Role System (fondasi bersama)
 
----
+Login, signup, role assignment, auto-redirect. Dipakai semua modul di bawah.
 
-## LAYER 3 — People Layer
+## MODULE 2 — BinaInsight (existing placeholder)
 
-```text id="p7m3kq"
-Participant
-Facilitator
-Admin
-```
+Assessment form untuk klien eksternal. Tidak diubah oleh PRD ini — skema/tabel existing tetap dipertahankan (lihat `README.md`: "Do not rename or delete existing BinaInsight tables").
 
-### Participant memiliki:
+## MODULE 3 — BinaImpact MVP (existing placeholder)
 
-* profile
-* engagement history
-* capability history (derived)
-* evidence history
+Assessment 4 model × 2 level × 3 section untuk kebutuhan client pitch. Tidak diubah oleh PRD ini.
 
----
+## MODULE 4 — T-BOS / BinaPlay (NEW)
 
-## LAYER 4 — Evidence System (CORE ENGINE)
+Team Behavioral Observation System — fasilitator menilai perilaku tim peserta selama mission/game simulasi, dengan dashboard agregat untuk admin.
 
-```text id="e8v2sx"
-Evidence
-```
+* Role yang dipakai: `peserta` (default), `facilitator` (di-assign admin), `admin`.
+* Skema data, logika skor, dan spesifikasi UI **tidak** mengikuti Evidence/Capability Layer generik v0.3 — T-BOS punya dokumen sendiri:
+  * `T-BOS_PRD_v1.docx` — requirement lengkap
+  * `ARCHITECTURE.md`, `DATA-MODEL.md`, `SCORING-LOGIC.md`, `STATE-MACHINE.md`, `ROLES-PERMISSIONS.md`, `DASHBOARD-SPEC.md`, `ADR.md`, `ROADMAP.md` — detail teknis & keputusan arsitektur (lihat ADR-002, ADR-009, ADR-011)
+* Landing page dan dashboard fasilitator app.binahub.id dirombak untuk mengakomodasi modul ini (ADR-010).
 
-### Evidence Types (REAL IMPLEMENTABLE)
+## MODULE 5+ — Layanan Berikutnya
 
-```text id="t3x9qd"
-Assessment Result
-Reflection Entry
-Facilitator Observation
-Survey Response
-Action Completion
-Coaching Note
-Manager Feedback
-```
+Pola yang sama: fondasi Layer 1-2 di-reuse, skema data & halaman modul baru dibuat sendiri, tidak dipaksa masuk abstraksi generik sampai ada bukti pola berulang.
 
 ---
 
-### Evidence Schema
+# 5. Data Flow Principle (per Modul)
 
-```text id="a91kqv"
-Evidence:
-- id
-- type
-- participant_id
-- engagement_id
-- timestamp
-- source (participant/facilitator/system/manager)
-- content (structured JSON/text)
-- tags
-- linked_capability
-- confidence_score
-```
-
----
-
-## LAYER 5 — Capability Layer (DERIVED)
-
-```text id="c4n8zp"
-Capability
-```
-
-### Contoh:
-
-* Leadership
-* Communication
-* Collaboration
-* Execution
-* Strategic Thinking
-
----
-
-### Important Rule:
-
-Capability = computed from evidence
-
-Bukan input manual utama.
-
----
-
-### Capability Calculation (simple rule for MVP)
-
-```text id="m1q7wv"
-Capability Score =
-weighted average of:
-- assessment evidence
-- reflection signals
-- facilitator observations
-- manager feedback
-```
-
----
-
-## LAYER 6 — Behavior Layer (OPTIONAL MVP+, TIDAK WAJIB DIAWAL)
-
-```text id="b6r9tp"
-Behavior Signal
-```
-
-Contoh:
-
-* lebih aktif mendengar
-* lebih tegas dalam keputusan
-* lebih konsisten follow-up
-
----
-
-Behavior diturunkan dari:
-
-* facilitator notes
-* reflection text analysis
-
----
-
-## LAYER 7 — Outcome Layer (BUSINESS VIEW)
-
-```text id="o3x8nv"
-Outcome
-```
-
-Contoh:
-
-* Leadership Readiness
-* Team Performance Index
-* Culture Health
-* Engagement Level
-
----
-
-Outcome = agregasi capability + business context
-
----
-
-# 4. PRODUCT MODULES (REAL IMPLEMENTATION VERSION)
-
-## MODULE 1 — Authentication & Role System (EXISTING)
-
-* Client
-* Facilitator
-* Admin
-
----
-
-## MODULE 2 — Engagement Management (NEW CORE MODULE)
-
-### UI Pages:
-
-* Engagement List
-* Engagement Detail
-* Participant Assignment
-* Status Tracking
-
----
-
-## MODULE 3 — Evidence Engine (CRITICAL)
-
-### Pages:
-
-* Add Evidence
-* Evidence Timeline
-* Evidence Detail
-* Evidence Mapping to Capability
-
----
-
-### Popups:
-
-* Add Reflection
-* Add Observation
-* Add Assessment Result
-* Add Action Completion
-* Add Coaching Note
-
----
-
-## MODULE 4 — Participant Workspace
-
-### Pages:
-
-* Participant Profile
-* Capability Progress
-* Evidence Timeline
-* Action Plan
-* Reflection Journal
-
----
-
-## MODULE 5 — Facilitator Workspace (HIGH PRIORITY)
-
-### Pages:
-
-* My Engagements
-* Participant List
-* Evaluation Queue
-* Observation Input
-* Report Builder
-
----
-
-### Popups:
-
-* Quick Observation
-* AI Summary Draft
-* Evaluation Form
-
----
-
-## MODULE 6 — Action System (IMPORTANT BRIDGE)
-
-### Pages:
-
-* Action List
-* Action Detail
-* Progress Tracking
-
----
-
-### State:
-
-```text id="x8m2nv"
-To Do
-In Progress
-Blocked
-Completed
-```
-
----
-
-## MODULE 7 — Intelligence Layer (AI MODULE, LATER STAGE)
-
-### Pages:
-
-* Insight Dashboard
-* Capability Analysis
-* Organization Health
-* Recommendation Engine
-
----
-
-# 5. TRANSFORMATION FLOW (END-TO-END SYSTEM)
-
-Ini flow paling penting:
-
-```text id="f4k9xz"
-Engagement Created
-        ↓
-Participants Assigned
-        ↓
-Evidence Collected
-        ↓
-Capability Computed
-        ↓
-Insight Generated
-        ↓
-Action Created
-        ↓
-Outcome Measured
-```
-
----
-
-# 6. DATA FLOW PRINCIPLE (KRITIS UNTUK ENGINEERING)
+Setiap modul mengelola data flow-nya sendiri. Prinsip lintas modul yang tetap berlaku:
 
 ## Rule 1
 
-Semua UI write → Evidence
-
----
+Setiap modul bertanggung jawab atas skema datanya sendiri — tidak menulis ke tabel modul lain.
 
 ## Rule 2
 
-Tidak ada Capability input manual utama
-
----
+Modul baru **tidak wajib** memodelkan datanya sebagai "Evidence" generik. Kalau suatu saat 2-3 modul terbukti punya bentuk data yang identik, generalisasi baru dipertimbangkan — bukan didesain di muka.
 
 ## Rule 3
 
-AI hanya membaca Evidence, tidak menggantikan Evidence
+Perubahan role/akses selalu lewat Layer 1-2 (fondasi bersama), tidak diimplementasikan ulang per modul.
 
 ---
 
-## Rule 4
+# 6. AI Strategy — Ditunda
 
-Semua insight harus traceable ke Evidence
-
----
-
-# 7. AI STRATEGY (REDEFINED)
-
-## Bima AI bukan chatbot
-
-Bima AI adalah:
-
-```text id="i6p4xz"
-Evidence Interpreter + Insight Generator
-```
+Bima AI (Evidence Interpreter + Insight Generator dari v0.3) **tidak masuk scope saat ini**. Dicatat sebagai arah jangka panjang di Bagian 9, bukan dependency modul manapun yang sedang dikerjakan (termasuk T-BOS).
 
 ---
 
-### AI Responsibilities:
+# 7. MVP Scope (Realistis, per Modul)
 
-* summarize evidence
-* cluster patterns
-* suggest capability gaps
-* generate facilitator report draft
-* generate executive insight
+Roadmap detail ada di `ROADMAP.md` masing-masing (platform-level di `ROADMAP.md` repo ini, T-BOS-specific di `ROADMAP.md` T-BOS). Ringkasan tahapan platform:
 
----
-
-### AI Cannot:
-
-* invent evidence
-* override raw data
-* produce untraceable conclusions
+1. **Fondasi**: Auth, role, auto-redirect (Layer 1-2) — prasyarat semua modul.
+2. **Modul berjalan satu-satu**: BinaInsight & BinaImpact (existing), T-BOS (baru) — dikerjakan sebagai unit terpisah, tidak saling blocking.
+3. **Generalisasi (jika terbukti perlu)**: baru dipertimbangkan setelah ≥2-3 modul stabil dan pola datanya benar-benar tumpang tindih.
 
 ---
 
-# 8. MVP SCOPE (REALISTIC VERSION)
+# 8. Open Items
 
-## Phase 1 (Current System Stabilization)
-
-* Auth
-* Engagement basic CRUD
-* Participant assignment
-* Basic Evidence (assessment + facilitator note)
-* Simple dashboard
+* Role `client` vs `peserta` — digabung atau tetap terpisah? (Bagian 3, Layer 1)
+* Siapa admin pertama yang berwenang assign role — dibuat manual/seed, atau ada alur lain?
+* Apakah landing page app.binahub.id perlu redesign penuh atau cukup ditambah entry point untuk T-BOS? (lihat ADR-010, T-BOS ADR.md)
 
 ---
 
-## Phase 2 (Core System)
+# 9. Visi Jangka Panjang (Bukan Syarat MVP)
 
-* Evidence Engine fully structured
-* Reflection system
-* Action tracking
-* Participant workspace
+Arsitektur generik dari PRD v0.3 — Evidence Engine, Capability Layer (derived), Behavior Layer, Outcome Layer, Action System, Intelligence Layer (Bima AI), Tenant/Organization multi-tenant, Mission system generik lintas modul, Knowledge hub, Complex graph visualization — **tidak dihapus sebagai ide**, tapi diturunkan statusnya jadi visi jangka panjang yang belum jadi prasyarat teknis.
 
----
+Alasan: platform seperti ini biasanya tidak gagal karena idenya salah, tapi karena mencoba jadi terlalu pintar dan generik sebelum modul-modul dasarnya benar-benar dipakai dan terbukti punya pola yang sama. PRD v0.4 ini sengaja menunda generalisasi sampai ada bukti nyata dari ≥2-3 modul yang berjalan.
 
-## Phase 3 (Intelligence Layer v1)
-
-* Capability computation v1
-* Facilitator workspace
-* Basic AI summaries
-
----
-
-## Phase 4 (Executive Layer)
-
-* Organization dashboard
-* Outcome tracking
-* Trend analysis
-
----
-
-# 9. WHAT WE REMOVED (IMPORTANT DECISION)
-
-Untuk menjaga implementability:
-
-❌ Capability sebagai input utama
-❌ Outcome sebagai AI-only concept
-❌ Behavior layer terlalu awal
-❌ Mission system (ditunda)
-❌ Knowledge hub (ditunda)
-❌ Complex graph visualization (ditunda)
-
----
-
-# 10. FINAL PRODUCT DEFINITION
-
-BinaHub v0.3 adalah:
-
-```text id="z9v4qx"
-Evidence-Based Transformation Operating System
-```
-
-yang memiliki 3 kemampuan inti:
-
----
-
-## 1. Capture reality (Evidence Engine)
-
----
-
-## 2. Structure human development (Capability System)
-
----
-
-## 3. Interpret change (Intelligence Layer)
-
----
-
-# PENUTUP (KRITIS)
-
-Saya jujur di sini:
-
-PRD v0.3 ini lebih “implementable”, tapi juga lebih “keras”.
-
-Karena:
-
-* mengurangi abstraksi berlebihan
-* memaksa sistem mengikuti real workflow
-* membuat AI tunduk pada data
-* mengunci evidence sebagai pusat
-
-Dan ini penting.
-
-Karena platform seperti ini tidak gagal karena ide.
-
-Tapi gagal karena:
-
-> terlalu cepat menjadi terlalu pintar sebelum menjadi benar-benar dipakai.
-
----
+Kalau suatu saat BinaInsight, BinaImpact, T-BOS, dan modul berikutnya sama-sama butuh: (a) tempat menyimpan "bukti" yang seragam, (b) skor kapabilitas yang dihitung otomatis, dan (c) insight lintas modul — barulah Evidence/Capability Layer generik ini layak dibangun ulang, dengan 2-3 modul nyata sebagai referensi, bukan spekulasi di atas kertas.
