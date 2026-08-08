@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowLeft, Lock, Unlock, Edit3, Save, X, History, Clock, Check } from "lucide-react";
+import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import type { LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";
 
@@ -36,14 +37,14 @@ interface Observation {
 
 interface AuditEntry {
   id: string;
-  actor_id: string;
-  actor_role: string;
+  actorId: string;
+  actorRole: string;
+  actorName: string;
   action: string;
-  previous_status: string | null;
-  new_status: string | null;
+  previousStatus: string | null;
+  newStatus: string | null;
   changes: any;
-  created_at: string;
-  profiles?: { full_name: string } | null;
+  createdAt: string;
 }
 
 interface ObservationDetail extends Observation {
@@ -57,6 +58,14 @@ interface ObservationDetail extends Observation {
 }
 
 export default function TbosObservationsListPage() {
+  return (
+    <FacilitatorAuthGate>
+      <TbosObservationsContent />
+    </FacilitatorAuthGate>
+  );
+}
+
+function TbosObservationsContent() {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -510,14 +519,14 @@ function ObservationDetailPanel({
                         <div className="flex-1">
                           <p className="text-xs text-[#0B2C6B] font-medium">
                             {actionLabel(entry.action)}
-                            {entry.previous_status && entry.new_status
-                              ? `: ${entry.previous_status} → ${entry.new_status}`
+                            {entry.previousStatus && entry.newStatus
+                              ? `: ${entry.previousStatus} → ${entry.newStatus}`
                               : ""}
                           </p>
                           <p className="text-[10px] text-[#4A4C54]">
-                            {entry.profiles?.full_name || "System"} •{" "}
-                            {entry.actor_role} •{" "}
-                            {new Date(entry.created_at).toLocaleString("id-ID", {
+                            {entry.actorName || "System"} •{" "}
+                            {entry.actorRole} •{" "}
+                            {new Date(entry.createdAt).toLocaleString("id-ID", {
                               day: "numeric",
                               month: "short",
                               hour: "2-digit",

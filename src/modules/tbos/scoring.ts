@@ -122,6 +122,7 @@ export function calculateTeamScoreSummary(
 
   for (const missionCode of missionsObserved) {
     const mission = MISSIONS[missionCode];
+    if (!mission) continue; // skip unknown mission codes from DB
     const { score, dimensionScores } = calculateTbosScore(teamObservations, missionCode);
     missionScores.push({
       missionCode,
@@ -237,9 +238,19 @@ export function calculateExecutiveSummary(
 
   const sorted = [...dimensionAverages].sort((a, b) => (b.score || 0) - (a.score || 0));
 
+  // Prevent overlap: only include development areas that are NOT in topStrengths
+  const strengthCount = Math.min(3, sorted.length);
+  const topStrengths = sorted.slice(0, strengthCount);
+  const strengthCodes = new Set(topStrengths.map((d) => d.dimensionCode));
+  const developmentAreas = sorted
+    .slice(strengthCount)
+    .filter((d) => !strengthCodes.has(d.dimensionCode))
+    .slice(-3)
+    .reverse();
+
   return {
-    topStrengths: sorted.slice(0, 3),
-    developmentAreas: sorted.slice(-3).reverse(),
+    topStrengths,
+    developmentAreas,
     totalTeams: teamSummaries.length,
     totalObservations,
   };

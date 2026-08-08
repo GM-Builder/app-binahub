@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import type { MissionCode, DimensionCode, LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";
 
@@ -43,6 +44,14 @@ interface Team {
 type Step = "select" | "observe" | "submitting" | "done";
 
 export default function TbosObservationPage() {
+  return (
+    <FacilitatorAuthGate>
+      <TbosObservationContent />
+    </FacilitatorAuthGate>
+  );
+}
+
+function TbosObservationContent() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("select");
   const [missions, setMissions] = useState<Mission[]>([]);
