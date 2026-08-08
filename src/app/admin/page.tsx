@@ -181,131 +181,112 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <style>{`
-        #global-navbar, footer { display: none !important; }
-        body { background: #F5F7FA; }
-        .admin-root button,
-        .admin-root a[href] {
-          transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease, color 180ms ease, opacity 180ms ease;
-        }
-        .admin-root button:not(:disabled):hover,
-        .admin-root a[href]:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 14px 28px -22px rgba(11, 44, 107, 0.65);
-        }
-        .admin-root button:not(:disabled):active,
-        .admin-root a[href]:active {
-          transform: translateY(0) scale(0.98);
-        }
-        .admin-root button:disabled {
-          cursor: not-allowed;
-          transform: none;
-          box-shadow: none;
-        }
-      `}</style>
-      <main className="admin-root min-h-screen bg-[#F5F7FA] text-[#0B2C6B]">
-        <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-black/[0.06] bg-[#071B3D] px-5 py-6 text-white lg:block">
-          <div className="mb-10">
-            <div className="relative flex h-11 w-40 items-center rounded-[10px] bg-white px-3">
-              <Image src="/full-logo.png" alt="BinaHub" fill className="object-contain object-left px-3 py-2" />
-            </div>
-            <h1 className="mt-3 text-2xl font-light tracking-[-0.04em]">Intelligence Hub</h1>
-          </div>
-          <nav className="space-y-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex w-full items-center justify-between rounded-[12px] px-4 py-3 text-left text-sm transition ${
-                  activeTab === tab
-                    ? "bg-white text-[#0B2C6B]"
-                    : "text-white/62 hover:bg-white/[0.06] hover:text-white"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {tab}
-                  {tab === "Assessment" && newAssessmentCount > 0 && <NotificationBadge count={newAssessmentCount} />}
-                  {tab === "Inquiry Masuk" && newInquiryCount > 0 && <NotificationBadge count={newInquiryCount} />}
+      <main className="admin-root min-h-screen bg-[#FAF8F4] text-slate-900 font-sans selection:bg-[#C79A3C]/20 selection:text-[#0B2C6B]">
+        {/* Sidebar */}
+        <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-slate-800/60 bg-[#071B3D] px-5 py-6 text-white lg:flex lg:flex-col lg:justify-between z-30">
+          <div>
+            {/* Genuine Logo */}
+            <div className="mb-8 px-2">
+              <Link href="/home" className="inline-block transition-opacity hover:opacity-90">
+                <img
+                  src="/binahub_logo.webp"
+                  alt="BinaHub Logo"
+                  className="h-9 w-auto object-contain brightness-0 invert"
+                />
+              </Link>
+              <div className="mt-2.5 flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#D9A441]">
+                  Admin Workspace
                 </span>
-                {activeTab === tab && <ArrowRight size={15} className="text-[#D9A441]" />}
-              </button>
-            ))}
-          </nav>
-          <div className="mt-6 border-t border-white/10 pt-4">
-            <p className="mb-2 px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/34">
-              Sistem Transformasi
-            </p>
-            <Link
-              href="/admin/tbos"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              T-BOS Analytics
-            </Link>
-            <Link
-              href="/admin/users"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              Manajemen User & Role
-            </Link>
-            <Link
-              href="/admin/engagements"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              Program
-            </Link>
-            <Link
-              href="/admin/rbac"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              Matriks Izin
-            </Link>
-            <p className="mb-2 mt-4 px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/34">
-              Workflow & Observasi
-            </p>
-            <Link
-              href="/fasilitator/tbos"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              Form Observasi T-BOS
-            </Link>
-            <Link
-              href="/fasilitator/tbos/observations"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              Kelola & Kunci Observasi
-            </Link>
-            <Link
-              href="/peserta/dashboard"
-              className="flex rounded-[12px] px-4 py-2 text-sm text-white/62 hover:bg-white/[0.06] hover:text-white"
-            >
-              Dashboard Peserta
-            </Link>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <nav className="space-y-1.5">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Navigasi Utama
+              </p>
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-xs font-semibold transition-all ${
+                    activeTab === tab
+                      ? "bg-white text-[#0B2C6B] shadow-sm shadow-black/10"
+                      : "text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {tab}
+                    {tab === "Assessment" && newAssessmentCount > 0 && <NotificationBadge count={newAssessmentCount} />}
+                    {tab === "Inquiry Masuk" && newInquiryCount > 0 && <NotificationBadge count={newInquiryCount} />}
+                  </span>
+                  {activeTab === tab && <ArrowRight size={14} className="text-[#D9A441]" />}
+                </button>
+              ))}
+            </nav>
+
+            {/* Modules & Workflows */}
+            <div className="mt-6 border-t border-slate-800/80 pt-4 space-y-1">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Sistem &amp; Observasi
+              </p>
+              <Link
+                href="/admin/tbos"
+                className="flex items-center justify-between rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                <span>T-BOS Analytics</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D9A441]/20 text-[#D9A441] font-semibold">Live</span>
+              </Link>
+              <Link
+                href="/admin/users"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Manajemen User &amp; Role
+              </Link>
+              <Link
+                href="/fasilitator/tbos/observations"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Kelola &amp; Kunci Observasi
+              </Link>
+              <Link
+                href="/peserta/dashboard"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Dashboard Peserta
+              </Link>
+            </div>
           </div>
+
           <button
             onClick={handleLogout}
-            className="absolute bottom-6 left-5 right-5 flex items-center justify-center gap-2 rounded-[12px] border border-white/10 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white/58 transition hover:bg-white/10 hover:text-white"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-red-500/15 hover:border-red-500/30 hover:text-red-300 transition-all"
           >
-            <LogOut size={15} /> Keluar
+            <LogOut size={14} /> Keluar dari Sesi
           </button>
         </aside>
 
         <section className="lg:pl-72">
-          <header className="sticky top-0 z-20 border-b border-black/[0.06] bg-[#F5F7FA]/95 px-5 py-4 backdrop-blur-sm md:px-8">
+          {/* Header */}
+          <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 px-5 py-4 backdrop-blur-md md:px-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#D9A441]">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#C79A3C]">
                   {activeMeta.eyebrow}
                 </p>
-                <h2 className="mt-1 text-2xl font-light tracking-[-0.04em] md:text-3xl">
+                <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">
                   {activeMeta.title}
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#0B2C6B]/58">{activeMeta.description}</p>
+                </h1>
+                <p className="mt-1 max-w-2xl text-xs text-slate-500 leading-relaxed">
+                  {activeMeta.description}
+                </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={activeTab}
                   onChange={(event) => setActiveTab(event.target.value as (typeof tabs)[number])}
-                  className="rounded-[10px] border border-black/10 bg-white px-3 py-2 text-sm lg:hidden"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-xs lg:hidden"
                 >
                   {tabs.map((tab) => (
                     <option key={tab}>{tab}</option>
@@ -313,9 +294,10 @@ export default function AdminDashboardPage() {
                 </select>
                 <button
                   onClick={fetchDashboard}
-                  className="flex items-center gap-2 rounded-[10px] border border-black/10 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-[#0B2C6B]"
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
                 >
-                  <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+                  <RefreshCw size={13} className={loading ? "animate-spin text-[#C79A3C]" : "text-slate-500"} />
+                  Refresh
                 </button>
               </div>
             </div>

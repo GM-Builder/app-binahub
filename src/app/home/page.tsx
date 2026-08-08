@@ -2,7 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LogOut, ArrowUpRight, Sparkles, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
+import {
+  Loader2,
+  LogOut,
+  ArrowUpRight,
+  LayoutDashboard,
+  Trophy,
+  ShieldCheck,
+  Building2,
+  FileCheck2,
+  ClipboardList,
+  Sparkles,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ServiceMegaGrid } from "@/components/service-mega-grid";
 
@@ -57,7 +69,6 @@ export default function HomePage() {
         (session.user?.user_metadata?.role as string) ||
         "";
 
-      // Try fetching role from API (non-blocking, best-effort)
       let profilesRole = "";
       let fullName = session.user?.user_metadata?.full_name || "";
 
@@ -71,7 +82,7 @@ export default function HomePage() {
           fullName = data.fullName || fullName;
         }
       } catch {
-        // API not available — use fallback
+        // Fallback to JWT role resolution
       }
 
       const resolvedRole = resolveRole(email, metadataRole, profilesRole);
@@ -92,104 +103,114 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F4]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#C79A3C]" />
       </div>
     );
   }
 
-  const roleLabel: Record<string, string> = {
-    peserta: "Peserta",
-    facilitator: "Fasilitator",
-    admin: "Admin",
-    client: "Client",
+  const roleBadgeConfig: Record<string, { label: string; bg: string; text: string }> = {
+    admin: { label: "Administrator", bg: "bg-[#0B2C6B]/10", text: "text-[#0B2C6B]" },
+    facilitator: { label: "Fasilitator", bg: "bg-[#C79A3C]/15", text: "text-[#9E7520]" },
+    client: { label: "Client", bg: "bg-emerald-100", text: "text-emerald-800" },
+    peserta: { label: "Peserta", bg: "bg-slate-100", text: "text-slate-700" },
   };
 
-  const dashboards: Record<string, { href: string; label: string; desc: string }[]> = {
-    peserta: [
+  const currentBadge = roleBadgeConfig[role] || roleBadgeConfig.peserta;
+
+  // Curated, non-redundant workspace shortcuts per role
+  const quickLinks: Record<string, { href: string; label: string; desc: string; icon: any }[]> = {
+    admin: [
       {
-        href: "/peserta/dashboard",
-        label: "Dashboard Peserta",
-        desc: "Lihat hasil observasi tim dan skor T-BOS Anda.",
+        href: "/admin/tbos",
+        label: "T-BOS Analytics",
+        desc: "Radar chart, heatmap, ranking tim & laporan eksekutif.",
+        icon: Trophy,
+      },
+      {
+        href: "/admin",
+        label: "Intelligence Hub",
+        desc: "Pipeline assessment, kontak klien, dan inquiry masuk.",
+        icon: LayoutDashboard,
+      },
+      {
+        href: "/fasilitator/tbos/observations",
+        label: "Kelola & Kunci Observasi",
+        desc: "Review, edit, dan lock observasi perilaku tim.",
+        icon: ShieldCheck,
+      },
+      {
+        href: "/admin/users",
+        label: "Manajemen User & Role",
+        desc: "Kelola akun pengguna, hak akses, dan role.",
+        icon: Building2,
       },
     ],
     facilitator: [
       {
         href: "/fasilitator/tbos",
-        label: "T-BOS Observasi",
-        desc: "Input observasi perilaku tim selama mission.",
+        label: "Form Observasi T-BOS",
+        desc: "Input observasi perilaku tim selama mission berlangsung.",
+        icon: ClipboardList,
       },
       {
         href: "/fasilitator/tbos/observations",
         label: "Riwayat Observasi",
-        desc: "Lihat dan edit observasi yang sudah disubmit.",
-      },
-      {
-        href: "/facilitator/dashboard",
-        label: "Dashboard Fasilitator",
-        desc: "Program, peserta, evidence, dan laporan.",
+        desc: "Review status observasi dan lakukan revisi.",
+        icon: FileCheck2,
       },
     ],
-    admin: [
+    peserta: [
       {
-        href: "/admin/dashboard",
-        label: "Intelligence Hub",
-        desc: "Dashboard utama: assessment, leads, inquiry, project.",
-      },
-      {
-        href: "/admin/tbos",
-        label: "T-BOS Dashboard",
-        desc: "Radar chart, heatmap, ranking, dan executive summary.",
-      },
-      {
-        href: "/admin/organizations",
-        label: "Organisasi",
-        desc: "Kelola data organisasi dan pengguna.",
-      },
-      {
-        href: "/admin/assessments",
-        label: "Assessment",
-        desc: "Kelola hasil assessment dan proposal.",
-      },
-      {
-        href: "/admin/engagements",
-        label: "Program",
-        desc: "Kelola engagement dan kode akses klien.",
+        href: "/peserta/dashboard",
+        label: "Dashboard Peserta",
+        desc: "Lihat hasil observasi tim, 8 dimensi perilaku, dan peringkat.",
+        icon: Trophy,
       },
     ],
     client: [
       {
         href: "/client/dashboard",
-        label: "Dashboard Client",
-        desc: "Program transformasi dan kemampuan tim Anda.",
+        label: "Dashboard Klien",
+        desc: "Pantau progres program transformasi organisasi Anda.",
+        icon: LayoutDashboard,
       },
     ],
   };
 
-  const dashList = dashboards[role] || dashboards.peserta;
+  const userQuickLinks = quickLinks[role] || quickLinks.peserta;
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-20 bg-white border-b border-black/[0.06]">
+    <div className="min-h-screen bg-[#FAF8F4] text-slate-900 font-sans selection:bg-[#C79A3C]/20 selection:text-[#0B2C6B]">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-[#0B2C6B]">
-              Bina<span className="text-[#D9A441]">Hub</span>
-            </h1>
-            <span className="hidden sm:inline text-xs px-2.5 py-1 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/60 font-medium">
-              {roleLabel[role] || "Peserta"}
-            </span>
-          </div>
+          <Link href="/home" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+            <img
+              src="/binahub_logo.webp"
+              alt="BinaHub Logo"
+              className="h-9 sm:h-10 w-auto object-contain"
+            />
+          </Link>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <p className="text-xs font-medium text-[#0B2C6B]">{userName}</p>
-              <p className="text-[10px] text-[#4A4C54]/60">{roleLabel[role] || "Peserta"}</p>
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-100/80 border border-slate-200/60">
+              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-[#0B2C6B] to-[#C79A3C] flex items-center justify-center text-white text-xs font-bold">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-xs font-semibold text-slate-800 max-w-[130px] sm:max-w-[200px] truncate">
+                {userName}
+              </span>
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${currentBadge.bg} ${currentBadge.text}`}
+              >
+                {currentBadge.label}
+              </span>
             </div>
+
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-red-300 hover:text-red-600 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold hover:border-red-200 hover:bg-red-50/50 hover:text-red-600 transition-all"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Keluar</span>
@@ -198,67 +219,104 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-6">
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-[#0B2C6B] to-[#071B3D] rounded-2xl p-6 mb-6 relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-              backgroundSize: "32px 32px",
-            }}
-          />
-          <div className="relative flex items-start justify-between gap-4">
+      {/* Main Container */}
+      <main className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8 space-y-8">
+        {/* Welcome Header */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 sm:p-8 shadow-sm backdrop-blur">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441] mb-2">
-                Selamat datang
-              </p>
-              <h2 className="text-2xl font-bold text-white mb-1">Halo, {userName}!</h2>
-              <p className="text-sm text-white/60 max-w-md">
-                Pilih layanan BinaHub di bawah ini untuk mulai eksplorasi.
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#C79A3C] mb-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Workspace Operasional</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+                Selamat Datang, {userName}
+              </h1>
+              <p className="mt-1 text-sm text-slate-500 max-w-2xl leading-relaxed">
+                Kelola observasi tim, asesmen, dan program transformasi organisasi secara terpusat.
               </p>
             </div>
-            <Sparkles className="w-8 h-8 text-[#D9A441]/40 shrink-0 hidden sm:block" />
+
+            {role === "admin" && (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/admin/tbos"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-br from-[#0B2C6B] to-[#071B3D] text-white text-xs font-semibold shadow-md shadow-[#0B2C6B]/20 hover:brightness-110 transition-all"
+                >
+                  <Trophy className="w-3.5 h-3.5 text-[#D9A441]" />
+                  Buka T-BOS Analytics
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Dashboard Access */}
-        <div className="bg-white rounded-2xl border border-black/[0.04] p-4 mb-6">
-          <div className="grid sm:grid-cols-2 gap-3">
-            {dashList.map((dash) => (
-              <a
-                key={dash.href}
-                href={dash.href}
-                className="flex items-center justify-between p-4 rounded-xl bg-[#0B2C6B]/[0.03] border border-[#0B2C6B]/10 hover:border-[#D9A441]/50 hover:bg-[#0B2C6B]/[0.05] transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#0B2C6B] flex items-center justify-center shrink-0">
-                    <LayoutDashboard className="w-5 h-5 text-white" />
-                  </div>
+        {/* Quick Launch Cards */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+              Akses Cepat Workspace
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {userQuickLinks.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs hover:border-[#C79A3C]/60 hover:shadow-md hover:shadow-slate-200/50 transition-all flex flex-col justify-between"
+                >
                   <div>
-                    <p className="text-sm font-semibold text-[#0B2C6B]">{dash.label}</p>
-                    <p className="text-xs text-[#4A4C54] mt-0.5">{dash.desc}</p>
+                    <div className="h-10 w-10 rounded-xl bg-slate-100 group-hover:bg-[#C79A3C]/10 text-[#0B2C6B] group-hover:text-[#C79A3C] flex items-center justify-center transition-colors mb-3.5">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0B2C6B] transition-colors">
+                      {item.label}
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                      {item.desc}
+                    </p>
                   </div>
-                </div>
-                <ArrowUpRight className="w-5 h-5 text-[#0B2C6B]/40 group-hover:text-[#D9A441] transition-colors shrink-0" />
-              </a>
-            ))}
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#0B2C6B] group-hover:text-[#C79A3C]">
+                    <span>Buka modul</span>
+                    <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
 
-        {/* Service Grid */}
-        <div className="bg-white rounded-2xl border border-black/[0.04] p-6 sm:p-8">
+        {/* BinaHub Ecosystem Mega Grid */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm">
           <div className="mb-6">
-            <h3 className="text-base font-bold text-[#0B2C6B]">Layanan BinaHub</h3>
-            <p className="text-xs text-[#4A4C54] mt-1">
-              Klik layanan aktif untuk mulai menggunakan.
+            <h2 className="text-base font-bold text-slate-900">Ekosistem Layanan BinaHub</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Pilih platform atau modul spesifik untuk memulai proses transformasi manusia dan organisasi.
             </p>
           </div>
           <ServiceMegaGrid />
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="mt-16 border-t border-slate-200/80 bg-white py-6">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          <p>© 2026 BinaHub Ecosystem. Human-Centered Transformation Partner.</p>
+          <div className="flex items-center gap-4">
+            <Link href="/help" className="hover:text-[#C79A3C] transition-colors">
+              Pusat Bantuan
+            </Link>
+            <span>•</span>
+            <Link href="/help" className="hover:text-[#C79A3C] transition-colors">
+              Privasi &amp; Keamanan
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

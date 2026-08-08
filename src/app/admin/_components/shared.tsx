@@ -293,6 +293,106 @@ export function NotificationBadge({ count }: { count: number }) {
   );
 }
 
+export function StatCard({
+  label,
+  value,
+  icon: Icon,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  icon?: LucideIcon;
+  tone?: "default" | "gold" | "danger" | "success";
+}) {
+  const toneClass = {
+    default: "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]",
+    gold: "bg-[#D9A441]/15 text-[#9B6C17]",
+    danger: "bg-red-50 text-red-700",
+    success: "bg-emerald-50 text-emerald-700",
+  }[tone];
+
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-[#D9A441]/40">
+      {Icon ? (
+        <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${toneClass}`}>
+          <Icon size={18} />
+        </div>
+      ) : null}
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+export function WorkflowStrip({ steps }: { steps: Array<{ title: string; description: string }> }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      {steps.map((step, index) => (
+        <div key={step.title} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+          <div className="mb-2.5 flex items-center gap-2.5">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#0B2C6B] text-xs font-bold text-white">
+              {index + 1}
+            </span>
+            <p className="text-xs font-bold text-slate-900">{step.title}</p>
+          </div>
+          <p className="text-xs leading-relaxed text-slate-500">{step.description}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function GuidancePanel({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="mb-5 rounded-2xl border border-[#D9A441]/30 bg-[#FFF8EA]/70 p-4">
+      <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#9B6C17]">
+        <ShieldCheck size={14} /> {title}
+      </p>
+      <div className="grid gap-2 md:grid-cols-3">
+        {items.map((item) => (
+          <p key={item} className="rounded-xl border border-[#D9A441]/20 bg-white/80 px-3.5 py-2.5 text-xs leading-relaxed text-slate-700 shadow-xs">
+            {item}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function CompactStatusPill({
+  label,
+  value,
+  icon: Icon,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  icon: LucideIcon;
+  tone?: "default" | "gold" | "danger" | "success";
+}) {
+  const hasValue = Number(value) > 0;
+  const toneClass = {
+    default: "border-slate-200 bg-slate-50/80 text-[#0B2C6B]",
+    gold: "border-[#D9A441]/30 bg-[#FFF8EA] text-[#9B6C17]",
+    danger: "border-red-200 bg-red-50 text-red-700",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  }[tone];
+
+  return (
+    <div className={`relative flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold ${toneClass}`}>
+      <Icon size={14} className="shrink-0" />
+      <span className="text-[11px] font-medium text-slate-600">{label}</span>
+      {hasValue ? (
+        <span className="rounded-full bg-[#0B2C6B] px-1.5 py-0.2 text-[10px] font-bold leading-none text-white">
+          {Number(value) > 99 ? "99+" : value}
+        </span>
+      ) : (
+        <span className="text-[11px] font-medium text-slate-400">0</span>
+      )}
+    </div>
+  );
+}
+
 export function ModuleHero({
   eyebrow,
   title,
@@ -312,12 +412,12 @@ export function ModuleHero({
   };
 
   return (
-    <section className="rounded-[8px] border border-[#0B2C6B]/10 bg-white px-5 py-4 shadow-[0_18px_60px_-48px_rgba(11,44,107,0.28)] md:px-6">
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#D9A441]">{eyebrow}</p>
-          <h2 className="mt-2 text-2xl font-light tracking-[-0.04em] text-[#0B2C6B] md:text-3xl">{title}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-black/58">{description}</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#C79A3C]">{eyebrow}</p>
+          <h2 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{title}</h2>
+          <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-500">{description}</p>
         </div>
         {stats.length ? (
           <div className="flex flex-wrap gap-2 lg:max-w-[430px] lg:justify-end">
@@ -328,104 +428,6 @@ export function ModuleHero({
         ) : null}
       </div>
     </section>
-  );
-}
-
-export function CompactStatusPill({
-  label,
-  value,
-  icon: Icon,
-  tone = "default",
-}: {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-  tone?: "default" | "gold" | "danger" | "success";
-}) {
-  const hasValue = Number(value) > 0;
-  const toneClass = {
-    default: "border-[#0B2C6B]/10 bg-[#F8FAFC] text-[#0B2C6B]",
-    gold: "border-[#D9A441]/24 bg-[#FFF8EA] text-[#9B6C17]",
-    danger: "border-red-200 bg-red-50 text-red-700",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  }[tone];
-
-  return (
-    <div className={`relative flex h-11 items-center gap-2 rounded-[12px] border px-3 ${toneClass}`}>
-      <Icon size={16} />
-      <span className="hidden text-[10px] font-bold uppercase tracking-[0.12em] opacity-65 sm:inline">{label}</span>
-      {hasValue ? (
-        <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#D9A441] px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-[#071B3D] shadow-[0_8px_18px_-10px_rgba(217,164,65,0.9)]">
-          {Number(value) > 99 ? "99+" : value}
-        </span>
-      ) : (
-        <span className="text-xs font-bold opacity-45">0</span>
-      )}
-    </div>
-  );
-}
-
-export function StatCard({
-  label,
-  value,
-  icon: Icon,
-  tone = "default",
-}: {
-  label: string;
-  value: string | number;
-  icon?: LucideIcon;
-  tone?: "default" | "gold" | "danger" | "success";
-}) {
-  const toneClass = {
-    default: "bg-[#F8FAFC] text-[#0B2C6B]",
-    gold: "bg-[#FFF8EA] text-[#9B6C17]",
-    danger: "bg-red-50 text-red-700",
-    success: "bg-emerald-50 text-emerald-700",
-  }[tone];
-
-  return (
-    <div className="rounded-[8px] border border-black/[0.05] bg-white p-5 shadow-[0_16px_50px_-44px_rgba(11,44,107,0.3)]">
-      {Icon ? (
-        <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-[10px] ${toneClass}`}>
-          <Icon size={19} />
-        </div>
-      ) : null}
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-black/38">{label}</p>
-      <p className="mt-3 text-4xl font-light tracking-[-0.05em] text-[#0B2C6B]">{value}</p>
-    </div>
-  );
-}
-
-export function WorkflowStrip({ steps }: { steps: Array<{ title: string; description: string }> }) {
-  return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {steps.map((step, index) => (
-        <div key={step.title} className="rounded-[12px] border border-black/[0.05] bg-white p-4">
-          <div className="mb-3 flex items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-[#0B2C6B] text-xs font-bold text-white">{index + 1}</span>
-            <p className="text-sm font-semibold text-[#0B2C6B]">{step.title}</p>
-          </div>
-          <p className="text-xs leading-relaxed text-black/52">{step.description}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function GuidancePanel({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="mb-5 rounded-[12px] border border-[#D9A441]/20 bg-[#FFF8EA] p-4">
-      <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#9B6C17]">
-        <ShieldCheck size={13} /> {title}
-      </p>
-      <div className="grid gap-2 md:grid-cols-3">
-        {items.map((item) => (
-          <p key={item} className="rounded-[10px] border border-[#D9A441]/10 bg-white/70 px-3 py-2 text-xs leading-relaxed text-black/58">
-            {item}
-          </p>
-        ))}
-      </div>
-    </div>
   );
 }
 
