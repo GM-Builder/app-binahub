@@ -14,6 +14,9 @@ import {
   FileCheck2,
   ClipboardList,
   Sparkles,
+  UsersRound,
+  FileText,
+  BarChart3,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ServiceMegaGrid } from "@/components/service-mega-grid";
@@ -150,14 +153,38 @@ export default function HomePage() {
       {
         href: "/fasilitator/tbos",
         label: "Form Observasi T-BOS",
-        desc: "Input observasi perilaku tim selama mission berlangsung.",
+        desc: "Input observasi 8 dimensi perilaku tim secara real-time.",
         icon: ClipboardList,
       },
       {
         href: "/fasilitator/tbos/observations",
-        label: "Riwayat Observasi",
-        desc: "Review status observasi dan lakukan revisi.",
+        label: "Riwayat & Kunci Observasi",
+        desc: "Review catatan observasi, revisi, dan kunci evaluasi tim.",
         icon: FileCheck2,
+      },
+      {
+        href: "/facilitator/binaimpact",
+        label: "BinaImpact Evaluator",
+        desc: "Pengukuran dampak perubahan & reaksi workshop peserta.",
+        icon: Trophy,
+      },
+      {
+        href: "/facilitator/engagements",
+        label: "Program & Engagements",
+        desc: "Kelola batch peserta, jadwal sesi, dan kode akses.",
+        icon: UsersRound,
+      },
+      {
+        href: "/facilitator/evidence",
+        label: "Evidence & Dokumen Sesi",
+        desc: "Unggah dan tinjau bukti kerja sama & lembar observasi.",
+        icon: FileText,
+      },
+      {
+        href: "/facilitator/scoring",
+        label: "Scoring & Statistik",
+        desc: "Ringkasan statistik nilai peserta dan performa program.",
+        icon: BarChart3,
       },
     ],
     peserta: [
