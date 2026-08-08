@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, LogOut, RefreshCw, Loader2, Radar as RadarIcon, Grid3x3, Trophy, BarChart3, Users, FileText, Download, FileSpreadsheet } from "lucide-react";
+import { ArrowRight, LogOut, RefreshCw, Loader2, Radar as RadarIcon, Grid3x3, Trophy, BarChart3, Users, FileText, Download, FileSpreadsheet, Plus, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AssessmentPanel } from "./_components/assessment-panel";
 import { ContactsPanel } from "./_components/contacts-panel";
@@ -370,51 +370,64 @@ function TbosTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Create Team Modal State
+  const [showAddTeamModal, setShowAddTeamModal] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamBatch, setNewTeamBatch] = useState<"Batch 1" | "Batch 2">("Batch 1");
+  const [creatingTeam, setCreatingTeam] = useState(false);
+  const [createTeamError, setCreateTeamError] = useState("");
+  const [createTeamSuccess, setCreateTeamSuccess] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/tbos/dashboard");
-      const data = await res.json();
-      if (data.success) {
-        const observations: TbosObservation[] = (data.observations || []).map((obs: any) => ({
-          id: obs.id,
-          teamId: obs.teamId,
-          teamName: obs.teamName,
-          missionId: obs.missionId,
-          missionCode: obs.missionCode,
-          missionName: obs.missionName,
-          profileId: obs.profileId,
-          facilitatorName: obs.facilitatorName,
-          batch: obs.batch,
-          observedAt: obs.observedAt,
-          submittedAt: obs.submittedAt,
-          status: obs.status,
-          notes: obs.notes,
-          scores: (obs.scores || []).map((s: any) => ({
-            dimensionCode: s.dimensionCode,
-            dimensionName: s.dimensionName,
-            levelValue: s.levelValue,
-            levelLabel: s.levelLabel,
-          })),
-        }));
-        const teams = (data.teams || []).map((t: any) => ({ id: t.id, name: t.name, batch: t.batch }));
-        const computed = generateDashboardData(teams, observations);
-        setDashboardData(computed);
-      } else {
-        setError(data.error || "Gagal memuat data T-BOS.");
-      }
+      const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
+      const { teams, observations } = await fetchDashboardRawData();
+      const computed = generateDashboardData(teams, observations);
+      setDashboardData(computed);
     } catch {
-      setError("Gagal terhubung ke server.");
+      setError("Gagal memuat data T-BOS.");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTeamName.trim()) {
+      setCreateTeamError("Nama tim tidak boleh kosong.");
+      return;
+    }
+
+    setCreatingTeam(true);
+    setCreateTeamError("");
+    const { createTeam } = await import("@/modules/tbos/api-client");
+    const res = await createTeam({
+      name: newTeamName.trim(),
+      batch: newTeamBatch,
+    });
+
+    if (res.success) {
+      setCreateTeamSuccess(true);
+      setNewTeamName("");
+      setTimeout(() => {
+        setCreateTeamSuccess(false);
+        setShowAddTeamModal(false);
+        fetchData();
+      }, 1000);
+    } else {
+      setCreateTeamError(res.error || "Gagal membuat tim.");
+    }
+    setCreatingTeam(false);
+  };
 
   const SUB_TABS = [
     { key: "overview" as const, label: "Overview", icon: <BarChart3 size={14} /> },
     { key: "summary" as const, label: "Executive Summary", icon: <FileText size={14} /> },
-    { key: "radar" as const, label: "Radar", icon: <RadarIcon size={14} /> },
+    { key: "radar" as const, label: "Radar Chart", icon: <RadarIcon size={14} /> },
     { key: "heatmap" as const, label: "Heatmap", icon: <Grid3x3 size={14} /> },
     { key: "ranking" as const, label: "Ranking", icon: <Trophy size={14} /> },
     { key: "batch" as const, label: "Batch", icon: <Users size={14} /> },
@@ -430,7 +443,7 @@ function TbosTab() {
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+      <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
         {error}
       </div>
     );
@@ -438,8 +451,75 @@ function TbosTab() {
 
   if (!dashboardData || dashboardData.teams.length === 0) {
     return (
-      <div className="text-center py-20">
-        <p className="text-sm text-[#4A4C54]">Belum ada data observasi T-BOS. Buat tim dan assign fasilitator untuk mulai.</p>
+      <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 p-8 max-w-lg mx-auto">
+        <Users className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+        <h3 className="text-sm font-bold text-slate-900 mb-1">Belum Ada Data Tim T-BOS</h3>
+        <p className="text-xs text-slate-500 mb-5">
+          Mulai dengan menambahkan tim dan batch peserta untuk diobservasi oleh fasilitator.
+        </p>
+        <button
+          onClick={() => setShowAddTeamModal(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Tambah Tim Pertama
+        </button>
+
+        {showAddTeamModal && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-left">
+              <h3 className="text-base font-bold text-slate-900 mb-4">Tambah Tim Baru</h3>
+              <form onSubmit={handleCreateTeam} className="space-y-4">
+                {createTeamError && <p className="text-xs text-red-600">{createTeamError}</p>}
+                {createTeamSuccess && <p className="text-xs text-green-600">Tim berhasil ditambahkan!</p>}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Tim</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="Contoh: Team Alpha"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Batch</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["Batch 1", "Batch 2"] as const).map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => setNewTeamBatch(b)}
+                        className={`py-2 text-xs font-semibold rounded-lg border ${
+                          newTeamBatch === b ? "bg-[#0B2C6B] text-white" : "border-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTeamModal(false)}
+                    className="flex-1 py-2 text-xs font-semibold rounded-lg border border-slate-200"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingTeam}
+                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-[#0B2C6B] text-white"
+                  >
+                    {creatingTeam ? "Menyimpan..." : "Simpan Tim"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -447,26 +527,67 @@ function TbosTab() {
   const summary = dashboardData.executiveSummary;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Quick Action Navigation Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+          </span>
+          <span className="text-xs font-semibold text-slate-700">T-BOS Intelligence</span>
+          <span className="text-xs text-slate-400">• Real-time sync</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowAddTeamModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Tambah Tim
+          </button>
+          <Link
+            href="/fasilitator/tbos/observations"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-[#0B2C6B] text-xs font-semibold hover:bg-slate-50 transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#D9A441]" />
+            Kelola Observasi
+          </Link>
+          <Link
+            href="/fasilitator/tbos"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors"
+          >
+            Form Input
+          </Link>
+          <Link
+            href="/peserta/dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-colors"
+          >
+            Dashboard Peserta
+          </Link>
+        </div>
+      </div>
+
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl p-4 border border-black/[0.04]">
-          <p className="text-xs text-[#4A4C54] mb-1">Total Tim</p>
-          <p className="text-2xl font-bold text-[#0B2C6B]">{dashboardData.teams.length}</p>
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Total Tim</p>
+          <p className="text-2xl font-bold tracking-tight text-slate-900">{dashboardData.teams.length}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-black/[0.04]">
-          <p className="text-xs text-[#4A4C54] mb-1">Total Observasi</p>
-          <p className="text-2xl font-bold text-[#0B2C6B]">{summary?.totalObservations || 0}</p>
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Total Observasi</p>
+          <p className="text-2xl font-bold tracking-tight text-slate-900">{summary?.totalObservations || 0}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-black/[0.04]">
-          <p className="text-xs text-[#4A4C54] mb-1">Dimensi Terobservasi</p>
-          <p className="text-2xl font-bold text-[#0B2C6B]">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Dimensi Terobservasi</p>
+          <p className="text-2xl font-bold tracking-tight text-slate-900">
             {dashboardData.batchComparisons.filter((b) => b.batch1Avg !== null || b.batch2Avg !== null).length}
           </p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-black/[0.04]">
-          <p className="text-xs text-[#4A4C54] mb-1">Rata-rata Skor</p>
-          <p className="text-2xl font-bold text-[#0B2C6B]">
+        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Rata-rata Skor</p>
+          <p className="text-2xl font-bold tracking-tight text-slate-900">
             {summary?.topStrengths.length
               ? (summary.topStrengths.reduce((a, b) => a + (b.score || 0), 0) / summary.topStrengths.length).toFixed(1)
               : "-"}
@@ -475,15 +596,15 @@ function TbosTab() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-black/[0.06] overflow-x-auto">
+      <div className="flex gap-1 border-b border-slate-200 overflow-x-auto">
         {SUB_TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setSubTab(tab.key)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
               subTab === tab.key
                 ? "border-[#0B2C6B] text-[#0B2C6B]"
-                : "border-transparent text-[#4A4C54] hover:text-[#0B2C6B]"
+                : "border-transparent text-slate-500 hover:text-slate-900"
             }`}
           >
             {tab.icon}
@@ -501,6 +622,65 @@ function TbosTab() {
         {subTab === "ranking" && <TbosRanking teams={dashboardData.teams} />}
         {subTab === "batch" && <TbosBatchComparison comparisons={dashboardData.batchComparisons} />}
       </div>
+
+      {/* Modal Dialog */}
+      {showAddTeamModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-left">
+            <h3 className="text-base font-bold text-slate-900 mb-4">Tambah Tim Baru</h3>
+            <form onSubmit={handleCreateTeam} className="space-y-4">
+              {createTeamError && <p className="text-xs text-red-600">{createTeamError}</p>}
+              {createTeamSuccess && <p className="text-xs text-green-600">Tim berhasil ditambahkan!</p>}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Tim</label>
+                <input
+                  type="text"
+                  required
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  placeholder="Contoh: Team Alpha"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#0B2C6B]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Batch Program</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["Batch 1", "Batch 2"] as const).map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setNewTeamBatch(b)}
+                      className={`py-2 text-xs font-semibold rounded-xl border transition-colors ${
+                        newTeamBatch === b
+                          ? "bg-[#0B2C6B] text-white border-[#0B2C6B]"
+                          : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddTeamModal(false)}
+                  className="flex-1 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingTeam}
+                  className="flex-1 py-2.5 text-xs font-semibold rounded-xl bg-[#0B2C6B] text-white hover:bg-[#071B3D] transition-colors"
+                >
+                  {creatingTeam ? "Menyimpan..." : "Simpan Tim"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -510,68 +690,68 @@ function TbosOverviewTab({ data }: { data: TbosDashboardData }) {
   return (
     <div className="space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl p-5 border border-black/[0.04]">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-green-600" />
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-emerald-600" />
             </div>
-            <h3 className="text-sm font-semibold text-[#0B2C6B]">3 Kekuatan Utama</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">3 Kekuatan Utama</h3>
           </div>
           <div className="space-y-2">
-            {summary.topStrengths.length === 0 && <p className="text-xs text-[#4A4C54]">Belum ada data.</p>}
+            {summary.topStrengths.length === 0 && <p className="text-xs text-slate-400">Belum ada data.</p>}
             {summary.topStrengths.map((dim, i) => (
               <div key={dim.dimensionCode} className="flex items-center gap-3">
-                <span className="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                <span className="flex-1 text-sm text-[#4A4C54]">{dim.dimensionName}</span>
-                <span className="text-sm font-bold text-[#0B2C6B]">{dim.score?.toFixed(1)}</span>
+                <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                <span className="flex-1 text-xs font-medium text-slate-700">{dim.dimensionName}</span>
+                <span className="text-xs font-bold text-[#0B2C6B]">{dim.score?.toFixed(1)}</span>
               </div>
             ))}
           </div>
         </div>
-        <div className="bg-white rounded-xl p-5 border border-black/[0.04]">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
               <BarChart3 className="w-4 h-4 text-amber-600" />
             </div>
-            <h3 className="text-sm font-semibold text-[#0B2C6B]">3 Area Pengembangan</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">3 Area Pengembangan</h3>
           </div>
           <div className="space-y-2">
-            {summary.developmentAreas.length === 0 && <p className="text-xs text-[#4A4C54]">Belum ada data.</p>}
+            {summary.developmentAreas.length === 0 && <p className="text-xs text-slate-400">Belum ada data.</p>}
             {summary.developmentAreas.map((dim, i) => (
               <div key={dim.dimensionCode} className="flex items-center gap-3">
                 <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                <span className="flex-1 text-sm text-[#4A4C54]">{dim.dimensionName}</span>
-                <span className="text-sm font-bold text-[#0B2C6B]">{dim.score?.toFixed(1)}</span>
+                <span className="flex-1 text-xs font-medium text-slate-700">{dim.dimensionName}</span>
+                <span className="text-xs font-bold text-[#0B2C6B]">{dim.score?.toFixed(1)}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div className="bg-white rounded-xl p-5 border border-black/[0.04]">
-        <h3 className="text-sm font-semibold text-[#0B2C6B] mb-4">Ringkasan Tim</h3>
+      <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-4">Ringkasan Tim</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-black/[0.06]">
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Tim</th>
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Batch</th>
-                <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Skor</th>
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Kekuatan</th>
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Area Dev.</th>
-                <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Obs.</th>
+              <tr className="border-b border-slate-100 text-slate-400">
+                <th className="text-left py-2 px-3 font-semibold uppercase">Tim</th>
+                <th className="text-left py-2 px-3 font-semibold uppercase">Batch</th>
+                <th className="text-center py-2 px-3 font-semibold uppercase">Skor</th>
+                <th className="text-left py-2 px-3 font-semibold uppercase">Kekuatan</th>
+                <th className="text-left py-2 px-3 font-semibold uppercase">Area Dev.</th>
+                <th className="text-center py-2 px-3 font-semibold uppercase">Obs.</th>
               </tr>
             </thead>
             <tbody>
               {data.teams.map((team) => (
-                <tr key={team.teamId} className="border-b border-black/[0.03] hover:bg-black/[0.01]">
-                  <td className="py-2.5 px-3 font-medium text-[#0B2C6B]">{team.teamName}</td>
-                  <td className="py-2.5 px-3 text-[#4A4C54]">{team.batch}</td>
+                <tr key={team.teamId} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <td className="py-2.5 px-3 font-semibold text-[#0B2C6B]">{team.teamName}</td>
+                  <td className="py-2.5 px-3 text-slate-500">{team.batch}</td>
                   <td className="py-2.5 px-3 text-center">
                     <span className="font-bold text-[#0B2C6B]">{team.overallTeamScore !== null ? team.overallTeamScore.toFixed(1) : "-"}</span>
                   </td>
-                  <td className="py-2.5 px-3 text-xs text-[#4A4C54]">{team.strongestDimension?.dimensionName || "-"}</td>
-                  <td className="py-2.5 px-3 text-xs text-[#4A4C54]">{team.weakestDimension?.dimensionName || "-"}</td>
-                  <td className="py-2.5 px-3 text-center text-[#4A4C54]">{team.totalObservations}</td>
+                  <td className="py-2.5 px-3 text-slate-600">{team.strongestDimension?.dimensionName || "-"}</td>
+                  <td className="py-2.5 px-3 text-slate-600">{team.weakestDimension?.dimensionName || "-"}</td>
+                  <td className="py-2.5 px-3 text-center font-medium text-slate-500">{team.totalObservations}</td>
                 </tr>
               ))}
             </tbody>

@@ -5,54 +5,76 @@ import { services, type ServiceModule } from "@/lib/services";
 
 export function ServiceMegaGrid({ items = services }: { items?: ServiceModule[] }) {
   return (
-    <div className="grid grid-cols-3 gap-x-4 gap-y-8 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-8">
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-4">
       {items.map((service) => (
-        <ServiceIcon key={service.slug} service={service} />
+        <ServiceCard key={service.slug} service={service} />
       ))}
     </div>
   );
 }
 
-function ServiceIcon({ service }: { service: ServiceModule }) {
+function ServiceCard({ service }: { service: ServiceModule }) {
   const isActive = service.status === "active";
-  const content = (
-    <>
-      <div
-        className={[
-          "relative mx-auto flex aspect-square w-full max-w-[96px] items-center justify-center rounded-[24px] border bg-white shadow-[0_18px_52px_-38px_rgba(11,44,107,0.44)] transition",
-          isActive
-            ? "border-[#0B2C6B]/10 group-hover:-translate-y-1 group-hover:border-[#D9A441]/70"
-            : "border-[#0B2C6B]/6 opacity-38 grayscale",
-        ].join(" ")}
-      >
-        <Image
-          src={service.icon}
-          alt=""
-          width={88}
-          height={88}
-          className="h-[56%] w-[56%] object-contain"
-        />
-      </div>
-      <div className="mt-3 text-center">
-        <p
-          className={[
-            "text-sm font-semibold leading-tight tracking-[-0.02em]",
-            isActive ? "text-[#0B2C6B]" : "text-[#0B2C6B]/42",
-          ].join(" ")}
-        >
+
+  const cardContent = (
+    <div
+      className={`relative h-full flex flex-col justify-between p-5 rounded-2xl border transition-all ${
+        isActive
+          ? "bg-white border-slate-200/80 hover:border-[#C79A3C]/70 hover:shadow-md hover:shadow-slate-200/60 group"
+          : "bg-slate-50/60 border-slate-200/60 opacity-80"
+      }`}
+    >
+      <div>
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="h-12 w-12 rounded-xl bg-slate-100 group-hover:bg-[#C79A3C]/10 flex items-center justify-center p-2 transition-colors">
+            <Image
+              src={service.icon}
+              alt={service.name}
+              width={48}
+              height={48}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <span
+            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+              isActive
+                ? "bg-[#C79A3C]/15 text-[#9E7520]"
+                : "bg-slate-200/80 text-slate-500"
+            }`}
+          >
+            {isActive ? "Tersedia" : "Segera"}
+          </span>
+        </div>
+
+        <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0B2C6B] transition-colors">
           {service.name}
+        </h3>
+        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+          {service.slug === "binainsight" && "Asesmen kesiapan transformasi & pemetaan potensi."}
+          {service.slug === "binaimpact" && "Pengukuran dampak perubahan & efektivitas program."}
+          {service.slug === "binalab" && "Eksperimen strategi & inovasi model operasional."}
+          {service.slug === "binacoach" && "Pendampingan intensif & coaching kepemimpinan."}
+          {service.slug === "binaplay" && "Gamifikasi & simulasi skenario bisnis."}
+          {service.slug === "binaacademy" && "Kurikulum pembelajaran & sertifikasi tim."}
+          {service.slug === "binajourney" && "Roadmap transformasi langkah demi langkah."}
+          {service.slug === "binaworks" && "Implementasi proyek & eksekusi lapangan."}
         </p>
       </div>
-    </>
+
+      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#0B2C6B]">
+        <span>{isActive ? "Buka layanan" : "Dalam pengembangan"}</span>
+        {isActive && <span className="text-[#C79A3C] font-bold">→</span>}
+      </div>
+    </div>
   );
 
   if (!isActive) {
-    return <div className="group cursor-not-allowed">{content}</div>;
+    return <div className="cursor-default">{cardContent}</div>;
   }
 
   return (
-    <Link href={service.href} className="group">
-      {content}
+    <Link href={service.href} className="block">
+      {cardContent}
     </Link>
   );
 }
