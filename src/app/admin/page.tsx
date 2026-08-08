@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, LogOut, RefreshCw, Loader2, Radar as RadarIcon, Grid3x3, Trophy, BarChart3, Users, FileText, Download, FileSpreadsheet, Plus, ShieldCheck } from "lucide-react";
+import { ArrowRight, LogOut, RefreshCw, Loader2, Radar as RadarIcon, Grid3x3, Trophy, BarChart3, Users, FileText, Download, FileSpreadsheet, Plus, ShieldCheck, UsersRound, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AssessmentPanel } from "./_components/assessment-panel";
 import { ContactsPanel } from "./_components/contacts-panel";
@@ -386,18 +386,46 @@ function TbosTab() {
   const [createTeamError, setCreateTeamError] = useState("");
   const [createTeamSuccess, setCreateTeamSuccess] = useState(false);
 
+  // Assign Facilitator Modal State
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [facilitatorsList, setFacilitatorsList] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
+  const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
+  const [selectedMissionId, setSelectedMissionId] = useState("mission-1");
+  const [assigning, setAssigning] = useState(false);
+  const [assignSuccess, setAssignSuccess] = useState(false);
+  const [assignError, setAssignError] = useState("");
+
   const fetchData = useCallback(async () => {
     try {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
       const { teams, observations } = await fetchDashboardRawData();
       const computed = generateDashboardData(teams, observations);
       setDashboardData(computed);
+
+      // Fetch facilitators list for assignment
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const res = await fetch("/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const userRes = await res.json();
+        if (userRes.success && userRes.users) {
+          const facs = userRes.users.filter((u: any) => u.role === "facilitator" || u.role === "admin");
+          setFacilitatorsList(facs);
+          if (facs.length > 0 && !selectedFacilitatorId) {
+            setSelectedFacilitatorId(facs[0].id);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load users for facilitator assignment:", err);
+      }
     } catch {
       setError("Gagal memuat data T-BOS.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedFacilitatorId]);
 
   useEffect(() => {
     fetchData();
@@ -430,6 +458,47 @@ function TbosTab() {
       setCreateTeamError(res.error || "Gagal membuat tim.");
     }
     setCreatingTeam(false);
+  };
+
+  const handleAssignFacilitator = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFacilitatorId) {
+      setAssignError("Pilih fasilitator terlebih dahulu.");
+      return;
+    }
+
+    setAssigning(true);
+    setAssignError("");
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch("/api/tbos/missions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          facilitatorId: selectedFacilitatorId,
+          missionId: selectedMissionId,
+        }),
+      });
+      const dataRes = await res.json();
+
+      if (dataRes.success) {
+        setAssignSuccess(true);
+        setTimeout(() => {
+          setAssignSuccess(false);
+          setShowAssignModal(false);
+        }, 1200);
+      } else {
+        setAssignError(dataRes.error || "Gagal menugaskan fasilitator.");
+      }
+    } catch (err: any) {
+      setAssignError(err.message || "Gagal menghubungi server.");
+    } finally {
+      setAssigning(false);
+    }
   };
 
   const SUB_TABS = [
@@ -549,6 +618,13 @@ function TbosTab() {
 
         <div className="flex flex-wrap items-center gap-2">
           <button
+            onClick={() => setShowAssignModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-br from-[#0B2C6B] to-[#C79A3C] text-white text-xs font-semibold shadow-xs hover:brightness-110 transition-all"
+          >
+            <UsersRound className="w-3.5 h-3.5" />
+            Tugaskan Fasilitator
+          </button>
+          <button
             onClick={() => setShowAddTeamModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors"
           >
@@ -576,6 +652,80 @@ function TbosTab() {
           </Link>
         </div>
       </div>
+
+      {/* Assign Facilitator Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-left border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Tugaskan Fasilitator ke T-BOS</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Pilih fasilitator untuk memimpin observasi 8 dimensi perilaku.</p>
+              </div>
+              <button onClick={() => setShowAssignModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignFacilitator} className="space-y-4">
+              {assignError && <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-200">{assignError}</p>}
+              {assignSuccess && <p className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 font-semibold">Fasilitator berhasil ditugaskan!</p>}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Fasilitator</label>
+                {facilitatorsList.length === 0 ? (
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                    Belum ada akun dengan role fasilitator. Tambahkan di menu Manajemen User & Role terlebih dahulu.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedFacilitatorId}
+                    onChange={(e) => setSelectedFacilitatorId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium text-slate-800"
+                  >
+                    {facilitatorsList.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.full_name || f.email} ({f.email})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Mission Observasi</label>
+                <select
+                  value={selectedMissionId}
+                  onChange={(e) => setSelectedMissionId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium text-slate-800"
+                >
+                  <option value="mission-1">Mission 1: Visi Bersama &amp; Mindset Bertumbuh</option>
+                  <option value="mission-2">Mission 2: Komunikasi Terbuka &amp; Koordinasi Lintas Fungsi</option>
+                  <option value="mission-3">Mission 3: Pemecahan Masalah &amp; Pengambilan Keputusan</option>
+                  <option value="mission-4">Mission 4: Eksekusi Tangkas &amp; Resiliensi Tim</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignModal(false)}
+                  className="flex-1 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={assigning || facilitatorsList.length === 0}
+                  className="flex-1 py-2 text-xs font-semibold rounded-xl bg-gradient-to-br from-[#0B2C6B] to-[#C79A3C] text-white disabled:opacity-50 hover:brightness-110 transition-all"
+                >
+                  {assigning ? "Menugaskan..." : "Simpan Penugasan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
