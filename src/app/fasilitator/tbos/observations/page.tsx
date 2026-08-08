@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check } from "lucide-react";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";
@@ -57,35 +59,39 @@ function TbosObservationsContent() {
   }, []);
 
   useEffect(() => {
-    loadObservations();
+    void Promise.resolve().then(loadObservations);
   }, [loadObservations]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
+      <div className="flex min-h-screen items-center justify-center pb-[calc(4rem+env(safe-area-inset-bottom))]">
         <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
+        <TbosFacilitatorNav />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+      <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-4 pb-[calc(4rem+env(safe-area-inset-bottom))] text-sm text-red-700">
         {error}
+        <TbosFacilitatorNav />
       </div>
     );
   }
 
   if (observations.length === 0) {
     return (
-      <div className="text-center py-20">
+      <div className="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] pt-20 text-center">
         <p className="text-sm text-[#4A4C54]">Belum ada observasi.</p>
+        <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Buat observasi</Link>
+        <TbosFacilitatorNav />
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[#0B2C6B]">Riwayat Observasi</h2>
         <span className="text-xs text-[#4A4C54]">{observations.length} observasi</span>
@@ -143,6 +149,7 @@ function TbosObservationsContent() {
           />
         )}
       </AnimatePresence>
+      <TbosFacilitatorNav />
     </div>
   );
 }
@@ -181,6 +188,8 @@ function ObservationDetailPanel({
   const [editedScores, setEditedScores] = useState<Record<string, number>>({});
   const [editedNotes, setEditedNotes] = useState("");
   const [actionError, setActionError] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const loadDetail = useCallback(async () => {
     try {
@@ -204,8 +213,42 @@ function ObservationDetailPanel({
   }, [observationId, userId, isAdmin]);
 
   useEffect(() => {
-    loadDetail();
+    void Promise.resolve().then(loadDetail);
   }, [loadDetail]);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    closeButtonRef.current?.focus();
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const elements = Array.from(dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+      if (elements.length === 0) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+      previouslyFocused?.focus();
+    };
+  }, [onClose]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -259,8 +302,13 @@ function ObservationDetailPanel({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
       onClick={onClose}
+      role="presentation"
     >
       <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="observation-detail-title"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
@@ -270,11 +318,11 @@ function ObservationDetailPanel({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-black/[0.06] px-6 py-4 flex items-center justify-between z-10">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="p-1 -ml-1 rounded hover:bg-black/[0.04]">
+             <button ref={closeButtonRef} type="button" onClick={onClose} aria-label="Tutup detail observasi" className="-ml-1 flex h-11 w-11 items-center justify-center rounded-lg hover:bg-black/[0.04]">
               <X className="w-5 h-5 text-[#4A4C54]" />
             </button>
             <div>
-              <h2 className="text-sm font-bold text-[#0B2C6B]">Detail Observasi</h2>
+               <h2 id="observation-detail-title" className="text-sm font-bold text-[#0B2C6B]">Detail Observasi</h2>
               {detail && (
                 <p className="text-xs text-[#4A4C54]">
                   {detail.teamName} • {detail.missionName}

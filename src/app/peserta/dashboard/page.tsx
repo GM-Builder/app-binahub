@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, LogOut, Users, Trophy, Target, Eye } from "lucide-react";
+import { Loader2, Users, Trophy, Target, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AppShell } from "@/components/app-shell";
 import { fetchParticipantTeamInfo } from "@/modules/tbos/api-client";
@@ -11,6 +11,7 @@ export default function PesertaDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [error, setError] = useState("");
   const [teamInfo, setTeamInfo] = useState<{
     teamName: string;
     batch: string;
@@ -21,11 +22,7 @@ export default function PesertaDashboardPage() {
     rank: number | null;
   } | null>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData.session;
@@ -42,21 +39,25 @@ export default function PesertaDashboardPage() {
         .maybeSingle();
 
       const name = profile?.full_name || session.user.user_metadata?.full_name || session.user.email || "Peserta";
+      if (profile?.role !== "peserta" && profile?.role !== "admin") {
+        router.replace("/home");
+        return;
+      }
       setUserName(name);
 
       const info = await fetchParticipantTeamInfo(userId);
       setTeamInfo(info);
     } catch (err) {
       console.error("[Peserta Dashboard] Error loading session or team info:", err);
+      setError(err instanceof Error ? err.message : "Gagal memuat dashboard peserta.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+  useEffect(() => {
+    void Promise.resolve().then(checkAuth);
+  }, [checkAuth]);
 
   if (loading) {
     return (
@@ -67,8 +68,16 @@ export default function PesertaDashboardPage() {
   }
 
   return (
-    <AppShell role="client" title="Dashboard Peserta" eyebrow={`Selamat datang, ${userName}`}>
+    <AppShell role="peserta" title="Dashboard Peserta" eyebrow={`Selamat datang, ${userName}`}>
       <div className="space-y-6">
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+            <p>{error}</p>
+            <button onClick={checkAuth} className="mt-3 min-h-11 rounded-lg bg-red-700 px-4 font-semibold text-white">
+              Coba lagi
+            </button>
+          </div>
+        )}
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-[#0B2C6B] to-[#071B3D] rounded-2xl p-6 text-white">
           <h2 className="text-xl font-bold mb-2">Halo, {userName}!</h2>
@@ -79,7 +88,7 @@ export default function PesertaDashboardPage() {
         </div>
 
         {/* Team Score Overview */}
-        {teamInfo ? (
+        {!error && teamInfo ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard
               icon={<Trophy className="w-4 h-4 text-[#D9A441]" />}
@@ -102,14 +111,14 @@ export default function PesertaDashboardPage() {
               value={teamInfo.teamName || "-"}
             />
           </div>
-        ) : (
+        ) : !error ? (
           <div className="bg-white rounded-xl p-6 border border-black/[0.04] text-center">
             <p className="text-sm text-[#4A4C54]">
               Anda belum ditambahkan ke tim manapun. Hubungi fasilitator atau admin untuk
               informasi lebih lanjut.
             </p>
           </div>
-        )}
+        ) : null}
 
         {/* Info Cards */}
         <div className="grid md:grid-cols-2 gap-4">
@@ -147,14 +156,6 @@ export default function PesertaDashboardPage() {
           </div>
         </div>
 
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-sm font-medium hover:border-red-300 hover:text-red-600 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Keluar
-        </button>
       </div>
     </AppShell>
   );

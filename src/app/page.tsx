@@ -255,7 +255,12 @@ function AuthContent() {
 
           {/* Success Notification */}
           {success && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-3">
+            <div
+              id="auth-success"
+              role="status"
+              aria-live="polite"
+              className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-3"
+            >
               <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -265,7 +270,11 @@ function AuthContent() {
 
           {/* Error Notification */}
           {error && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3">
+            <div
+              id="auth-error"
+              role="alert"
+              className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3"
+            >
               <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -334,6 +343,7 @@ function AuthContent() {
           <div className={`${mode === 'signin' && !showEmailForm ? 'hidden' : 'block'}`}>
             <form
               className="space-y-4"
+              aria-describedby={error ? 'auth-error' : undefined}
               onSubmit={
                 mode === 'signin'
                   ? handleSignIn
@@ -344,14 +354,17 @@ function AuthContent() {
             >
               {mode === 'signup' && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  <label htmlFor="auth-full-name" className="mb-1.5 block text-sm font-medium text-slate-700">
                     Nama Lengkap
                   </label>
                   <input
+                    id="auth-full-name"
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? 'auth-error' : undefined}
                     className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
                     placeholder="Nama Lengkap Anda"
                     autoComplete="name"
@@ -360,14 +373,17 @@ function AuthContent() {
               )}
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                <label htmlFor="auth-email" className="mb-1.5 block text-sm font-medium text-slate-700">
                   Email
                 </label>
                 <input
+                  id="auth-email"
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? 'auth-error' : undefined}
                   className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
                   placeholder="nama@email.com"
                   autoComplete="email"
@@ -376,16 +392,19 @@ function AuthContent() {
 
               {mode !== 'forgot' && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  <label htmlFor="auth-password" className="mb-1.5 block text-sm font-medium text-slate-700">
                     Password
                   </label>
                   <div className="relative">
                     <input
+                      id="auth-password"
                       type={showPassword ? 'text' : 'password'}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
+                      aria-invalid={error ? true : undefined}
+                      aria-describedby={error ? 'auth-error' : undefined}
+                      className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
                       placeholder="••••••••"
                       minLength={6}
                       autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
@@ -393,8 +412,8 @@ function AuthContent() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      aria-label="Toggle password visibility"
+                      className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-slate-400 hover:text-slate-600"
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                     >
                       {showPassword ? (
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,15 +432,18 @@ function AuthContent() {
 
               {mode === 'signup' && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  <label htmlFor="auth-confirm-password" className="mb-1.5 block text-sm font-medium text-slate-700">
                     Konfirmasi Password
                   </label>
                   <div className="relative">
                     <input
+                      id="auth-confirm-password"
                       type={showPassword ? 'text' : 'password'}
                       required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      aria-invalid={error ? true : undefined}
+                      aria-describedby={error ? 'auth-error' : undefined}
                       className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
                       placeholder="••••••••"
                       minLength={6}
@@ -451,11 +473,14 @@ function AuthContent() {
               {/* Checkboxes on signup */}
               {mode === 'signup' && (
                 <div className="space-y-2.5 pt-1">
-                  <label className="flex items-start gap-2.5 cursor-pointer">
+                  <label htmlFor="auth-agree-terms" className="flex items-start gap-2.5 cursor-pointer">
                     <input
+                      id="auth-agree-terms"
                       type="checkbox"
                       checked={agreeTerms}
                       onChange={(e) => setAgreeTerms(e.target.checked)}
+                      aria-invalid={error ? true : undefined}
+                      aria-describedby={error ? 'auth-error' : undefined}
                       className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#C79A3C] focus:ring-[#C79A3C]"
                     />
                     <span className="text-xs text-slate-500 leading-tight">
@@ -467,11 +492,14 @@ function AuthContent() {
                     </span>
                   </label>
 
-                  <label className="flex items-start gap-2.5 cursor-pointer">
+                  <label htmlFor="auth-agree-privacy" className="flex items-start gap-2.5 cursor-pointer">
                     <input
+                      id="auth-agree-privacy"
                       type="checkbox"
                       checked={agreePrivacy}
                       onChange={(e) => setAgreePrivacy(e.target.checked)}
+                      aria-invalid={error ? true : undefined}
+                      aria-describedby={error ? 'auth-error' : undefined}
                       className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#C79A3C] focus:ring-[#C79A3C]"
                     />
                     <span className="text-xs text-slate-500 leading-tight">

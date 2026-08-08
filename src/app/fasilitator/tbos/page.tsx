@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Loader2, Wifi, WifiOff, ChevronRight, Crown, UserPlus, Trash2, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Wifi, WifiOff, ChevronRight, Crown, UserPlus, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import {
@@ -13,7 +14,6 @@ import {
   submitObservation,
   saveDraft,
   loadDraft,
-  clearDraft,
   queueObservation,
   flushQueuedObservations,
   getQueuedObservations,
@@ -54,25 +54,24 @@ function TbosObservationContent() {
   const [scores, setScores] = useState<Record<string, LevelValue>>({});
   const [notes, setNotes] = useState("");
 
-  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState<boolean>(() => typeof navigator === "undefined" || navigator.onLine);
   const [queuedCount, setQueuedCount] = useState<number>(0);
 
   // Team members state with captain support
-  const [teamMembers, setTeamMembers] = useState<Array<{ member_name: string; is_captain: boolean }>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; member_name: string; is_captain: boolean }>>([]);
   const [newMemberName, setNewMemberName] = useState("");
   const [addingMember, setAddingMember] = useState(false);
+  const [memberError, setMemberError] = useState("");
+  const [savedLocally, setSavedLocally] = useState(false);
 
   // Monitor Network Status
   useEffect(() => {
-    setIsOnline(navigator.onLine);
-    setQueuedCount(getQueuedObservations().length);
-
     const handleOnline = async () => {
       setIsOnline(true);
       const { data } = await supabase.auth.getSession();
       if (data.session?.user.id) {
         await flushQueuedObservations(data.session.user.id);
-        setQueuedCount(getQueuedObservations().length);
+        setQueuedCount(getQueuedObservations(data.session.user.id).length);
       }
     };
 
@@ -92,9 +91,10 @@ function TbosObservationContent() {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData.session?.user.id || "";
       setUserId(currentUserId);
+      setQueuedCount(getQueuedObservations(currentUserId).length);
 
       const [mList, tList] = await Promise.all([
-        fetchMissions(currentUserId),
+        fetchMissions(),
         fetchTeams(),
       ]);
 
@@ -108,14 +108,16 @@ function TbosObservationContent() {
   }, []);
 
   useEffect(() => {
-    initData();
+    void Promise.resolve().then(initData);
   }, [initData]);
 
   // Load team members when team is selected
   useEffect(() => {
-    if (selectedTeam) {
+    void Promise.resolve().then(() => {
+      if (selectedTeam) {
       if (selectedTeam.members && selectedTeam.members.length > 0) {
         setTeamMembers(selectedTeam.members.map(m => ({
+          id: m.id,
           member_name: m.member_name,
           is_captain: m.is_captain || false,
         })));
@@ -125,17 +127,19 @@ function TbosObservationContent() {
           .then((r) => r.json())
           .then((data) => {
             if (data.success && data.members) {
-              setTeamMembers(data.members.map((m: any) => ({
+              setTeamMembers((data.members as Array<{ id: string; member_name: string; is_captain?: boolean }>).map((m) => ({
+                id: m.id,
                 member_name: m.member_name,
                 is_captain: m.is_captain || false,
               })));
             }
           })
-          .catch(() => {});
+          .catch(() => setMemberError("Gagal memuat anggota tim."));
       }
-    } else {
-      setTeamMembers([]);
-    }
+      } else {
+        setTeamMembers([]);
+      }
+    });
   }, [selectedTeam]);
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -144,13 +148,11 @@ function TbosObservationContent() {
 
     const name = newMemberName.trim();
     setAddingMember(true);
+    setMemberError("");
     const isFirstMember = teamMembers.length === 0;
-    const newMember = { member_name: name, is_captain: isFirstMember };
-    setTeamMembers((prev) => [...prev, newMember]);
-    setNewMemberName("");
 
     try {
-      await fetch("/api/tbos/teams/members", {
+      const response = await fetch("/api/tbos/teams/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -159,61 +161,62 @@ function TbosObservationContent() {
           isCaptain: isFirstMember,
         }),
       });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal menambah anggota.");
+      setTeamMembers((prev) => [...prev, result.member]);
+      setNewMemberName("");
     } catch (err) {
-      console.error("Could not sync member to server:", err);
+      setMemberError(err instanceof Error ? err.message : "Gagal menambah anggota.");
     } finally {
       setAddingMember(false);
     }
   };
 
-  const handleSetCaptain = async (memberName: string) => {
+  const handleSetCaptain = async (memberId: string) => {
     if (!selectedTeam) return;
-
-    // Update local state
-    setTeamMembers((prev) =>
-      prev.map((m) => ({
-        ...m,
-        is_captain: m.member_name === memberName,
-      }))
-    );
-
-    // Sync to server
+    setMemberError("");
     try {
-      await fetch("/api/tbos/teams/members", {
+      const response = await fetch("/api/tbos/teams/members", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teamId: selectedTeam.id,
-          memberName,
+          memberId,
           isCaptain: true,
         }),
       });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal mengganti ketua tim.");
+      setTeamMembers((prev) => prev.map((m) => ({ ...m, is_captain: m.id === memberId })));
     } catch (err) {
-      console.error("Could not update captain:", err);
+      setMemberError(err instanceof Error ? err.message : "Gagal mengganti ketua tim.");
     }
   };
 
-  const handleRemoveMember = async (memberName: string) => {
+  const handleRemoveMember = async (memberId: string) => {
     if (!selectedTeam) return;
-    setTeamMembers((prev) => prev.filter((m) => m.member_name !== memberName));
+    setMemberError("");
     try {
-      await fetch(`/api/tbos/teams/members?teamId=${selectedTeam.id}&memberName=${encodeURIComponent(memberName)}`, {
+      const response = await fetch(`/api/tbos/teams/members?teamId=${selectedTeam.id}&memberId=${memberId}`, {
         method: "DELETE",
       });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal menghapus anggota.");
+      setTeamMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err) {
-      console.error("Could not delete member:", err);
+      setMemberError(err instanceof Error ? err.message : "Gagal menghapus anggota.");
     }
   };
 
   // Load draft when team and mission selected
   useEffect(() => {
-    if (selectedTeam && selectedMission) {
-      const draft = loadDraft(selectedTeam.id, selectedMission.id);
-      if (draft) {
-        setScores(draft.scores || {});
-        setNotes(draft.notes || "");
+    void Promise.resolve().then(() => {
+      if (selectedTeam && selectedMission) {
+        const draft = loadDraft(selectedTeam.id, selectedMission.id);
+        setScores(draft?.scores || {});
+        setNotes(draft?.notes || "");
       }
-    }
+    });
   }, [selectedTeam, selectedMission]);
 
   const handleScoreSelect = (dimensionId: string, level: LevelValue) => {
@@ -244,6 +247,7 @@ function TbosObservationContent() {
     const payload = {
       teamId: selectedTeam.id,
       missionId: selectedMission.id,
+      clientSubmissionId: crypto.randomUUID(),
       profileId: userId,
       batch: selectedTeam.batch,
       notes,
@@ -254,9 +258,9 @@ function TbosObservationContent() {
     };
 
     if (!navigator.onLine) {
-      queueObservation(payload);
-      clearDraft(selectedTeam.id, selectedMission.id);
-      setQueuedCount(getQueuedObservations().length);
+      queueObservation(userId, payload);
+      setQueuedCount(getQueuedObservations(userId).length);
+      setSavedLocally(true);
       setStep("done");
       return;
     }
@@ -264,12 +268,16 @@ function TbosObservationContent() {
     const res = await submitObservation(payload);
 
     if (res.success) {
+      setSavedLocally(false);
+      setStep("done");
+    } else if (res.retryable) {
+      queueObservation(userId, payload);
+      setQueuedCount(getQueuedObservations(userId).length);
+      setSavedLocally(true);
       setStep("done");
     } else {
-      queueObservation(payload);
-      clearDraft(selectedTeam.id, selectedMission.id);
-      setQueuedCount(getQueuedObservations().length);
-      setStep("done");
+      setError(res.error || "Observasi ditolak. Periksa data lalu coba lagi.");
+      setStep("observe");
     }
   };
 
@@ -284,11 +292,12 @@ function TbosObservationContent() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 pb-20">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 rounded-full border-3 border-[#0B2C6B]/20 border-t-[#0B2C6B] animate-spin" />
           <p className="text-sm text-slate-500">Memuat...</p>
         </div>
+        <TbosFacilitatorNav />
       </div>
     );
   }
@@ -296,7 +305,7 @@ function TbosObservationContent() {
   // Success state
   if (step === "done") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 pb-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -306,8 +315,8 @@ function TbosObservationContent() {
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white">Berhasil!</h1>
-            <p className="text-white/70 text-sm mt-1">Observasi tersimpan</p>
+            <h1 className="text-xl font-bold text-white">{savedLocally ? "Tersimpan di perangkat" : "Berhasil!"}</h1>
+            <p className="text-white/70 text-sm mt-1">{savedLocally ? "Menunggu sinkronisasi" : "Observasi tersimpan ke server"}</p>
           </div>
           <div className="p-6">
             <div className="bg-slate-50 rounded-xl p-4 mb-6">
@@ -316,9 +325,9 @@ function TbosObservationContent() {
                 {" • "}
                 <span className="text-slate-500">{selectedMission?.name}</span>
               </p>
-              {!isOnline && (
+              {savedLocally && (
                 <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                  <WifiOff className="w-3 h-3" /> Akan di-sync saat online
+                  <WifiOff className="w-3 h-3" /> Akan disinkronkan saat koneksi tersedia
                 </p>
               )}
             </div>
@@ -338,6 +347,7 @@ function TbosObservationContent() {
             </div>
           </div>
         </motion.div>
+        <TbosFacilitatorNav />
       </div>
     );
   }
@@ -354,7 +364,8 @@ function TbosObservationContent() {
               {step === "observe" && (
                 <button
                   onClick={() => setStep("select")}
-                  className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center"
+                  aria-label="Kembali ke pemilihan tim dan misi"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100"
                 >
                   <ArrowLeft className="w-4 h-4 text-slate-600" />
                 </button>
@@ -395,7 +406,7 @@ function TbosObservationContent() {
         )}
       </header>
 
-      <main className="p-4 pb-24">
+      <main className="mx-auto max-w-2xl p-4 pb-[calc(10rem+env(safe-area-inset-bottom))]">
         {error && (
           <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
             {error}
@@ -528,11 +539,11 @@ function TbosObservationContent() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent"
+                 className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 border-t border-slate-200 bg-white/95 p-3 backdrop-blur"
                 >
                   <button
                     onClick={() => setStep("observe")}
-                    className="w-full h-14 rounded-2xl bg-[#0B2C6B] text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#0B2C6B]/25"
+                    className="mx-auto flex h-14 w-full max-w-2xl items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] font-semibold text-white shadow-lg shadow-[#0B2C6B]/25"
                   >
                     Mulai Observasi
                     <ArrowRight className="w-5 h-5" />
@@ -559,13 +570,14 @@ function TbosObservationContent() {
                 </div>
 
                 {/* Member List */}
+                {memberError && <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs text-red-700" role="alert">{memberError}</p>}
                 <div className="space-y-2 mb-3">
                   {teamMembers.length === 0 ? (
                     <p className="text-xs text-slate-400 italic">Belum ada anggota. Tambahkan nama peserta.</p>
                   ) : (
-                    teamMembers.map((m, i) => (
+                    teamMembers.map((m) => (
                       <div
-                        key={i}
+                        key={m.id}
                         className={`flex items-center justify-between p-2.5 rounded-xl ${
                           m.is_captain ? "bg-amber-50 border border-amber-200" : "bg-slate-50"
                         }`}
@@ -577,7 +589,7 @@ function TbosObservationContent() {
                           </span>
                           {m.is_captain && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-800 font-medium">
-                              Captain
+                              Ketua Tim
                             </span>
                           )}
                         </div>
@@ -585,18 +597,18 @@ function TbosObservationContent() {
                           {!m.is_captain && (
                             <button
                               type="button"
-                              onClick={() => handleSetCaptain(m.member_name)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
-                              title="Jadikan Captain"
+                              onClick={() => handleSetCaptain(m.id)}
+                              className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                              aria-label={`Jadikan ${m.member_name} ketua tim`}
                             >
                               <Crown className="w-3.5 h-3.5" />
                             </button>
                           )}
                           <button
                             type="button"
-                            onClick={() => handleRemoveMember(m.member_name)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                            title="Hapus"
+                            onClick={() => handleRemoveMember(m.id)}
+                            className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            aria-label={`Hapus ${m.member_name}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -624,7 +636,7 @@ function TbosObservationContent() {
                   </button>
                 </form>
                 <p className="text-[10px] text-slate-400 mt-2">
-                  Anggota pertama otomatis jadi captain. Tap ikon 👑 untuk ganti captain.
+                  Anggota pertama otomatis menjadi ketua. Gunakan tombol mahkota untuk mengganti ketua tim.
                 </p>
               </div>
 
@@ -663,7 +675,9 @@ function TbosObservationContent() {
                             <button
                               key={level.level_value}
                               onClick={() => handleScoreSelect(dim.id, level.level_value as LevelValue)}
-                              className={`flex-shrink-0 w-[72px] p-3 rounded-xl border-2 transition-all ${
+                              aria-pressed={isSelected}
+                              aria-label={`${dim.name}, tingkat ${level.level_value}: ${level.level_label}`}
+                              className={`flex-shrink-0 w-[72px] min-h-20 p-3 rounded-xl border-2 transition-all ${
                                 isSelected
                                   ? `${colors.bg} ${colors.border} border-current`
                                   : "border-slate-100 bg-white"
@@ -714,11 +728,11 @@ function TbosObservationContent() {
               </div>
 
               {/* Submit Button - Fixed at Bottom */}
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent">
+               <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
                 <button
                   onClick={handleSubmit}
                   disabled={!allDimensionsScored}
-                  className={`w-full h-14 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                  className={`mx-auto flex h-14 w-full max-w-2xl items-center justify-center gap-2 rounded-2xl font-semibold transition-all ${
                     allDimensionsScored
                       ? "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/25"
                       : "bg-slate-200 text-slate-400"
@@ -751,6 +765,7 @@ function TbosObservationContent() {
           )}
         </AnimatePresence>
       </main>
+      <TbosFacilitatorNav />
     </div>
   );
 }

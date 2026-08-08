@@ -41,9 +41,9 @@ export interface TbosTeamMember {
   memberName: string;
 }
 
-export interface TbosFacilitatorMission {
-  missionCode: MissionCode;
-  missionName: string;
+export interface TbosFacilitatorTeam {
+  teamId: string;
+  teamName: string;
 }
 
 // --- Scoring Types ---

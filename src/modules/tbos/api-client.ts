@@ -2,7 +2,6 @@
 // Sources: ARCHITECTURE.md, ADR-006, ApiFetchBridge
 
 import type { MissionCode, DimensionCode, LevelValue } from "./config";
-import { MISSIONS, getMissionDimensions, getDimensionLevels } from "./config";
 
 export interface TbosDbMission {
   id: string;
@@ -28,6 +27,7 @@ export interface TbosDbTeam {
   name: string;
   batch: string;
   members: {
+    id: string;
     profile_id: string | null;
     member_name: string;
     is_captain?: boolean;
@@ -84,6 +84,8 @@ export interface TbosDbObservationDetail extends TbosDbObservation {
 
 export interface QueuedObservation {
   id: string;
+  profileId: string;
+  clientSubmissionId?: string;
   teamId: string;
   missionId: string;
   batch: string;
@@ -99,58 +101,25 @@ export interface QueuedObservation {
 /**
  * Fetch assigned missions for facilitator from backend API.
  */
-export async function fetchMissions(profileId?: string): Promise<TbosDbMission[]> {
-  try {
-    const res = await fetch("/api/tbos/missions");
-    const data = await res.json();
-    if (data.success && Array.isArray(data.missions)) {
-      return data.missions;
-    }
-  } catch (err) {
-    console.warn("[T-BOS API Client] Failed fetching /api/tbos/missions, fallback to local config:", err);
+export async function fetchMissions(): Promise<TbosDbMission[]> {
+  const res = await fetch("/api/tbos/missions");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success || !Array.isArray(data.missions)) {
+    throw new Error(data.error || "Gagal memuat daftar misi.");
   }
-
-  // Fallback to local config if offline or endpoint not reachable
-  return Object.values(MISSIONS).map((m) => ({
-    id: m.code,
-    code: m.code,
-    name: m.name,
-    description: m.description,
-    dimensions: getMissionDimensions(m.code).map((d) => ({
-      id: d.code,
-      code: d.code,
-      name: d.name,
-      question: d.question,
-      order_index: d.orderIndex,
-      levels: getDimensionLevels(d.code).map((l) => ({
-        level_value: l.levelValue,
-        level_label: l.levelLabel,
-        description: l.description,
-      })),
-    })),
-  }));
+  return data.missions;
 }
 
 /**
  * Fetch active teams from backend API.
  */
 export async function fetchTeams(): Promise<TbosDbTeam[]> {
-  try {
-    const res = await fetch("/api/tbos/teams");
-    const data = await res.json();
-    if (data.success && Array.isArray(data.teams)) {
-      return data.teams;
-    }
-  } catch (err) {
-    console.warn("[T-BOS API Client] Failed fetching /api/tbos/teams, fallback to default teams:", err);
+  const res = await fetch("/api/tbos/teams");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success || !Array.isArray(data.teams)) {
+    throw new Error(data.error || "Gagal memuat daftar tim.");
   }
-
-  return [
-    { id: "team-alpha", name: "Alpha", batch: "Batch 1", members: [{ profile_id: null, member_name: "Anggota 1" }] },
-    { id: "team-bravo", name: "Bravo", batch: "Batch 1", members: [{ profile_id: null, member_name: "Anggota 2" }] },
-    { id: "team-charlie", name: "Charlie", batch: "Batch 2", members: [{ profile_id: null, member_name: "Anggota 3" }] },
-    { id: "team-delta", name: "Delta", batch: "Batch 2", members: [{ profile_id: null, member_name: "Anggota 4" }] },
-  ];
+  return data.teams;
 }
 
 /**
@@ -183,16 +152,20 @@ export async function createTeam(input: {
 export async function submitObservation(input: {
   teamId: string;
   missionId: string;
+  clientSubmissionId?: string;
   profileId: string;
   batch: string;
   notes?: string;
   scores: { dimensionId: string; levelValue: number }[];
-}): Promise<{ success: boolean; observationId?: string; error?: string }> {
+}): Promise<{ success: boolean; observationId?: string; error?: string; retryable?: boolean }> {
   try {
     const res = await fetch("/api/tbos/observations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify({
+        ...input,
+        clientSubmissionId: input.clientSubmissionId || crypto.randomUUID(),
+      }),
     });
 
     const data = await res.json();
@@ -202,9 +175,13 @@ export async function submitObservation(input: {
       return { success: true, observationId: data.observationId || data.id };
     }
 
-    return { success: false, error: data.error || "Gagal menyimpan observasi." };
+    return {
+      success: false,
+      error: data.error || "Gagal menyimpan observasi.",
+      retryable: res.status >= 500,
+    };
   } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+    return { success: false, error: err.message || "Gagal terhubung ke backend API.", retryable: true };
   }
 }
 
@@ -312,21 +289,15 @@ export async function fetchDashboardRawData(): Promise<{
   teams: { id: string; name: string; batch: string }[];
   observations: any[];
 }> {
-  try {
-    const res = await fetch("/api/tbos/dashboard");
-    const data = await res.json();
-    if (data.success) {
-      return {
-        teams: data.teams || [],
-        observations: data.observations || [],
-      };
-    }
-  } catch (err) {
-    console.error("[T-BOS API Client] Error fetching dashboard data:", err);
+  const res = await fetch("/api/tbos/dashboard");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || "Gagal memuat dashboard T-BOS.");
   }
-
-  const teams = await fetchTeams();
-  return { teams, observations: [] };
+  return {
+    teams: data.teams || [],
+    observations: data.observations || [],
+  };
 }
 
 /**
@@ -341,37 +312,12 @@ export async function fetchParticipantTeamInfo(userId: string): Promise<{
   weakestDimension: string | null;
   rank: number | null;
 } | null> {
-  try {
-    const res = await fetch("/api/tbos/participant/team-info");
-    const data = await res.json();
-    if (data.success && data.teamInfo) {
-      return data.teamInfo;
-    }
-  } catch (err) {
-    console.warn("[T-BOS API Client] Participant team info API not reachable, calculating locally:", err);
+  const res = await fetch("/api/tbos/participant/team-info");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || "Gagal memuat data tim peserta.");
   }
-
-  // Fallback local calculation
-  const { teams, observations } = await fetchDashboardRawData();
-  if (teams.length === 0) return null;
-
-  const { calculateTeamScoreSummary, generateDashboardData } = await import("./scoring");
-  const firstTeam = teams[0];
-  const summary = calculateTeamScoreSummary(firstTeam.id, firstTeam.name, firstTeam.batch, observations);
-  const dashboard = generateDashboardData(teams, observations);
-
-  const sortedTeams = [...dashboard.teams].sort((a, b) => (b.overallTeamScore || 0) - (a.overallTeamScore || 0));
-  const rankIndex = sortedTeams.findIndex((t) => t.teamId === firstTeam.id);
-
-  return {
-    teamName: firstTeam.name,
-    batch: firstTeam.batch,
-    missionsCompleted: summary.missionScores.length,
-    overallScore: summary.overallTeamScore,
-    strongestDimension: summary.strongestDimension?.dimensionName || null,
-    weakestDimension: summary.weakestDimension?.dimensionName || null,
-    rank: rankIndex !== -1 ? rankIndex + 1 : null,
-  };
+  return data.teamInfo || null;
 }
 
 // ============================================================
@@ -379,7 +325,11 @@ export async function fetchParticipantTeamInfo(userId: string): Promise<{
 // ============================================================
 
 const DRAFT_KEY_PREFIX = "tbos_draft_";
-const QUEUE_KEY = "tbos_queued_observations";
+const QUEUE_KEY_PREFIX = "tbos_queued_observations_";
+
+function queueKey(profileId: string) {
+  return `${QUEUE_KEY_PREFIX}${profileId}`;
+}
 
 export function saveDraft(teamId: string, missionId: string, scores: Record<string, LevelValue>, notes: string) {
   if (typeof window === "undefined") return;
@@ -404,27 +354,31 @@ export function clearDraft(teamId: string, missionId: string) {
   localStorage.removeItem(`${DRAFT_KEY_PREFIX}${teamId}_${missionId}`);
 }
 
-export function queueObservation(input: {
+export function queueObservation(profileId: string, input: {
   teamId: string;
   missionId: string;
+  clientSubmissionId?: string;
   batch: string;
   notes: string;
   scores: { dimensionId: string; levelValue: number }[];
 }) {
   if (typeof window === "undefined") return;
-  const queued = getQueuedObservations();
+  const queued = getQueuedObservations(profileId);
   const newItem: QueuedObservation = {
     id: `queue_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    profileId,
     ...input,
+    clientSubmissionId: input.clientSubmissionId || crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
   queued.push(newItem);
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queued));
+  localStorage.setItem(queueKey(profileId), JSON.stringify(queued));
 }
 
-export function getQueuedObservations(): QueuedObservation[] {
+export function getQueuedObservations(profileId: string): QueuedObservation[] {
   if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem(QUEUE_KEY);
+  if (!profileId) return [];
+  const raw = localStorage.getItem(queueKey(profileId));
   if (!raw) return [];
   try {
     return JSON.parse(raw);
@@ -434,7 +388,7 @@ export function getQueuedObservations(): QueuedObservation[] {
 }
 
 export async function flushQueuedObservations(profileId: string): Promise<number> {
-  const queued = getQueuedObservations();
+  const queued = getQueuedObservations(profileId).filter((item) => item.profileId === profileId);
   if (queued.length === 0) return 0;
 
   let successCount = 0;
@@ -444,6 +398,7 @@ export async function flushQueuedObservations(profileId: string): Promise<number
     const res = await submitObservation({
       teamId: item.teamId,
       missionId: item.missionId,
+      clientSubmissionId: item.clientSubmissionId || item.id,
       profileId,
       batch: item.batch,
       notes: item.notes,
@@ -458,7 +413,7 @@ export async function flushQueuedObservations(profileId: string): Promise<number
   }
 
   if (typeof window !== "undefined") {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining));
+    localStorage.setItem(queueKey(profileId), JSON.stringify(remaining));
   }
 
   return successCount;

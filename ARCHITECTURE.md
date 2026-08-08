@@ -54,6 +54,6 @@ T-BOS adalah aplikasi web untuk fasilitator mengisi observasi perilaku tim selam
 ## 5. Pertimbangan Teknis Kunci
 
 - **Offline-first**: ✅ Diimplementasi via localStorage (ADR-006). Auto-save draft, antrian offline, dan flush otomatis saat online kembali. Bukan full PWA/Service Worker.
-- **Role-based access**: ✅ Diimplementasi. Fasilitator hanya melihat mission yang di-assign via `tbos_facilitator_missions`. Backend (`binahub-api`) memvalidasi akses lewat JWT + tabel assignment.
+- **Role-based access**: Fasilitator hanya melihat tim yang di-assign via `tbos_facilitator_teams`; semua misi aktif dipilih ketika observasi. Backend memvalidasi JWT dan assignment tim pada setiap operasi.
 - **API Architecture**: Frontend (`app-binahub`) tidak mengakses Supabase langsung — semua operasi data dikirim ke `binahub-api` via HTTP fetch. `ApiFetchBridge` di root layout otomatis meng-intercept `/api/*` calls, mengarahkan ke backend, dan menyisipkan auth token.
 - **Real-time dashboard**: Auto-refresh setiap 30 detik via `setInterval` di client (bukan Supabase Realtime). Cukup untuk kebutuhan saat ini.

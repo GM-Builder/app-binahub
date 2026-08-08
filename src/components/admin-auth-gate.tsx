@@ -23,13 +23,9 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        const role = profile?.role || session.user.user_metadata?.role || "admin";
+        const response = await fetch("/api/auth/role");
+        const result = await response.json();
+        const role = response.ok && result.success ? result.role : null;
 
         if (role !== "admin") {
           if (alive) router.replace("/login");
@@ -38,7 +34,7 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
 
         if (alive) setAllowed(true);
       } catch {
-        if (alive) setAllowed(true);
+        if (alive) router.replace("/");
       }
     }
 
@@ -77,13 +73,9 @@ export function PermissionGate({ children, allowedRoles, fallback }: PermissionG
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      const userRole = (profile?.role || session.user.user_metadata?.role || "peserta") as AppRole;
+      const response = await fetch("/api/auth/role");
+      const result = await response.json();
+      const userRole = (response.ok && result.success ? result.role : "peserta") as AppRole;
       if (alive) setGranted(allowedRoles.includes(userRole));
     }
 

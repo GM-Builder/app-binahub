@@ -58,11 +58,11 @@ Status: ✅ Final — diselaraskan dengan Supabase migration `0005_tbos_tables.s
 | profile_id | uuid | FK → profiles (role `peserta`) |
 | member_name | text | Nama anggota |
 
-### `tbos_facilitator_missions`
+### `tbos_facilitator_teams`
 | Kolom | Tipe | Keterangan |
 |---|---|---|
 | profile_id | uuid | FK → profiles (role `facilitator`) |
-| mission_id | uuid | FK → tbos_missions |
+| team_id | uuid | FK → tbos_teams |
 
 ### `tbos_observations`
 | Kolom | Tipe | Keterangan |
@@ -107,7 +107,7 @@ Status: ✅ Final — diselaraskan dengan Supabase migration `0005_tbos_tables.s
 tbos_teams 1---N tbos_observations N---1 tbos_missions
 tbos_observations 1---N tbos_observation_scores N---1 tbos_behavioral_dimensions
 tbos_missions N---N tbos_behavioral_dimensions (via tbos_mission_dimensions)
-profiles(facilitator) N---N tbos_missions (via tbos_facilitator_missions)
+profiles(facilitator) N---N tbos_teams (via tbos_facilitator_teams)
 tbos_teams N---N profiles(peserta) (via tbos_team_members)
 tbos_observations 1---N tbos_observation_audit_log
 ```

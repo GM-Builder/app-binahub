@@ -125,7 +125,7 @@ export default function HomePage() {
   const quickLinks: Record<string, { href: string; label: string; desc: string; icon: any }[]> = {
     admin: [
       {
-        href: "/admin?tab=T-BOS",
+        href: "/admin/tbos",
         label: "T-BOS",
         desc: "Radar chart, heatmap, ranking tim & laporan eksekutif.",
         icon: Trophy,
@@ -267,7 +267,7 @@ export default function HomePage() {
             {role === "admin" && (
               <div className="flex items-center gap-2">
                 <Link
-                  href="/admin?tab=T-BOS"
+                  href="/admin/tbos"
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-br from-[#0B2C6B] to-[#071B3D] text-white text-xs font-semibold shadow-md shadow-[#0B2C6B]/20 hover:brightness-110 transition-all"
                 >
                   <Trophy className="w-3.5 h-3.5 text-[#D9A441]" />

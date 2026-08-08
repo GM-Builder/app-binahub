@@ -21,13 +21,9 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
       }
 
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        const role = profile?.role || session.user.user_metadata?.role || "facilitator";
+        const response = await fetch("/api/auth/role");
+        const result = await response.json();
+        const role = response.ok && result.success ? result.role : null;
 
         if (role !== "facilitator" && role !== "admin") {
           if (alive) router.replace("/login");
@@ -36,7 +32,7 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
 
         if (alive) setAllowed(true);
       } catch {
-        if (alive) setAllowed(true); // Allow fallback if session exists
+        if (alive) router.replace("/");
       }
     }
 
