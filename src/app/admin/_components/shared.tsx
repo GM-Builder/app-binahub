@@ -324,41 +324,6 @@ export function StatCard({
   );
 }
 
-export function WorkflowStrip({ steps }: { steps: Array<{ title: string; description: string }> }) {
-  return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {steps.map((step, index) => (
-        <div key={step.title} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
-          <div className="mb-2.5 flex items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#0B2C6B] text-xs font-bold text-white">
-              {index + 1}
-            </span>
-            <p className="text-xs font-bold text-slate-900">{step.title}</p>
-          </div>
-          <p className="text-xs leading-relaxed text-slate-500">{step.description}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function GuidancePanel({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="mb-5 rounded-2xl border border-[#D9A441]/30 bg-[#FFF8EA]/70 p-4">
-      <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#9B6C17]">
-        <ShieldCheck size={14} /> {title}
-      </p>
-      <div className="grid gap-2 md:grid-cols-3">
-        {items.map((item) => (
-          <p key={item} className="rounded-xl border border-[#D9A441]/20 bg-white/80 px-3.5 py-2.5 text-xs leading-relaxed text-slate-700 shadow-xs">
-            {item}
-          </p>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function CompactStatusPill({
   label,
   value,

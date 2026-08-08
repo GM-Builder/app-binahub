@@ -33,13 +33,6 @@ export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: s
   },
 };
 
-export const ADMIN_WORKFLOW_STEPS = [
-  { title: "Prioritaskan", description: "Mulai dari badge baru, smart action pending, dan follow-up jatuh tempo." },
-  { title: "Review", description: "Buka detail sebelum aksi kirim email, invitation, proposal, atau penghapusan data." },
-  { title: "Catat", description: "Perbarui status dan catatan internal setelah ada progres agar tim berikutnya paham konteks." },
-  { title: "Verifikasi", description: "Refresh dashboard dan pastikan perubahan masuk ke modul yang tepat." },
-] as const;
-
 export const ASSOCIATE_CATEGORIES = [
   "Assessor (Insight)",
   "Facilitator (Play)",

@@ -229,15 +229,8 @@ export default function AdminDashboardPage() {
             {/* Modules & Workflows */}
             <div className="mt-6 border-t border-slate-800/80 pt-4 space-y-1">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Sistem &amp; Observasi
+                Operasional Lapangan
               </p>
-              <Link
-                href="/admin/tbos"
-                className="flex items-center justify-between rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
-              >
-                <span>T-BOS Analytics</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D9A441]/20 text-[#D9A441] font-semibold">Live</span>
-              </Link>
               <Link
                 href="/admin/users"
                 className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
