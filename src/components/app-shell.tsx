@@ -7,19 +7,15 @@ import { useRouter, usePathname } from "next/navigation";
 import { usePageTracking } from "@/hooks/use-analytics";
 import {
   ArrowUpRight,
-  BarChart3,
   ClipboardCheck,
   ClipboardList,
   Eye,
   FileClock,
-  FileText,
   HelpCircle,
   Home,
   Lightbulb,
   LogOut,
   Menu,
-  RadioTower,
-  ShieldCheck,
   Target,
   Trophy,
   UsersRound,
@@ -52,19 +48,15 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   facilitator: [
-    { href: "/facilitator/dashboard", label: "Dashboard", icon: <Home size={16} /> },
-    { href: "/fasilitator/tbos", label: "T-BOS Observasi", icon: <ClipboardCheck size={16} /> },
+    { href: "/fasilitator/tbos", label: "Observasi", icon: <ClipboardCheck size={16} /> },
     { href: "/fasilitator/tbos/observations", label: "Riwayat Observasi", icon: <Eye size={16} /> },
-    { href: "/facilitator/engagements", label: "Program Saya", icon: <ArrowUpRight size={16} /> },
-    { href: "/facilitator/participants", label: "Peserta", icon: <UsersRound size={16} /> },
-    { href: "/facilitator/evidence", label: "Pengamatan", icon: <Eye size={16} /> },
-    { href: "/facilitator/reviews", label: "Antrian Penilaian", icon: <ShieldCheck size={16} /> },
-    { href: "/facilitator/reports", label: "Laporan", icon: <FileText size={16} /> },
-    { href: "/facilitator/events", label: "Antrian Kejadian", icon: <RadioTower size={16} /> },
-    { href: "/facilitator/statistics", label: "Statistik", icon: <BarChart3 size={16} /> },
-    { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
 };
+
+const tbosAdminNav = [
+  { href: "/admin/tbos", label: "Dashboard T-BOS", icon: <Trophy size={16} /> },
+  { href: "/fasilitator/tbos/observations", label: "Kelola Observasi", icon: <Eye size={16} /> },
+];
 
 const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon: React.ReactNode }[]>> = {
   peserta: [
@@ -92,11 +84,13 @@ export function AppShell({
   role,
   title,
   eyebrow,
+  navigation = "default",
   children,
 }: {
   role: Role;
   title: string;
   eyebrow: string;
+  navigation?: "default" | "tbos";
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -107,7 +101,10 @@ export function AppShell({
   const [showMobileNav, setShowMobileNav] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const tipsPanelRef = useRef<HTMLDivElement>(null);
-  const mobileItems = mobileNavByRole[role] || [];
+  const navigationItems = navigation === "tbos" && role === "admin" ? tbosAdminNav : navByRole[role];
+  const mobileItems = navigation === "tbos" && role === "admin"
+    ? tbosAdminNav.map((item) => ({ ...item, icon: item.href === "/admin/tbos" ? <Trophy size={20} /> : <Eye size={20} /> }))
+    : mobileNavByRole[role] || [];
   const roleHomeHref = role === "facilitator" ? "/home" : role === "admin" ? "/admin" : `/${role}/dashboard`;
   const showBackLink = pathname !== roleHomeHref && pathname !== "/facilitator/dashboard";
 
@@ -177,7 +174,7 @@ export function AppShell({
             </p>
           </Link>
           <nav className="flex flex-col gap-2" aria-label="Navigasi utama">
-            {navByRole[role].map((item) => {
+            {navigationItems.map((item) => {
               const isActive = routeIsActive(pathname, item.href);
               return (
                 <Link
@@ -224,7 +221,7 @@ export function AppShell({
                 </button>
               </div>
               <nav className="flex flex-col gap-2" aria-label="Navigasi mobile">
-                {navByRole[role].map((item) => {
+                {navigationItems.map((item) => {
                    const isActive = routeIsActive(pathname, item.href);
                   return (
                     <Link
@@ -274,16 +271,16 @@ export function AppShell({
               <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#0B2C6B] sm:text-3xl">{title}</h1>
             </div>
             <div className="flex items-center gap-2">
-               <button
+              {navigation !== "tbos" && <button
                  type="button"
                 onClick={() => setShowTips(!showTips)}
                 aria-expanded={showTips}
                 aria-label="Tampilkan tips"
                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/10 px-3 py-1.5 text-xs font-semibold text-[#0B2C6B]/70 hover:bg-[#F5F7FA] lg:hidden"
-              >
-                <Lightbulb size={12} />
-                <span className="hidden sm:inline">Tips</span>
-              </button>
+               >
+                 <Lightbulb size={12} />
+                 <span className="hidden sm:inline">Tips</span>
+              </button>}
                <button
                  type="button"
                 onClick={() => setShowMobileNav(true)}
@@ -299,11 +296,11 @@ export function AppShell({
         </header>
         <div className="flex gap-6 px-4 py-6 sm:px-6 lg:px-6">
           <div className="min-w-0 flex-1">{children}</div>
-          <aside className="hidden w-64 shrink-0 lg:block">
+          {navigation !== "tbos" && <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-6">
               <HelpSidebar currentPath={pathname} />
             </div>
-          </aside>
+          </aside>}
         </div>
       </main>
 
@@ -327,7 +324,7 @@ export function AppShell({
         </nav>
       )}
 
-      {showTips && (
+      {navigation !== "tbos" && showTips && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowTips(false)} />
            <div ref={tipsPanelRef} role="dialog" aria-modal="true" aria-label="Tips halaman" className="absolute right-0 top-0 h-full w-80 overflow-y-auto bg-white p-4 shadow-xl">

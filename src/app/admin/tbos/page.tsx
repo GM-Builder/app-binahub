@@ -14,6 +14,8 @@ import {
   FileSpreadsheet,
   RefreshCw,
   Plus,
+  UserPlus,
+  UsersRound,
   Lock,
   Eye,
   Check,
@@ -24,7 +26,7 @@ import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam } from "@/modules/tbos/api-client";
-import type { TbosObservation, TbosDashboardData } from "@/modules/tbos/types";
+import type { TbosDashboardData } from "@/modules/tbos/types";
 import { TbosRadarChart } from "./_components/radar-chart";
 import { TbosHeatmap } from "./_components/heatmap";
 import { TbosRanking } from "./_components/ranking";
@@ -45,7 +47,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 export default function TbosDashboardPage() {
   return (
     <AdminAuthGate>
-      <AppShell role="admin" title="T-BOS Dashboard" eyebrow="Team Behavioral Observation System">
+      <AppShell role="admin" navigation="tbos" title="T-BOS Dashboard" eyebrow="Team Behavioral Observation System">
         <TbosDashboardContent />
       </AppShell>
     </AdminAuthGate>
@@ -66,6 +68,15 @@ function TbosDashboardContent() {
   const [createTeamError, setCreateTeamError] = useState("");
   const [createTeamSuccess, setCreateTeamSuccess] = useState(false);
 
+  // Facilitator assignment state
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [facilitators, setFacilitators] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
+  const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [assignmentError, setAssignmentError] = useState("");
+  const [assignmentSuccess, setAssignmentSuccess] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
@@ -80,8 +91,50 @@ function TbosDashboardContent() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    void Promise.resolve().then(fetchData);
   }, [fetchData]);
+
+  const openAssignmentModal = async () => {
+    setAssignmentError("");
+    setAssignmentSuccess(false);
+    try {
+      const response = await fetch("/api/users");
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat fasilitator.");
+      const available = (result.users as Array<{ id: string; full_name: string; email: string; role: string }>)
+        .filter((user) => user.role === "facilitator");
+      setFacilitators(available);
+      setSelectedFacilitatorId(available[0]?.id || "");
+      setSelectedTeamId(dashboardData?.teams[0]?.teamId || "");
+      setShowAssignmentModal(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat fasilitator.");
+    }
+  };
+
+  const handleAssignFacilitator = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedFacilitatorId || !selectedTeamId) {
+      setAssignmentError("Pilih fasilitator dan tim terlebih dahulu.");
+      return;
+    }
+    setAssigning(true);
+    setAssignmentError("");
+    try {
+      const response = await fetch("/api/tbos/teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ facilitatorId: selectedFacilitatorId, teamId: selectedTeamId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal menugaskan fasilitator.");
+      setAssignmentSuccess(true);
+    } catch (err) {
+      setAssignmentError(err instanceof Error ? err.message : "Gagal menugaskan fasilitator.");
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   // Auto-refresh every 30 seconds for near real-time updates
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -97,10 +150,6 @@ function TbosDashboardContent() {
       if (refreshTimer.current) clearInterval(refreshTimer.current);
     };
   }, [fetchData]);
-
-  useEffect(() => {
-    setLastUpdated(new Date());
-  }, [dashboardData]);
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,6 +269,13 @@ function TbosDashboardContent() {
             <Plus className="w-3.5 h-3.5" />
             Tambah Tim
           </button>
+          <button
+            onClick={openAssignmentModal}
+            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-[#D9A441] px-3 py-2 text-xs font-semibold text-[#071B3D] transition-colors hover:bg-[#C89432]"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            Tugaskan Fasilitator
+          </button>
           <Link
             href="/fasilitator/tbos/observations"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#0B2C6B] bg-[#0B2C6B]/[0.04] text-xs font-semibold hover:bg-[#0B2C6B]/[0.08] transition-colors"
@@ -313,6 +369,89 @@ function TbosDashboardContent() {
           onClose={() => setShowAddTeamModal(false)}
         />
       )}
+      {showAssignmentModal && (
+        <AssignmentModal
+          facilitators={facilitators}
+          teams={dashboardData.teams.map((team) => ({ id: team.teamId, name: team.teamName, batch: team.batch }))}
+          facilitatorId={selectedFacilitatorId}
+          teamId={selectedTeamId}
+          setFacilitatorId={setSelectedFacilitatorId}
+          setTeamId={setSelectedTeamId}
+          loading={assigning}
+          error={assignmentError}
+          success={assignmentSuccess}
+          onSubmit={handleAssignFacilitator}
+          onClose={() => setShowAssignmentModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AssignmentModal({
+  facilitators,
+  teams,
+  facilitatorId,
+  teamId,
+  setFacilitatorId,
+  setTeamId,
+  loading,
+  error,
+  success,
+  onSubmit,
+  onClose,
+}: {
+  facilitators: Array<{ id: string; full_name: string; email: string }>;
+  teams: Array<{ id: string; name: string; batch: string }>;
+  facilitatorId: string;
+  teamId: string;
+  setFacilitatorId: (value: string) => void;
+  setTeamId: (value: string) => void;
+  loading: boolean;
+  error: string;
+  success: boolean;
+  onSubmit: (event: React.FormEvent) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="assignment-title">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-4">
+          <div className="flex items-center gap-2">
+            <UsersRound className="h-5 w-5 text-[#0B2C6B]" />
+            <h2 id="assignment-title" className="font-bold text-[#0B2C6B]">Tugaskan Fasilitator</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Tutup penugasan" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <form onSubmit={onSubmit} className="space-y-4 p-5">
+          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+          {success && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Fasilitator berhasil ditugaskan.</p>}
+          {facilitators.length === 0 ? (
+            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada akun dengan role fasilitator.</p>
+          ) : (
+            <div>
+              <label htmlFor="tbos-facilitator" className="mb-1.5 block text-xs font-semibold text-[#0B2C6B]">Fasilitator</label>
+              <select id="tbos-facilitator" value={facilitatorId} onChange={(event) => setFacilitatorId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+                {facilitators.map((facilitator) => <option key={facilitator.id} value={facilitator.id}>{facilitator.full_name || facilitator.email}</option>)}
+              </select>
+            </div>
+          )}
+          <div>
+            <label htmlFor="tbos-team" className="mb-1.5 block text-xs font-semibold text-[#0B2C6B]">Tim</label>
+            <select id="tbos-team" value={teamId} onChange={(event) => setTeamId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+              {teams.map((team) => <option key={team.id} value={team.id}>{team.name} ({team.batch})</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold">Batal</button>
+            <button type="submit" disabled={loading || success || facilitators.length === 0} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
+              {loading ? "Menyimpan..." : "Simpan Penugasan"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -477,7 +616,6 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
     } catch (err) {
       console.error("[T-BOS] CSV export failed:", err);
     } finally {
-      setExporting("null" as any);
       setExporting(null);
     }
   };

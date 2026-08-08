@@ -8,7 +8,7 @@ export default function FacilitatorDashboardRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/home");
+    router.replace("/fasilitator/tbos");
   }, [router]);
 
   return (
