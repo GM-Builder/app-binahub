@@ -9,7 +9,6 @@ import {
   Badge,
   ConfirmDialog,
   EmptyState,
-  GuidancePanel,
   MetricBar,
   Panel,
 } from "./shared";
@@ -193,14 +192,6 @@ export function AssessmentPanel({
       )}
       {emailPreview && <EmailPreviewModal preview={emailPreview} onClose={() => setEmailPreview(null)} />}
       {actionError && <AdminNotice>{actionError}</AdminNotice>}
-      <GuidancePanel
-        title="Panduan Assessment"
-        items={[
-          "Buka detail klien untuk melihat skor, status, email, dan rekomendasi AI dalam satu tempat.",
-          "Kirim Result, Proposal, dan Follow Up akan meminta konfirmasi dulu karena dapat mengirim email ke klien.",
-          "Gunakan filter follow-up dan high potential untuk menentukan prioritas harian admin.",
-        ]}
-      />
       <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_150px_auto]">
         <div className="relative max-w-md flex-1">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30" />

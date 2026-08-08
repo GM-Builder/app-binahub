@@ -5,7 +5,7 @@ import { Mail, Phone, Save } from "lucide-react";
 import { FOLLOW_UP_LEVELS, INQUIRY_STATUS_OPTIONS, NOTE_PRESETS } from "../_lib/constants";
 import type { ConfirmAction, InquiryRecord } from "../_lib/types";
 import { daysSince, formatDate, uniqueOptions } from "../_lib/utils";
-import { AdminNotice, AdminSearch, AdminSelect, Badge, ConfirmDialog, GuidancePanel, Panel, PresetButtons } from "./shared";
+import { AdminNotice, AdminSearch, AdminSelect, Badge, ConfirmDialog, Panel, PresetButtons } from "./shared";
 
 export function InquiriesPanel({
   inquiries,
@@ -84,14 +84,6 @@ export function InquiriesPanel({
         />
       )}
       {actionError && <AdminNotice>{actionError}</AdminNotice>}
-      <GuidancePanel
-        title="Panduan Inquiry"
-        items={[
-          "Prioritaskan inquiry baru yang sudah H+2 atau memiliki kebutuhan jelas di pesannya.",
-          "Follow-up manual akan meminta konfirmasi karena sistem mengirim email AI ke kontak inquiry.",
-          "Simpan status dan catatan setelah menghubungi klien agar pipeline kontak tetap rapi.",
-        ]}
-      />
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         {FOLLOW_UP_LEVELS.map((item) => (
           <div key={item.level} className="rounded-[12px] border border-black/[0.05] bg-[#FFF8EA] p-4">

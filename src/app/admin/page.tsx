@@ -11,7 +11,7 @@ import { ContactsPanel } from "./_components/contacts-panel";
 import { InquiriesPanel } from "./_components/inquiries-panel";
 import { Overview } from "./_components/overview";
 import { SmartCenterPanel } from "./_components/smart-center-panel";
-import { DashboardSkeleton, ModuleHero, NotificationBadge } from "./_components/shared";
+import { DashboardSkeleton, NotificationBadge } from "./_components/shared";
 import { TAB_META, tabs } from "./_lib/constants";
 import { isProjectCompleted } from "./_lib/utils";
 import type { DashboardData } from "./_lib/types";
@@ -314,16 +314,6 @@ export default function AdminDashboardPage() {
               <DashboardSkeleton />
             ) : (
               <>
-                {activeTab !== "Overview" && (
-                  <div className="mb-6">
-                    <ModuleHero
-                      eyebrow="Workspace context"
-                      title={activeMeta.title}
-                      description={activeMeta.description}
-                      stats={focusStats}
-                    />
-                  </div>
-                )}
                 {activeTab === "Overview" && <Overview data={data} />}
                 {activeTab === "Automation Center" && (
                   <SmartCenterPanel data={data} onAction={adminRequest} onRefresh={fetchDashboard} />

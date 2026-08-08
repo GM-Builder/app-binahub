@@ -16,7 +16,6 @@ import {
   EmptyState,
   FieldLabel,
   FormSection,
-  GuidancePanel,
   HrmItem,
   HrmList,
   Panel,
@@ -459,23 +458,6 @@ export function AssociatePanel({
           icon={Layers3}
         />
       </div>
-
-      <GuidancePanel
-        title={mode === "coach" ? "Panduan Associate Network" : "Panduan Project Assignment"}
-        items={
-          mode === "coach"
-            ? [
-                "Lengkapi nama, bidang, kategori, availability, CV, LinkedIn, dan catatan sebelum associate dipakai untuk matching.",
-                "Gunakan status prospect untuk kandidat baru dan active untuk associate yang siap diundang.",
-                "Hapus data hanya jika tidak terhubung ke assignment aktif.",
-              ]
-            : [
-                "Assignment mencatat pasangan associate, klien, program, sesi, availability, dan dokumen kerja sama.",
-                "Gunakan modul ini untuk tracking delivery setelah project masuk tahap eksekusi.",
-                "Penghapusan assignment/dokumen selalu melewati konfirmasi agar tidak salah hapus data operasional.",
-              ]
-        }
-      />
 
       {mode === "coach" && (
       <div className="rounded-[8px] border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_16px_50px_-44px_rgba(11,44,107,0.28)] md:p-6">

@@ -5,7 +5,7 @@ import { Mail, Phone, Save } from "lucide-react";
 import { CONTACT_STATUS_OPTIONS, NOTE_PRESETS } from "../_lib/constants";
 import type { ContactRecord } from "../_lib/types";
 import { formatDate, getSmartContactStatus, uniqueOptions } from "../_lib/utils";
-import { AdminNotice, AdminSearch, AdminSelect, Badge, GuidancePanel, Panel, PresetButtons } from "./shared";
+import { AdminNotice, AdminSearch, AdminSelect, Badge, Panel, PresetButtons } from "./shared";
 
 export function ContactsPanel({
   contacts,
@@ -66,14 +66,6 @@ export function ContactsPanel({
   return (
     <Panel title="Master Database Kontak" action={`${filteredContacts.length}/${contacts.length} records`}>
       {actionError && <AdminNotice>{actionError}</AdminNotice>}
-      <GuidancePanel
-        title="Panduan Kontak & Leads"
-        items={[
-          "Gunakan filter source dan status untuk memisahkan lead assessment, inquiry, associate, dan kontak internal.",
-          "Status AI adalah rekomendasi prioritas; status manual tetap menjadi sumber keputusan admin.",
-          "Catatan internal sebaiknya menjawab: sudah dihubungi lewat apa, respon terakhir, dan next step.",
-        ]}
-      />
       <div className="mb-5 grid gap-3 lg:grid-cols-[1fr_160px_180px_160px]">
         <AdminSearch value={search} onChange={setSearch} placeholder="Cari nama, email, telepon, kategori..." />
         <AdminSelect value={sourceType} onChange={setSourceType} options={["Semua", ...sourceOptions]} />
