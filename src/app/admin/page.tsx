@@ -390,17 +390,29 @@ function TbosTab() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [facilitatorsList, setFacilitatorsList] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
-  const [selectedMissionId, setSelectedMissionId] = useState("mission-1");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [teamsList, setTeamsList] = useState<Array<{ id: string; name: string; batch: string }>>([]);
   const [assigning, setAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
   const [assignError, setAssignError] = useState("");
 
   const fetchData = useCallback(async () => {
     try {
-      const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
+      const { fetchDashboardRawData, fetchTeams } = await import("@/modules/tbos/api-client");
       const { teams, observations } = await fetchDashboardRawData();
       const computed = generateDashboardData(teams, observations);
       setDashboardData(computed);
+
+      // Fetch teams list for assignment dropdown
+      try {
+        const teamsData = await fetchTeams();
+        setTeamsList(teamsData);
+        if (teamsData.length > 0 && !selectedTeamId) {
+          setSelectedTeamId(teamsData[0].id);
+        }
+      } catch (err) {
+        console.warn("Could not load teams for assignment:", err);
+      }
 
       // Fetch facilitators list for assignment
       try {
@@ -425,7 +437,7 @@ function TbosTab() {
     } finally {
       setLoading(false);
     }
-  }, [selectedFacilitatorId]);
+  }, [selectedFacilitatorId, selectedTeamId]);
 
   useEffect(() => {
     fetchData();
@@ -462,8 +474,8 @@ function TbosTab() {
 
   const handleAssignFacilitator = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFacilitatorId) {
-      setAssignError("Pilih fasilitator terlebih dahulu.");
+    if (!selectedFacilitatorId || !selectedTeamId) {
+      setAssignError("Pilih fasilitator dan tim terlebih dahulu.");
       return;
     }
 
@@ -472,7 +484,7 @@ function TbosTab() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      const res = await fetch("/api/tbos/missions", {
+      const res = await fetch("/api/tbos/teams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -480,7 +492,7 @@ function TbosTab() {
         },
         body: JSON.stringify({
           facilitatorId: selectedFacilitatorId,
-          missionId: selectedMissionId,
+          teamId: selectedTeamId,
         }),
       });
       const dataRes = await res.json();
@@ -659,8 +671,8 @@ function TbosTab() {
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-left border border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Tugaskan Fasilitator ke T-BOS</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Pilih fasilitator untuk memimpin observasi 8 dimensi perilaku.</p>
+                <h3 className="text-base font-bold text-slate-900">Tugaskan Fasilitator ke Tim</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Pilih fasilitator untuk memimpin observasi tim tertentu.</p>
               </div>
               <button onClick={() => setShowAssignModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={18} />
@@ -693,17 +705,24 @@ function TbosTab() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Mission Observasi</label>
-                <select
-                  value={selectedMissionId}
-                  onChange={(e) => setSelectedMissionId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium text-slate-800"
-                >
-                  <option value="mission-1">Mission 1: Visi Bersama &amp; Mindset Bertumbuh</option>
-                  <option value="mission-2">Mission 2: Komunikasi Terbuka &amp; Koordinasi Lintas Fungsi</option>
-                  <option value="mission-3">Mission 3: Pemecahan Masalah &amp; Pengambilan Keputusan</option>
-                  <option value="mission-4">Mission 4: Eksekusi Tangkas &amp; Resiliensi Tim</option>
-                </select>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Pilih Tim untuk Diobservasi</label>
+                {teamsList.length === 0 ? (
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                    Belum ada tim yang terdaftar. Tambahkan tim terlebih dahulu.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedTeamId}
+                    onChange={(e) => setSelectedTeamId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium text-slate-800"
+                  >
+                    {teamsList.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name} ({team.batch})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -716,7 +735,7 @@ function TbosTab() {
                 </button>
                 <button
                   type="submit"
-                  disabled={assigning || facilitatorsList.length === 0}
+                  disabled={assigning || facilitatorsList.length === 0 || teamsList.length === 0}
                   className="flex-1 py-2 text-xs font-semibold rounded-xl bg-gradient-to-br from-[#0B2C6B] to-[#C79A3C] text-white disabled:opacity-50 hover:brightness-110 transition-all"
                 >
                   {assigning ? "Menugaskan..." : "Simpan Penugasan"}
