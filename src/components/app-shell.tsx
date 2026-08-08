@@ -49,9 +49,9 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   facilitator: [
-    { href: "/fasilitator/tbos", label: "Observasi", icon: <ClipboardCheck size={16} /> },
-    { href: "/fasilitator/tbos/observations", label: "Riwayat Observasi", icon: <Eye size={16} /> },
-    { href: "/fasilitator/tbos/results", label: "Hasil", icon: <BarChart3 size={16} /> },
+    { href: "/fasilitator/tbos", label: "Form Observasi", icon: <ClipboardCheck size={16} /> },
+    { href: "/fasilitator/tbos/observations", label: "Kelola & Lihat", icon: <Eye size={16} /> },
+    { href: "/fasilitator/tbos/results", label: "Hasil & Statistik", icon: <BarChart3 size={16} /> },
   ],
 };
 
@@ -66,8 +66,8 @@ const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon:
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={20} /> },
   ],
   facilitator: [
-    { href: "/fasilitator/tbos", label: "Observasi", icon: <ClipboardCheck size={20} /> },
-    { href: "/fasilitator/tbos/observations", label: "Riwayat", icon: <Eye size={20} /> },
+    { href: "/fasilitator/tbos", label: "Form", icon: <ClipboardCheck size={20} /> },
+    { href: "/fasilitator/tbos/observations", label: "Kelola & Lihat", icon: <Eye size={20} /> },
     { href: "/fasilitator/tbos/results", label: "Hasil", icon: <BarChart3 size={20} /> },
   ],
   admin: [
@@ -295,6 +295,44 @@ export function AppShell({
               </button>
             </div>
           </div>
+
+          {(role as string) === "facilitator" && (
+            <div className="mt-4 flex gap-1 p-1 bg-[#0B2C6B]/[0.04] rounded-xl overflow-x-auto">
+              <Link
+                href="/fasilitator/tbos"
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
+                  pathname === "/fasilitator/tbos"
+                    ? "bg-[#0B2C6B] text-white shadow-sm"
+                    : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
+                }`}
+              >
+                <ClipboardCheck size={16} />
+                Form Observasi
+              </Link>
+              <Link
+                href="/fasilitator/tbos/observations"
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
+                  pathname.startsWith("/fasilitator/tbos/observations")
+                    ? "bg-[#0B2C6B] text-white shadow-sm"
+                    : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
+                }`}
+              >
+                <Eye size={16} />
+                Kelola & Lihat
+              </Link>
+              <Link
+                href="/fasilitator/tbos/results"
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
+                  pathname.startsWith("/fasilitator/tbos/results")
+                    ? "bg-[#0B2C6B] text-white shadow-sm"
+                    : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
+                }`}
+              >
+                <BarChart3 size={16} />
+                Hasil & Statistik
+              </Link>
+            </div>
+          )}
         </header>
         <div className="flex gap-6 px-4 py-6 sm:px-6 lg:px-6">
           <div className="min-w-0 flex-1">{children}</div>

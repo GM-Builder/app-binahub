@@ -10,20 +10,20 @@ interface Props {
 
 function getScoreColor(score: number | null): string {
   if (score === null) return "#F1F5F9";
-  if (score >= 4.5) return "#16A34A";
-  if (score >= 3.5) return "#65A30D";
-  if (score >= 2.5) return "#CA8A04";
-  if (score >= 1.5) return "#EA580C";
-  return "#DC2626";
+  if (score >= 4.5) return "#10B981";
+  if (score >= 3.5) return "#84CC16";
+  if (score >= 2.5) return "#F59E0B";
+  if (score >= 1.5) return "#F97316";
+  return "#EF4444";
 }
 
 function getScoreBg(score: number | null): string {
-  if (score === null) return "bg-gray-50 text-gray-400";
-  if (score >= 4.5) return "bg-green-100 text-green-800";
-  if (score >= 3.5) return "bg-lime-100 text-lime-800";
-  if (score >= 2.5) return "bg-yellow-100 text-yellow-800";
-  if (score >= 1.5) return "bg-orange-100 text-orange-800";
-  return "bg-red-100 text-red-800";
+  if (score === null) return "bg-gray-50 text-gray-300";
+  if (score >= 4.5) return "bg-emerald-500 text-white";
+  if (score >= 3.5) return "bg-lime-500 text-white";
+  if (score >= 2.5) return "bg-amber-400 text-white";
+  if (score >= 1.5) return "bg-orange-500 text-white";
+  return "bg-red-500 text-white";
 }
 
 export function TbosHeatmap({ teams }: Props) {
@@ -48,21 +48,25 @@ export function TbosHeatmap({ teams }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-black/[0.04]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-[#0B2C6B]">
-          Heatmap Perbandingan Tim
-        </h3>
+    <div className="bg-white rounded-2xl border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
+        <div>
+          <h3 className="text-base font-bold text-[#0B2C6B]">
+            Heatmap Perbandingan Tim
+          </h3>
+          <p className="text-xs text-[#4A4C54]/70 mt-0.5">{filteredTeams.length} tim · {DIMENSION_LIST.length} dimensi</p>
+        </div>
         {batches.length > 2 && (
-          <div className="flex gap-1">
+          <div className="flex gap-1 p-1 bg-[#0B2C6B]/[0.04] rounded-xl">
             {batches.map((batch) => (
               <button
                 key={batch}
                 onClick={() => setBatchFilter(batch)}
-                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                   batchFilter === batch
-                    ? "bg-[#0B2C6B] text-white"
-                    : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/60 hover:bg-[#0B2C6B]/[0.1]"
+                    ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]"
+                    : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
                 }`}
               >
                 {batch === "all" ? "Semua" : batch}
@@ -72,25 +76,26 @@ export function TbosHeatmap({ teams }: Props) {
         )}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      {/* Heatmap Table */}
+      <div className="overflow-x-auto p-4">
+        <table className="w-full border-separate" style={{ borderSpacing: "3px" }}>
           <thead>
             <tr>
-              <th className="sticky left-0 bg-white text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase whitespace-nowrap">
+              <th className="sticky left-0 z-10 bg-white text-left py-3 px-3 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide whitespace-nowrap rounded-lg">
                 Tim
               </th>
               {DIMENSION_LIST.map((dim) => (
                 <th
                   key={dim.code}
-                  className="text-center py-2 px-2 text-xs font-medium text-[#4A4C54] uppercase"
-                  style={{ minWidth: 80 }}
+                  className="text-center py-2.5 px-1.5 text-xs font-semibold text-[#0B2C6B]/70 uppercase"
+                  style={{ minWidth: 88 }}
                 >
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] leading-tight">{dim.name}</span>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span className="text-[10px] leading-tight font-bold">{dim.name}</span>
                   </div>
                 </th>
               ))}
-              <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">
+              <th className="text-center py-2.5 px-3 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">
                 Avg
               </th>
             </tr>
@@ -104,20 +109,20 @@ export function TbosHeatmap({ teams }: Props) {
                   : null;
 
               return (
-                <tr key={team.teamId} className="border-t border-black/[0.04]">
-                  <td className="sticky left-0 bg-white py-2.5 px-3">
+                <tr key={team.teamId} className="group">
+                  <td className="sticky left-0 z-10 bg-white py-2 px-3 rounded-lg group-hover:bg-[#0B2C6B]/[0.02] transition-colors">
                     <div>
-                      <p className="text-sm font-medium text-[#0B2C6B] whitespace-nowrap">{team.teamName}</p>
-                      <p className="text-[10px] text-[#4A4C54]">{team.batch}</p>
+                      <p className="text-sm font-semibold text-[#0B2C6B] whitespace-nowrap">{team.teamName}</p>
+                      <p className="text-[10px] text-[#4A4C54]/60 font-medium">{team.batch}</p>
                     </div>
                   </td>
                   {DIMENSION_LIST.map((dim) => {
                     const dimScore = team.dimensionAverages.find((d) => d.dimensionCode === dim.code);
                     const score = dimScore?.score ?? null;
                     return (
-                      <td key={dim.code} className="text-center py-2 px-1">
+                      <td key={dim.code} className="text-center py-1 px-1">
                         <div
-                          className={`w-full h-10 rounded-md flex items-center justify-center text-xs font-bold ${getScoreBg(score)}`}
+                          className={`w-full h-12 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-200 hover:scale-105 hover:shadow-md cursor-default ${getScoreBg(score)}`}
                           title={score !== null ? `${dim.name}: ${score.toFixed(1)}` : "Belum diobservasi"}
                         >
                           {score !== null ? score.toFixed(1) : "—"}
@@ -125,10 +130,13 @@ export function TbosHeatmap({ teams }: Props) {
                       </td>
                     );
                   })}
-                  <td className="text-center py-2.5 px-3">
-                    <span className="text-sm font-bold text-[#0B2C6B]">
-                      {avgScore !== null ? avgScore.toFixed(1) : "-"}
-                    </span>
+                  <td className="text-center py-2 px-3">
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-[#0B2C6B]">
+                        {avgScore !== null ? avgScore.toFixed(1) : "-"}
+                      </span>
+                      <span className="text-[9px] text-[#4A4C54]/50">/5.0</span>
+                    </div>
                   </td>
                 </tr>
               );
@@ -137,26 +145,25 @@ export function TbosHeatmap({ teams }: Props) {
         </table>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 text-xs text-[#4A4C54]">
-        <span>Skala warna:</span>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-red-100" /> 1-1.4
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-orange-100" /> 1.5-2.4
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-yellow-100" /> 2.5-3.4
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-lime-100" /> 3.5-4.4
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-green-100" /> 4.5-5
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="w-4 h-4 rounded bg-gray-50 border border-gray-200" /> N/A
+      {/* Legend — Gradient bar */}
+      <div className="px-6 pb-5 pt-2">
+        <div className="flex items-center gap-3 text-xs text-[#4A4C54]">
+          <span className="font-medium text-[#0B2C6B]">Skala:</span>
+          <div className="flex items-center gap-0">
+            <span className="text-[10px] mr-1 font-medium">1.0</span>
+            <div className="flex h-3 rounded-full overflow-hidden">
+              <div className="w-10 bg-red-500" />
+              <div className="w-10 bg-orange-500" />
+              <div className="w-10 bg-amber-400" />
+              <div className="w-10 bg-lime-500" />
+              <div className="w-10 bg-emerald-500" />
+            </div>
+            <span className="text-[10px] ml-1 font-medium">5.0</span>
+          </div>
+          <div className="flex items-center gap-1 ml-2">
+            <span className="w-5 h-3 rounded bg-gray-100 border border-gray-200" />
+            <span className="text-[10px] font-medium">N/A</span>
+          </div>
         </div>
       </div>
     </div>

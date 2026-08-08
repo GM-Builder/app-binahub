@@ -21,6 +21,12 @@ import {
   Check,
   X,
   ClipboardList,
+  TrendingUp,
+  Activity,
+  Target,
+  Layers,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
@@ -308,13 +314,16 @@ function TbosDashboardContent() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Tim" value={String(dashboardData.teams.length)} />
-        <StatCard label="Total Observasi" value={String(summary?.totalObservations || 0)} />
+        <StatCard label="Total Tim" value={String(dashboardData.teams.length)} icon={<Users className="w-5 h-5" />} accent="from-blue-500/10 to-blue-600/5" iconColor="text-blue-600" />
+        <StatCard label="Total Observasi" value={String(summary?.totalObservations || 0)} icon={<Activity className="w-5 h-5" />} accent="from-emerald-500/10 to-emerald-600/5" iconColor="text-emerald-600" />
         <StatCard
           label="Dimensi Terobservasi"
           value={String(
             dashboardData.batchComparisons.filter((b) => b.batch1Avg !== null || b.batch2Avg !== null).length
           )}
+          icon={<Layers className="w-5 h-5" />}
+          accent="from-violet-500/10 to-violet-600/5"
+          iconColor="text-violet-600"
         />
         <StatCard
           label="Rata-rata Skor"
@@ -326,6 +335,9 @@ function TbosDashboardContent() {
                 ).toFixed(1)
               : "-"
           }
+          icon={<Target className="w-5 h-5" />}
+          accent="from-amber-500/10 to-amber-600/5"
+          iconColor="text-amber-600"
         />
       </div>
 
@@ -333,19 +345,19 @@ function TbosDashboardContent() {
 
       {/* Tab Navigation + Export */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1 border-b border-black/[0.06] overflow-x-auto">
+        <div className="flex gap-1 p-1 bg-[#0B2C6B]/[0.04] rounded-xl overflow-x-auto">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                 activeTab === tab.key
-                  ? "border-[#0B2C6B] text-[#0B2C6B]"
-                  : "border-transparent text-[#4A4C54] hover:text-[#0B2C6B]"
+                  ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]"
+                  : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
               }`}
             >
               {tab.icon}
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -398,34 +410,47 @@ function TbosDashboardContent() {
 
 function TeamRosterPanel({ teams }: { teams: TbosDbTeam[] }) {
   return (
-    <section className="border border-slate-200 bg-white p-5 shadow-[0_10px_28px_rgba(8,29,66,0.06)]" aria-labelledby="team-roster-title">
+    <section className="rounded-2xl border border-black/[0.04] bg-white p-5 shadow-[0_4px_24px_rgba(8,29,66,0.06)]" aria-labelledby="team-roster-title">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 id="team-roster-title" className="text-base font-bold text-[#0B2C6B]">Roster Tim & Kapten</h2>
           <p className="mt-1 text-sm text-slate-500">Anggota master yang disiapkan admin atau ditambahkan fasilitator.</p>
         </div>
-        <UsersRound className="h-5 w-5 shrink-0 text-[#D9A441]" aria-hidden="true" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D9A441]/10">
+          <UsersRound className="h-4.5 w-4.5 text-[#D9A441]" aria-hidden="true" />
+        </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {teams.map((team) => {
           const captain = team.members.find((member) => member.is_captain);
           return (
-            <article key={team.id} className="border border-slate-200 bg-[#F8F8F5] p-4">
+            <article key={team.id} className="rounded-xl border border-black/[0.04] bg-gradient-to-br from-[#F8F9FC] to-white p-4 transition-shadow hover:shadow-md">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate font-bold text-[#0B2C6B]">{team.name}</h3>
                   <p className="mt-1 text-xs text-slate-500">{team.batch} · {team.members.length} anggota</p>
                 </div>
-                <span className="shrink-0 text-xs font-semibold text-[#8A641D]">{captain ? "Ada kapten" : "Belum ada kapten"}</span>
+                <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${captain ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                  {captain ? "✓ Kapten" : "Belum ada kapten"}
+                </span>
               </div>
               {team.members.length === 0 ? (
-                <p className="mt-4 text-sm text-slate-500">Roster belum diisi.</p>
+                <p className="mt-4 text-sm text-slate-400 italic">Roster belum diisi.</p>
               ) : (
-                <ul className="mt-4 divide-y divide-slate-200 border-y border-slate-200" aria-label={`Anggota ${team.name}`}>
+                <ul className="mt-4 divide-y divide-black/[0.04]" aria-label={`Anggota ${team.name}`}>
                   {team.members.map((member) => (
                     <li key={member.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                      <span className="truncate font-medium text-slate-700">{member.member_name}</span>
-                      {member.is_captain && <span className="shrink-0 text-xs font-bold text-[#A16F12]">Kapten</span>}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0B2C6B]/[0.06] text-xs font-bold text-[#0B2C6B] shrink-0">
+                          {member.member_name?.charAt(0)?.toUpperCase() || "?"}
+                        </span>
+                        <span className="truncate font-medium text-slate-700">{member.member_name}</span>
+                      </div>
+                      {member.is_captain && (
+                        <span className="shrink-0 text-xs font-bold text-[#D9A441] bg-[#D9A441]/10 px-2 py-0.5 rounded-full">
+                          Kapten
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -616,6 +641,13 @@ function AddTeamModal({
 
 function ExportButtons({ data }: { data: TbosDashboardData }) {
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const handleExportPdf = async () => {
     setExporting("pdf");
@@ -630,8 +662,10 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
       a.download = `TBOS_Report_${new Date().toISOString().split("T")[0]}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      setToast({ type: "success", message: "PDF report berhasil diunduh." });
     } catch (err) {
       console.error("[T-BOS] PDF export failed:", err);
+      setToast({ type: "error", message: "Gagal mengekspor PDF. Coba lagi." });
     } finally {
       setExporting(null);
     }
@@ -663,48 +697,93 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
       a.download = `TBOS_Observations_${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+      setToast({ type: "success", message: "CSV data berhasil diunduh." });
     } catch (err) {
       console.error("[T-BOS] CSV export failed:", err);
+      setToast({ type: "error", message: "Gagal mengekspor CSV. Coba lagi." });
     } finally {
       setExporting(null);
     }
   };
 
   return (
-    <div className="flex gap-2 shrink-0">
-      <button
-        onClick={handleExportPdf}
-        disabled={exporting !== null}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0B2C6B] text-white text-xs font-medium hover:bg-[#071B3D] transition-colors disabled:opacity-40"
-      >
-        {exporting === "pdf" ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Download className="w-3.5 h-3.5" />
+    <>
+      <div className="flex gap-2 shrink-0">
+        <button
+          onClick={handleExportPdf}
+          disabled={exporting !== null}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-all duration-200 disabled:opacity-40 shadow-sm hover:shadow-md"
+        >
+          {exporting === "pdf" ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Download className="w-3.5 h-3.5" />
+          )}
+          PDF Report
+        </button>
+        <button
+          onClick={handleExportCsv}
+          disabled={exporting !== null}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-black/[0.08] text-[#4A4C54] text-xs font-semibold hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-all duration-200 disabled:opacity-40 hover:shadow-sm"
+        >
+          {exporting === "csv" ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+          )}
+          CSV Data
+        </button>
+      </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[60] animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}>
+            {toast.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+            )}
+            {toast.message}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function StatCard({ label, value, icon, accent, iconColor }: { label: string; value: string; icon?: React.ReactNode; accent?: string; iconColor?: string }) {
+  return (
+    <div className={`relative overflow-hidden bg-white rounded-2xl p-4 border border-black/[0.04] shadow-[0_2px_12px_rgba(8,29,66,0.04)] hover:shadow-[0_4px_20px_rgba(8,29,66,0.08)] transition-shadow duration-300`}>
+      <div className={`absolute inset-0 bg-gradient-to-br ${accent || "from-blue-500/5 to-transparent"} pointer-events-none`} />
+      <div className="relative flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-[#4A4C54]/80 mb-1.5">{label}</p>
+          <p className="text-2xl font-bold text-[#0B2C6B] tracking-tight">{value}</p>
+        </div>
+        {icon && (
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm ring-1 ring-black/[0.04] ${iconColor || "text-[#0B2C6B]"}`}>
+            {icon}
+          </div>
         )}
-        PDF
-      </button>
-      <button
-        onClick={handleExportCsv}
-        disabled={exporting !== null}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors disabled:opacity-40"
-      >
-        {exporting === "csv" ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <FileSpreadsheet className="w-3.5 h-3.5" />
-        )}
-        CSV
-      </button>
+      </div>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
+  const pct = score !== null ? Math.min((score / max) * 100, 100) : 0;
+  const color = score === null ? "bg-gray-200" : score >= 4.5 ? "bg-emerald-500" : score >= 3.5 ? "bg-lime-500" : score >= 2.5 ? "bg-amber-400" : score >= 1.5 ? "bg-orange-500" : "bg-red-500";
   return (
-    <div className="bg-white rounded-xl p-4 border border-black/[0.04]">
-      <p className="text-xs text-[#4A4C54] mb-1">{label}</p>
-      <p className="text-2xl font-bold text-[#0B2C6B]">{value}</p>
+    <div className="flex items-center gap-2 w-full">
+      <div className="flex-1 h-2 bg-black/[0.04] rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs font-bold text-[#0B2C6B] w-8 text-right tabular-nums">{score !== null ? score.toFixed(1) : "—"}</span>
     </div>
   );
 }
@@ -717,48 +796,64 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
       {/* Executive Summary */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Top Strengths */}
-        <div className="bg-white rounded-xl p-5 border border-black/[0.04]">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-green-600" />
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)]">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-l-2xl" />
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center ring-1 ring-emerald-100">
+              <TrendingUp className="w-4.5 h-4.5 text-emerald-600" />
             </div>
-            <h3 className="text-sm font-semibold text-[#0B2C6B]">3 Kekuatan Utama</h3>
+            <div>
+              <h3 className="text-sm font-bold text-[#0B2C6B]">3 Kekuatan Utama</h3>
+              <p className="text-[10px] text-[#4A4C54]/60">Dimensi perilaku terbaik</p>
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3.5">
             {summary.topStrengths.length === 0 && (
-              <p className="text-xs text-[#4A4C54]">Belum ada data.</p>
+              <p className="text-xs text-[#4A4C54] italic">Belum ada data.</p>
             )}
             {summary.topStrengths.map((dim, i) => (
-              <div key={dim.dimensionCode} className="flex items-center gap-3">
-                <span className="w-5 h-5 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
-                <span className="flex-1 text-sm text-[#4A4C54]">{dim.dimensionName}</span>
-                <span className="text-sm font-bold text-[#0B2C6B]">{dim.score?.toFixed(1)}</span>
+              <div key={dim.dimensionCode} className="space-y-1.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-[#0B2C6B]">{dim.dimensionName}</span>
+                </div>
+                <div className="ml-8">
+                  <ScoreBar score={dim.score} />
+                </div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Development Areas */}
-        <div className="bg-white rounded-xl p-5 border border-black/[0.04]">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-amber-600" />
+        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)]">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-amber-600 rounded-l-2xl" />
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center ring-1 ring-amber-100">
+              <Target className="w-4.5 h-4.5 text-amber-600" />
             </div>
-            <h3 className="text-sm font-semibold text-[#0B2C6B]">3 Area Pengembangan</h3>
+            <div>
+              <h3 className="text-sm font-bold text-[#0B2C6B]">3 Area Pengembangan</h3>
+              <p className="text-[10px] text-[#4A4C54]/60">Prioritas pengembangan</p>
+            </div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3.5">
             {summary.developmentAreas.length === 0 && (
-              <p className="text-xs text-[#4A4C54]">Belum ada data.</p>
+              <p className="text-xs text-[#4A4C54] italic">Belum ada data.</p>
             )}
             {summary.developmentAreas.map((dim, i) => (
-              <div key={dim.dimensionCode} className="flex items-center gap-3">
-                <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">
-                  {i + 1}
-                </span>
-                <span className="flex-1 text-sm text-[#4A4C54]">{dim.dimensionName}</span>
-                <span className="text-sm font-bold text-[#0B2C6B]">{dim.score?.toFixed(1)}</span>
+              <div key={dim.dimensionCode} className="space-y-1.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">
+                    {i + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-[#0B2C6B]">{dim.dimensionName}</span>
+                </div>
+                <div className="ml-8">
+                  <ScoreBar score={dim.score} />
+                </div>
               </div>
             ))}
           </div>
@@ -766,37 +861,61 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
       </div>
 
       {/* Quick Team Overview */}
-      <div className="bg-white rounded-xl p-5 border border-black/[0.04]">
-        <h3 className="text-sm font-semibold text-[#0B2C6B] mb-4">Ringkasan Tim</h3>
+      <div className="bg-white rounded-2xl border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-black/[0.04]">
+          <h3 className="text-sm font-bold text-[#0B2C6B]">Ringkasan Tim</h3>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-black/[0.06]">
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Tim</th>
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Batch</th>
-                <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Skor</th>
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Kekuatan</th>
-                <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Area Dev.</th>
-                <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Obs.</th>
+              <tr className="bg-[#0B2C6B]/[0.03]">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Tim</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Batch</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Skor</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kekuatan</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Area Dev.</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Obs.</th>
               </tr>
             </thead>
             <tbody>
-              {data.teams.map((team) => (
-                <tr key={team.teamId} className="border-b border-black/[0.03] hover:bg-black/[0.01]">
-                  <td className="py-2.5 px-3 font-medium text-[#0B2C6B]">{team.teamName}</td>
-                  <td className="py-2.5 px-3 text-[#4A4C54]">{team.batch}</td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span className="font-bold text-[#0B2C6B]">
+              {data.teams.map((team, idx) => (
+                <tr key={team.teamId} className={`border-b border-black/[0.03] hover:bg-[#0B2C6B]/[0.02] transition-colors ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
+                  <td className="py-3 px-4 font-semibold text-[#0B2C6B]">{team.teamName}</td>
+                  <td className="py-3 px-4">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/70">{team.batch}</span>
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={`inline-flex items-center justify-center min-w-[2.5rem] px-2 py-0.5 rounded-lg text-sm font-bold ${
+                      team.overallTeamScore !== null && team.overallTeamScore >= 4.0
+                        ? "bg-emerald-50 text-emerald-700"
+                        : team.overallTeamScore !== null && team.overallTeamScore >= 3.0
+                        ? "bg-blue-50 text-blue-700"
+                        : team.overallTeamScore !== null
+                        ? "bg-amber-50 text-amber-700"
+                        : "text-gray-400"
+                    }`}>
                       {team.overallTeamScore !== null ? team.overallTeamScore.toFixed(1) : "-"}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-xs text-[#4A4C54]">
-                    {team.strongestDimension?.dimensionName || "-"}
+                  <td className="py-3 px-4 text-xs text-[#4A4C54]">
+                    {team.strongestDimension ? (
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {team.strongestDimension.dimensionName}
+                      </span>
+                    ) : "-"}
                   </td>
-                  <td className="py-2.5 px-3 text-xs text-[#4A4C54]">
-                    {team.weakestDimension?.dimensionName || "-"}
+                  <td className="py-3 px-4 text-xs text-[#4A4C54]">
+                    {team.weakestDimension ? (
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        {team.weakestDimension.dimensionName}
+                      </span>
+                    ) : "-"}
                   </td>
-                  <td className="py-2.5 px-3 text-center text-[#4A4C54]">{team.totalObservations}</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className="text-sm font-medium text-[#0B2C6B]">{team.totalObservations}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>

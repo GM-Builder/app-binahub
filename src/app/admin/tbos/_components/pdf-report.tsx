@@ -11,9 +11,9 @@ import { generateExecutiveNarrative } from "@/modules/tbos/scoring";
 
 const NAVY = "#0B2C6B";
 const GOLD = "#D9A441";
-const LIGHT_BG = "#F5F7FA";
+const LIGHT_BG = "#F8F9FC";
 const BORDER = "#E2E8F0";
-const TEXT_DARK = "#1A1A2E";
+const TEXT_DARK = "#1E293B";
 const TEXT_MUTED = "#64748B";
 
 Font.register({
@@ -32,16 +32,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter",
     fontSize: 10,
     color: TEXT_DARK,
-    padding: 40,
+    paddingTop: 36,
+    paddingBottom: 48,
+    paddingHorizontal: 40,
     backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    paddingBottom: 16,
-    marginBottom: 24,
-    borderBottom: `3px solid ${GOLD}`,
+    paddingBottom: 14,
+    marginBottom: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: GOLD,
+    borderBottomStyle: "solid",
   },
   logo: {
     fontSize: 22,
@@ -57,13 +61,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: "uppercase",
     marginTop: 2,
+    fontWeight: 500,
   },
   reportMeta: {
     textAlign: "right",
   },
   reportTitle: {
     fontSize: 14,
-    fontWeight: 600,
+    fontWeight: 700,
     color: NAVY,
   },
   reportDate: {
@@ -72,7 +77,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 11,
@@ -80,102 +85,137 @@ const styles = StyleSheet.create({
     color: NAVY,
     marginBottom: 8,
     paddingBottom: 4,
-    borderBottom: `1px solid ${BORDER}`,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+    borderBottomStyle: "solid",
   },
   paragraph: {
     fontSize: 9,
     lineHeight: 1.6,
-    color: TEXT_MUTED,
+    color: TEXT_DARK,
+    backgroundColor: LIGHT_BG,
+    padding: 10,
+    borderRadius: 6,
   },
   statRow: {
     flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: LIGHT_BG,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 6,
+    padding: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: NAVY,
+    borderLeftStyle: "solid",
   },
   statLabel: {
     fontSize: 7,
     color: TEXT_MUTED,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 3,
+    fontWeight: 600,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 700,
     color: NAVY,
   },
   dimensionRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
-    borderBottom: `1px solid ${BORDER}`,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    marginBottom: 3,
+    backgroundColor: LIGHT_BG,
+    borderRadius: 4,
   },
   rankBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 8,
   },
   dimensionName: {
     flex: 1,
     fontSize: 9,
-    fontWeight: 500,
+    fontWeight: 600,
     color: TEXT_DARK,
   },
   scoreBadge: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 700,
     color: NAVY,
   },
-  narrative: {
-    fontSize: 9,
-    lineHeight: 1.6,
-    color: TEXT_MUTED,
+  narrativeItem: {
     marginBottom: 8,
+    padding: 8,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 6,
+    borderLeftWidth: 2,
+    borderLeftColor: GOLD,
+    borderLeftStyle: "solid",
+  },
+  narrativeText: {
+    fontSize: 8.5,
+    lineHeight: 1.5,
+    color: TEXT_DARK,
   },
   recommendationBox: {
     backgroundColor: NAVY,
     borderRadius: 8,
-    padding: 16,
-    marginTop: 12,
+    padding: 14,
+    marginTop: 10,
   },
   recommendationText: {
     fontSize: 9,
     lineHeight: 1.6,
     color: "#FFFFFF",
-    opacity: 0.85,
-  },
-  teamTable: {
-    width: "100%",
+    opacity: 0.9,
   },
   tableHeader: {
     flexDirection: "row",
-    borderBottom: `2px solid ${NAVY}`,
-    paddingBottom: 6,
-    marginBottom: 4,
+    backgroundColor: NAVY,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+    borderRadius: 4,
+    marginBottom: 2,
   },
   tableHeaderCell: {
-    fontSize: 8,
-    fontWeight: 600,
-    color: NAVY,
+    fontSize: 7.5,
+    fontWeight: 700,
+    color: "#FFFFFF",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 6,
-    borderBottom: `1px solid ${BORDER}`,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+    borderBottomStyle: "solid",
+    alignItems: "center",
+  },
+  tableRowAlt: {
+    backgroundColor: LIGHT_BG,
   },
   tableCell: {
-    fontSize: 9,
+    fontSize: 8.5,
     color: TEXT_DARK,
+  },
+  scoreBarContainer: {
+    height: 5,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginTop: 2,
+    width: "100%",
   },
   footer: {
     position: "absolute",
@@ -184,7 +224,10 @@ const styles = StyleSheet.create({
     right: 40,
     flexDirection: "row",
     justifyContent: "space-between",
-    borderTop: `1px solid ${BORDER}`,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    borderTopStyle: "solid",
     paddingTop: 8,
   },
   footerText: {
@@ -194,16 +237,27 @@ const styles = StyleSheet.create({
   pageNumber: {
     fontSize: 7,
     color: TEXT_MUTED,
+    fontWeight: 600,
   },
 });
 
 function getScoreColor(score: number | null): string {
   if (score === null) return "#CBD5E1";
-  if (score >= 4.5) return "#16A34A";
-  if (score >= 3.5) return "#65A30D";
-  if (score >= 2.5) return "#CA8A04";
-  if (score >= 1.5) return "#EA580C";
-  return "#DC2626";
+  if (score >= 4.5) return "#10B981";
+  if (score >= 3.5) return "#84CC16";
+  if (score >= 2.5) return "#F59E0B";
+  if (score >= 1.5) return "#F97316";
+  return "#EF4444";
+}
+
+function ScoreBarPdf({ score }: { score: number | null }) {
+  const pct = score !== null ? Math.min((score / 5) * 100, 100) : 0;
+  const color = getScoreColor(score);
+  return (
+    <View style={styles.scoreBarContainer}>
+      <View style={{ height: "100%", width: `${pct}%`, backgroundColor: color, borderRadius: 3 }} />
+    </View>
+  );
 }
 
 function TbosReportDocument({ data }: { data: TbosDashboardData }) {
@@ -225,7 +279,7 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
           <View style={styles.reportMeta}>
             <Text style={styles.reportTitle}>T-BOS Executive Report</Text>
             <Text style={styles.reportDate}>
-              {new Date(data.generatedAt).toLocaleDateString("id-ID", {
+              Laporan Resmi · {new Date(data.generatedAt).toLocaleDateString("id-ID", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -256,55 +310,65 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
 
         {/* Overview */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <Text style={styles.sectionTitle}>Overview Organisasi</Text>
           <Text style={styles.paragraph}>{narrative.overview}</Text>
         </View>
 
         {/* Strengths */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3 Kekuatan Utama</Text>
+          <Text style={styles.sectionTitle}>3 Kekuatan Utama Organisasi</Text>
           {summary.topStrengths.map((dim, i) => (
-            <View key={dim.dimensionCode} style={styles.dimensionRow}>
-              <View style={[styles.rankBadge, { backgroundColor: getScoreColor(dim.score) }]}>
-                <Text style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF" }}>{i + 1}</Text>
+            <View key={dim.dimensionCode} style={styles.narrativeItem}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                  <View style={[styles.rankBadge, { backgroundColor: getScoreColor(dim.score) }]}>
+                    <Text style={{ fontSize: 8, fontWeight: 700, color: "#FFFFFF" }}>{i + 1}</Text>
+                  </View>
+                  <Text style={styles.dimensionName}>{dim.dimensionName}</Text>
+                </View>
+                <Text style={styles.scoreBadge}>{dim.score?.toFixed(1)} / 5.0</Text>
               </View>
-              <Text style={styles.dimensionName}>{dim.dimensionName}</Text>
-              <Text style={styles.scoreBadge}>{dim.score?.toFixed(1)}/5</Text>
+              <ScoreBarPdf score={dim.score} />
+              {narrative.strengthsNarrative[i] && (
+                <Text style={[styles.narrativeText, { marginTop: 4 }]}>{narrative.strengthsNarrative[i]}</Text>
+              )}
             </View>
-          ))}
-          {narrative.strengthsNarrative.map((text, i) => (
-            <Text key={i} style={styles.narrative}>{text}</Text>
           ))}
         </View>
 
         {/* Development Areas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3 Area Pengembangan</Text>
+          <Text style={styles.sectionTitle}>3 Area Pengembangan Utama</Text>
           {summary.developmentAreas.map((dim, i) => (
-            <View key={dim.dimensionCode} style={styles.dimensionRow}>
-              <View style={[styles.rankBadge, { backgroundColor: getScoreColor(dim.score) }]}>
-                <Text style={{ fontSize: 9, fontWeight: 700, color: "#FFFFFF" }}>{i + 1}</Text>
+            <View key={dim.dimensionCode} style={styles.narrativeItem}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                  <View style={[styles.rankBadge, { backgroundColor: getScoreColor(dim.score) }]}>
+                    <Text style={{ fontSize: 8, fontWeight: 700, color: "#FFFFFF" }}>{i + 1}</Text>
+                  </View>
+                  <Text style={styles.dimensionName}>{dim.dimensionName}</Text>
+                </View>
+                <Text style={styles.scoreBadge}>{dim.score?.toFixed(1)} / 5.0</Text>
               </View>
-              <Text style={styles.dimensionName}>{dim.dimensionName}</Text>
-              <Text style={styles.scoreBadge}>{dim.score?.toFixed(1)}/5</Text>
+              <ScoreBarPdf score={dim.score} />
+              {narrative.developmentNarrative[i] && (
+                <Text style={[styles.narrativeText, { marginTop: 4 }]}>{narrative.developmentNarrative[i]}</Text>
+              )}
             </View>
-          ))}
-          {narrative.developmentNarrative.map((text, i) => (
-            <Text key={i} style={styles.narrative}>{text}</Text>
           ))}
         </View>
 
         {/* Recommendation */}
         <View style={styles.recommendationBox}>
-          <Text style={[styles.sectionTitle, { color: GOLD, borderBottom: "none", marginBottom: 6 }]}>
-            Rekomendasi Strategis
+          <Text style={[styles.sectionTitle, { color: GOLD, borderBottomWidth: 0, marginBottom: 4, paddingBottom: 0 }]}>
+            Rekomendasi Strategis Organisasi
           </Text>
           <Text style={styles.recommendationText}>{narrative.recommendation}</Text>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>BinaHub — Human-Centered Transformation Partner</Text>
-          <Text style={styles.pageNumber}>Halaman 1</Text>
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>BinaHub — Human-Centered Transformation Partner · Rahasia</Text>
+          <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} dari ${totalPages}`} />
         </View>
       </Page>
 
@@ -315,7 +379,7 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
             <Text style={styles.logo}>
               Bina<Text style={styles.logoAccent}>Hub</Text>
             </Text>
-            <Text style={styles.tagline}>T-BOS Team Ranking</Text>
+            <Text style={styles.tagline}>T-BOS Team Ranking & Detail</Text>
           </View>
           <View style={styles.reportMeta}>
             <Text style={styles.reportTitle}>Detail Skor per Tim</Text>
@@ -324,25 +388,25 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
 
         {/* Team Ranking Table */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ranking Tim</Text>
+          <Text style={styles.sectionTitle}>Peringkat Tim</Text>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, { width: 30 }]}>#</Text>
-            <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Tim</Text>
-            <Text style={[styles.tableHeaderCell, { width: 60 }]}>Batch</Text>
-            <Text style={[styles.tableHeaderCell, { width: 50, textAlign: "center" }]}>Skor</Text>
-            <Text style={[styles.tableHeaderCell, { width: 50, textAlign: "center" }]}>Obs.</Text>
-            <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Kekuatan</Text>
+            <Text style={[styles.tableHeaderCell, { width: 24 }]}>#</Text>
+            <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Nama Tim</Text>
+            <Text style={[styles.tableHeaderCell, { width: 50 }]}>Batch</Text>
+            <Text style={[styles.tableHeaderCell, { width: 45, textAlign: "center" }]}>Skor</Text>
+            <Text style={[styles.tableHeaderCell, { width: 40, textAlign: "center" }]}>Obs.</Text>
+            <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Kekuatan Utama</Text>
             <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Area Dev.</Text>
           </View>
           {sortedTeams.map((team, i) => (
-            <View key={team.teamId} style={styles.tableRow}>
-              <Text style={[styles.tableCell, { width: 30, fontWeight: 700, color: NAVY }]}>{i + 1}</Text>
-              <Text style={[styles.tableCell, { flex: 1, fontWeight: 500 }]}>{team.teamName}</Text>
-              <Text style={[styles.tableCell, { width: 60 }]}>{team.batch}</Text>
-              <Text style={[styles.tableCell, { width: 50, textAlign: "center", fontWeight: 700, color: NAVY }]}>
+            <View key={team.teamId} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}>
+              <Text style={[styles.tableCell, { width: 24, fontWeight: 700, color: NAVY }]}>{i + 1}</Text>
+              <Text style={[styles.tableCell, { flex: 1.2, fontWeight: 600 }]}>{team.teamName}</Text>
+              <Text style={[styles.tableCell, { width: 50 }]}>{team.batch}</Text>
+              <Text style={[styles.tableCell, { width: 45, textAlign: "center", fontWeight: 700, color: NAVY }]}>
                 {team.overallTeamScore?.toFixed(1) ?? "-"}
               </Text>
-              <Text style={[styles.tableCell, { width: 50, textAlign: "center" }]}>{team.totalObservations}</Text>
+              <Text style={[styles.tableCell, { width: 40, textAlign: "center" }]}>{team.totalObservations}</Text>
               <Text style={[styles.tableCell, { flex: 1, fontSize: 8 }]}>
                 {team.strongestDimension?.dimensionName ?? "-"}
               </Text>
@@ -355,33 +419,33 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
 
         {/* Dimension Scores per Team */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Skor per Dimensi per Tim</Text>
+          <Text style={styles.sectionTitle}>Rincian Skor Dimensi per Tim</Text>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Tim</Text>
             {teams[0]?.dimensionAverages.map((d) => (
-              <Text key={d.dimensionCode} style={[styles.tableHeaderCell, { width: 50, textAlign: "center", fontSize: 6 }]}>
+              <Text key={d.dimensionCode} style={[styles.tableHeaderCell, { width: 48, textAlign: "center", fontSize: 6.5 }]}>
                 {d.dimensionName.split(" ").map(w => w[0]).join("")}
               </Text>
             ))}
-            <Text style={[styles.tableHeaderCell, { width: 40, textAlign: "center" }]}>Avg</Text>
+            <Text style={[styles.tableHeaderCell, { width: 36, textAlign: "center" }]}>Avg</Text>
           </View>
-          {sortedTeams.map((team) => {
+          {sortedTeams.map((team, idx) => {
             const validScores = team.dimensionAverages.filter((d) => d.score !== null);
             const avg = validScores.length > 0
               ? (validScores.reduce((s, d) => s + (d.score || 0), 0) / validScores.length).toFixed(1)
               : "-";
             return (
-              <View key={team.teamId} style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 1, fontWeight: 500 }]}>{team.teamName}</Text>
+              <View key={team.teamId} style={[styles.tableRow, idx % 2 === 1 ? styles.tableRowAlt : {}]}>
+                <Text style={[styles.tableCell, { flex: 1, fontWeight: 600 }]}>{team.teamName}</Text>
                 {team.dimensionAverages.map((d) => (
                   <Text
                     key={d.dimensionCode}
-                    style={[styles.tableCell, { width: 50, textAlign: "center", fontWeight: 600, color: getScoreColor(d.score) }]}
+                    style={[styles.tableCell, { width: 48, textAlign: "center", fontWeight: 700, color: getScoreColor(d.score) }]}
                   >
                     {d.score !== null ? d.score.toFixed(1) : "—"}
                   </Text>
                 ))}
-                <Text style={[styles.tableCell, { width: 40, textAlign: "center", fontWeight: 700, color: NAVY }]}>
+                <Text style={[styles.tableCell, { width: 36, textAlign: "center", fontWeight: 700, color: NAVY }]}>
                   {avg}
                 </Text>
               </View>
@@ -389,9 +453,9 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
           })}
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>BinaHub — Confidential</Text>
-          <Text style={styles.pageNumber}>Halaman 2</Text>
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>BinaHub — Human-Centered Transformation Partner · Rahasia</Text>
+          <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} dari ${totalPages}`} />
         </View>
       </Page>
 
@@ -402,33 +466,33 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
             <Text style={styles.logo}>
               Bina<Text style={styles.logoAccent}>Hub</Text>
             </Text>
-            <Text style={styles.tagline}>Batch Comparison</Text>
+            <Text style={styles.tagline}>Batch Comparison Analysis</Text>
           </View>
           <View style={styles.reportMeta}>
-            <Text style={styles.reportTitle}>Perbandingan Batch 1 vs Batch 2</Text>
+            <Text style={styles.reportTitle}>Perbandingan Batch 1 vs 2</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Rata-rata Skor per Dimensi per Batch</Text>
+          <Text style={styles.sectionTitle}>Analisis Rata-rata Skor Dimensi per Batch</Text>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensi</Text>
+            <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensi Perilaku</Text>
             <Text style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>Batch 1</Text>
             <Text style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>Batch 2</Text>
             <Text style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>Selisih</Text>
           </View>
-          {batchComparisons.map((bc) => {
+          {batchComparisons.map((bc, idx) => {
             const diff = bc.batch1Avg !== null && bc.batch2Avg !== null ? bc.batch2Avg - bc.batch1Avg : null;
             return (
-              <View key={bc.dimensionCode} style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 1, fontWeight: 500 }]}>{bc.dimensionName}</Text>
-                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 600, color: NAVY }]}>
+              <View key={bc.dimensionCode} style={[styles.tableRow, idx % 2 === 1 ? styles.tableRowAlt : {}]}>
+                <Text style={[styles.tableCell, { flex: 1, fontWeight: 600 }]}>{bc.dimensionName}</Text>
+                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: NAVY }]}>
                   {bc.batch1Avg !== null ? bc.batch1Avg.toFixed(1) : "—"}
                 </Text>
-                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 600, color: GOLD }]}>
+                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: GOLD }]}>
                   {bc.batch2Avg !== null ? bc.batch2Avg.toFixed(1) : "—"}
                 </Text>
-                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 600, color: diff !== null && diff > 0 ? "#16A34A" : diff !== null && diff < 0 ? "#DC2626" : TEXT_MUTED }]}>
+                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: diff !== null && diff > 0 ? "#10B981" : diff !== null && diff < 0 ? "#EF4444" : TEXT_MUTED }]}>
                   {diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}` : "—"}
                 </Text>
               </View>
@@ -436,9 +500,9 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
           })}
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>BinaHub — Confidential</Text>
-          <Text style={styles.pageNumber}>Halaman 3</Text>
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>BinaHub — Human-Centered Transformation Partner · Rahasia</Text>
+          <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} dari ${totalPages}`} />
         </View>
       </Page>
     </Document>

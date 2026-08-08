@@ -17,6 +17,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
@@ -53,7 +54,14 @@ const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:rin
 export default function TbosObservationPage() {
   return (
     <FacilitatorAuthGate>
-      <TbosObservationContent />
+      <AppShell
+        role="facilitator"
+        navigation="tbos"
+        title="Form Observasi T-BOS"
+        eyebrow="Team Behavioral Observation System"
+      >
+        <TbosObservationContent />
+      </AppShell>
     </FacilitatorAuthGate>
   );
 }
@@ -730,13 +738,74 @@ function TbosObservationContent() {
                 );
               })}
             </dl>
+            <div className="flex items-center justify-between gap-3">
+              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-[#081D42]">Catatan lapangan</label>
+              <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
+            </div>
+            <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Konteks singkat yang membantu pembacaan skor..." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
+          </section>
+
+          <BottomAction disabled={!allDimensionsScored} onClick={() => setStep("review")} label={allDimensionsScored ? "Tinjau Observasi" : `${scoredCount}/${selectedMission.dimensions.length} Dimensi Dinilai`} />
+        </WorkflowPage>
+      )}
+
+      {step === "review" && selectedTeam && selectedMission && sessionCaptain && (
+        <WorkflowPage
+          eyebrow="Langkah 4 dari 4"
+          title="Tinjau & konfirmasi"
+          subtitle="Pastikan snapshot sesi sudah tepat sebelum disimpan."
+          backLabel="Kembali mengedit skor observasi"
+          onBack={() => setStep("observe")}
+          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
+        >
+          {error && <Alert>{error}</Alert>}
+          <section className="overflow-hidden rounded-3xl bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
+            <div className="bg-[#0B2C6B] p-5 text-white">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Konteks observasi</p>
+              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
+              <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 p-5">
+              <div>
+                <p className="text-xs text-slate-500">Hadir</p>
+                <p className="mt-1 text-lg font-bold text-[#081D42]">{presentMembers.length} anggota</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Kapten sesi</p>
+                <p className="mt-1 truncate text-sm font-bold text-[#081D42]">{sessionCaptain.member_name}</p>
+              </div>
+              <div className="col-span-2 border-t border-slate-100 pt-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar hadir</p>
+                <ul className="mt-2 flex flex-wrap gap-2" aria-label="Anggota yang hadir">
+                  {presentMembers.map((member) => <li key={member.id} className="rounded-full bg-[#F7F6F2] px-3 py-1.5 text-xs font-semibold text-slate-700">{member.member_name}{member.id === sessionCaptainId ? " · Kapten" : ""}</li>)}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
+            <h2 id="review-scores-title" className="text-lg font-bold text-[#081D42]">Skor dimensi</h2>
+            <dl className="mt-4 divide-y divide-slate-100">
+              {selectedMission.dimensions.map((dimension) => {
+                const value = scores[dimension.id];
+                const level = dimension.levels.find((item) => item.level_value === value);
+                return (
+                  <div key={dimension.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <dd className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-lg font-extrabold ${LEVEL_STYLES[value]}`}>{value}</dd>
+                    <div className="min-w-0">
+                      <dt className="text-sm font-bold text-slate-800">{dimension.name}</dt>
+                      <dd className="mt-0.5 text-xs text-slate-500">{level?.level_label}</dd>
+                    </div>
+                  </div>
+                );
+              })}
+            </dl>
           </section>
 
           <section className="rounded-3xl border border-[#D6A84B]/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
             <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
           </section>
-
           <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-[#F7F6F2]/95 p-3 backdrop-blur">
             <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
               <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-white px-3 text-sm font-bold text-[#0B2C6B] ${FOCUS}`}>Edit</button>
@@ -747,13 +816,13 @@ function TbosObservationContent() {
       )}
 
       {step === "submitting" && (
-        <main className="mx-auto flex min-h-[75vh] max-w-2xl flex-col items-center justify-center px-4 text-center" role="status" aria-live="polite">
+        <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 text-center" role="status" aria-live="polite">
           <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#0B2C6B] shadow-xl shadow-[#0B2C6B]/20">
             <Loader2 className="h-8 w-8 animate-spin text-[#E8C778] motion-reduce:animate-none" aria-hidden="true" />
           </div>
-          <h1 className="mt-5 text-xl font-bold text-[#081D42]">Menyimpan snapshot sesi</h1>
+          <h2 className="mt-5 text-xl font-bold text-[#081D42]">Menyimpan snapshot sesi</h2>
           <p className="mt-2 text-sm text-slate-500">Jangan tutup halaman sampai proses selesai.</p>
-        </main>
+        </div>
       )}
     </Shell>
   );
@@ -761,10 +830,9 @@ function TbosObservationContent() {
 
 function Shell({ children, isOnline, queuedCount }: { children: React.ReactNode; isOnline: boolean; queuedCount: number }) {
   return (
-    <div className="min-h-screen bg-[#F7F6F2] text-slate-800">
+    <div className="text-slate-800">
       {children}
       <span className="sr-only" role="status" aria-live="polite">{isOnline ? "Perangkat online" : "Perangkat offline"}. {queuedCount} observasi dalam antrean.</span>
-      <TbosFacilitatorNav />
     </div>
   );
 }
@@ -779,23 +847,23 @@ function WorkflowPage({ eyebrow, title, subtitle, backLabel, onBack, status, chi
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <header className="relative overflow-hidden bg-[#081D42] px-4 pb-8 pt-4 text-white">
+    <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-2xl bg-[#081D42] p-5 text-white shadow-md">
         <div className="absolute -right-12 -top-20 h-44 w-44 rounded-full bg-[#123A72]" />
         <div className="relative mx-auto max-w-2xl">
           <div className="flex items-center justify-between gap-3">
-            <button type="button" onClick={onBack} aria-label={backLabel} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/15 ${FOCUS}`}>
-              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+            <button type="button" onClick={onBack} aria-label={backLabel} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/20 transition-colors ${FOCUS}`}>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </button>
             {status}
           </div>
-          <p className="mt-6 text-xs font-bold uppercase tracking-[0.17em] text-[#E8C778]">{eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-[-0.025em]">{title}</h1>
-          <p className="mt-1 text-sm text-white/65">{subtitle}</p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.17em] text-[#E8C778]">{eyebrow}</p>
+          <h1 className="mt-1 text-xl font-bold tracking-[-0.025em]">{title}</h1>
+          <p className="mt-0.5 text-xs text-white/70">{subtitle}</p>
         </div>
-      </header>
-      <main className="mx-auto max-w-2xl space-y-4 px-4 py-5 pb-[calc(11rem+env(safe-area-inset-bottom))]">{children}</main>
-    </>
+      </div>
+      <div className="mx-auto max-w-2xl space-y-4 pb-16">{children}</div>
+    </div>
   );
 }
 

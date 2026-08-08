@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check, UsersRound, Crown } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
@@ -21,7 +22,14 @@ import {
 export default function TbosObservationsListPage() {
   return (
     <FacilitatorAuthGate>
-      <TbosObservationsContent />
+      <AppShell
+        role="facilitator"
+        navigation="tbos"
+        title="Kelola & Lihat Observasi"
+        eyebrow="Team Behavioral Observation System"
+      >
+        <TbosObservationsContent />
+      </AppShell>
     </FacilitatorAuthGate>
   );
 }
@@ -64,34 +72,31 @@ function TbosObservationsContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center pb-[calc(4rem+env(safe-area-inset-bottom))]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
-        <TbosFacilitatorNav />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-4 pb-[calc(4rem+env(safe-area-inset-bottom))] text-sm text-red-700">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         {error}
-        <TbosFacilitatorNav />
       </div>
     );
   }
 
   if (observations.length === 0) {
     return (
-      <div className="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] pt-20 text-center">
+      <div className="py-16 text-center">
         <p className="text-sm text-[#4A4C54]">Belum ada observasi.</p>
         <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Buat observasi</Link>
-        <TbosFacilitatorNav />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[#0B2C6B]">Riwayat Observasi</h2>
         <span className="text-xs text-[#4A4C54]">{observations.length} observasi</span>
@@ -149,7 +154,6 @@ function TbosObservationsContent() {
           />
         )}
       </AnimatePresence>
-      <TbosFacilitatorNav />
     </div>
   );
 }
