@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Loader2, Wifi, WifiOff, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Wifi, WifiOff, ChevronRight, Crown, UserPlus, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { supabase } from "@/lib/supabase";
@@ -57,6 +57,11 @@ function TbosObservationContent() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [queuedCount, setQueuedCount] = useState<number>(0);
 
+  // Team members state with captain support
+  const [teamMembers, setTeamMembers] = useState<Array<{ member_name: string; is_captain: boolean }>>([]);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+
   // Monitor Network Status
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -105,6 +110,100 @@ function TbosObservationContent() {
   useEffect(() => {
     initData();
   }, [initData]);
+
+  // Load team members when team is selected
+  useEffect(() => {
+    if (selectedTeam) {
+      if (selectedTeam.members && selectedTeam.members.length > 0) {
+        setTeamMembers(selectedTeam.members.map(m => ({
+          member_name: m.member_name,
+          is_captain: m.is_captain || false,
+        })));
+      } else {
+        // Fetch from API if not in team object
+        fetch(`/api/tbos/teams/members?teamId=${selectedTeam.id}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success && data.members) {
+              setTeamMembers(data.members.map((m: any) => ({
+                member_name: m.member_name,
+                is_captain: m.is_captain || false,
+              })));
+            }
+          })
+          .catch(() => {});
+      }
+    } else {
+      setTeamMembers([]);
+    }
+  }, [selectedTeam]);
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberName.trim() || !selectedTeam) return;
+
+    const name = newMemberName.trim();
+    setAddingMember(true);
+    const isFirstMember = teamMembers.length === 0;
+    const newMember = { member_name: name, is_captain: isFirstMember };
+    setTeamMembers((prev) => [...prev, newMember]);
+    setNewMemberName("");
+
+    try {
+      await fetch("/api/tbos/teams/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: selectedTeam.id,
+          memberName: name,
+          isCaptain: isFirstMember,
+        }),
+      });
+    } catch (err) {
+      console.error("Could not sync member to server:", err);
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleSetCaptain = async (memberName: string) => {
+    if (!selectedTeam) return;
+
+    // Update local state
+    setTeamMembers((prev) =>
+      prev.map((m) => ({
+        ...m,
+        is_captain: m.member_name === memberName,
+      }))
+    );
+
+    // Sync to server
+    try {
+      await fetch("/api/tbos/teams/members", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: selectedTeam.id,
+          memberName,
+          isCaptain: true,
+        }),
+      });
+    } catch (err) {
+      console.error("Could not update captain:", err);
+    }
+  };
+
+  const handleRemoveMember = async (memberName: string) => {
+    if (!selectedTeam) return;
+    setTeamMembers((prev) => prev.filter((m) => m.member_name !== memberName));
+    try {
+      await fetch(`/api/tbos/teams/members?teamId=${selectedTeam.id}&memberName=${encodeURIComponent(memberName)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Could not delete member:", err);
+    }
+  };
 
   // Load draft when team and mission selected
   useEffect(() => {
@@ -452,22 +551,82 @@ function TbosObservationContent() {
               exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              {/* Team Members - Compact */}
-              {selectedTeam.members && selectedTeam.members.length > 0 && (
-                <div className="bg-white rounded-2xl p-4 shadow-sm">
-                  <p className="text-xs text-slate-500 mb-2">Anggota tim:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedTeam.members.map((m, i) => (
-                      <span
-                        key={i}
-                        className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600"
-                      >
-                        {m.member_name}
-                      </span>
-                    ))}
-                  </div>
+              {/* Team Members with Captain */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-[#0B2C6B]" />
+                  <p className="text-xs font-semibold text-slate-700">Anggota Tim</p>
                 </div>
-              )}
+
+                {/* Member List */}
+                <div className="space-y-2 mb-3">
+                  {teamMembers.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">Belum ada anggota. Tambahkan nama peserta.</p>
+                  ) : (
+                    teamMembers.map((m, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-center justify-between p-2.5 rounded-xl ${
+                          m.is_captain ? "bg-amber-50 border border-amber-200" : "bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {m.is_captain && <Crown className="w-3.5 h-3.5 text-amber-500" />}
+                          <span className={`text-sm ${m.is_captain ? "font-semibold text-amber-800" : "text-slate-700"}`}>
+                            {m.member_name}
+                          </span>
+                          {m.is_captain && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-800 font-medium">
+                              Captain
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {!m.is_captain && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetCaptain(m.member_name)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                              title="Jadikan Captain"
+                            >
+                              <Crown className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMember(m.member_name)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Hapus"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Member Input */}
+                <form onSubmit={handleAddMember} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMemberName}
+                    onChange={(e) => setNewMemberName(e.target.value)}
+                    placeholder="Nama peserta..."
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0B2C6B]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newMemberName.trim() || addingMember}
+                    className="px-3 py-2 rounded-xl bg-[#0B2C6B] text-white text-sm font-medium hover:bg-[#071B3D] disabled:opacity-40 transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                </form>
+                <p className="text-[10px] text-slate-400 mt-2">
+                  Anggota pertama otomatis jadi captain. Tap ikon 👑 untuk ganti captain.
+                </p>
+              </div>
 
               {/* Dimension Cards */}
               {selectedMission.dimensions.map((dim, idx) => {

@@ -30,6 +30,7 @@ export interface TbosDbTeam {
   members: {
     profile_id: string | null;
     member_name: string;
+    is_captain?: boolean;
   }[];
 }
 
