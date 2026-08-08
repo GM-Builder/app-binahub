@@ -137,10 +137,10 @@ export default function HomePage() {
         icon: LayoutDashboard,
       },
       {
-        href: "/fasilitator/tbos/observations",
-        label: "Kelola & Kunci Observasi",
-        desc: "Review, edit, dan lock observasi perilaku tim.",
-        icon: ShieldCheck,
+        href: "/admin/engagements",
+        label: "Program Engagements",
+        desc: "Kelola batch transformasi, sesi workshop, dan kode akses klien.",
+        icon: UsersRound,
       },
       {
         href: "/admin/users",
