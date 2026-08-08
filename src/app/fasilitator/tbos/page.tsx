@@ -497,7 +497,10 @@ function TbosObservationContent() {
                           onClick={() => toggleAttendance(member.id)}
                           className={`relative h-11 w-14 shrink-0 rounded-full transition-colors motion-reduce:transition-none ${member.isPresent ? "bg-[#0B2C6B]" : "bg-slate-300"} ${FOCUS}`}
                         >
-                          <span className={`absolute top-1.5 h-8 w-8 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${member.isPresent ? "translate-x-4" : "translate-x-1"}`} />
+                           <span
+                             className={`absolute left-1 top-1.5 h-8 w-8 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${member.isPresent ? "translate-x-4" : "translate-x-0"}`}
+                             aria-hidden="true"
+                           />
                         </button>
                         <div className="min-w-0 flex-1">
                           <h3 className={`truncate text-sm font-bold ${member.isPresent ? "text-slate-800" : "text-slate-400"}`}>{member.member_name}</h3>

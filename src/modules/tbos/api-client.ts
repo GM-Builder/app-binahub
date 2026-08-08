@@ -227,14 +227,15 @@ export async function fetchObservations(
 ): Promise<TbosDbObservation[]> {
   try {
     const res = await fetch("/api/tbos/observations");
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (data.success && Array.isArray(data.observations)) {
       return data.observations;
     }
+    throw new Error(data.error || `Gagal memuat observasi (HTTP ${res.status}).`);
   } catch (err) {
     console.error("[T-BOS API Client] Error fetching observations:", err);
+    throw err instanceof Error ? err : new Error("Gagal memuat observasi.");
   }
-  return [];
 }
 
 /**
@@ -336,7 +337,8 @@ export async function fetchDashboardRawData(): Promise<{
   const res = await fetch("/api/tbos/dashboard");
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
-    throw new Error(data.error || "Gagal memuat dashboard T-BOS.");
+    const detail = data.detail || data.hint || data.code;
+    throw new Error(detail ? `${data.error || "Gagal memuat dashboard T-BOS."} (${detail})` : data.error || "Gagal memuat dashboard T-BOS.");
   }
   return {
     teams: data.teams || [],
