@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Loader2, Wifi, WifiOff, Users, UserPlus, Trash2, Shield, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Wifi, WifiOff, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { supabase } from "@/lib/supabase";
@@ -22,6 +22,15 @@ import {
 } from "@/modules/tbos/api-client";
 
 type Step = "select" | "observe" | "submitting" | "done";
+
+// Level color mapping for visual feedback
+const LEVEL_COLORS: Record<number, { bg: string; border: string; text: string }> = {
+  1: { bg: "bg-red-50", border: "border-red-200", text: "text-red-700" },
+  2: { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
+  3: { bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700" },
+  4: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
+  5: { bg: "bg-green-50", border: "border-green-300", text: "text-green-800" },
+};
 
 export default function TbosObservationPage() {
   return (
@@ -48,7 +57,7 @@ function TbosObservationContent() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [queuedCount, setQueuedCount] = useState<number>(0);
 
-  // Monitor Network Status & Queued Items
+  // Monitor Network Status
   useEffect(() => {
     setIsOnline(navigator.onLine);
     setQueuedCount(getQueuedObservations().length);
@@ -57,7 +66,7 @@ function TbosObservationContent() {
       setIsOnline(true);
       const { data } = await supabase.auth.getSession();
       if (data.session?.user.id) {
-        const synced = await flushQueuedObservations(data.session.user.id);
+        await flushQueuedObservations(data.session.user.id);
         setQueuedCount(getQueuedObservations().length);
       }
     };
@@ -87,7 +96,7 @@ function TbosObservationContent() {
       setMissions(mList);
       setTeams(tList);
     } catch {
-      setError("Gagal memuat data. Menggunakan data lokal.");
+      setError("Gagal memuat data.");
     } finally {
       setLoading(false);
     }
@@ -108,7 +117,6 @@ function TbosObservationContent() {
     }
   }, [selectedTeam, selectedMission]);
 
-  // Auto-save draft on changes (ADR-006)
   const handleScoreSelect = (dimensionId: string, level: LevelValue) => {
     const updated = { ...scores, [dimensionId]: level };
     setScores(updated);
@@ -122,81 +130,6 @@ function TbosObservationContent() {
     setNotes(sliced);
     if (selectedTeam && selectedMission) {
       saveDraft(selectedTeam.id, selectedMission.id, scores, sliced);
-    }
-  };
-
-  const [teamMembers, setTeamMembers] = useState<Array<{ member_name: string }>>([]);
-  const [newMemberName, setNewMemberName] = useState("");
-  const [addingMember, setAddingMember] = useState(false);
-
-  // When selectedTeam changes, load members
-  useEffect(() => {
-    if (selectedTeam) {
-      if (selectedTeam.members && selectedTeam.members.length > 0) {
-        setTeamMembers(selectedTeam.members);
-      } else {
-        fetch(`/api/tbos/teams/members?teamId=${selectedTeam.id}`)
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.success && data.members) {
-              setTeamMembers(data.members);
-            }
-          })
-          .catch(() => {});
-      }
-    }
-  }, [selectedTeam]);
-
-  const handleAddMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMemberName.trim() || !selectedTeam) return;
-
-    const name = newMemberName.trim();
-    setAddingMember(true);
-    setTeamMembers((prev) => [...prev, { member_name: name }]);
-    setNewMemberName("");
-
-    try {
-      await fetch("/api/tbos/teams/members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamId: selectedTeam.id,
-          memberName: name,
-        }),
-      });
-    } catch (err) {
-      console.error("Could not sync member to server:", err);
-    } finally {
-      setAddingMember(false);
-    }
-  };
-
-  const handleRemoveMember = async (memberName: string) => {
-    if (!selectedTeam) return;
-    setTeamMembers((prev) => prev.filter((m) => m.member_name !== memberName));
-    try {
-      await fetch(`/api/tbos/teams/members?teamId=${selectedTeam.id}&memberName=${encodeURIComponent(memberName)}`, {
-        method: "DELETE",
-      });
-    } catch (err) {
-      console.error("Could not delete member:", err);
-    }
-  };
-
-  const handleSelectMission = (mission: TbosDbMission) => {
-    setSelectedMission(mission);
-    setScores({});
-    setNotes("");
-    if (selectedTeam) {
-      setStep("observe");
-    }
-  };
-
-  const handleSelectTeam = (team: TbosDbTeam) => {
-    setSelectedTeam(team);
-    if (selectedMission) {
-      setStep("observe");
     }
   };
 
@@ -222,7 +155,6 @@ function TbosObservationContent() {
     };
 
     if (!navigator.onLine) {
-      // Offline fallback: queue locally (ADR-006)
       queueObservation(payload);
       clearDraft(selectedTeam.id, selectedMission.id);
       setQueuedCount(getQueuedObservations().length);
@@ -235,7 +167,6 @@ function TbosObservationContent() {
     if (res.success) {
       setStep("done");
     } else {
-      // Queue on failure
       queueObservation(payload);
       clearDraft(selectedTeam.id, selectedMission.id);
       setQueuedCount(getQueuedObservations().length);
@@ -243,55 +174,67 @@ function TbosObservationContent() {
     }
   };
 
+  const resetForm = () => {
+    setStep("select");
+    setSelectedMission(null);
+    setSelectedTeam(null);
+    setScores({});
+    setNotes("");
+  };
+
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0B2C6B]" />
-          <p className="text-sm text-[#4A4C54]">Memuat data T-BOS...</p>
+          <div className="w-10 h-10 rounded-full border-3 border-[#0B2C6B]/20 border-t-[#0B2C6B] animate-spin" />
+          <p className="text-sm text-slate-500">Memuat...</p>
         </div>
       </div>
     );
   }
 
+  // Success state
   if (step === "done") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA] p-6">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl shadow-lg max-w-md w-full overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-3xl shadow-xl max-w-sm w-full overflow-hidden"
         >
-          <div className="bg-[#0B2C6B] p-8 text-center">
-            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-[#D9A441]" />
+          <div className="bg-gradient-to-br from-[#0B2C6B] to-[#1a3a7a] p-8 text-center">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white">Observasi Tersimpan</h1>
+            <h1 className="text-xl font-bold text-white">Berhasil!</h1>
+            <p className="text-white/70 text-sm mt-1">Observasi tersimpan</p>
           </div>
-          <div className="p-8 text-center">
-            <p className="text-sm text-[#4A4C54] mb-6">
-              Observasi untuk <strong className="text-[#0B2C6B]">{selectedTeam?.name}</strong> di mission{" "}
-              <strong className="text-[#0B2C6B]">{selectedMission?.name}</strong> berhasil disimpan
-              {!isOnline && " (tersimpan offline, akan di-sync saat online)"}.
-            </p>
-            <div className="flex flex-col gap-3">
+          <div className="p-6">
+            <div className="bg-slate-50 rounded-xl p-4 mb-6">
+              <p className="text-sm text-slate-600">
+                <span className="font-semibold text-[#0B2C6B]">{selectedTeam?.name}</span>
+                {" • "}
+                <span className="text-slate-500">{selectedMission?.name}</span>
+              </p>
+              {!isOnline && (
+                <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                  <WifiOff className="w-3 h-3" /> Akan di-sync saat online
+                </p>
+              )}
+            </div>
+            <div className="space-y-3">
               <button
-                onClick={() => {
-                  setStep("select");
-                  setSelectedMission(null);
-                  setSelectedTeam(null);
-                  setScores({});
-                  setNotes("");
-                }}
-                className="w-full h-12 rounded-xl bg-[#0B2C6B] text-white font-medium text-sm hover:bg-[#071B3D] transition-colors"
+                onClick={resetForm}
+                className="w-full h-12 rounded-xl bg-[#0B2C6B] text-white font-semibold text-sm hover:bg-[#071B3D] transition-colors"
               >
                 Observasi Baru
               </button>
               <button
                 onClick={() => router.push("/fasilitator/tbos/observations")}
-                className="w-full h-12 rounded-xl border border-black/10 text-[#4A4C54] font-medium text-sm hover:bg-black/[0.02] transition-colors"
+                className="w-full h-12 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50 transition-colors"
               >
-                Lihat Riwayat Observasi
+                Lihat Riwayat
               </button>
             </div>
           </div>
@@ -300,54 +243,68 @@ function TbosObservationContent() {
     );
   }
 
+  const canProceed = selectedMission && selectedTeam;
+
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
-      {/* Header */}
-      <div className="bg-white border-b border-black/[0.06] sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          {step === "observe" && (
-            <button
-              onClick={() => setStep("select")}
-              className="p-2 -ml-2 rounded-lg hover:bg-black/[0.04] transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-[#0B2C6B]" />
-            </button>
-          )}
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-[#0B2C6B]">T-BOS Observasi</h1>
-              {/* Online/Offline Status */}
-              <span
-                className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                  isOnline ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                {isOnline ? "Online" : "Offline"}
-                {queuedCount > 0 && ` (${queuedCount} pending)`}
+    <div className="min-h-screen bg-slate-50">
+      {/* Compact Header */}
+      <header className="bg-white sticky top-0 z-20 shadow-sm">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {step === "observe" && (
+                <button
+                  onClick={() => setStep("select")}
+                  className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-4 h-4 text-slate-600" />
+                </button>
+              )}
+              <div>
+                <h1 className="text-base font-bold text-[#0B2C6B]">T-BOS</h1>
+                <p className="text-xs text-slate-500">
+                  {step === "select" ? "Pilih tim & mission" : selectedMission?.name}
+                </p>
+              </div>
+            </div>
+            {/* Status Badge */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+              isOnline ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+            }`}>
+              {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+              {queuedCount > 0 && <span>{queuedCount}</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar for observe step */}
+        {step === "observe" && selectedMission && (
+          <div className="px-4 pb-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+              <span>{selectedTeam?.name}</span>
+              <span className="font-medium text-[#0B2C6B]">
+                {Object.keys(scores).length}/{selectedMission.dimensions.length}
               </span>
             </div>
-            <p className="text-xs text-[#4A4C54]">
-              {step === "select" && "Pilih mission dan tim"}
-              {step === "observe" && `${selectedMission?.name} • ${selectedTeam?.name}`}
-            </p>
-          </div>
-          {step === "observe" && selectedMission && (
-            <div className="text-xs font-medium text-[#4A4C54]">
-              {Object.keys(scores).length}/{selectedMission.dimensions.length} terisi
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#0B2C6B] rounded-full transition-all duration-300"
+                style={{ width: `${(Object.keys(scores).length / selectedMission.dimensions.length) * 100}%` }}
+              />
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <main className="p-4 pb-24">
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600">
             {error}
           </div>
         )}
 
         <AnimatePresence mode="wait">
+          {/* Step 1: Selection */}
           {step === "select" && (
             <motion.div
               key="select"
@@ -356,261 +313,272 @@ function TbosObservationContent() {
               exit={{ opacity: 0 }}
               className="space-y-6"
             >
-              {/* Mission Selection */}
-              <div>
-                <h2 className="text-sm font-semibold text-[#0B2C6B] mb-3 uppercase tracking-wide">
-                  Pilih Mission (Ditugaskan)
+              {/* Team Selection - Card Style */}
+              <section>
+                <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">
+                  Pilih Tim
                 </h2>
                 <div className="space-y-2">
-                  {missions.length === 0 && (
-                    <p className="text-sm text-[#4A4C54] p-4 bg-white rounded-xl">
-                      Belum ada mission ditugaskan ke Anda. Hubungi admin.
-                    </p>
+                  {teams.length === 0 && (
+                    <div className="bg-white rounded-2xl p-6 text-center">
+                      <p className="text-sm text-slate-500">Belum ada tim ditugaskan</p>
+                      <p className="text-xs text-slate-400 mt-1">Hubungi admin untuk assignment</p>
+                    </div>
                   )}
-                  {missions.map((mission) => (
+                  {teams.map((team) => (
                     <button
-                      key={mission.id}
-                      onClick={() => handleSelectMission(mission)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                        selectedMission?.id === mission.id
-                          ? "border-[#0B2C6B] bg-[#0B2C6B]/[0.03]"
-                          : "border-transparent bg-white hover:border-[#0B2C6B]/20"
+                      key={team.id}
+                      onClick={() => setSelectedTeam(team)}
+                      className={`w-full text-left p-4 rounded-2xl transition-all ${
+                        selectedTeam?.id === team.id
+                          ? "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/25"
+                          : "bg-white shadow-sm"
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-sm text-[#0B2C6B]">{mission.name}</p>
-                          <p className="text-xs text-[#4A4C54] mt-1">{mission.description}</p>
-                          <div className="flex gap-1 mt-2">
-                            {mission.dimensions.map((d) => (
-                              <span
-                                key={d.id}
-                                className="text-[10px] px-2 py-0.5 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/60 font-medium"
-                              >
-                                {d.name}
-                              </span>
-                            ))}
-                          </div>
+                          <p className={`font-semibold ${selectedTeam?.id === team.id ? "text-white" : "text-slate-800"}`}>
+                            {team.name}
+                          </p>
+                          <p className={`text-xs mt-0.5 ${selectedTeam?.id === team.id ? "text-white/70" : "text-slate-500"}`}>
+                            {team.batch}
+                          </p>
                         </div>
-                        {selectedMission?.id === mission.id && (
-                          <Check className="w-5 h-5 text-[#0B2C6B] shrink-0" />
-                        )}
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                          selectedTeam?.id === team.id ? "bg-white/20" : "bg-slate-100"
+                        }`}>
+                          {selectedTeam?.id === team.id ? (
+                            <Check className="w-4 h-4 text-white" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                          )}
+                        </div>
                       </div>
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              {/* Team Selection */}
-              {selectedMission && (
-                <div>
-                  <h2 className="text-sm font-semibold text-[#0B2C6B] mb-3 uppercase tracking-wide">
-                    Pilih Tim
+              {/* Mission Selection */}
+              {selectedTeam && (
+                <motion.section
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">
+                    Pilih Mission
                   </h2>
                   <div className="space-y-2">
-                    {teams.length === 0 && (
-                      <p className="text-sm text-[#4A4C54] p-4 bg-white rounded-xl">
-                        Belum ada tim terdaftar.
-                      </p>
-                    )}
-                    {teams.map((team) => (
+                    {missions.map((mission) => (
                       <button
-                        key={team.id}
-                        onClick={() => handleSelectTeam(team)}
-                        className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                          selectedTeam?.id === team.id
-                            ? "border-[#0B2C6B] bg-[#0B2C6B]/[0.03]"
-                            : "border-transparent bg-white hover:border-[#0B2C6B]/20"
+                        key={mission.id}
+                        onClick={() => setSelectedMission(mission)}
+                        className={`w-full text-left p-4 rounded-2xl transition-all ${
+                          selectedMission?.id === mission.id
+                            ? "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/25"
+                            : "bg-white shadow-sm"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm text-[#0B2C6B]">{team.name}</p>
-                            <p className="text-xs text-[#4A4C54]">{team.batch}</p>
-                            {team.members && team.members.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {team.members.map((m, i) => (
-                                  <span
-                                    key={i}
-                                    className="text-[10px] px-2 py-0.5 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/60"
-                                  >
-                                    {m.member_name}
-                                  </span>
-                                ))}
-                              </div>
+                            <p className={`font-semibold ${selectedMission?.id === mission.id ? "text-white" : "text-slate-800"}`}>
+                              {mission.name}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {mission.dimensions.slice(0, 3).map((d) => (
+                                <span
+                                  key={d.id}
+                                  className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                    selectedMission?.id === mission.id
+                                      ? "bg-white/20 text-white/80"
+                                      : "bg-slate-100 text-slate-500"
+                                  }`}
+                                >
+                                  {d.name}
+                                </span>
+                              ))}
+                              {mission.dimensions.length > 3 && (
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                                  selectedMission?.id === mission.id
+                                    ? "bg-white/20 text-white/80"
+                                    : "bg-slate-100 text-slate-500"
+                                }`}>
+                                  +{mission.dimensions.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ml-3 ${
+                            selectedMission?.id === mission.id ? "bg-white/20" : "bg-slate-100"
+                          }`}>
+                            {selectedMission?.id === mission.id ? (
+                              <Check className="w-4 h-4 text-white" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-slate-400" />
                             )}
                           </div>
-                          {selectedTeam?.id === team.id && (
-                            <Check className="w-5 h-5 text-[#0B2C6B] shrink-0" />
-                          )}
                         </div>
                       </button>
                     ))}
                   </div>
-                </div>
+                </motion.section>
+              )}
+
+              {/* Start Button */}
+              {canProceed && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent"
+                >
+                  <button
+                    onClick={() => setStep("observe")}
+                    className="w-full h-14 rounded-2xl bg-[#0B2C6B] text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#0B2C6B]/25"
+                  >
+                    Mulai Observasi
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </motion.div>
               )}
             </motion.div>
           )}
 
+          {/* Step 2: Observation */}
           {step === "observe" && selectedMission && selectedTeam && (
             <motion.div
               key="observe"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="space-y-4"
             >
-              {/* Participant Roster Card */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#0B2C6B]" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                      Anggota {selectedTeam.name} ({teamMembers.length} Peserta)
-                    </h3>
-                  </div>
-                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-[#0B2C6B]/10 text-[#0B2C6B] font-semibold w-fit">
-                    Peserta tidak perlu login
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Fasilitator mencatat nama peserta tim yang hadir di lapangan secara langsung. Nilai 8 dimensi perilaku akan teratribusikan ke tim ini secara otomatis.
-                </p>
-
-                {/* Current Members List */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {teamMembers.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic">Belum ada nama peserta. Ketik dan tambahkan nama peserta di bawah.</p>
-                  ) : (
-                    teamMembers.map((m, idx) => (
+              {/* Team Members - Compact */}
+              {selectedTeam.members && selectedTeam.members.length > 0 && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                  <p className="text-xs text-slate-500 mb-2">Anggota tim:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedTeam.members.map((m, i) => (
                       <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800"
+                        key={i}
+                        className="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600"
                       >
-                        <span>{m.member_name}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveMember(m.member_name)}
-                          className="text-slate-400 hover:text-red-500 transition-colors"
-                          title="Hapus peserta"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {m.member_name}
                       </span>
-                    ))
-                  )}
-                </div>
-
-                {/* Add Member Input */}
-                <form onSubmit={handleAddMember} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMemberName}
-                    onChange={(e) => setNewMemberName(e.target.value)}
-                    placeholder="Ketik nama peserta (contoh: Budi Santoso)..."
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-[#0B2C6B]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newMemberName.trim() || addingMember}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] disabled:opacity-40 transition-all"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    Tambah Peserta
-                  </button>
-                </form>
-              </div>
-
-              {selectedMission.dimensions.map((dim, idx) => (
-                <div key={dim.id} className="bg-white rounded-xl p-4">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-7 h-7 rounded-full bg-[#0B2C6B] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                      {idx + 1}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-[#0B2C6B]">{dim.name}</h3>
-                      <p className="text-xs text-[#4A4C54] mt-0.5">{dim.question}</p>
-                    </div>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  <div className="space-y-2">
-                    {dim.levels.map((level) => {
-                      const isSelected = scores[dim.id] === level.level_value;
-                      return (
-                        <button
-                          key={level.level_value}
-                          onClick={() => handleScoreSelect(dim.id, level.level_value as LevelValue)}
-                          className={`w-full text-left p-3 rounded-lg border transition-all ${
-                            isSelected
-                              ? "border-[#0B2C6B] bg-[#0B2C6B]/[0.04]"
-                              : "border-black/[0.06] bg-white hover:border-[#0B2C6B]/30"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+              {/* Dimension Cards */}
+              {selectedMission.dimensions.map((dim, idx) => {
+                const selectedLevel = scores[dim.id];
+                return (
+                  <div key={dim.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    {/* Dimension Header */}
+                    <div className="p-4 border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#0B2C6B]/10 text-[#0B2C6B] text-sm font-bold flex items-center justify-center">
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-slate-800">{dim.name}</h3>
+                          <p className="text-xs text-slate-500 mt-0.5">{dim.question}</p>
+                        </div>
+                        {selectedLevel && (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${LEVEL_COLORS[selectedLevel].bg}`}>
+                            <span className={`text-sm font-bold ${LEVEL_COLORS[selectedLevel].text}`}>
+                              {selectedLevel}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Level Options - Horizontal Scroll on Mobile */}
+                    <div className="p-3">
+                      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                        {dim.levels.map((level) => {
+                          const isSelected = scores[dim.id] === level.level_value;
+                          const colors = LEVEL_COLORS[level.level_value];
+                          return (
+                            <button
+                              key={level.level_value}
+                              onClick={() => handleScoreSelect(dim.id, level.level_value as LevelValue)}
+                              className={`flex-shrink-0 w-[72px] p-3 rounded-xl border-2 transition-all ${
                                 isSelected
-                                  ? "border-[#0B2C6B] bg-[#0B2C6B]"
-                                  : "border-black/20"
+                                  ? `${colors.bg} ${colors.border} border-current`
+                                  : "border-slate-100 bg-white"
                               }`}
                             >
-                              {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-[#0B2C6B]">
-                                  {level.level_value}
-                                </span>
-                                <span className="text-sm font-medium text-[#0B2C6B]">
-                                  {level.level_label}
-                                </span>
+                              <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-sm font-bold mb-1 ${
+                                isSelected ? colors.text : "bg-slate-100 text-slate-500"
+                              }`}>
+                                {level.level_value}
                               </div>
-                              <p className="text-xs text-[#4A4C54] mt-0.5">
-                                {level.description}
+                              <p className={`text-[10px] font-medium text-center leading-tight ${
+                                isSelected ? colors.text : "text-slate-500"
+                              }`}>
+                                {level.level_label}
                               </p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                            </button>
+                          );
+                        })}
+                      </div>
 
-              {/* Notes */}
-              <div className="bg-white rounded-xl p-4">
-                <label className="text-sm font-semibold text-[#0B2C6B] mb-2 block">
-                  Catatan (opsional, maks. 50 karakter)
-                </label>
+                      {/* Selected Level Description */}
+                      {selectedLevel && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="mt-3 pt-3 border-t border-slate-100"
+                        >
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {dim.levels.find(l => l.level_value === selectedLevel)?.description}
+                          </p>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Notes - Simple */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <input
                   type="text"
                   value={notes}
                   onChange={(e) => handleNotesChange(e.target.value)}
-                  placeholder="Contoh: Leader langsung membagi peran."
-                  className="w-full px-3 py-2.5 rounded-lg border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+                  placeholder="Catatan singkat (opsional)..."
+                  maxLength={50}
+                  className="w-full text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
                 />
-                <p className="text-xs text-[#4A4C54]/60 mt-1 text-right">{notes.length}/50</p>
               </div>
 
-              {/* Submit */}
-              <button
-                onClick={handleSubmit}
-                disabled={!allDimensionsScored}
-                className="w-full h-14 rounded-xl bg-[#0B2C6B] text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#071B3D] shadow-md shadow-[#0B2C6B]/20"
-              >
-                {allDimensionsScored ? (
-                  <>
-                    Submit Observasi
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : (
-                  `Isi semua dimensi (${Object.keys(scores).length}/${selectedMission.dimensions.length})`
-                )}
-              </button>
+              {/* Submit Button - Fixed at Bottom */}
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!allDimensionsScored}
+                  className={`w-full h-14 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                    allDimensionsScored
+                      ? "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/25"
+                      : "bg-slate-200 text-slate-400"
+                  }`}
+                >
+                  {allDimensionsScored ? (
+                    <>
+                      Simpan Observasi
+                      <Check className="w-5 h-5" />
+                    </>
+                  ) : (
+                    `${Object.keys(scores).length}/${selectedMission.dimensions.length} dimensi`
+                  )}
+                </button>
+              </div>
             </motion.div>
           )}
 
+          {/* Submitting */}
           {step === "submitting" && (
             <motion.div
               key="submitting"
@@ -618,12 +586,12 @@ function TbosObservationContent() {
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center py-20"
             >
-              <Loader2 className="w-8 h-8 animate-spin text-[#0B2C6B] mb-4" />
-              <p className="text-sm text-[#4A4C54]">Menyimpan observasi...</p>
+              <div className="w-12 h-12 rounded-full border-3 border-[#0B2C6B]/20 border-t-[#0B2C6B] animate-spin mb-4" />
+              <p className="text-sm text-slate-500">Menyimpan...</p>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
     </div>
   );
 }
