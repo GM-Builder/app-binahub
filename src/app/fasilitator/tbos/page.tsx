@@ -100,8 +100,8 @@ function TbosObservationContent() {
 
       setMissions(mList);
       setTeams(tList);
-    } catch {
-      setError("Gagal memuat data.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data.");
     } finally {
       setLoading(false);
     }

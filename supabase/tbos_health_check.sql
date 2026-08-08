@@ -13,6 +13,15 @@ select
   (select count(*) from public.tbos_behavioral_dimensions) as dimensions,
   (select count(*) from public.tbos_dimension_levels) as levels,
   (select count(*) from public.tbos_mission_dimensions) as mission_dimension_mappings,
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'tbos_team_members' and column_name = 'id'
+  ) as member_id_ready,
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'tbos_team_members' and column_name = 'is_captain'
+  ) as captain_column_ready,
+  (select count(*) from public.tbos_facilitator_teams) as facilitator_team_assignments,
   has_function_privilege('service_role', 'public.tbos_submit_observation(uuid,uuid,uuid,text,text,jsonb,boolean)', 'EXECUTE') as submit_rpc_ready,
   has_function_privilege('service_role', 'public.tbos_set_team_captain(uuid,uuid,boolean)', 'EXECUTE') as captain_rpc_ready,
   has_function_privilege('service_role', 'public.tbos_mutate_observation(uuid,uuid,text,text,text,jsonb)', 'EXECUTE') as mutation_rpc_ready;
