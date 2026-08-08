@@ -22,6 +22,21 @@ select
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'tbos_team_members' and column_name = 'is_captain'
   ) as captain_column_ready,
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'tbos_observations' and column_name = 'client_submission_id'
+  ) as client_submission_column_ready,
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'tbos_observation_members' and column_name = 'team_member_id'
+  ) as observation_member_source_ready,
+  exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.tbos_observation_members'::regclass
+      and confrelid = 'public.tbos_team_members'::regclass
+      and contype = 'f'
+  ) as observation_member_relationship_ready,
   (select count(*) from public.tbos_facilitator_teams) as facilitator_team_assignments,
   (select count(*) from public.tbos_observation_members) as observation_member_snapshots,
   (select relrowsecurity from pg_class where oid = 'public.tbos_observation_members'::regclass) as observation_members_rls_enabled,
