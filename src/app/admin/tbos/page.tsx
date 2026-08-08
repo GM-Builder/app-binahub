@@ -25,7 +25,8 @@ import {
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { generateDashboardData } from "@/modules/tbos/scoring";
-import { createTeam } from "@/modules/tbos/api-client";
+import { createTeam, fetchTeams } from "@/modules/tbos/api-client";
+import type { TbosDbTeam } from "@/modules/tbos/api-client";
 import type { TbosDashboardData } from "@/modules/tbos/types";
 import { TbosRadarChart } from "./_components/radar-chart";
 import { TbosHeatmap } from "./_components/heatmap";
@@ -59,6 +60,7 @@ function TbosDashboardContent() {
   const [dashboardData, setDashboardData] = useState<TbosDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [teamRoster, setTeamRoster] = useState<TbosDbTeam[]>([]);
 
   // Create Team Modal State
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -80,9 +82,13 @@ function TbosDashboardContent() {
   const fetchData = useCallback(async () => {
     try {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
-      const { teams, observations } = await fetchDashboardRawData();
+      const [{ teams, observations }, roster] = await Promise.all([
+        fetchDashboardRawData(),
+        fetchTeams(),
+      ]);
       const computed = generateDashboardData(teams, observations);
       setDashboardData(computed);
+      setTeamRoster(roster);
     } catch {
       setError("Gagal memuat data dashboard.");
     } finally {
@@ -323,6 +329,8 @@ function TbosDashboardContent() {
         />
       </div>
 
+      <TeamRosterPanel teams={teamRoster} />
+
       {/* Tab Navigation + Export */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-1 border-b border-black/[0.06] overflow-x-auto">
@@ -385,6 +393,48 @@ function TbosDashboardContent() {
         />
       )}
     </div>
+  );
+}
+
+function TeamRosterPanel({ teams }: { teams: TbosDbTeam[] }) {
+  return (
+    <section className="border border-slate-200 bg-white p-5 shadow-[0_10px_28px_rgba(8,29,66,0.06)]" aria-labelledby="team-roster-title">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 id="team-roster-title" className="text-base font-bold text-[#0B2C6B]">Roster Tim & Kapten</h2>
+          <p className="mt-1 text-sm text-slate-500">Anggota master yang disiapkan admin atau ditambahkan fasilitator.</p>
+        </div>
+        <UsersRound className="h-5 w-5 shrink-0 text-[#D9A441]" aria-hidden="true" />
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {teams.map((team) => {
+          const captain = team.members.find((member) => member.is_captain);
+          return (
+            <article key={team.id} className="border border-slate-200 bg-[#F8F8F5] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate font-bold text-[#0B2C6B]">{team.name}</h3>
+                  <p className="mt-1 text-xs text-slate-500">{team.batch} · {team.members.length} anggota</p>
+                </div>
+                <span className="shrink-0 text-xs font-semibold text-[#8A641D]">{captain ? "Ada kapten" : "Belum ada kapten"}</span>
+              </div>
+              {team.members.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-500">Roster belum diisi.</p>
+              ) : (
+                <ul className="mt-4 divide-y divide-slate-200 border-y border-slate-200" aria-label={`Anggota ${team.name}`}>
+                  {team.members.map((member) => (
+                    <li key={member.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <span className="truncate font-medium text-slate-700">{member.member_name}</span>
+                      {member.is_captain && <span className="shrink-0 text-xs font-bold text-[#A16F12]">Kapten</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

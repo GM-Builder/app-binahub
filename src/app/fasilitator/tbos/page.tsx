@@ -312,15 +312,30 @@ function TbosObservationContent() {
     }
   };
 
-  const resetForm = () => {
-    setStep("tasks");
-    setSelectedTeam(null);
-    setSelectedMission(null);
-    setTeamMembers([]);
-    setSessionCaptainId(null);
-    setScores({});
-    setNotes("");
+  const resetForm = async () => {
+    setLoading(true);
     setError("");
+    try {
+      const [missionList, teamList, observationList] = await Promise.all([
+        fetchMissions(),
+        fetchTeams(),
+        fetchObservations(userId),
+      ]);
+      setMissions(missionList);
+      setTeams(teamList);
+      setObservations(observationList);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memperbarui penugasan.");
+    } finally {
+      setLoading(false);
+      setStep("tasks");
+      setSelectedTeam(null);
+      setSelectedMission(null);
+      setTeamMembers([]);
+      setSessionCaptainId(null);
+      setScores({});
+      setNotes("");
+    }
   };
 
   const completedMissionIds = (teamId: string) => new Set(
@@ -363,7 +378,7 @@ function TbosObservationContent() {
                 <p className="font-bold text-[#0B2C6B]">{selectedTeam?.name}</p>
                 <p className="mt-1 text-sm text-slate-600">{selectedMission?.name}</p>
               </div>
-              <button type="button" onClick={resetForm} className={`flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#0B2C6B] px-4 font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>
+              <button type="button" onClick={() => void resetForm()} className={`flex min-h-12 w-full items-center justify-center rounded-xl bg-[#0B2C6B] px-4 font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>
                 Kembali ke Penugasan
               </button>
               <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 font-semibold text-slate-700 ${FOCUS}`}>
@@ -390,7 +405,7 @@ function TbosObservationContent() {
                     <ClipboardCheck className="h-5 w-5 text-[#E8C778]" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#E8C778]">BinaHub</p>
+                   <p className="font-sans text-xl font-extrabold tracking-[-0.04em]"><span className="text-white">Bina</span><span className="text-[#E8C778]">Hub</span></p>
                     <p className="text-sm font-semibold text-white/75">T-BOS Field Console</p>
                   </div>
                 </div>
@@ -467,7 +482,7 @@ function TbosObservationContent() {
           onBack={() => setStep("tasks")}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
         >
-          <section className="rounded-3xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
+           <section className="rounded-2xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 id="attendance-title" className="text-lg font-bold text-[#081D42]">Kehadiran sesi</h2>
@@ -487,7 +502,7 @@ function TbosObservationContent() {
                 {teamMembers.map((member) => {
                   const isSessionCaptain = member.isPresent && sessionCaptainId === member.id;
                   return (
-                    <article key={member.id} className={`rounded-2xl border p-3 ${isSessionCaptain ? "border-[#D6A84B] bg-[#FFF9EA]" : "border-slate-200 bg-white"}`}>
+                     <article key={member.id} className={`rounded-xl border p-3 ${isSessionCaptain ? "border-[#D6A84B] bg-[#FFF9EA]" : "border-slate-200 bg-white"}`}>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -537,7 +552,7 @@ function TbosObservationContent() {
             </form>
           </section>
 
-          <div className="rounded-2xl border border-[#D6A84B]/35 bg-[#FFF9EA] p-4" role="status">
+           <div className="rounded-xl border border-[#D6A84B]/35 bg-[#FFF9EA] p-4" role="status">
             <p className="text-sm font-bold text-[#6D511B]">Ringkasan sesi</p>
             <p className="mt-1 text-sm text-[#7A642F]">{presentMembers.length} hadir · Kapten: {sessionCaptain?.member_name || "belum dipilih"}</p>
             <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten sesi hanya tersimpan pada observasi ini dan tidak mengubah kapten master.</p>
@@ -615,7 +630,7 @@ function TbosObservationContent() {
               const selectedLevel = scores[dimension.id];
               const selectedDefinition = dimension.levels.find((level) => level.level_value === selectedLevel);
               return (
-                <fieldset key={dimension.id} className={`rounded-3xl border border-black/[0.04] bg-white p-4 shadow-[0_9px_26px_rgba(8,29,66,0.08)] sm:p-5 ${index % 2 ? "sm:ml-3" : "sm:mr-3"}`}>
+                   <fieldset key={dimension.id} className={`rounded-2xl border border-black/[0.04] bg-white p-4 shadow-[0_9px_26px_rgba(8,29,66,0.08)] sm:p-5 ${index % 2 ? "sm:ml-3" : "sm:mr-3"}`}>
                   <legend className="sr-only">{dimension.name}</legend>
                   <div className="flex items-start gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-sm font-bold text-[#E8C778]">{index + 1}</span>
@@ -652,7 +667,7 @@ function TbosObservationContent() {
             })}
           </div>
 
-          <section className="rounded-3xl bg-white p-5 shadow-[0_10px_30px_rgba(8,29,66,0.08)]" aria-labelledby="notes-title">
+           <section className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(8,29,66,0.08)]" aria-labelledby="notes-title">
             <div className="flex items-center justify-between gap-3">
               <label id="notes-title" htmlFor="observation-notes" className="font-bold text-[#081D42]">Catatan lapangan</label>
               <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
