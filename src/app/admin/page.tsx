@@ -201,16 +201,16 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <nav className="space-y-1.5">
+            {/* Navigation Tabs: Analitik & Intelijen */}
+            <nav className="space-y-1">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Navigasi Utama
+                Pusat Analitik &amp; Intelijen
               </p>
               {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-xs font-semibold transition-all ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2 text-left text-xs font-semibold transition-all ${
                     activeTab === tab
                       ? "bg-white text-[#0B2C6B] shadow-sm shadow-black/10"
                       : "text-slate-300 hover:bg-white/[0.08] hover:text-white"
@@ -226,10 +226,10 @@ export default function AdminDashboardPage() {
               ))}
             </nav>
 
-            {/* Modules & Workflows */}
-            <div className="mt-6 border-t border-slate-800/80 pt-4 space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Operasional Lapangan
+            {/* Manajemen & Tata Kelola */}
+            <div className="mt-5 border-t border-slate-800/80 pt-3 space-y-1">
+              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Manajemen &amp; Tata Kelola
               </p>
               <Link
                 href="/admin/users"
@@ -238,10 +238,35 @@ export default function AdminDashboardPage() {
                 Manajemen User &amp; Role
               </Link>
               <Link
+                href="/admin/engagements"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Program Engagements
+              </Link>
+              <Link
+                href="/admin/rbac"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Matriks Izin RBAC
+              </Link>
+            </div>
+
+            {/* Operasional Lapangan */}
+            <div className="mt-4 border-t border-slate-800/80 pt-3 space-y-1">
+              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Operasional Lapangan
+              </p>
+              <Link
                 href="/fasilitator/tbos/observations"
                 className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
               >
                 Kelola &amp; Kunci Observasi
+              </Link>
+              <Link
+                href="/fasilitator/tbos"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Form Input Observasi
               </Link>
               <Link
                 href="/peserta/dashboard"
