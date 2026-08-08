@@ -32,4 +32,28 @@ describe("T-BOS offline queue", () => {
 
     expect(getQueuedObservations("facilitator-a")[0].clientSubmissionId).toBe("submission-123");
   });
+
+  it("keeps the submitted roster snapshot in the queue", () => {
+    const memberId = crypto.randomUUID();
+    queueObservation("facilitator-a", {
+      teamId: crypto.randomUUID(),
+      missionId: crypto.randomUUID(),
+      batch: "Batch 1",
+      notes: "",
+      scores: [{ dimensionId: crypto.randomUUID(), levelValue: 4 }],
+      members: [{
+        teamMemberId: memberId,
+        memberName: "Captain A",
+        isPresent: true,
+        isCaptain: true,
+      }],
+    });
+
+    expect(getQueuedObservations("facilitator-a")[0].members).toEqual([{
+      teamMemberId: memberId,
+      memberName: "Captain A",
+      isPresent: true,
+      isCaptain: true,
+    }]);
+  });
 });

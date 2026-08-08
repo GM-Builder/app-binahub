@@ -52,12 +52,30 @@ export interface TbosDbObservation {
   lockedBy: string | null;
   revisionDeadline: string | null;
   canEdit: boolean;
+  members: TbosObservationMemberSnapshot[];
   scores: {
     dimensionId: string;
     dimensionCode: DimensionCode;
     dimensionName: string;
     levelValue: number;
   }[];
+}
+
+export interface TbosObservationMemberSnapshot {
+  id: string;
+  teamMemberId: string | null;
+  memberName: string;
+  isPresent: boolean;
+  isCaptain: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TbosObservationMemberInput {
+  teamMemberId?: string | null;
+  memberName: string;
+  isPresent: boolean;
+  isCaptain: boolean;
 }
 
 export interface TbosDbAuditEntry {
@@ -91,6 +109,7 @@ export interface QueuedObservation {
   batch: string;
   notes: string;
   scores: { dimensionId: string; levelValue: number }[];
+  members?: TbosObservationMemberInput[];
   createdAt: string;
 }
 
@@ -157,13 +176,27 @@ export async function submitObservation(input: {
   batch: string;
   notes?: string;
   scores: { dimensionId: string; levelValue: number }[];
+  members?: TbosObservationMemberInput[];
 }): Promise<{ success: boolean; observationId?: string; error?: string; retryable?: boolean }> {
   try {
+    let members = input.members;
+    if (!members) {
+      const team = (await fetchTeams()).find((candidate) => candidate.id === input.teamId);
+      if (!team) throw new Error("Tim untuk snapshot anggota tidak ditemukan.");
+      members = team.members.map((member) => ({
+        teamMemberId: member.id,
+        memberName: member.member_name,
+        isPresent: true,
+        isCaptain: Boolean(member.is_captain),
+      }));
+    }
+
     const res = await fetch("/api/tbos/observations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...input,
+        members,
         clientSubmissionId: input.clientSubmissionId || crypto.randomUUID(),
       }),
     });
@@ -285,9 +318,20 @@ export async function toggleLockObservation(
 /**
  * Fetch raw data for Admin Dashboard calculations from GET /api/tbos/dashboard.
  */
+export interface TbosViewerStats {
+  role: "admin" | "facilitator";
+  assignedTeamCount: number | null;
+  organizationCount: number | null;
+  scopedTeamCount: number;
+  ownObservationCount: number;
+  ownTeamsObserved: number;
+  ownAverageScore: number | null;
+}
+
 export async function fetchDashboardRawData(): Promise<{
   teams: { id: string; name: string; batch: string }[];
   observations: any[];
+  viewerStats: TbosViewerStats | null;
 }> {
   const res = await fetch("/api/tbos/dashboard");
   const data = await res.json().catch(() => ({}));
@@ -297,6 +341,7 @@ export async function fetchDashboardRawData(): Promise<{
   return {
     teams: data.teams || [],
     observations: data.observations || [],
+    viewerStats: data.viewerStats || null,
   };
 }
 
@@ -361,6 +406,7 @@ export function queueObservation(profileId: string, input: {
   batch: string;
   notes: string;
   scores: { dimensionId: string; levelValue: number }[];
+  members?: TbosObservationMemberInput[];
 }) {
   if (typeof window === "undefined") return;
   const queued = getQueuedObservations(profileId);
@@ -393,8 +439,27 @@ export async function flushQueuedObservations(profileId: string): Promise<number
 
   let successCount = 0;
   const remaining: QueuedObservation[] = [];
+  let teams: TbosDbTeam[] | undefined;
 
   for (const item of queued) {
+    if (!item.members) {
+      try {
+        teams ||= await fetchTeams();
+        const team = teams.find((candidate) => candidate.id === item.teamId);
+        if (!team) throw new Error("Tim untuk snapshot anggota tidak ditemukan.");
+        item.members = team.members.map((member) => ({
+          teamMemberId: member.id,
+          memberName: member.member_name,
+          isPresent: true,
+          isCaptain: Boolean(member.is_captain),
+        }));
+        localStorage.setItem(queueKey(profileId), JSON.stringify(queued));
+      } catch {
+        remaining.push(item);
+        continue;
+      }
+    }
+
     const res = await submitObservation({
       teamId: item.teamId,
       missionId: item.missionId,
@@ -403,6 +468,7 @@ export async function flushQueuedObservations(profileId: string): Promise<number
       batch: item.batch,
       notes: item.notes,
       scores: item.scores,
+      members: item.members,
     });
 
     if (res.success) {

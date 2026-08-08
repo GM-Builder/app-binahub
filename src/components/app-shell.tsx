@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { usePageTracking } from "@/hooks/use-analytics";
 import {
   ArrowUpRight,
+  BarChart3,
   ClipboardCheck,
   ClipboardList,
   Eye,
@@ -50,6 +51,7 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
   facilitator: [
     { href: "/fasilitator/tbos", label: "Observasi", icon: <ClipboardCheck size={16} /> },
     { href: "/fasilitator/tbos/observations", label: "Riwayat Observasi", icon: <Eye size={16} /> },
+    { href: "/fasilitator/tbos/results", label: "Hasil", icon: <BarChart3 size={16} /> },
   ],
 };
 
@@ -64,9 +66,9 @@ const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon:
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={20} /> },
   ],
   facilitator: [
-    { href: "/home", label: "Beranda", icon: <Home size={20} /> },
     { href: "/fasilitator/tbos", label: "Observasi", icon: <ClipboardCheck size={20} /> },
     { href: "/fasilitator/tbos/observations", label: "Riwayat", icon: <Eye size={20} /> },
+    { href: "/fasilitator/tbos/results", label: "Hasil", icon: <BarChart3 size={20} /> },
   ],
   admin: [
     { href: "/admin", label: "Dashboard", icon: <Home size={20} /> },
@@ -76,7 +78,7 @@ const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon:
 };
 
 function routeIsActive(pathname: string, href: string) {
-  if (href === "/admin" || href === "/home" || href === "/help") return pathname === href;
+  if (href === "/admin" || href === "/home" || href === "/help" || href === "/fasilitator/tbos") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardCheck, Eye, Home, LogOut } from "lucide-react";
+import { BarChart3, ClipboardCheck, Eye, LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const items = [
-  { href: "/home", label: "Beranda", icon: Home },
   { href: "/fasilitator/tbos", label: "Form", icon: ClipboardCheck },
   { href: "/fasilitator/tbos/observations", label: "Riwayat", icon: Eye },
+  { href: "/fasilitator/tbos/results", label: "Hasil", icon: BarChart3 },
 ];
 
 export function TbosFacilitatorNav() {

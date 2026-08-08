@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check } from "lucide-react";
+import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check, UsersRound, Crown } from "lucide-react";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
@@ -418,6 +418,53 @@ function ObservationDetailPanel({
                   </div>
                 )}
               </div>
+
+              {/* Roster snapshot */}
+              {detail.members && detail.members.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-[#0B2C6B] mb-2 flex items-center gap-2">
+                    <UsersRound className="w-4 h-4" /> Anggota & Kapten
+                  </h3>
+                  <div className="space-y-1.5">
+                    {detail.members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-lg bg-[#F5F7FA]"
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span
+                            className={`h-2 w-2 rounded-full shrink-0 ${
+                              member.isPresent ? "bg-emerald-500" : "bg-slate-300"
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <span
+                            className={`text-sm truncate ${
+                              member.isPresent ? "text-[#0B2C6B] font-medium" : "text-[#4A4C54]"
+                            }`}
+                          >
+                            {member.memberName}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1 shrink-0">
+                          {member.isCaptain && member.isPresent && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-semibold">
+                              <Crown className="w-3 h-3" /> Kapten
+                            </span>
+                          )}
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                              member.isPresent ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {member.isPresent ? "Hadir" : "Tidak hadir"}
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Scores */}
               <div>
