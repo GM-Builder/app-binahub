@@ -1,75 +1,46 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Loader2,
-  Mail,
-  Lock,
-  User,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  KeyRound,
-  ShieldCheck,
-} from "lucide-react";
-import { supabase } from "@/lib/supabase";
-
-export default function AuthPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-white">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0B2C6B]" />
-        </div>
-      }
-    >
-      <AuthContent />
-    </Suspense>
-  );
-}
+import { useState, Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
-  // Check URL params for registered/confirmed/mode states
   useEffect(() => {
-    const paramMode = searchParams.get("mode");
-    if (paramMode === "signup" || paramMode === "register") {
-      setMode("signup");
+    const paramMode = searchParams.get('mode');
+    if (paramMode === 'signup' || paramMode === 'register') {
+      setMode('signup');
+      setShowEmailForm(true);
     }
-    const registered = searchParams.get("registered");
-    const confirmed = searchParams.get("confirmed");
-    if (registered) setSuccess("Akun berhasil dibuat. Silakan masuk.");
-    if (confirmed) setSuccess("Email berhasil diverifikasi. Silakan masuk.");
+    const registered = searchParams.get('registered');
+    const confirmed = searchParams.get('confirmed');
+    if (registered) setSuccess('Akun berhasil dibuat. Silakan masuk.');
+    if (confirmed) setSuccess('Email terverifikasi. Silakan masuk.');
   }, [searchParams]);
 
-  // Check existing session
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
-        setRedirecting(true);
-        router.replace("/home");
+        router.replace('/home');
       }
     });
   }, [router]);
@@ -77,40 +48,40 @@ function AuthContent() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password) {
-      setError("Email dan password wajib diisi.");
+      setError('Isi email dan password.');
       setLoading(false);
       return;
     }
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
       });
 
       if (signInError) {
-        if (signInError.message.toLowerCase().includes("email not confirmed")) {
-          setError("Email belum diverifikasi. Silakan periksa kotak masuk/spam Anda.");
-        } else if (signInError.message.toLowerCase().includes("invalid login credentials")) {
-          setError("Email atau password tidak sesuai.");
-        } else {
-          setError(signInError.message);
-        }
+        setError(
+          signInError.message.includes('Email not confirmed')
+            ? 'Email belum diverifikasi. Cek inbox Anda.'
+            : signInError.message.includes('Invalid login credentials')
+            ? 'Email atau password tidak valid.'
+            : signInError.message
+        );
         setLoading(false);
         return;
       }
 
-      if (data.session) {
-        setRedirecting(true);
-        router.replace("/home");
+      if (signInData.user) {
+        router.replace('/home');
+        router.refresh();
       }
     } catch {
-      setError("Terjadi kendala jaringan. Silakan coba beberapa saat lagi.");
+      setError('Terjadi kendala jaringan. Silakan coba lagi.');
       setLoading(false);
     }
   };
@@ -118,37 +89,37 @@ function AuthContent() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setError("Masukkan email yang valid.");
+    if (!agreeTerms || !agreePrivacy) {
+      setError('Setujui Syarat & Ketentuan serta Kebijakan Privasi sebelum mendaftar.');
       setLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password minimal 6 karakter.");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError('Masukkan email yang valid.');
       setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Konfirmasi password tidak cocok.");
+      setError('Konfirmasi password tidak cocok.');
       setLoading(false);
       return;
     }
 
-    if (!agreeTerms) {
-      setError("Anda harus menyetujui Syarat & Ketentuan serta Kebijakan Privasi.");
+    if (password.length < 6) {
+      setError('Password minimal 6 karakter.');
       setLoading(false);
       return;
     }
 
     try {
-      const defaultName = fullName.trim() || normalizedEmail.split("@")[0];
-      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/home` : undefined;
+      const defaultName = fullName.trim() || normalizedEmail.split('@')[0] || 'Peserta BinaHub';
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/home` : undefined;
 
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
@@ -157,16 +128,16 @@ function AuthContent() {
           emailRedirectTo: redirectTo,
           data: {
             full_name: defaultName,
-            role: "peserta",
+            role: 'peserta',
           },
         },
       });
 
       if (signUpError) {
-        if (signUpError.message.toLowerCase().includes("already registered")) {
-          setError("Email ini sudah terdaftar. Silakan masuk dengan password Anda.");
+        if (signUpError.message?.includes('already registered')) {
+          setError('Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.');
         } else {
-          setError(signUpError.message || "Pendaftaran gagal. Silakan coba lagi.");
+          setError(signUpError.message || 'Registrasi gagal. Silakan coba lagi.');
         }
         setLoading(false);
         return;
@@ -174,24 +145,23 @@ function AuthContent() {
 
       if (authData.user) {
         if (authData.user.identities && authData.user.identities.length === 0) {
-          setError("Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.");
+          setError('Email ini sudah terdaftar. Silakan masuk menggunakan akun Anda.');
           setLoading(false);
           return;
         }
 
         if (!authData.session) {
-          setSuccess("Akun berhasil didaftarkan! Silakan periksa email Anda untuk verifikasi.");
-          setMode("signin");
+          setSuccess('Registrasi berhasil! Silakan periksa email Anda untuk verifikasi.');
+          setMode('signin');
           setLoading(false);
           return;
         }
 
-        // Active session -> redirect
-        setRedirecting(true);
-        router.replace("/home");
+        router.replace('/home');
+        router.refresh();
       }
     } catch {
-      setError("Terjadi kendala saat mendaftar. Silakan coba lagi.");
+      setError('Gagal menghubungi server. Silakan coba beberapa saat lagi.');
       setLoading(false);
     }
   };
@@ -199,18 +169,18 @@ function AuthContent() {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
-      setError("Masukkan email Anda untuk reset password.");
+      setError('Masukkan alamat email Anda.');
       setLoading(false);
       return;
     }
 
     try {
-      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/home` : undefined;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo,
       });
@@ -218,10 +188,10 @@ function AuthContent() {
       if (resetError) {
         setError(resetError.message);
       } else {
-        setSuccess("Tautan reset password telah dikirim ke email Anda.");
+        setSuccess('Tautan reset password telah dikirim ke email Anda.');
       }
     } catch {
-      setError("Gagal mengirim email reset password.");
+      setError('Gagal mengirim tautan reset password.');
     } finally {
       setLoading(false);
     }
@@ -229,12 +199,12 @@ function AuthContent() {
 
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
-    setError("");
+    setError('');
 
     try {
-      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/home` : undefined;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider: 'google',
         options: { redirectTo },
       });
 
@@ -243,357 +213,382 @@ function AuthContent() {
         setGoogleLoading(false);
       }
     } catch {
-      setError("Gagal menghubungkan ke Google.");
+      setError('Gagal menghubungkan ke Google.');
       setGoogleLoading(false);
     }
   };
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B2C6B] via-[#0B2C6B] to-[#071B3D]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-[#D9A441]" />
-          <p className="text-sm font-medium text-white/80">Mengarahkan ke dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#FAFCFF] px-4 py-12 font-sans selection:bg-[#D9A441]/30 selection:text-[#0B2C6B]">
-      {/* Background Soft Grid Pattern (SLJ Aesthetic) */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white px-5 py-10 font-sans selection:bg-[#C79A3C]/20 selection:text-[#0B2C6B]">
+      {/* Soft background accents matching slj-binahub with Gold theme */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#0B2C6B08_1px,transparent_1px),linear-gradient(to_bottom,#0B2C6B08_1px,transparent_1px)] bg-[size:36px_36px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[#C79A3C]/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[320px] w-[320px] rounded-full bg-[#C79A3C]/15 blur-3xl" />
 
-      {/* Ambient Luxury Glow Spheres */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-[460px] w-[460px] -translate-x-1/2 rounded-full bg-gradient-to-br from-[#D9A441]/15 to-[#0B2C6B]/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 right-10 h-[360px] w-[360px] rounded-full bg-[#0B2C6B]/10 blur-3xl" />
-      <div className="pointer-events-none absolute top-1/3 -left-20 h-[300px] w-[300px] rounded-full bg-[#D9A441]/10 blur-3xl" />
-
-      <div className="relative w-full max-w-[430px]">
-        {/* Brand Header */}
-        <div className="text-center mb-7">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white shadow-md shadow-[#0B2C6B]/5 border border-slate-200/60 mb-3.5">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold tracking-tight text-[#0B2C6B]">
-                Bina<span className="text-[#D9A441]">Hub</span>
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0B2C6B]/[0.06] text-[#0B2C6B]">
-                App
-              </span>
-            </div>
-          </div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-[0.2em]">
-            Human-Centered Transformation Partner
-          </p>
+      <div className="relative w-full max-w-[400px]">
+        {/* Genuine BinaHub Logo */}
+        <div className="mb-8 flex items-center justify-center">
+          <Link href="/" className="transition-transform hover:scale-[1.02]">
+            <img
+              src="/binahub_logo.webp"
+              alt="BinaHub Logo"
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
+          </Link>
         </div>
 
-        {/* Elevated Glassmorphic Auth Card */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 sm:p-8 shadow-xl shadow-slate-300/40 backdrop-blur-md transition-all">
-          {/* Mode Tabs (Masuk / Daftar) */}
-          {mode !== "forgot" && (
-            <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-100/90 mb-6 border border-slate-200/50">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signin");
-                  setError("");
-                  setSuccess("");
-                }}
-                className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                  mode === "signin"
-                    ? "bg-white text-[#0B2C6B] shadow-sm shadow-black/5"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Masuk
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signup");
-                  setError("");
-                  setSuccess("");
-                }}
-                className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                  mode === "signup"
-                    ? "bg-white text-[#0B2C6B] shadow-sm shadow-black/5"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Daftar Baru
-              </button>
-            </div>
-          )}
-
-          {/* Card Title & Subtitle */}
-          <div className="mb-6">
+        {/* Card matching slj-binahub */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-xl shadow-slate-300/30 backdrop-blur sm:p-7">
+          {/* Header */}
+          <div className="mb-7">
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              {mode === "signin" && "Selamat Datang Kembali"}
-              {mode === "signup" && "Buat Akun BinaHub"}
-              {mode === "forgot" && "Reset Password"}
+              {mode === 'signin' && 'Masuk ke akun Anda'}
+              {mode === 'signup' && 'Buat akun Anda'}
+              {mode === 'forgot' && 'Reset Password Anda'}
             </h1>
-            <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-              {mode === "signin" && "Masuk untuk mengakses workspace dan modul operasional Anda."}
-              {mode === "signup" && "Satu akun terpadu untuk BinaInsight, BinaImpact, dan T-BOS."}
-              {mode === "forgot" && "Masukkan email terdaftar Anda untuk menerima tautan pemulihan."}
+            <p className="mt-1 text-sm text-slate-500">
+              {mode === 'signin' && 'Selamat datang kembali di ekosistem BinaHub.'}
+              {mode === 'signup' && 'Gratis. Satu profil untuk seluruh layanan BinaHub.'}
+              {mode === 'forgot' && 'Masukkan email terdaftar untuk menerima tautan pemulihan.'}
             </p>
           </div>
 
-          {/* Success Banner */}
+          {/* Success Notification */}
           {success && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-xs text-emerald-800 animate-in fade-in slide-in-from-top-1">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <p className="leading-relaxed font-medium">{success}</p>
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-3">
+              <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs leading-relaxed text-emerald-700">{success}</p>
             </div>
           )}
 
-          {/* Error Banner */}
+          {/* Error Notification */}
           {error && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/90 p-3.5 text-xs text-red-800 animate-in fade-in slide-in-from-top-1">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <p className="leading-relaxed font-medium">{error}</p>
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3">
+              <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="text-xs leading-relaxed text-red-700">{error}</p>
             </div>
           )}
 
-          {/* Google Sign In (for signin & signup) */}
-          {mode !== "forgot" && (
+          {/* Google Button (for signin and signup) */}
+          {mode !== 'forgot' && (
             <>
               <button
                 type="button"
                 onClick={handleGoogleAuth}
                 disabled={googleLoading}
-                className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50/80 hover:border-slate-300 disabled:opacity-60 shadow-xs"
+                className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50"
               >
                 {googleLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                  <svg className="h-4 w-4 animate-spin text-slate-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
                 ) : (
                   <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                   </svg>
                 )}
-                <span>
+                <span className="text-sm">
                   {googleLoading
-                    ? "Menghubungkan..."
-                    : mode === "signin"
-                    ? "Lanjutkan dengan Google"
-                    : "Daftar dengan Google"}
+                    ? 'Mengalihkan...'
+                    : mode === 'signin'
+                    ? 'Lanjutkan dengan Google'
+                    : 'Daftar dengan Google'}
                 </span>
               </button>
 
+              {/* Divider */}
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-200" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white px-3 text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-                    atau dengan email
-                  </span>
+                  <span className="bg-white/80 px-3 text-xs text-slate-400">atau</span>
                 </div>
               </div>
+
+              {/* Email Login Toggle Button (if collapsed in signin mode) */}
+              {mode === 'signin' && !showEmailForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowEmailForm(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300"
+                >
+                  <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Masuk dengan Email</span>
+                </button>
+              )}
             </>
           )}
 
           {/* Form */}
-          <form
-            onSubmit={
-              mode === "signin"
-                ? handleSignIn
-                : mode === "signup"
-                ? handleSignUp
-                : handleForgotPassword
-            }
-            className="space-y-4"
-          >
-            {mode === "signup" && (
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                  Nama Lengkap
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <div className={`${mode === 'signin' && !showEmailForm ? 'hidden' : 'block'}`}>
+            <form
+              className="space-y-4"
+              onSubmit={
+                mode === 'signin'
+                  ? handleSignIn
+                  : mode === 'signup'
+                  ? handleSignUp
+                  : handleForgotPassword
+              }
+            >
+              {mode === 'signup' && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Nama Lengkap
+                  </label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
                     placeholder="Nama Lengkap Anda"
-                    className="block w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#0B2C6B] focus:outline-none focus:ring-2 focus:ring-[#0B2C6B]/10"
+                    autoComplete="name"
                   />
                 </div>
-              </div>
-            )}
+              )}
 
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                Alamat Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Email
+                </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@perusahaan.com"
+                  className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
+                  placeholder="nama@email.com"
                   autoComplete="email"
-                  className="block w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#0B2C6B] focus:outline-none focus:ring-2 focus:ring-[#0B2C6B]/10"
                 />
               </div>
-            </div>
 
-            {mode !== "forgot" && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
+              {mode !== 'forgot' && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     Password
                   </label>
-                  {mode === "signin" && (
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
+                      placeholder="••••••••"
+                      minLength={6}
+                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        setMode("forgot");
-                        setError("");
-                        setSuccess("");
-                      }}
-                      className="text-[11px] font-medium text-[#0B2C6B] hover:text-[#D9A441] transition-colors"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label="Toggle password visibility"
                     >
-                      Lupa password?
+                      {showPassword ? (
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L3.42 3.42m6.46 6.46l6.46 6.46M21 21l-3.42-3.42m0 0a9.953 9.953 0 003.42-3.42M3.42 3.42L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
                     </button>
-                  )}
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    minLength={6}
-                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                    className="block w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#0B2C6B] focus:outline-none focus:ring-2 focus:ring-[#0B2C6B]/10"
-                  />
+              )}
+
+              {mode === 'signup' && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Konfirmasi Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="block w-full rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#C79A3C] focus:outline-none focus:ring-2 focus:ring-[#C79A3C]/10"
+                      placeholder="••••••••"
+                      minLength={6}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Forgot password link on signin */}
+              {mode === 'signin' && (
+                <div className="flex items-center justify-end">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-                    aria-label="Toggle password visibility"
+                    onClick={() => {
+                      setMode('forgot');
+                      setError('');
+                      setSuccess('');
+                    }}
+                    className="text-xs font-medium text-slate-500 transition-colors hover:text-[#C79A3C]"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    Lupa password?
                   </button>
                 </div>
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                  Konfirmasi Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    minLength={6}
-                    autoComplete="new-password"
-                    className="block w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-all focus:border-[#0B2C6B] focus:outline-none focus:ring-2 focus:ring-[#0B2C6B]/10"
-                  />
-                </div>
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <label className="flex items-start gap-2 pt-1 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0B2C6B] focus:ring-[#0B2C6B]"
-                />
-                <span className="text-[11px] text-slate-500 leading-tight">
-                  Saya menyetujui{" "}
-                  <Link href="/help" className="text-[#0B2C6B] font-medium hover:underline">
-                    Syarat & Ketentuan
-                  </Link>{" "}
-                  serta{" "}
-                  <Link href="/help" className="text-[#0B2C6B] font-medium hover:underline">
-                    Kebijakan Privasi
-                  </Link>{" "}
-                  BinaHub.
-                </span>
-              </label>
-            )}
-
-            {/* Primary Action Button (Navy + Gold Luxury Palette) */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2C6B] via-[#0D3685] to-[#071B3D] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0B2C6B]/20 transition-all hover:shadow-xl hover:shadow-[#0B2C6B]/30 hover:brightness-105 active:scale-[0.99] disabled:opacity-50 disabled:shadow-none"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Memproses...</span>
-                </>
-              ) : (
-                <>
-                  <span>
-                    {mode === "signin" && "Masuk ke Akun"}
-                    {mode === "signup" && "Daftar Akun Baru"}
-                    {mode === "forgot" && "Kirim Tautan Reset"}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-[#D9A441]" />
-                </>
               )}
-            </button>
-          </form>
 
-          {/* Back button for Forgot Password mode */}
-          {mode === "forgot" && (
+              {/* Checkboxes on signup */}
+              {mode === 'signup' && (
+                <div className="space-y-2.5 pt-1">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#C79A3C] focus:ring-[#C79A3C]"
+                    />
+                    <span className="text-xs text-slate-500 leading-tight">
+                      Saya menyetujui{' '}
+                      <Link href="/help" className="font-semibold text-[#C79A3C] hover:underline">
+                        Syarat &amp; Ketentuan
+                      </Link>{' '}
+                      BinaHub.
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreePrivacy}
+                      onChange={(e) => setAgreePrivacy(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#C79A3C] focus:ring-[#C79A3C]"
+                    />
+                    <span className="text-xs text-slate-500 leading-tight">
+                      Saya memahami dan menyetujui{' '}
+                      <Link href="/help" className="font-semibold text-[#C79A3C] hover:underline">
+                        Kebijakan Privasi
+                      </Link>{' '}
+                      penggunaan data.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* Gold Gradient Primary Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-[#C79A3C] to-[#A87E2A] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#C79A3C]/20 transition-all hover:from-[#B58A32] hover:to-[#966E22] hover:shadow-xl hover:shadow-[#C79A3C]/30 disabled:opacity-50 disabled:shadow-none"
+              >
+                {loading ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <span>
+                    {mode === 'signin' && 'Masuk'}
+                    {mode === 'signup' && 'Daftar Akun'}
+                    {mode === 'forgot' && 'Kirim Tautan Reset'}
+                  </span>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Back to signin for forgot mode */}
+          {mode === 'forgot' && (
             <button
               type="button"
               onClick={() => {
-                setMode("signin");
-                setError("");
-                setSuccess("");
+                setMode('signin');
+                setError('');
+                setSuccess('');
               }}
-              className="w-full mt-4 text-center text-xs font-semibold text-slate-500 hover:text-[#0B2C6B] transition-colors"
+              className="mt-4 flex w-full items-center justify-center text-xs font-semibold text-slate-500 hover:text-[#C79A3C] transition-colors"
             >
-              ← Kembali ke Halaman Masuk
+              ← Kembali ke Masuk
             </button>
           )}
         </div>
 
-        {/* Footer info */}
-        <div className="mt-7 text-center">
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mb-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Koneksi aman terenkripsi & kepatuhan data ISO/IEC 27001 ready</span>
-          </div>
-          <p className="text-[11px] text-slate-400">
-            © 2026 BinaHub Ecosystem. All rights reserved.
+        {/* Switch Signin / Signup with Gold hover */}
+        {mode !== 'forgot' && (
+          <p className="mt-6 text-center text-sm text-slate-500">
+            {mode === 'signin' ? (
+              <>
+                Belum punya akun?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signup');
+                    setShowEmailForm(true);
+                    setError('');
+                    setSuccess('');
+                  }}
+                  className="font-semibold text-[#C79A3C] transition-colors hover:text-[#A87E2A]"
+                >
+                  Daftar gratis
+                </button>
+              </>
+            ) : (
+              <>
+                Sudah punya akun?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signin');
+                    setError('');
+                    setSuccess('');
+                  }}
+                  className="font-semibold text-[#C79A3C] transition-colors hover:text-[#A87E2A]"
+                >
+                  Masuk di sini
+                </button>
+              </>
+            )}
           </p>
-        </div>
+        )}
+
+        {/* Legal links matching slj-binahub */}
+        <p className="mt-4 flex items-center justify-center gap-3 text-[11px] text-slate-400">
+          <Link href="/help" className="transition-colors hover:text-[#C79A3C]">
+            Syarat &amp; Ketentuan
+          </Link>
+          <span className="text-slate-300">•</span>
+          <Link href="/help" className="transition-colors hover:text-[#C79A3C]">
+            Kebijakan Privasi
+          </Link>
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#C79A3C] border-t-transparent" />
+        </div>
+      }
+    >
+      <AuthContent />
+    </Suspense>
   );
 }
