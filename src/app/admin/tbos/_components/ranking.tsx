@@ -2,19 +2,11 @@
 
 import type { TeamScoreSummary } from "@/modules/tbos/types";
 import { formatScore } from "@/modules/tbos/scoring";
+import { getScoreColor } from "@/modules/tbos/score-color";
 import { Trophy, TrendingUp, TrendingDown } from "lucide-react";
 
 interface Props {
   teams: TeamScoreSummary[];
-}
-
-function getScoreColor(score: number | null): string {
-  if (score === null) return "#CBD5E1";
-  if (score >= 4.5) return "#10B981";
-  if (score >= 3.5) return "#84CC16";
-  if (score >= 2.5) return "#F59E0B";
-  if (score >= 1.5) return "#F97316";
-  return "#EF4444";
 }
 
 export function TbosRanking({ teams }: Props) {
@@ -33,9 +25,9 @@ export function TbosRanking({ teams }: Props) {
   }
 
   const medalGradients = [
-    "from-[#D9A441]/20 via-[#F0D68A]/10 to-transparent border-[#D9A441]/30", // Gold
-    "from-slate-300/20 via-slate-200/10 to-transparent border-slate-300/30", // Silver
-    "from-orange-300/20 via-orange-200/10 to-transparent border-orange-300/30", // Bronze
+    "from-[#D9A441]/20 to-transparent border-[#D9A441]/30", // Gold
+    "from-slate-300/20 to-transparent border-slate-300/30", // Silver
+    "from-orange-300/20 to-transparent border-orange-300/30", // Bronze
   ];
 
   const medalColors = [
@@ -54,10 +46,10 @@ export function TbosRanking({ teams }: Props) {
         return (
           <div
             key={team.teamId}
-            className={`bg-white rounded-2xl border p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
+            className={`bg-white rounded-xl border p-5 flex items-center gap-4 transition-colors duration-200 ${
               isTop3
                 ? `bg-gradient-to-r ${medalGradients[idx]} shadow-sm`
-                : "border-black/[0.04] hover:border-[#0B2C6B]/10"
+                : "border-[#0B2C6B]/10 hover:border-[#0B2C6B]/25"
             }`}
           >
             {/* Rank Badge */}

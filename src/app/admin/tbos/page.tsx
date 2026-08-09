@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
+import { StatCard } from "@/components/ui";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam, fetchTeams } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
@@ -245,7 +246,7 @@ function TbosDashboardContent() {
   return (
     <div className="space-y-6">
       {/* Quick Action Navigation & Real-time indicator */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white p-4 rounded-2xl border border-black/[0.04] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white p-4 rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
         <div className="flex items-center gap-3">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -314,16 +315,13 @@ function TbosDashboardContent() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Tim" value={String(dashboardData.teams.length)} icon={<Users className="w-5 h-5" />} accent="from-blue-500/10 to-blue-600/5" iconColor="text-blue-600" />
-        <StatCard label="Total Observasi" value={String(summary?.totalObservations || 0)} icon={<Activity className="w-5 h-5" />} accent="from-emerald-500/10 to-emerald-600/5" iconColor="text-emerald-600" />
+        <StatCard label="Total Tim" value={dashboardData.teams.length} icon={<Users size={16} />} />
+        <StatCard label="Total Observasi" value={summary?.totalObservations || 0} icon={<Activity size={16} />} />
         <StatCard
           label="Dimensi Terobservasi"
-          value={String(
-            dashboardData.batchComparisons.filter((b) => b.batch1Avg !== null || b.batch2Avg !== null).length
-          )}
-          icon={<Layers className="w-5 h-5" />}
-          accent="from-violet-500/10 to-violet-600/5"
-          iconColor="text-violet-600"
+          value={dashboardData.batchComparisons.filter((b) => b.batch1Avg !== null || b.batch2Avg !== null).length}
+          detail={`dari ${dashboardData.batchComparisons.length} dimensi`}
+          icon={<Layers size={16} />}
         />
         <StatCard
           label="Rata-rata Skor"
@@ -335,9 +333,8 @@ function TbosDashboardContent() {
                 ).toFixed(1)
               : "-"
           }
-          icon={<Target className="w-5 h-5" />}
-          accent="from-amber-500/10 to-amber-600/5"
-          iconColor="text-amber-600"
+          detail="dari 3 kekuatan utama"
+          icon={<Target size={16} />}
         />
       </div>
 
@@ -410,21 +407,16 @@ function TbosDashboardContent() {
 
 function TeamRosterPanel({ teams }: { teams: TbosDbTeam[] }) {
   return (
-    <section className="rounded-2xl border border-black/[0.04] bg-white p-5 shadow-[0_4px_24px_rgba(8,29,66,0.06)]" aria-labelledby="team-roster-title">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 id="team-roster-title" className="text-base font-bold text-[#0B2C6B]">Roster Tim & Kapten</h2>
-          <p className="mt-1 text-sm text-slate-500">Anggota master yang disiapkan admin atau ditambahkan fasilitator.</p>
-        </div>
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#D9A441]/10">
-          <UsersRound className="h-4.5 w-4.5 text-[#D9A441]" aria-hidden="true" />
-        </div>
+    <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]" aria-labelledby="team-roster-title">
+      <div>
+        <h2 id="team-roster-title" className="text-base font-bold text-[#0B2C6B]">Roster Tim & Kapten</h2>
+        <p className="mt-1 text-sm text-slate-500">Anggota master yang disiapkan admin atau ditambahkan fasilitator.</p>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {teams.map((team) => {
           const captain = team.members.find((member) => member.is_captain);
           return (
-            <article key={team.id} className="rounded-xl border border-black/[0.04] bg-gradient-to-br from-[#F8F9FC] to-white p-4 transition-shadow hover:shadow-md">
+            <article key={team.id} className="rounded-lg border border-black/[0.06] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate font-bold text-[#0B2C6B]">{team.name}</h3>
@@ -756,25 +748,6 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
   );
 }
 
-function StatCard({ label, value, icon, accent, iconColor }: { label: string; value: string; icon?: React.ReactNode; accent?: string; iconColor?: string }) {
-  return (
-    <div className={`relative overflow-hidden bg-white rounded-2xl p-4 border border-black/[0.04] shadow-[0_2px_12px_rgba(8,29,66,0.04)] hover:shadow-[0_4px_20px_rgba(8,29,66,0.08)] transition-shadow duration-300`}>
-      <div className={`absolute inset-0 bg-gradient-to-br ${accent || "from-blue-500/5 to-transparent"} pointer-events-none`} />
-      <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-[#4A4C54]/80 mb-1.5">{label}</p>
-          <p className="text-2xl font-bold text-[#0B2C6B] tracking-tight">{value}</p>
-        </div>
-        {icon && (
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-sm ring-1 ring-black/[0.04] ${iconColor || "text-[#0B2C6B]"}`}>
-            {icon}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
   const pct = score !== null ? Math.min((score / max) * 100, 100) : 0;
   const color = score === null ? "bg-gray-200" : score >= 4.5 ? "bg-emerald-500" : score >= 3.5 ? "bg-lime-500" : score >= 2.5 ? "bg-amber-400" : score >= 1.5 ? "bg-orange-500" : "bg-red-500";
@@ -796,12 +769,9 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
       {/* Executive Summary */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Top Strengths */}
-        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)]">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-l-2xl" />
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center ring-1 ring-emerald-100">
-              <TrendingUp className="w-4.5 h-4.5 text-emerald-600" />
-            </div>
+        <div className="bg-white rounded-xl p-5 border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
             <div>
               <h3 className="text-sm font-bold text-[#0B2C6B]">3 Kekuatan Utama</h3>
               <p className="text-[10px] text-[#4A4C54]/60">Dimensi perilaku terbaik</p>
@@ -814,12 +784,12 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
             {summary.topStrengths.map((dim, i) => (
               <div key={dim.dimensionCode} className="space-y-1.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-bold flex items-center justify-center">
                     {i + 1}
                   </span>
                   <span className="flex-1 text-sm font-medium text-[#0B2C6B]">{dim.dimensionName}</span>
                 </div>
-                <div className="ml-8">
+                <div className="ml-[30px]">
                   <ScoreBar score={dim.score} />
                 </div>
               </div>
@@ -828,12 +798,9 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
         </div>
 
         {/* Development Areas */}
-        <div className="relative overflow-hidden bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)]">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-400 to-amber-600 rounded-l-2xl" />
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center ring-1 ring-amber-100">
-              <Target className="w-4.5 h-4.5 text-amber-600" />
-            </div>
+        <div className="bg-white rounded-xl p-5 border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <div className="flex items-center gap-2 mb-5">
+            <Target className="w-4 h-4 text-amber-600" />
             <div>
               <h3 className="text-sm font-bold text-[#0B2C6B]">3 Area Pengembangan</h3>
               <p className="text-[10px] text-[#4A4C54]/60">Prioritas pengembangan</p>
@@ -846,12 +813,12 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
             {summary.developmentAreas.map((dim, i) => (
               <div key={dim.dimensionCode} className="space-y-1.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center">
+                  <span className="w-5 h-5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-bold flex items-center justify-center">
                     {i + 1}
                   </span>
                   <span className="flex-1 text-sm font-medium text-[#0B2C6B]">{dim.dimensionName}</span>
                 </div>
-                <div className="ml-8">
+                <div className="ml-[30px]">
                   <ScoreBar score={dim.score} />
                 </div>
               </div>
@@ -861,7 +828,7 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
       </div>
 
       {/* Quick Team Overview */}
-      <div className="bg-white rounded-2xl border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)] overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
         <div className="px-5 py-4 border-b border-black/[0.04]">
           <h3 className="text-sm font-bold text-[#0B2C6B]">Ringkasan Tim</h3>
         </div>

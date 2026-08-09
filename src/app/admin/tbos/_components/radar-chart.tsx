@@ -3,19 +3,11 @@
 import { useState, useMemo } from "react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from "@/components/lazy-charts";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
+import { getScoreColor } from "@/modules/tbos/score-color";
 import { DIMENSION_LIST } from "@/modules/tbos";
 
 interface Props {
   teams: TeamScoreSummary[];
-}
-
-function getScoreColor(score: number | null): string {
-  if (score === null) return "#CBD5E1";
-  if (score >= 4.5) return "#10B981";
-  if (score >= 3.5) return "#84CC16";
-  if (score >= 2.5) return "#F59E0B";
-  if (score >= 1.5) return "#F97316";
-  return "#EF4444";
 }
 
 export function TbosRadarChart({ teams }: Props) {
@@ -90,7 +82,7 @@ export function TbosRadarChart({ teams }: Props) {
               className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isSelected
                   ? "bg-[#0B2C6B] text-white shadow-md ring-2 ring-[#0B2C6B]/20"
-                  : "bg-white text-[#4A4C54] border border-black/[0.06] hover:border-[#0B2C6B]/30 hover:shadow-sm"
+                  : "bg-white text-[#4A4C54] border border-[#0B2C6B]/10 hover:border-[#0B2C6B]/30 hover:shadow-sm"
               }`}
             >
               <span
@@ -113,7 +105,7 @@ export function TbosRadarChart({ teams }: Props) {
 
       {/* Radar Chart */}
       {selectedTeam && (
-        <div className="bg-white rounded-2xl border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
           {/* Chart Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
             <div>

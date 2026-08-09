@@ -13,7 +13,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
 
   if (!hasData) {
     return (
-      <div className="text-center py-12 bg-white rounded-2xl border border-black/[0.04] p-8">
+      <div className="text-center py-12 bg-white rounded-xl border border-[#0B2C6B]/10 p-8">
         <p className="text-sm text-[#4A4C54]">Belum ada data observasi untuk perbandingan batch.</p>
       </div>
     );
@@ -31,7 +31,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
   }));
 
   return (
-    <div className="bg-white rounded-2xl border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)] overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
       {/* Card Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
         <div>
@@ -42,7 +42,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
         </div>
 
         {/* Legend in Header */}
-        <div className="flex items-center gap-4 bg-white/80 px-3 py-1.5 rounded-xl ring-1 ring-black/[0.04]">
+        <div className="flex items-center gap-4 bg-white/80 px-3 py-1.5 rounded-xl border border-[#0B2C6B]/10">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#0B2C6B]" />
             <span className="text-xs font-semibold text-[#0B2C6B]">Batch 1</span>

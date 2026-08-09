@@ -8,15 +8,6 @@ interface Props {
   teams: TeamScoreSummary[];
 }
 
-function getScoreColor(score: number | null): string {
-  if (score === null) return "#F1F5F9";
-  if (score >= 4.5) return "#10B981";
-  if (score >= 3.5) return "#84CC16";
-  if (score >= 2.5) return "#F59E0B";
-  if (score >= 1.5) return "#F97316";
-  return "#EF4444";
-}
-
 function getScoreBg(score: number | null): string {
   if (score === null) return "bg-gray-50 text-gray-300";
   if (score >= 4.5) return "bg-emerald-500 text-white";
@@ -48,7 +39,7 @@ export function TbosHeatmap({ teams }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-black/[0.04] shadow-[0_2px_16px_rgba(8,29,66,0.04)] overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
         <div>
@@ -122,7 +113,7 @@ export function TbosHeatmap({ teams }: Props) {
                     return (
                       <td key={dim.code} className="text-center py-1 px-1">
                         <div
-                          className={`w-full h-12 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-200 hover:scale-105 hover:shadow-md cursor-default ${getScoreBg(score)}`}
+                          className={`w-full h-11 rounded-md flex items-center justify-center text-sm font-semibold transition-colors duration-150 cursor-default ${getScoreBg(score)}`}
                           title={score !== null ? `${dim.name}: ${score.toFixed(1)}` : "Belum diobservasi"}
                         >
                           {score !== null ? score.toFixed(1) : "—"}

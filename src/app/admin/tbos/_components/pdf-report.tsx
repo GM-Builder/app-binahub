@@ -8,6 +8,7 @@ import {
 } from "@react-pdf/renderer";
 import type { TbosDashboardData } from "@/modules/tbos/types";
 import { generateExecutiveNarrative } from "@/modules/tbos/scoring";
+import { getScoreColor } from "@/modules/tbos/score-color";
 
 const NAVY = "#0B2C6B";
 const GOLD = "#D9A441";
@@ -240,15 +241,6 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
 });
-
-function getScoreColor(score: number | null): string {
-  if (score === null) return "#CBD5E1";
-  if (score >= 4.5) return "#10B981";
-  if (score >= 3.5) return "#84CC16";
-  if (score >= 2.5) return "#F59E0B";
-  if (score >= 1.5) return "#F97316";
-  return "#EF4444";
-}
 
 function ScoreBarPdf({ score }: { score: number | null }) {
   const pct = score !== null ? Math.min((score / 5) * 100, 100) : 0;
