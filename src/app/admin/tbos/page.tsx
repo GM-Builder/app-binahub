@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import Link from "next/link";
 import {
   Loader2,
@@ -27,6 +27,9 @@ import {
   Layers,
   CheckCircle2,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Home,
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
@@ -275,6 +278,13 @@ function TbosDashboardContent() {
 
         {/* Quick Admin Actions */}
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
+          >
+            <Home className="w-3.5 h-3.5" />
+            Kembali ke Home Admin
+          </Link>
           <button
             onClick={() => setShowAddTeamModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors shadow-sm"
@@ -338,8 +348,6 @@ function TbosDashboardContent() {
         />
       </div>
 
-      <TeamRosterPanel teams={teamRoster} />
-
       {/* Tab Navigation + Export */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-1 p-1 bg-[#0B2C6B]/[0.04] rounded-xl overflow-x-auto">
@@ -364,7 +372,7 @@ function TbosDashboardContent() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === "overview" && <OverviewTab data={dashboardData} />}
+        {activeTab === "overview" && <OverviewTab data={dashboardData} roster={teamRoster} />}
         {activeTab === "summary" && <TbosExecutiveSummary data={dashboardData} />}
         {activeTab === "radar" && <TbosRadarChart teams={dashboardData.teams} />}
         {activeTab === "heatmap" && <TbosHeatmap teams={dashboardData.teams} />}
@@ -402,56 +410,6 @@ function TbosDashboardContent() {
         />
       )}
     </div>
-  );
-}
-
-function TeamRosterPanel({ teams }: { teams: TbosDbTeam[] }) {
-  return (
-    <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]" aria-labelledby="team-roster-title">
-      <div>
-        <h2 id="team-roster-title" className="text-base font-bold text-[#0B2C6B]">Roster Tim & Kapten</h2>
-        <p className="mt-1 text-sm text-slate-500">Anggota master yang disiapkan admin atau ditambahkan fasilitator.</p>
-      </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {teams.map((team) => {
-          const captain = team.members.find((member) => member.is_captain);
-          return (
-            <article key={team.id} className="rounded-lg border border-black/[0.06] p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="truncate font-bold text-[#0B2C6B]">{team.name}</h3>
-                  <p className="mt-1 text-xs text-slate-500">{team.batch} · {team.members.length} anggota</p>
-                </div>
-                <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${captain ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                  {captain ? "✓ Kapten" : "Belum ada kapten"}
-                </span>
-              </div>
-              {team.members.length === 0 ? (
-                <p className="mt-4 text-sm text-slate-400 italic">Roster belum diisi.</p>
-              ) : (
-                <ul className="mt-4 divide-y divide-black/[0.04]" aria-label={`Anggota ${team.name}`}>
-                  {team.members.map((member) => (
-                    <li key={member.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0B2C6B]/[0.06] text-xs font-bold text-[#0B2C6B] shrink-0">
-                          {member.member_name?.charAt(0)?.toUpperCase() || "?"}
-                        </span>
-                        <span className="truncate font-medium text-slate-700">{member.member_name}</span>
-                      </div>
-                      {member.is_captain && (
-                        <span className="shrink-0 text-xs font-bold text-[#D9A441] bg-[#D9A441]/10 px-2 py-0.5 rounded-full">
-                          Kapten
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 
@@ -761,8 +719,11 @@ function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
   );
 }
 
-function OverviewTab({ data }: { data: TbosDashboardData }) {
+function OverviewTab({ data, roster }: { data: TbosDashboardData; roster: TbosDbTeam[] }) {
   const { executiveSummary: summary } = data;
+  const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+
+  const rosterById = new Map(roster.map((team) => [team.id, team]));
 
   return (
     <div className="space-y-6">
@@ -842,49 +803,97 @@ function OverviewTab({ data }: { data: TbosDashboardData }) {
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kekuatan</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Area Dev.</th>
                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Obs.</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Roster</th>
               </tr>
             </thead>
             <tbody>
-              {data.teams.map((team, idx) => (
-                <tr key={team.teamId} className={`border-b border-black/[0.03] hover:bg-[#0B2C6B]/[0.02] transition-colors ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
-                  <td className="py-3 px-4 font-semibold text-[#0B2C6B]">{team.teamName}</td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/70">{team.batch}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`inline-flex items-center justify-center min-w-[2.5rem] px-2 py-0.5 rounded-lg text-sm font-bold ${
-                      team.overallTeamScore !== null && team.overallTeamScore >= 4.0
-                        ? "bg-emerald-50 text-emerald-700"
-                        : team.overallTeamScore !== null && team.overallTeamScore >= 3.0
-                        ? "bg-blue-50 text-blue-700"
-                        : team.overallTeamScore !== null
-                        ? "bg-amber-50 text-amber-700"
-                        : "text-gray-400"
-                    }`}>
-                      {team.overallTeamScore !== null ? team.overallTeamScore.toFixed(1) : "-"}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-xs text-[#4A4C54]">
-                    {team.strongestDimension ? (
-                      <span className="inline-flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        {team.strongestDimension.dimensionName}
-                      </span>
-                    ) : "-"}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-[#4A4C54]">
-                    {team.weakestDimension ? (
-                      <span className="inline-flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        {team.weakestDimension.dimensionName}
-                      </span>
-                    ) : "-"}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="text-sm font-medium text-[#0B2C6B]">{team.totalObservations}</span>
-                  </td>
-                </tr>
-              ))}
+              {data.teams.map((team, idx) => {
+                const isExpanded = expandedTeamId === team.teamId;
+                const rosterTeam = rosterById.get(team.teamId);
+                const members = rosterTeam?.members || [];
+                return (
+                  <Fragment key={team.teamId}>
+                    <tr className={`border-b border-black/[0.03] hover:bg-[#0B2C6B]/[0.02] transition-colors ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
+                      <td className="py-3 px-4 font-semibold text-[#0B2C6B]">{team.teamName}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/70">{team.batch}</span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`inline-flex items-center justify-center min-w-[2.5rem] px-2 py-0.5 rounded-lg text-sm font-bold ${
+                          team.overallTeamScore !== null && team.overallTeamScore >= 4.0
+                            ? "bg-emerald-50 text-emerald-700"
+                            : team.overallTeamScore !== null && team.overallTeamScore >= 3.0
+                            ? "bg-blue-50 text-blue-700"
+                            : team.overallTeamScore !== null
+                            ? "bg-amber-50 text-amber-700"
+                            : "text-gray-400"
+                        }`}>
+                          {team.overallTeamScore !== null ? team.overallTeamScore.toFixed(1) : "-"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-xs text-[#4A4C54]">
+                        {team.strongestDimension ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            {team.strongestDimension.dimensionName}
+                          </span>
+                        ) : "-"}
+                      </td>
+                      <td className="py-3 px-4 text-xs text-[#4A4C54]">
+                        {team.weakestDimension ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            {team.weakestDimension.dimensionName}
+                          </span>
+                        ) : "-"}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="text-sm font-medium text-[#0B2C6B]">{team.totalObservations}</span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedTeamId(isExpanded ? null : team.teamId)}
+                          aria-expanded={isExpanded}
+                          aria-label={`Lihat roster ${team.teamName}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            isExpanded
+                              ? "bg-[#0B2C6B] text-white"
+                              : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B] hover:bg-[#0B2C6B]/[0.1]"
+                          }`}
+                        >
+                          <UsersRound className="w-3.5 h-3.5" />
+                          Lihat Tim
+                          {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-[#F8F9FC] border-b border-black/[0.03]">
+                        <td colSpan={7} className="py-4 px-4 sm:px-6">
+                          <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
+                            Roster & Kapten
+                          </p>
+                          {members.length === 0 ? (
+                            <p className="mt-2 text-sm text-slate-400 italic">Roster belum diisi.</p>
+                          ) : (
+                            <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Anggota ${team.teamName}`}>
+                              {members.map((member) => (
+                                <li key={member.id} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-black/[0.06] px-3 py-1.5 text-xs text-slate-700">
+                                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${member.is_captain ? "bg-[#D9A441]/15 text-[#D9A441]" : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]"}`}>
+                                    {member.is_captain ? "C" : member.member_name?.charAt(0)?.toUpperCase() || "?"}
+                                  </span>
+                                  {member.member_name}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
