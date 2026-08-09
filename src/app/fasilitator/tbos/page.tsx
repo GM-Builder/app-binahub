@@ -19,7 +19,6 @@ import {
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
-import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import {
@@ -367,7 +366,7 @@ function TbosObservationContent() {
     return (
       <Shell isOnline={isOnline} queuedCount={queuedCount}>
         <main className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-10">
-          <section className="w-full overflow-hidden rounded-3xl bg-white shadow-[0_24px_70px_rgba(8,29,66,0.18)]" role="status">
+          <section className="w-full overflow-hidden rounded-md bg-white shadow-[0_24px_70px_rgba(8,29,66,0.18)]" role="status">
             <div className="relative overflow-hidden bg-[#081D42] px-6 py-10 text-center text-white">
               <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-[#17447F]" />
               <div className="absolute -bottom-16 -left-10 h-36 w-36 rounded-full border-[22px] border-[#D6A84B]/20" />
@@ -439,7 +438,7 @@ function TbosObservationContent() {
 
             {error && <Alert>{error}</Alert>}
             {teams.length === 0 && (
-              <div className="rounded-3xl bg-white p-7 text-center shadow-sm">
+              <div className="rounded-md bg-white p-7 text-center shadow-sm">
                 <p className="font-semibold text-[#0B2C6B]">Belum ada tim ditugaskan</p>
                 <p className="mt-1 text-sm text-slate-500">Hubungi admin untuk mendapatkan assignment.</p>
               </div>
@@ -448,7 +447,7 @@ function TbosObservationContent() {
               const completedCount = completedMissionIds(team.id).size;
               const captain = team.members?.find((member) => member.is_captain);
               return (
-                <article key={team.id} className={`rounded-3xl border border-black/[0.04] bg-white p-5 ${index % 2 === 0 ? "shadow-[0_14px_35px_rgba(8,29,66,0.1)]" : "shadow-[0_6px_18px_rgba(8,29,66,0.07)]"}`}>
+                <article key={team.id} className={`rounded-md border border-black/[0.04] bg-white p-5 ${index % 2 === 0 ? "shadow-[0_14px_35px_rgba(8,29,66,0.1)]" : "shadow-[0_6px_18px_rgba(8,29,66,0.07)]"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <span className="inline-flex rounded-full bg-[#0B2C6B]/7 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#0B2C6B]">{team.batch}</span>
@@ -589,7 +588,7 @@ function TbosObservationContent() {
                 const completed = completedMissionIds(selectedTeam.id).has(mission.id);
                 const selected = selectedMission?.id === mission.id;
                 return (
-                  <button key={mission.id} type="button" aria-pressed={selected} onClick={() => setSelectedMission(mission)} className={`w-full rounded-3xl border p-5 text-left transition motion-reduce:transition-none ${selected ? "border-[#D6A84B] bg-[#081D42] text-white shadow-[0_18px_40px_rgba(8,29,66,0.2)]" : "border-black/[0.04] bg-white text-[#081D42] shadow-[0_7px_20px_rgba(8,29,66,0.07)]"} ${FOCUS}`}>
+                  <button key={mission.id} type="button" aria-pressed={selected} onClick={() => setSelectedMission(mission)} className={`w-full rounded-md border p-5 text-left transition motion-reduce:transition-none ${selected ? "border-[#D6A84B] bg-[#081D42] text-white shadow-[0_18px_40px_rgba(8,29,66,0.2)]" : "border-black/[0.04] bg-white text-[#081D42] shadow-[0_7px_20px_rgba(8,29,66,0.07)]"} ${FOCUS}`}>
                     <div className="flex items-start gap-4">
                       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${selected ? "bg-[#D6A84B] text-[#081D42]" : "bg-[#F3E7CA] text-[#79591B]"}`}>{String(index + 1).padStart(2, "0")}</span>
                       <div className="min-w-0 flex-1">
@@ -620,7 +619,7 @@ function TbosObservationContent() {
           onBack={() => setStep("mission")}
           status={<span className="text-xs font-bold text-[#E8C778]">{scoredCount}/{selectedMission.dimensions.length}</span>}
         >
-          <section className="rounded-3xl bg-[#0B2C6B] p-5 text-white shadow-[0_16px_40px_rgba(8,29,66,0.2)]" aria-label="Kemajuan observasi">
+          <section className="rounded-md bg-[#0B2C6B] p-5 text-white shadow-[0_16px_40px_rgba(8,29,66,0.2)]" aria-label="Kemajuan observasi">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Kemajuan</p>
@@ -697,7 +696,7 @@ function TbosObservationContent() {
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
         >
           {error && <Alert>{error}</Alert>}
-          <section className="overflow-hidden rounded-3xl bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
+          <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Konteks observasi</p>
               <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
@@ -721,7 +720,7 @@ function TbosObservationContent() {
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
+          <section className="rounded-md bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
             <h2 id="review-scores-title" className="text-lg font-bold text-[#081D42]">Skor dimensi</h2>
             <dl className="mt-4 divide-y divide-slate-100">
               {selectedMission.dimensions.map((dimension) => {
@@ -759,7 +758,7 @@ function TbosObservationContent() {
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
         >
           {error && <Alert>{error}</Alert>}
-          <section className="overflow-hidden rounded-3xl bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
+          <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Konteks observasi</p>
               <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
@@ -783,7 +782,7 @@ function TbosObservationContent() {
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
+          <section className="rounded-md bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
             <h2 id="review-scores-title" className="text-lg font-bold text-[#081D42]">Skor dimensi</h2>
             <dl className="mt-4 divide-y divide-slate-100">
               {selectedMission.dimensions.map((dimension) => {
@@ -802,7 +801,7 @@ function TbosObservationContent() {
             </dl>
           </section>
 
-          <section className="rounded-3xl border border-[#D6A84B]/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
+          <section className="rounded-md border border-[#D6A84B]/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
             <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
           </section>
@@ -817,7 +816,7 @@ function TbosObservationContent() {
 
       {step === "submitting" && (
         <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 text-center" role="status" aria-live="polite">
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-[#0B2C6B] shadow-xl shadow-[#0B2C6B]/20">
+          <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[#0B2C6B] shadow-xl shadow-[#0B2C6B]/20">
             <Loader2 className="h-8 w-8 animate-spin text-[#E8C778] motion-reduce:animate-none" aria-hidden="true" />
           </div>
           <h2 className="mt-5 text-xl font-bold text-[#081D42]">Menyimpan snapshot sesi</h2>

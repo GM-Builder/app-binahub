@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check, UsersRound, Crown } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
-import { TbosFacilitatorNav } from "@/components/tbos-facilitator-nav";
 import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";

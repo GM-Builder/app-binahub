@@ -64,7 +64,7 @@ function TbosResultsContent() {
 
   if (error) {
     return (
-      <section className="mx-auto max-w-xl rounded-3xl border border-red-200 bg-white p-6 text-center shadow-[0_20px_50px_-32px_rgba(127,29,29,0.45)]" aria-labelledby="results-error-title">
+      <section className="mx-auto max-w-xl rounded-md border border-red-200 bg-white p-6 text-center shadow-[0_20px_50px_-32px_rgba(127,29,29,0.45)]" aria-labelledby="results-error-title">
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
           <AlertCircle aria-hidden="true" />
         </span>
@@ -80,7 +80,7 @@ function TbosResultsContent() {
 
   if (!data || data.teams.length === 0) {
     return (
-      <section className="relative overflow-hidden rounded-3xl border border-[#0B2C6B]/10 bg-white p-7 text-center shadow-[0_24px_70px_-42px_rgba(11,44,107,0.5)] sm:p-10" aria-labelledby="empty-results-title">
+      <section className="relative overflow-hidden rounded-md border border-[#0B2C6B]/10 bg-white p-7 text-center shadow-[0_24px_70px_-42px_rgba(11,44,107,0.5)] sm:p-10" aria-labelledby="empty-results-title">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0B2C6B] via-[#D9A441] to-[#0B2C6B]" />
         <UsersRound className="mx-auto h-12 w-12 text-[#0B2C6B]/35" aria-hidden="true" />
         <h2 id="empty-results-title" className="mt-4 text-xl font-bold text-[#0B2C6B]">Belum ada hasil dalam cakupan Anda</h2>
@@ -153,7 +153,7 @@ function MetricCard({ label, value, detail, icon, accent = "navy" }: { label: st
 
 function TeamRanking({ teams }: { teams: TeamScoreSummary[] }) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-[#0B2C6B]/10 bg-white shadow-[0_22px_60px_-42px_rgba(11,44,107,0.7)]" aria-labelledby="team-ranking-title">
+    <section className="overflow-hidden rounded-md border border-[#0B2C6B]/10 bg-white shadow-[0_22px_60px_-42px_rgba(11,44,107,0.7)]" aria-labelledby="team-ranking-title">
       <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B2C6B] text-[#F3CE7A]"><Medal className="h-5 w-5" aria-hidden="true" /></span>
@@ -197,7 +197,7 @@ function TeamRanking({ teams }: { teams: TeamScoreSummary[] }) {
 function DimensionPanel({ title, description, dimensions, icon, tone }: { title: string; description: string; dimensions: DimensionScore[]; icon: React.ReactNode; tone: "strength" | "development" }) {
   const strength = tone === "strength";
   return (
-    <section className="rounded-3xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_22px_60px_-45px_rgba(11,44,107,0.7)]" aria-labelledby={`${tone}-title`}>
+    <section className="rounded-md border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_22px_60px_-45px_rgba(11,44,107,0.7)]" aria-labelledby={`${tone}-title`}>
       <div className="flex items-start gap-3">
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl [&>svg]:h-5 [&>svg]:w-5 ${strength ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`} aria-hidden="true">{icon}</span>
         <div><h2 id={`${tone}-title`} className="text-base font-bold text-[#0B2C6B]">{title}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div>
@@ -219,7 +219,7 @@ function DimensionPanel({ title, description, dimensions, icon, tone }: { title:
 function TeamComparison({ teams }: { teams: TeamScoreSummary[] }) {
   const scoredTeams = teams.filter((team) => team.overallTeamScore !== null);
   return (
-    <section className="rounded-3xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_22px_60px_-45px_rgba(11,44,107,0.7)] sm:p-6" aria-labelledby="comparison-title">
+    <section className="rounded-md border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_22px_60px_-45px_rgba(11,44,107,0.7)] sm:p-6" aria-labelledby="comparison-title">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D9A441]/15 text-[#946314]"><BarChart3 className="h-5 w-5" aria-hidden="true" /></span>
         <div><h2 id="comparison-title" className="text-base font-bold text-[#0B2C6B] sm:text-lg">Perbandingan ringkas tim</h2><p className="mt-1 text-xs leading-5 text-slate-500">Skor keseluruhan pada skala 1 sampai 5.</p></div>
