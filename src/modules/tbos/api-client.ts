@@ -132,8 +132,9 @@ export async function fetchMissions(): Promise<TbosDbMission[]> {
 /**
  * Fetch active teams from backend API.
  */
-export async function fetchTeams(): Promise<TbosDbTeam[]> {
-  const res = await fetch("/api/tbos/teams");
+export async function fetchTeams(programId?: string): Promise<TbosDbTeam[]> {
+  const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
+  const res = await fetch(`/api/tbos/teams${query}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success || !Array.isArray(data.teams)) {
     throw new Error(data.error || "Gagal memuat daftar tim.");
@@ -148,6 +149,7 @@ export async function createTeam(input: {
   name: string;
   batch: "Batch 1" | "Batch 2";
   organizationId?: string;
+  programId: string;
 }): Promise<{ success: boolean; team?: any; error?: string }> {
   try {
     const res = await fetch("/api/tbos/teams", {
@@ -223,10 +225,12 @@ export async function submitObservation(input: {
  */
 export async function fetchObservations(
   profileId: string,
-  isAdmin: boolean = false
+  isAdmin: boolean = false,
+  programId?: string
 ): Promise<TbosDbObservation[]> {
   try {
-    const res = await fetch("/api/tbos/observations");
+    const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
+    const res = await fetch(`/api/tbos/observations${query}`);
     const data = await res.json().catch(() => ({}));
     if (data.success && Array.isArray(data.observations)) {
       return data.observations;
@@ -236,6 +240,21 @@ export async function fetchObservations(
     console.error("[T-BOS API Client] Error fetching observations:", err);
     throw err instanceof Error ? err : new Error("Gagal memuat observasi.");
   }
+}
+
+export interface TbosProgram {
+  id: string;
+  code: string | null;
+  title: string;
+  organization_id: string;
+  status: string;
+}
+
+export async function fetchTbosPrograms(): Promise<TbosProgram[]> {
+  const res = await fetch("/api/engagements");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat program.");
+  return (data.engagements || []).filter((program: TbosProgram) => ["active", "in_progress", "review"].includes(program.status));
 }
 
 /**
@@ -329,12 +348,13 @@ export interface TbosViewerStats {
   ownAverageScore: number | null;
 }
 
-export async function fetchDashboardRawData(): Promise<{
+export async function fetchDashboardRawData(programId?: string): Promise<{
   teams: { id: string; name: string; batch: string }[];
   observations: any[];
   viewerStats: TbosViewerStats | null;
 }> {
-  const res = await fetch("/api/tbos/dashboard");
+  const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
+  const res = await fetch(`/api/tbos/dashboard${query}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     const detail = data.detail || data.hint || data.code;

@@ -19,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import {
@@ -48,7 +49,7 @@ const LEVEL_STYLES: Record<number, string> = {
   5: "border-emerald-400 bg-emerald-50 text-emerald-900",
 };
 
-const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D6A84B] focus-visible:ring-offset-2";
+const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
 export default function TbosObservationPage() {
   return (
@@ -76,6 +77,7 @@ function TbosObservationContent() {
   const [userId, setUserId] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<TbosDbTeam | null>(null);
   const [selectedMission, setSelectedMission] = useState<TbosDbMission | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState("");
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [sessionCaptainId, setSessionCaptainId] = useState<string | null>(null);
@@ -95,18 +97,18 @@ function TbosObservationContent() {
       setUserId(currentUserId);
       setQueuedCount(getQueuedObservations(currentUserId).length);
 
-      const [missionList, teamList] = await Promise.all([fetchMissions(), fetchTeams()]);
+       const [missionList, teamList] = await Promise.all([fetchMissions(), fetchTeams(selectedProgramId)]);
       setMissions(missionList);
       setTeams(teamList);
 
       // Completion data is useful context, but must never block field work.
-      void fetchObservations(currentUserId).then(setObservations).catch(() => setObservations(null));
+       void fetchObservations(currentUserId, false, selectedProgramId).then(setObservations).catch(() => setObservations(null));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat penugasan.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     void Promise.resolve().then(initData);
@@ -367,10 +369,10 @@ function TbosObservationContent() {
       <Shell isOnline={isOnline} queuedCount={queuedCount}>
         <main className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-10">
           <section className="w-full overflow-hidden rounded-md bg-white shadow-[0_24px_70px_rgba(8,29,66,0.18)]" role="status">
-            <div className="relative overflow-hidden bg-[#081D42] px-6 py-10 text-center text-white">
+            <div className="relative overflow-hidden bg-primary-dark px-6 py-10 text-center text-white">
               <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-[#17447F]" />
-              <div className="absolute -bottom-16 -left-10 h-36 w-36 rounded-full border-[22px] border-[#D6A84B]/20" />
-              <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#D6A84B] text-[#081D42] shadow-lg">
+              <div className="absolute -bottom-16 -left-10 h-36 w-36 rounded-full border-[22px] border-accent/20" />
+              <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-primary-dark shadow-lg">
                 {savedLocally ? <WifiOff className="h-8 w-8" /> : <Check className="h-8 w-8" />}
               </div>
               <h1 className="relative text-2xl font-bold tracking-tight">
@@ -381,7 +383,7 @@ function TbosObservationContent() {
               </p>
             </div>
             <div className="space-y-5 p-6">
-              <div className="rounded-2xl border border-[#D6A84B]/30 bg-[#F7F6F2] p-4">
+              <div className="rounded-2xl border border-accent/30 bg-[#F7F6F2] p-4">
                 <p className="font-bold text-[#0B2C6B]">{selectedTeam?.name}</p>
                 <p className="mt-1 text-sm text-slate-600">{selectedMission?.name}</p>
               </div>
@@ -402,26 +404,27 @@ function TbosObservationContent() {
     <Shell isOnline={isOnline} queuedCount={queuedCount}>
       {step === "tasks" && (
         <main>
-          <section className="relative overflow-hidden bg-[#081D42] px-4 pb-14 pt-8 text-white">
+          <div className="mx-auto max-w-2xl px-4 pt-4"><TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} /></div>
+          <section className="relative overflow-hidden bg-primary-dark px-4 pb-14 pt-8 text-white">
             <div className="absolute -right-14 -top-20 h-60 w-60 rounded-full bg-[#123A72]" />
-            <div className="absolute right-12 top-16 h-28 w-28 rounded-full border-[18px] border-[#D6A84B]/15" />
+            <div className="absolute right-12 top-16 h-28 w-28 rounded-full border-[18px] border-accent/15" />
             <div className="relative mx-auto max-w-2xl">
               <div className="mb-8 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-                    <ClipboardCheck className="h-5 w-5 text-[#E8C778]" aria-hidden="true" />
+                    <ClipboardCheck className="h-5 w-5 text-accent-light" aria-hidden="true" />
                   </div>
                   <div>
-                   <p className="font-sans text-xl font-extrabold tracking-[-0.04em]"><span className="text-white">Bina</span><span className="text-[#E8C778]">Hub</span></p>
+                   <p className="font-sans text-xl font-extrabold tracking-[-0.04em]"><span className="text-white">Bina</span><span className="text-accent-light">Hub</span></p>
                     <p className="text-sm font-semibold text-white/75">T-BOS Field Console</p>
                   </div>
                 </div>
                 <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
               </div>
-              <p className="text-sm font-semibold text-[#E8C778]">Penugasan hari ini</p>
+              <p className="text-sm font-semibold text-accent-light">Penugasan hari ini</p>
               <h1 className="mt-2 max-w-md text-3xl font-bold leading-tight tracking-[-0.03em]">Mulai dari tim, catat sesi dengan yakin.</h1>
               <div className="mt-7 inline-flex items-end gap-3 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/10 backdrop-blur">
-                <strong className="text-3xl leading-none text-[#E8C778]">{teams.length}</strong>
+                <strong className="text-3xl leading-none text-accent-light">{teams.length}</strong>
                 <span className="pb-0.5 text-sm text-white/75">tim ditugaskan</span>
               </div>
             </div>
@@ -433,7 +436,7 @@ function TbosObservationContent() {
                 <h2 id="assigned-teams-title" className="font-bold text-[#0B2C6B]">Tim Anda</h2>
                 <p className="mt-0.5 text-xs text-slate-500">Siapkan roster sebelum memilih misi.</p>
               </div>
-              <Users className="h-5 w-5 text-[#D6A84B]" aria-hidden="true" />
+              <Users className="h-5 w-5 text-accent" aria-hidden="true" />
             </div>
 
             {error && <Alert>{error}</Alert>}
@@ -451,9 +454,9 @@ function TbosObservationContent() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <span className="inline-flex rounded-full bg-[#0B2C6B]/7 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#0B2C6B]">{team.batch}</span>
-                      <h3 className="mt-3 text-xl font-bold tracking-tight text-[#081D42]">{team.name}</h3>
+                      <h3 className="mt-3 text-xl font-bold tracking-tight text-primary-dark">{team.name}</h3>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F3E7CA] font-bold text-[#8A641D]">{String(index + 1).padStart(2, "0")}</div>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F3E7CA] font-bold text-accent-dark">{String(index + 1).padStart(2, "0")}</div>
                   </div>
                   <dl className="mt-5 grid grid-cols-2 gap-3 border-y border-slate-100 py-4 text-sm">
                     <div>
@@ -492,10 +495,10 @@ function TbosObservationContent() {
            <section className="rounded-2xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 id="attendance-title" className="text-lg font-bold text-[#081D42]">Kehadiran sesi</h2>
+                <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Kehadiran sesi</h2>
                 <p className="mt-1 text-sm leading-relaxed text-slate-500">Atur kehadiran dan pilih satu kapten untuk snapshot sesi ini.</p>
               </div>
-              <Users className="mt-1 h-5 w-5 text-[#D6A84B]" aria-hidden="true" />
+              <Users className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
             </div>
 
             {memberError && <div className="mt-4"><Alert>{memberError}</Alert></div>}
@@ -509,7 +512,7 @@ function TbosObservationContent() {
                 {teamMembers.map((member) => {
                   const isSessionCaptain = member.isPresent && sessionCaptainId === member.id;
                   return (
-                     <article key={member.id} className={`rounded-xl border p-3 ${isSessionCaptain ? "border-[#D6A84B] bg-[#FFF9EA]" : "border-slate-200 bg-white"}`}>
+                     <article key={member.id} className={`rounded-xl border p-3 ${isSessionCaptain ? "border-accent bg-[#FFF9EA]" : "border-slate-200 bg-white"}`}>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -534,7 +537,7 @@ function TbosObservationContent() {
                           aria-pressed={isSessionCaptain}
                           aria-label={`Pilih ${member.member_name} sebagai kapten sesi`}
                           onClick={() => { setSessionCaptainId(member.id); setMemberError(""); }}
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-30 ${isSessionCaptain ? "border-[#D6A84B] bg-[#D6A84B] text-[#081D42]" : "border-slate-200 text-slate-400"} ${FOCUS}`}
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-30 ${isSessionCaptain ? "border-accent bg-accent text-primary-dark" : "border-slate-200 text-slate-400"} ${FOCUS}`}
                         >
                           <Crown className="h-4 w-4" aria-hidden="true" />
                         </button>
@@ -559,7 +562,7 @@ function TbosObservationContent() {
             </form>
           </section>
 
-           <div className="rounded-xl border border-[#D6A84B]/35 bg-[#FFF9EA] p-4" role="status">
+           <div className="rounded-xl border border-accent/35 bg-[#FFF9EA] p-4" role="status">
             <p className="text-sm font-bold text-[#6D511B]">Ringkasan sesi</p>
             <p className="mt-1 text-sm text-[#7A642F]">{presentMembers.length} hadir · Kapten: {sessionCaptain?.member_name || "belum dipilih"}</p>
             <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten sesi hanya tersimpan pada observasi ini dan tidak mengubah kapten master.</p>
@@ -580,7 +583,7 @@ function TbosObservationContent() {
         >
           <section aria-labelledby="missions-title">
             <div className="mb-4">
-              <h2 id="missions-title" className="text-lg font-bold text-[#081D42]">Semua misi</h2>
+              <h2 id="missions-title" className="text-lg font-bold text-primary-dark">Semua misi</h2>
               <p className="mt-1 text-sm text-slate-500">Misi yang sudah selesai tetap dapat diobservasi kembali.</p>
             </div>
             <div className="space-y-3">
@@ -588,18 +591,18 @@ function TbosObservationContent() {
                 const completed = completedMissionIds(selectedTeam.id).has(mission.id);
                 const selected = selectedMission?.id === mission.id;
                 return (
-                  <button key={mission.id} type="button" aria-pressed={selected} onClick={() => setSelectedMission(mission)} className={`w-full rounded-md border p-5 text-left transition motion-reduce:transition-none ${selected ? "border-[#D6A84B] bg-[#081D42] text-white shadow-[0_18px_40px_rgba(8,29,66,0.2)]" : "border-black/[0.04] bg-white text-[#081D42] shadow-[0_7px_20px_rgba(8,29,66,0.07)]"} ${FOCUS}`}>
+                  <button key={mission.id} type="button" aria-pressed={selected} onClick={() => setSelectedMission(mission)} className={`w-full rounded-md border p-5 text-left transition motion-reduce:transition-none ${selected ? "border-accent bg-primary-dark text-white shadow-[0_18px_40px_rgba(8,29,66,0.2)]" : "border-black/[0.04] bg-white text-primary-dark shadow-[0_7px_20px_rgba(8,29,66,0.07)]"} ${FOCUS}`}>
                     <div className="flex items-start gap-4">
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${selected ? "bg-[#D6A84B] text-[#081D42]" : "bg-[#F3E7CA] text-[#79591B]"}`}>{String(index + 1).padStart(2, "0")}</span>
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${selected ? "bg-accent text-primary-dark" : "bg-[#F3E7CA] text-accent-dark"}`}>{String(index + 1).padStart(2, "0")}</span>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-bold">{mission.name}</h3>
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${completed ? "bg-emerald-100 text-emerald-700" : selected ? "bg-white/10 text-white/70" : "bg-slate-100 text-slate-500"}`}>{completed ? "Selesai" : "Tersedia"}</span>
                         </div>
                         <p className={`mt-2 line-clamp-2 text-sm leading-relaxed ${selected ? "text-white/65" : "text-slate-500"}`}>{mission.description}</p>
-                        <p className={`mt-3 text-xs font-semibold ${selected ? "text-[#E8C778]" : "text-[#0B2C6B]"}`}>{mission.dimensions.length} dimensi observasi</p>
+                        <p className={`mt-3 text-xs font-semibold ${selected ? "text-accent-light" : "text-[#0B2C6B]"}`}>{mission.dimensions.length} dimensi observasi</p>
                       </div>
-                      {selected && <CheckCircle2 className="h-5 w-5 shrink-0 text-[#E8C778]" aria-hidden="true" />}
+                      {selected && <CheckCircle2 className="h-5 w-5 shrink-0 text-accent-light" aria-hidden="true" />}
                     </div>
                   </button>
                 );
@@ -617,18 +620,18 @@ function TbosObservationContent() {
           subtitle={`${selectedTeam.name} · ${selectedMission.name}`}
           backLabel="Kembali ke pilihan misi"
           onBack={() => setStep("mission")}
-          status={<span className="text-xs font-bold text-[#E8C778]">{scoredCount}/{selectedMission.dimensions.length}</span>}
+          status={<span className="text-xs font-bold text-accent-light">{scoredCount}/{selectedMission.dimensions.length}</span>}
         >
           <section className="rounded-md bg-[#0B2C6B] p-5 text-white shadow-[0_16px_40px_rgba(8,29,66,0.2)]" aria-label="Kemajuan observasi">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Kemajuan</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Kemajuan</p>
                 <p className="mt-2 text-lg font-bold">{scoredCount} dari {selectedMission.dimensions.length} dimensi</p>
               </div>
-              <span className="text-2xl font-bold text-[#E8C778]">{Math.round((scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100)}%</span>
+              <span className="text-2xl font-bold text-accent-light">{Math.round((scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100)}%</span>
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15">
-              <div className="h-full rounded-full bg-[#D6A84B] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100}%` }} />
+              <div className="h-full rounded-full bg-accent transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100}%` }} />
             </div>
           </section>
 
@@ -640,9 +643,9 @@ function TbosObservationContent() {
                    <fieldset key={dimension.id} className={`rounded-2xl border border-black/[0.04] bg-white p-4 shadow-[0_9px_26px_rgba(8,29,66,0.08)] sm:p-5 ${index % 2 ? "sm:ml-3" : "sm:mr-3"}`}>
                   <legend className="sr-only">{dimension.name}</legend>
                   <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-sm font-bold text-[#E8C778]">{index + 1}</span>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-sm font-bold text-accent-light">{index + 1}</span>
                     <div>
-                      <h2 className="font-bold text-[#081D42]">{dimension.name}</h2>
+                      <h2 className="font-bold text-primary-dark">{dimension.name}</h2>
                       <p className="mt-1 text-sm leading-relaxed text-slate-500">{dimension.question}</p>
                     </div>
                   </div>
@@ -676,7 +679,7 @@ function TbosObservationContent() {
 
            <section className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(8,29,66,0.08)]" aria-labelledby="notes-title">
             <div className="flex items-center justify-between gap-3">
-              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-[#081D42]">Catatan lapangan</label>
+              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan lapangan</label>
               <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
             </div>
             <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Konteks singkat yang membantu pembacaan skor..." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
@@ -698,18 +701,18 @@ function TbosObservationContent() {
           {error && <Alert>{error}</Alert>}
           <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Konteks observasi</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
               <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
               <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 p-5">
               <div>
                 <p className="text-xs text-slate-500">Hadir</p>
-                <p className="mt-1 text-lg font-bold text-[#081D42]">{presentMembers.length} anggota</p>
+                <p className="mt-1 text-lg font-bold text-primary-dark">{presentMembers.length} anggota</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500">Kapten sesi</p>
-                <p className="mt-1 truncate text-sm font-bold text-[#081D42]">{sessionCaptain.member_name}</p>
+                <p className="mt-1 truncate text-sm font-bold text-primary-dark">{sessionCaptain.member_name}</p>
               </div>
               <div className="col-span-2 border-t border-slate-100 pt-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar hadir</p>
@@ -721,7 +724,7 @@ function TbosObservationContent() {
           </section>
 
           <section className="rounded-md bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
-            <h2 id="review-scores-title" className="text-lg font-bold text-[#081D42]">Skor dimensi</h2>
+            <h2 id="review-scores-title" className="text-lg font-bold text-primary-dark">Skor dimensi</h2>
             <dl className="mt-4 divide-y divide-slate-100">
               {selectedMission.dimensions.map((dimension) => {
                 const value = scores[dimension.id];
@@ -738,7 +741,7 @@ function TbosObservationContent() {
               })}
             </dl>
             <div className="flex items-center justify-between gap-3">
-              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-[#081D42]">Catatan lapangan</label>
+              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan lapangan</label>
               <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
             </div>
             <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Konteks singkat yang membantu pembacaan skor..." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
@@ -760,18 +763,18 @@ function TbosObservationContent() {
           {error && <Alert>{error}</Alert>}
           <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#E8C778]">Konteks observasi</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
               <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
               <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 p-5">
               <div>
                 <p className="text-xs text-slate-500">Hadir</p>
-                <p className="mt-1 text-lg font-bold text-[#081D42]">{presentMembers.length} anggota</p>
+                <p className="mt-1 text-lg font-bold text-primary-dark">{presentMembers.length} anggota</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500">Kapten sesi</p>
-                <p className="mt-1 truncate text-sm font-bold text-[#081D42]">{sessionCaptain.member_name}</p>
+                <p className="mt-1 truncate text-sm font-bold text-primary-dark">{sessionCaptain.member_name}</p>
               </div>
               <div className="col-span-2 border-t border-slate-100 pt-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar hadir</p>
@@ -783,7 +786,7 @@ function TbosObservationContent() {
           </section>
 
           <section className="rounded-md bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
-            <h2 id="review-scores-title" className="text-lg font-bold text-[#081D42]">Skor dimensi</h2>
+            <h2 id="review-scores-title" className="text-lg font-bold text-primary-dark">Skor dimensi</h2>
             <dl className="mt-4 divide-y divide-slate-100">
               {selectedMission.dimensions.map((dimension) => {
                 const value = scores[dimension.id];
@@ -801,7 +804,7 @@ function TbosObservationContent() {
             </dl>
           </section>
 
-          <section className="rounded-md border border-[#D6A84B]/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
+          <section className="rounded-md border border-accent/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
             <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
           </section>
@@ -817,9 +820,9 @@ function TbosObservationContent() {
       {step === "submitting" && (
         <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 text-center" role="status" aria-live="polite">
           <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[#0B2C6B] shadow-xl shadow-[#0B2C6B]/20">
-            <Loader2 className="h-8 w-8 animate-spin text-[#E8C778] motion-reduce:animate-none" aria-hidden="true" />
+            <Loader2 className="h-8 w-8 animate-spin text-accent-light motion-reduce:animate-none" aria-hidden="true" />
           </div>
-          <h2 className="mt-5 text-xl font-bold text-[#081D42]">Menyimpan snapshot sesi</h2>
+          <h2 className="mt-5 text-xl font-bold text-primary-dark">Menyimpan snapshot sesi</h2>
           <p className="mt-2 text-sm text-slate-500">Jangan tutup halaman sampai proses selesai.</p>
         </div>
       )}
@@ -847,7 +850,7 @@ function WorkflowPage({ eyebrow, title, subtitle, backLabel, onBack, status, chi
 }) {
   return (
     <div className="space-y-4">
-      <div className="relative overflow-hidden rounded-2xl bg-[#081D42] p-5 text-white shadow-md">
+      <div className="relative overflow-hidden rounded-2xl bg-primary-dark p-5 text-white shadow-md">
         <div className="absolute -right-12 -top-20 h-44 w-44 rounded-full bg-[#123A72]" />
         <div className="relative mx-auto max-w-2xl">
           <div className="flex items-center justify-between gap-3">
@@ -856,7 +859,7 @@ function WorkflowPage({ eyebrow, title, subtitle, backLabel, onBack, status, chi
             </button>
             {status}
           </div>
-          <p className="mt-3 text-xs font-bold uppercase tracking-[0.17em] text-[#E8C778]">{eyebrow}</p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.17em] text-accent-light">{eyebrow}</p>
           <h1 className="mt-1 text-xl font-bold tracking-[-0.025em]">{title}</h1>
           <p className="mt-0.5 text-xs text-white/70">{subtitle}</p>
         </div>
@@ -869,7 +872,7 @@ function WorkflowPage({ eyebrow, title, subtitle, backLabel, onBack, status, chi
 function NetworkBadge({ isOnline, queuedCount, dark = false }: { isOnline: boolean; queuedCount: number; dark?: boolean }) {
   return (
     <div className={`flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold ${dark ? "bg-white/10 text-white/75 ring-1 ring-white/10" : "bg-white text-slate-600"}`} aria-label={`${isOnline ? "Online" : "Offline"}${queuedCount ? `, ${queuedCount} antrean` : ""}`}>
-      {isOnline ? <Wifi className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" /> : <WifiOff className="h-3.5 w-3.5 text-[#E8C778]" aria-hidden="true" />}
+      {isOnline ? <Wifi className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" /> : <WifiOff className="h-3.5 w-3.5 text-accent-light" aria-hidden="true" />}
       <span>{isOnline ? "Online" : "Offline"}{queuedCount > 0 ? ` · ${queuedCount}` : ""}</span>
     </div>
   );

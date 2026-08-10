@@ -15,6 +15,8 @@ const STATUS_CONFIG: Record<string, { label: string; icon?: React.ReactNode; ton
   pending: { label: "Menunggu Ditinjau", tone: "bg-amber-50 text-amber-700" },
   reviewed: { label: "Ditinjau", tone: "bg-emerald-50 text-emerald-700" },
   needs_attention: { label: "Perlu Perhatian", tone: "bg-red-50 text-red-700" },
+  submitted: { label: "Terkirim", tone: "bg-blue-50 text-blue-700" },
+  locked: { label: "Terkunci", tone: "bg-red-50 text-red-700" },
 };
 
 export function StatusPill({

@@ -53,6 +53,7 @@ function mapEngagement(item: Record<string, unknown>): TransformationEngagement 
     title: String(item.title || "Untitled Engagement"),
     type: String(item.type || "transformation") as TransformationEngagement["type"],
     status: String(item.status || "draft") as TransformationEngagement["status"],
+    code: item.code ? String(item.code) : null,
     start_date: item.start_date ? String(item.start_date) : null,
     end_date: item.end_date ? String(item.end_date) : null,
     created_at: String(item.created_at || new Date().toISOString()),

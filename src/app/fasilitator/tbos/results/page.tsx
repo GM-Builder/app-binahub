@@ -11,12 +11,14 @@ import {
   Medal,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
+  TrendingUp,
   Target,
   UsersRound,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { TbosProgramSelector } from "@/components/tbos-program-selector";
+import { StatCard } from "@/components/ui";
 import { fetchDashboardRawData } from "@/modules/tbos/api-client";
 import { formatScore, generateDashboardData } from "@/modules/tbos/scoring";
 import type { DimensionScore, TbosDashboardData, TeamScoreSummary } from "@/modules/tbos/types";
@@ -41,12 +43,13 @@ function TbosResultsContent() {
   const [ownObservationCount, setOwnObservationCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
 
   const loadResults = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const result = await fetchDashboardRawData();
+      const result = await fetchDashboardRawData(selectedProgramId);
       setOwnObservationCount(result.viewerStats?.ownObservationCount ?? 0);
       setData(generateDashboardData(result.teams, result.observations));
     } catch (loadError) {
@@ -54,7 +57,7 @@ function TbosResultsContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     void Promise.resolve().then(loadResults);
@@ -97,9 +100,9 @@ function TbosResultsContent() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
       <section className="relative isolate overflow-hidden rounded-[1.75rem] bg-[#071B3D] px-5 py-6 text-white shadow-[0_28px_70px_-35px_rgba(7,27,61,0.9)] sm:px-8 sm:py-8" aria-labelledby="results-overview-title">
-        <div className="absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full bg-[#D9A441]/20 blur-3xl" />
-        <div className="absolute -bottom-28 left-1/4 -z-10 h-56 w-56 rounded-full bg-blue-400/10 blur-3xl" />
+        <div className="absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full bg-[#D9A441]/15 blur-3xl" />
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#F3CE7A]">
@@ -119,35 +122,23 @@ function TbosResultsContent() {
       <section aria-labelledby="key-metrics-title">
         <h2 id="key-metrics-title" className="sr-only">Metrik utama</h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MetricCard label="Observasi saya" value={String(ownObservationCount)} detail="Dalam cakupan akun" icon={<ClipboardCheck />} accent="gold" />
-          <MetricCard label="Total tim" value={String(data.teams.length)} detail="Tim dalam cakupan" icon={<UsersRound />} />
-          <MetricCard label="Tim berskor" value={String(scoredTeams.length)} detail={`Dari ${data.teams.length} tim`} icon={<BarChart3 />} />
-          <MetricCard label="Skor rata-rata" value={formatScore(averageScore)} detail="Skala maksimal 5" icon={<Target />} accent="gold" />
+          <StatCard label="Observasi saya" value={ownObservationCount} detail="Dalam cakupan akun" icon={<ClipboardCheck />} />
+          <StatCard label="Total tim" value={data.teams.length} detail="Tim dalam cakupan" icon={<UsersRound />} />
+          <StatCard label="Tim berskor" value={scoredTeams.length} detail={`Dari ${data.teams.length} tim`} icon={<BarChart3 />} />
+          <StatCard label="Skor rata-rata" value={formatScore(averageScore)} detail="Skala maksimal 5" icon={<Target />} />
         </div>
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
         <TeamRanking teams={rankedTeams} />
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
-          <DimensionPanel title="Kekuatan utama" description="Dimensi dengan skor agregat tertinggi." dimensions={data.executiveSummary.topStrengths} icon={<Sparkles />} tone="strength" />
+          <DimensionPanel title="Kekuatan utama" description="Dimensi dengan skor agregat tertinggi." dimensions={data.executiveSummary.topStrengths} icon={<TrendingUp />} tone="strength" />
           <DimensionPanel title="Area pengembangan" description="Dimensi yang perlu menjadi fokus berikutnya." dimensions={data.executiveSummary.developmentAreas} icon={<Target />} tone="development" />
         </div>
       </div>
 
       <TeamComparison teams={rankedTeams} />
     </div>
-  );
-}
-
-function MetricCard({ label, value, detail, icon, accent = "navy" }: { label: string; value: string; detail: string; icon: React.ReactNode; accent?: "navy" | "gold" }) {
-  return (
-    <article className="relative overflow-hidden rounded-2xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_14px_35px_-28px_rgba(11,44,107,0.65)] sm:p-5">
-      <div className={`absolute inset-x-0 top-0 h-0.5 ${accent === "gold" ? "bg-[#D9A441]" : "bg-[#0B2C6B]"}`} />
-      <span className={`flex h-9 w-9 items-center justify-center rounded-xl [&>svg]:h-4 [&>svg]:w-4 ${accent === "gold" ? "bg-[#D9A441]/15 text-[#9A6817]" : "bg-[#0B2C6B]/[0.07] text-[#0B2C6B]"}`} aria-hidden="true">{icon}</span>
-      <p className="mt-4 text-2xl font-bold tracking-tight text-[#0B2C6B] sm:text-3xl">{value}</p>
-      <h3 className="mt-1 text-xs font-bold text-slate-700 sm:text-sm">{label}</h3>
-      <p className="mt-0.5 text-[11px] text-slate-500">{detail}</p>
-    </article>
   );
 }
 
@@ -221,7 +212,7 @@ function TeamComparison({ teams }: { teams: TeamScoreSummary[] }) {
   return (
     <section className="rounded-md border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_22px_60px_-45px_rgba(11,44,107,0.7)] sm:p-6" aria-labelledby="comparison-title">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D9A441]/15 text-[#946314]"><BarChart3 className="h-5 w-5" aria-hidden="true" /></span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent-dark"><BarChart3 className="h-5 w-5" aria-hidden="true" /></span>
         <div><h2 id="comparison-title" className="text-base font-bold text-[#0B2C6B] sm:text-lg">Perbandingan ringkas tim</h2><p className="mt-1 text-xs leading-5 text-slate-500">Skor keseluruhan pada skala 1 sampai 5.</p></div>
       </div>
       {scoredTeams.length === 0 ? (

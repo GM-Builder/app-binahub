@@ -3,11 +3,12 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, Eye, KeyRound, Plus, UsersRound, X, MessageSquare, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, KeyRound, Plus, UsersRound, X, MessageSquare, Send, Trash2, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements, useEvidence } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { StatusPill, Breadcrumb, ConfirmDialog } from "@/components/ui";
+import { EngagementEditModal } from "@/components/engagement-edit-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { supabase } from "@/lib/supabase";
 
@@ -44,6 +45,9 @@ function ManageEngagementContent() {
   const [newNote, setNewNote] = useState("");
   const [sendingNote, setSendingNote] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [archiving, setArchiving] = useState(false);
 
   const currentIndex = engagement ? STATUS_ORDER.indexOf(engagement.status as typeof STATUS_ORDER[number]) : -1;
   const nextStates = engagement ? STATUS_FLOW[engagement.status] || [] : [];
@@ -147,6 +151,42 @@ function ManageEngagementContent() {
     }
   };
 
+  const handleEditProgram = async () => {
+    if (!engagement) return;
+    setShowEditModal(true);
+  };
+
+  const handleArchiveProgram = async () => {
+    if (!engagement) return;
+    setArchiving(true);
+    try {
+      const response = await fetch(`/api/engagements/${engagement.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived" }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Gagal mengarsipkan program.");
+        return;
+      }
+      toast.success("Program diarsipkan");
+      window.location.reload();
+    } catch {
+      toast.error("Gagal mengarsipkan program.");
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const handleDeleteProgram = async () => {
+    if (!engagement || !window.confirm("Hapus program ini? Program dengan histori observasi hanya dapat diarsipkan.")) return;
+    const response = await fetch(`/api/engagements/${engagement.id}`, { method: "DELETE" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) toast.error(result.error || "Program tidak dapat dihapus.");
+    else window.location.href = "/admin/engagements";
+  };
+
   const handleAddParticipant = async () => {
     if (!engagement || !newParticipantName.trim()) return;
     setAddingParticipant(true);
@@ -204,6 +244,13 @@ function ManageEngagementContent() {
                 <h2 className="mt-1 text-xl font-semibold text-[#0B2C6B]">{engagement.title}</h2>
               </div>
               <div className="flex items-center gap-2">
+                <button type="button" onClick={() => void handleEditProgram()} className="inline-flex items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 px-3 py-1.5 text-xs font-semibold text-[#0B2C6B]"><Pencil size={14} /> Kelola</button>
+                {engagement.status !== "archived" && (
+                  <button type="button" onClick={() => setConfirmArchive(true)} disabled={archiving} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+                    <Archive size={14} /> Arsipkan
+                  </button>
+                )}
+                <button type="button" onClick={() => void handleDeleteProgram()} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700"><Trash2 size={14} /> Hapus</button>
                 <Link
                   href={`/admin/engagements/access-codes?engagement_id=${engagement.id}&title=${encodeURIComponent(engagement.title)}`}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#D9A441]/30 bg-[#D9A441]/10 px-3 py-1.5 text-xs font-semibold text-[#D9A441] hover:bg-[#D9A441]/20"
@@ -375,6 +422,20 @@ function ManageEngagementContent() {
         confirmLabel="Hapus"
         variant="danger"
       />
+
+      <ConfirmDialog
+        open={confirmArchive}
+        onClose={() => setConfirmArchive(false)}
+        onConfirm={() => void handleArchiveProgram()}
+        title="Arsipkan Program?"
+        description="Program yang diarsipkan tidak muncul di daftar program aktif. Data observasi tetap dipertahankan."
+        confirmLabel="Ya, Arsipkan"
+        variant="warning"
+      />
+
+      {showEditModal && engagement && (
+        <EngagementEditModal engagement={engagement} onClose={() => setShowEditModal(false)} onSaved={() => window.location.reload()} />
+      )}
     </div>
   );
 }

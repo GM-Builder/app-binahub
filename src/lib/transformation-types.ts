@@ -11,6 +11,7 @@ export interface Engagement {
   title: string;
   type: EngagementType;
   status: EngagementStatus;
+  code: string | null;
   start_date: string | null;
   end_date: string | null;
   created_at: string;

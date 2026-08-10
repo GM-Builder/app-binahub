@@ -6,7 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check, UsersRound, Crown } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { supabase } from "@/lib/supabase";
+import { StatusPill } from "@/components/ui";
 import type { LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";
 import {
@@ -40,6 +42,7 @@ function TbosObservationsContent() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [selectedProgramId, setSelectedProgramId] = useState("");
 
   const loadObservations = useCallback(async () => {
     try {
@@ -56,14 +59,14 @@ function TbosObservationsContent() {
       const adminRole = profile?.role === "admin";
       setIsAdmin(adminRole);
 
-      const obsList = await fetchObservations(userId, adminRole);
+       const obsList = await fetchObservations(userId, adminRole, selectedProgramId);
       setObservations(obsList);
     } catch {
       setError("Gagal memuat observasi.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     void Promise.resolve().then(loadObservations);
@@ -96,6 +99,7 @@ function TbosObservationsContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[#0B2C6B]">Riwayat Observasi</h2>
         <span className="text-xs text-[#4A4C54]">{observations.length} observasi</span>
@@ -112,7 +116,7 @@ function TbosObservationsContent() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-[#0B2C6B] truncate">{obs.teamName}</h3>
-                  <StatusBadge status={obs.status} />
+                   <StatusPill status={obs.status} />
                 </div>
                 <p className="text-xs text-[#4A4C54] mt-1">
                   {obs.missionName} • {obs.batch}
@@ -154,20 +158,6 @@ function TbosObservationsContent() {
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; color: string }> = {
-    draft: { label: "Draft", color: "bg-gray-100 text-gray-600" },
-    submitted: { label: "Submitted", color: "bg-blue-100 text-blue-700" },
-    locked: { label: "Locked", color: "bg-red-100 text-red-700" },
-  };
-  const c = config[status] || config.submitted;
-  return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${c.color}`}>
-      {c.label}
-    </span>
   );
 }
 
@@ -335,7 +325,7 @@ function ObservationDetailPanel({
           </div>
           {detail && (
             <div className="flex items-center gap-2">
-              <StatusBadge status={detail.status} />
+              <StatusPill status={detail.status} />
               {isAdmin && (
                 detail.status === "locked" ? (
                   <button

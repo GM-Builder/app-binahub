@@ -27,6 +27,9 @@ import {
   Layers,
   CheckCircle2,
   AlertTriangle,
+  Pencil,
+  Trash2,
+  Building2,
   ChevronDown,
   ChevronUp,
   Home,
@@ -34,6 +37,7 @@ import {
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/ui";
+import { useEngagements } from "@/hooks/use-transformation-data";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam, fetchTeams } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
@@ -71,6 +75,15 @@ function TbosDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [teamRoster, setTeamRoster] = useState<TbosDbTeam[]>([]);
+  const { engagements } = useEngagements();
+  const activePrograms = engagements.filter((program) => ["active", "in_progress", "review"].includes(program.status));
+  const [selectedProgramId, setSelectedProgramId] = useState("");
+  const [showProgramModal, setShowProgramModal] = useState(false);
+  const [newProgramCode, setNewProgramCode] = useState("");
+  const [newProgramTitle, setNewProgramTitle] = useState("");
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [creatingProgram, setCreatingProgram] = useState(false);
+  const [programError, setProgramError] = useState("");
 
   // Create Team Modal State
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -93,8 +106,8 @@ function TbosDashboardContent() {
     try {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
       const [{ teams, observations }, roster] = await Promise.all([
-        fetchDashboardRawData(),
-        fetchTeams(),
+        fetchDashboardRawData(selectedProgramId),
+        fetchTeams(selectedProgramId),
       ]);
       const computed = generateDashboardData(teams, observations);
       setDashboardData(computed);
@@ -104,11 +117,17 @@ function TbosDashboardContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedProgramId]);
 
   useEffect(() => {
     void Promise.resolve().then(fetchData);
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!selectedProgramId && activePrograms[0]?.id) {
+      setSelectedProgramId(activePrograms[0].id);
+    }
+  }, [activePrograms, selectedProgramId]);
 
   const openAssignmentModal = async () => {
     setAssignmentError("");
@@ -169,6 +188,10 @@ function TbosDashboardContent() {
 
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedProgramId) {
+      setCreateTeamError("Pilih program aktif terlebih dahulu.");
+      return;
+    }
     if (!newTeamName.trim()) {
       setCreateTeamError("Nama tim tidak boleh kosong.");
       return;
@@ -179,6 +202,7 @@ function TbosDashboardContent() {
     const res = await createTeam({
       name: newTeamName.trim(),
       batch: newTeamBatch,
+      programId: selectedProgramId,
     });
 
     if (res.success) {
@@ -193,6 +217,49 @@ function TbosDashboardContent() {
       setCreateTeamError(res.error || "Gagal membuat tim.");
     }
     setCreatingTeam(false);
+  };
+
+  const handleCreateProgram = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newProgramCode.trim() || !newProgramTitle.trim() || !newCompanyName.trim()) {
+      setProgramError("Kode, nama program, dan perusahaan wajib diisi.");
+      return;
+    }
+    setCreatingProgram(true);
+    setProgramError("");
+    try {
+      const organizationResponse = await fetch("/api/organizations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newCompanyName.trim() }) });
+      const organizationResult = await organizationResponse.json().catch(() => ({}));
+      if (!organizationResponse.ok || !organizationResult.success) throw new Error(organizationResult.error || "Gagal menyimpan perusahaan.");
+      const response = await fetch("/api/engagements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organizationResult.organization.id, code: newProgramCode.trim().toUpperCase(), title: newProgramTitle.trim(), type: "assessment", status: "active" }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal membuat program.");
+      setShowProgramModal(false);
+      setNewProgramCode(""); setNewProgramTitle(""); setNewCompanyName("");
+      setSelectedProgramId(result.engagement.id);
+      window.location.reload();
+    } catch (error) {
+      setProgramError(error instanceof Error ? error.message : "Gagal membuat program.");
+    } finally {
+      setCreatingProgram(false);
+    }
+  };
+
+  const handleEditTeam = async (teamId: string, currentName: string) => {
+    const name = window.prompt("Nama tim", currentName);
+    if (!name?.trim()) return;
+    const response = await fetch(`/api/tbos/teams/${teamId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) window.alert(result.error || "Gagal mengubah tim.");
+    else await fetchData();
+  };
+
+  const handleDeleteTeam = async (teamId: string, name: string) => {
+    if (!window.confirm(`Hapus tim ${name}? Tim dengan histori observasi tidak dapat dihapus.`)) return;
+    const response = await fetch(`/api/tbos/teams/${teamId}`, { method: "DELETE" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) window.alert(result.error || "Tim tidak dapat dihapus.");
+    else await fetchData();
   };
 
   const summary = dashboardData?.executiveSummary;
@@ -213,9 +280,35 @@ function TbosDashboardContent() {
     );
   }
 
+  const programSelector = (
+    <div className="mb-6 flex flex-col gap-3 rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Program Aktif</p>
+        <p className="mt-1 text-sm text-[#4A4C54]/70">Pilih program untuk melihat tim dan observasinya.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+      {activePrograms.length > 0 ? (
+        <select
+          value={selectedProgramId}
+          onChange={(event) => setSelectedProgramId(event.target.value)}
+          className="h-10 min-w-64 rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm font-semibold text-[#0B2C6B] outline-none focus:border-[#D9A441]"
+          aria-label="Pilih program aktif"
+        >
+          {activePrograms.map((program) => (
+            <option key={program.id} value={program.id}>{program.title}</option>
+          ))}
+        </select>
+      ) : null}
+      <button type="button" onClick={() => setShowProgramModal(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#071B3D]"><Plus className="h-3.5 w-3.5" /> Buat Program</button>
+      </div>
+    </div>
+  );
+
   if (!dashboardData || dashboardData.teams.length === 0) {
     return (
-      <div className="text-center py-20 bg-white rounded-2xl border border-black/[0.04] p-8 max-w-xl mx-auto">
+      <div>
+        {programSelector}
+        <div className="text-center py-20 bg-white rounded-2xl border border-black/[0.04] p-8 max-w-xl mx-auto">
         <Users className="w-12 h-12 text-[#0B2C6B]/40 mx-auto mb-4" />
         <h3 className="text-base font-bold text-[#0B2C6B] mb-2">Belum Ada Data Tim T-BOS</h3>
         <p className="text-sm text-[#4A4C54] mb-6">
@@ -242,12 +335,14 @@ function TbosDashboardContent() {
             onClose={() => setShowAddTeamModal(false)}
           />
         )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {programSelector}
       {/* Quick Action Navigation & Real-time indicator */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white p-4 rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
         <div className="flex items-center gap-3">
@@ -287,7 +382,9 @@ function TbosDashboardContent() {
           </Link>
           <button
             onClick={() => setShowAddTeamModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors shadow-sm"
+            disabled={!selectedProgramId}
+            title={selectedProgramId ? "Tambah tim ke program aktif" : "Pilih program aktif terlebih dahulu"}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors shadow-sm disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" />
             Tambah Tim
@@ -367,12 +464,12 @@ function TbosDashboardContent() {
           ))}
         </div>
 
-        <ExportButtons data={dashboardData} />
+        <ExportButtons data={dashboardData} programId={selectedProgramId} />
       </div>
 
       {/* Tab Content */}
       <div>
-        {activeTab === "overview" && <OverviewTab data={dashboardData} roster={teamRoster} />}
+        {activeTab === "overview" && <OverviewTab data={dashboardData} roster={teamRoster} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
         {activeTab === "summary" && <TbosExecutiveSummary data={dashboardData} />}
         {activeTab === "radar" && <TbosRadarChart teams={dashboardData.teams} />}
         {activeTab === "heatmap" && <TbosHeatmap teams={dashboardData.teams} />}
@@ -394,6 +491,7 @@ function TbosDashboardContent() {
           onClose={() => setShowAddTeamModal(false)}
         />
       )}
+      {showProgramModal && <CreateProgramModal code={newProgramCode} title={newProgramTitle} company={newCompanyName} setCode={setNewProgramCode} setTitle={setNewProgramTitle} setCompany={setNewCompanyName} loading={creatingProgram} error={programError} onSubmit={handleCreateProgram} onClose={() => setShowProgramModal(false)} />}
       {showAssignmentModal && (
         <AssignmentModal
           facilitators={facilitators}
@@ -589,7 +687,7 @@ function AddTeamModal({
   );
 }
 
-function ExportButtons({ data }: { data: TbosDashboardData }) {
+function ExportButtons({ data, programId }: { data: TbosDashboardData; programId: string }) {
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -602,10 +700,12 @@ function ExportButtons({ data }: { data: TbosDashboardData }) {
   const handleExportPdf = async () => {
     setExporting("pdf");
     try {
-      const { renderToBuffer } = await import("@react-pdf/renderer");
-      const { TbosReportDocument } = await import("./_components/pdf-report");
-      const buffer = await renderToBuffer(<TbosReportDocument data={data} />);
-      const blob = new Blob([buffer as unknown as ArrayBuffer], { type: "application/pdf" });
+      const response = await fetch(`/api/tbos/export?format=pdf&programId=${encodeURIComponent(programId)}`);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "Gagal membuat PDF.");
+      }
+      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -719,7 +819,7 @@ function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
   );
 }
 
-function OverviewTab({ data, roster }: { data: TbosDashboardData; roster: TbosDbTeam[] }) {
+function OverviewTab({ data, roster, onEditTeam, onDeleteTeam }: { data: TbosDashboardData; roster: TbosDbTeam[]; onEditTeam: (id: string, name: string) => void; onDeleteTeam: (id: string, name: string) => void }) {
   const { executiveSummary: summary } = data;
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
 
@@ -803,7 +903,8 @@ function OverviewTab({ data, roster }: { data: TbosDashboardData; roster: TbosDb
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kekuatan</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Area Dev.</th>
                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Obs.</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Roster</th>
+                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Roster</th>
+                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kelola</th>
               </tr>
             </thead>
             <tbody>
@@ -830,6 +931,12 @@ function OverviewTab({ data, roster }: { data: TbosDashboardData; roster: TbosDb
                         }`}>
                           {team.overallTeamScore !== null ? team.overallTeamScore.toFixed(1) : "-"}
                         </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="inline-flex items-center gap-1">
+                          <button type="button" onClick={() => onEditTeam(team.teamId, team.teamName)} className="rounded-lg p-2 text-[#0B2C6B] hover:bg-[#0B2C6B]/[0.06]" aria-label={`Kelola ${team.teamName}`}><Pencil className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => onDeleteTeam(team.teamId, team.teamName)} className="rounded-lg p-2 text-red-700 hover:bg-red-50" aria-label={`Hapus ${team.teamName}`}><Trash2 className="h-3.5 w-3.5" /></button>
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-xs text-[#4A4C54]">
                         {team.strongestDimension ? (
@@ -870,7 +977,7 @@ function OverviewTab({ data, roster }: { data: TbosDashboardData; roster: TbosDb
                     </tr>
                     {isExpanded && (
                       <tr className="bg-[#F8F9FC] border-b border-black/[0.03]">
-                        <td colSpan={7} className="py-4 px-4 sm:px-6">
+                         <td colSpan={8} className="py-4 px-4 sm:px-6">
                           <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
                             Roster & Kapten
                           </p>
@@ -897,6 +1004,117 @@ function OverviewTab({ data, roster }: { data: TbosDashboardData; roster: TbosDb
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateProgramModal({
+  code,
+  title,
+  company,
+  setCode,
+  setTitle,
+  setCompany,
+  loading,
+  error,
+  onSubmit,
+  onClose,
+}: {
+  code: string;
+  title: string;
+  company: string;
+  setCode: (v: string) => void;
+  setTitle: (v: string) => void;
+  setCompany: (v: string) => void;
+  loading: boolean;
+  error: string;
+  onSubmit: (e: React.FormEvent) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06]">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-[#0B2C6B]" />
+            <h3 className="text-base font-bold text-[#0B2C6B]">Buat Program Baru</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-black/[0.04] text-[#4A4C54]">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+              Nama Perusahaan
+            </label>
+            <input
+              type="text"
+              required
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Contoh: PT Masmindo Dwi Area"
+              maxLength={160}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+              Kode Program
+            </label>
+            <input
+              type="text"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="Contoh: TBOS-MAS-2026-01"
+              maxLength={50}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 font-mono text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+              Nama Program
+            </label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Contoh: Leadership Readiness Sprint"
+              maxLength={200}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+            />
+          </div>
+
+          <div className="pt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-black/10 text-sm font-semibold text-[#4A4C54] hover:bg-black/[0.02] transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              Buat Program
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -38,6 +38,7 @@ function CreateEngagementContent() {
 
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState("");
+  const [code, setCode] = useState("");
   const [type, setType] = useState<string>("transformation");
   const [status, setStatus] = useState<string>("draft");
   const [startDate, setStartDate] = useState("");
@@ -65,7 +66,7 @@ function CreateEngagementContent() {
   }, [engagements]);
 
   const canNext = useMemo(() => {
-    if (step === 0) return title.trim().length >= 3;
+    if (step === 0) return title.trim().length >= 3 && code.trim().length >= 2;
     if (step === 1) return participants.length > 0;
     if (step === 2) return true;
     return true;
@@ -96,6 +97,7 @@ function CreateEngagementContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organizationId,
+          code: code.trim().toUpperCase(),
           title: title.trim(),
           type,
           status,
@@ -204,7 +206,11 @@ function CreateEngagementContent() {
           {step === 0 && (
             <div>
               <h2 className="text-xl font-semibold text-[#0B2C6B]">Informasi Dasar</h2>
-              <p className="mt-1 text-sm text-[#4A4C54]/60">Tentukan detail program transformasi.</p>
+              <p className="mt-1 text-sm text-[#4A4C54]/60">Tentukan kode dan detail program transformasi.</p>
+              <label className="mt-5 block">
+                <span className="text-xs font-semibold text-[#0B2C6B]/60">Kode Program *</span>
+                <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g. TBOS-MAS-2026-01" className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-4 font-mono text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]" required />
+              </label>
               <label className="mt-5 block">
                 <span className="text-xs font-semibold text-[#0B2C6B]/60">Judul *</span>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Leadership Readiness Sprint" className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-4 text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]" required />

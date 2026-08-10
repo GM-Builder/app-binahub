@@ -4,7 +4,10 @@
   --background: #ffffff;
   --foreground: #4a4c54;
   --primary: #0b2c6b;
+  --primary-dark: #071b3d;
   --accent: #d9a441;
+  --accent-light: #f3ce7a;
+  --accent-dark: #9a6817;
   --secondary: #f5f7fa;
   --muted: #64748b;
   --border: #e6eaf0;
@@ -14,7 +17,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
   --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-dark: var(--accent-dark);
   --color-secondary: var(--secondary);
   --color-muted: var(--muted);
   --color-border: var(--border);
