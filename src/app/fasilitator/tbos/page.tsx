@@ -89,6 +89,10 @@ function TbosObservationContent() {
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(0);
   const [savedLocally, setSavedLocally] = useState(false);
+  const [isCreatingNewTeam, setIsCreatingNewTeam] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamBatchId, setNewTeamBatchId] = useState("");
+  const [batches, setBatches] = useState<Array<{ id: string; name: string }>>([]);
 
   const initData = useCallback(async () => {
     try {
@@ -100,6 +104,12 @@ function TbosObservationContent() {
        const [missionList, teamList] = await Promise.all([fetchMissions(), fetchTeams(selectedProgramId)]);
       setMissions(missionList);
       setTeams(teamList);
+
+      if (selectedProgramId) {
+        const { fetchBatches } = await import("@/modules/tbos/api-client");
+        const batchList = await fetchBatches(selectedProgramId);
+        setBatches(batchList);
+      }
 
       // Completion data is useful context, but must never block field work.
        void fetchObservations(currentUserId, false, selectedProgramId).then(setObservations).catch(() => setObservations(null));
@@ -140,6 +150,7 @@ function TbosObservationContent() {
     setNotes("");
     setMemberError("");
     setMembersLoading(true);
+    setIsCreatingNewTeam(false);
     setStep("prepare");
 
     try {
@@ -170,11 +181,40 @@ function TbosObservationContent() {
     }
   };
 
+  const startCreateNewTeam = () => {
+    setIsCreatingNewTeam(true);
+    setSelectedTeam(null);
+    setSelectedMission(null);
+    setScores({});
+    setNotes("");
+    setTeamMembers([]);
+    setSessionCaptainId(null);
+    setNewTeamName("");
+    setNewTeamBatchId(batches[0]?.id || "");
+    setStep("prepare");
+  };
+
   const handleAddMember = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedTeam || !newMemberName.trim()) return;
+    if (!newMemberName.trim()) return;
     setAddingMember(true);
     setMemberError("");
+
+    if (isCreatingNewTeam) {
+      const newMember: TeamMember = {
+        id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        member_name: newMemberName.trim(),
+        is_captain: teamMembers.length === 0,
+        isPresent: true,
+      };
+      setTeamMembers((current) => [...current, newMember]);
+      setSessionCaptainId((current) => current || newMember.id);
+      setNewMemberName("");
+      setAddingMember(false);
+      return;
+    }
+
+    if (!selectedTeam) { setAddingMember(false); return; }
 
     try {
       const response = await fetch("/api/tbos/teams/members", {
@@ -202,8 +242,16 @@ function TbosObservationContent() {
   };
 
   const handleRemoveMember = async (member: TeamMember) => {
-    if (!selectedTeam || !window.confirm(`Hapus ${member.member_name} dari roster master tim?`)) return;
+    if (!window.confirm(`Hapus ${member.member_name} dari roster master tim?`)) return;
     setMemberError("");
+
+    if (isCreatingNewTeam) {
+      setTeamMembers((current) => current.filter((item) => item.id !== member.id));
+      if (sessionCaptainId === member.id) setSessionCaptainId(null);
+      return;
+    }
+
+    if (!selectedTeam) return;
 
     try {
       const response = await fetch(
@@ -250,7 +298,7 @@ function TbosObservationContent() {
 
   const continueToObservation = () => {
     if (!selectedTeam || !selectedMission) return;
-    const draft = loadDraft(selectedTeam.id, selectedMission.id);
+    const draft = selectedTeam ? loadDraft(selectedTeam.id, selectedMission.id) : null;
     setScores(draft?.scores || {});
     setNotes(draft?.notes || "");
     setStep("observe");
@@ -274,22 +322,23 @@ function TbosObservationContent() {
   const scoredCount = selectedMission?.dimensions.filter((dimension) => scores[dimension.id] !== undefined).length || 0;
 
   const handleSubmit = async () => {
-    if (!selectedMission || !selectedTeam || !allDimensionsScored || !preparationValid) return;
+    if (!selectedMission || !allDimensionsScored || !preparationValid) return;
+    if (!selectedTeam && !isCreatingNewTeam) return;
+    if (isCreatingNewTeam && (!newTeamName.trim() || !newTeamBatchId || !selectedProgramId)) return;
     setError("");
     setStep("submitting");
 
     const members: TbosObservationMemberInput[] = teamMembers.map((member) => ({
-      teamMemberId: member.id,
+      teamMemberId: isCreatingNewTeam ? null : member.id,
       memberName: member.member_name,
       isPresent: member.isPresent,
       isCaptain: member.isPresent && member.id === sessionCaptainId,
     }));
-    const payload = {
-      teamId: selectedTeam.id,
+
+    const payload: any = {
       missionId: selectedMission.id,
       clientSubmissionId: crypto.randomUUID(),
       profileId: userId,
-      batch: selectedTeam.batch,
       notes,
       scores: selectedMission.dimensions.map((dimension) => ({
         dimensionId: dimension.id,
@@ -297,6 +346,18 @@ function TbosObservationContent() {
       })),
       members,
     };
+
+    if (isCreatingNewTeam) {
+      payload.newTeam = {
+        name: newTeamName.trim(),
+        batchId: newTeamBatchId,
+        programId: selectedProgramId,
+      };
+      payload.batch = batches.find((b) => b.id === newTeamBatchId)?.name || "";
+    } else {
+      payload.teamId = selectedTeam!.id;
+      payload.batch = selectedTeam!.batch;
+    }
 
     if (!navigator.onLine) {
       queueObservation(userId, payload);
@@ -434,9 +495,15 @@ function TbosObservationContent() {
             <div className="relative flex items-center justify-between rounded-2xl bg-white px-5 py-4 shadow-[0_12px_34px_rgba(8,29,66,0.1)]">
               <div>
                 <h2 id="assigned-teams-title" className="font-bold text-[#0B2C6B]">Tim Anda</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Siapkan roster sebelum memilih misi.</p>
+                <p className="mt-0.5 text-xs text-slate-500">Pilih tim atau buat baru untuk observasi.</p>
               </div>
-              <Users className="h-5 w-5 text-accent" aria-hidden="true" />
+              <button
+                type="button"
+                onClick={startCreateNewTeam}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-primary-dark hover:bg-accent-light transition-colors"
+              >
+                <UserPlus className="h-3.5 w-3.5" /> Buat Tim Baru
+              </button>
             </div>
 
             {error && <Alert>{error}</Alert>}
@@ -483,13 +550,13 @@ function TbosObservationContent() {
         </main>
       )}
 
-      {step === "prepare" && selectedTeam && (
+      {step === "prepare" && (selectedTeam || isCreatingNewTeam) && (
         <WorkflowPage
           eyebrow="Langkah 1 dari 4"
           title="Siapkan tim"
-          subtitle={`${selectedTeam.name} · ${selectedTeam.batch}`}
+          subtitle={isCreatingNewTeam ? (newTeamName || "Tim Baru") : `${selectedTeam!.name} · ${selectedTeam!.batch}`}
           backLabel="Kembali ke daftar penugasan"
-          onBack={() => setStep("tasks")}
+          onBack={() => { setStep("tasks"); setIsCreatingNewTeam(false); }}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
         >
            <section className="rounded-2xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
@@ -500,6 +567,41 @@ function TbosObservationContent() {
               </div>
               <Users className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
             </div>
+
+            {isCreatingNewTeam && (
+              <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-3">
+                <h3 className="text-sm font-bold text-primary-dark">Data Tim Baru</h3>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1">Nama Tim</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="Contoh: Team Alpha, Bravo 1"
+                    maxLength={50}
+                    className="w-full px-3 py-2 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1">Batch</label>
+                  {batches.length > 0 ? (
+                    <select
+                      value={newTeamBatchId}
+                      onChange={(e) => setNewTeamBatchId(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] bg-white"
+                    >
+                      <option value="">Pilih batch...</option>
+                      {batches.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2">Belum ada batch. Hubungi admin.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {memberError && <div className="mt-4"><Alert>{memberError}</Alert></div>}
             {membersLoading ? (
@@ -572,11 +674,11 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "mission" && selectedTeam && (
+      {step === "mission" && (selectedTeam || isCreatingNewTeam) && (
         <WorkflowPage
           eyebrow="Langkah 2 dari 4"
           title="Pilih misi"
-          subtitle={`${selectedTeam.name} · ${presentMembers.length} anggota hadir`}
+          subtitle={`${selectedTeam?.name || newTeamName || "Tim Baru"} · ${presentMembers.length} anggota hadir`}
           backLabel="Kembali ke persiapan tim"
           onBack={() => setStep("prepare")}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
@@ -588,7 +690,7 @@ function TbosObservationContent() {
             </div>
             <div className="space-y-3">
               {missions.map((mission, index) => {
-                const completed = completedMissionIds(selectedTeam.id).has(mission.id);
+                const completed = selectedTeam ? completedMissionIds(selectedTeam.id).has(mission.id) : false;
                 const selected = selectedMission?.id === mission.id;
                 return (
                   <button key={mission.id} type="button" aria-pressed={selected} onClick={() => setSelectedMission(mission)} className={`w-full rounded-md border p-5 text-left transition motion-reduce:transition-none ${selected ? "border-accent bg-primary-dark text-white shadow-[0_18px_40px_rgba(8,29,66,0.2)]" : "border-black/[0.04] bg-white text-primary-dark shadow-[0_7px_20px_rgba(8,29,66,0.07)]"} ${FOCUS}`}>
@@ -613,11 +715,11 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "observe" && selectedTeam && selectedMission && (
+      {step === "observe" && (selectedTeam || isCreatingNewTeam) && selectedMission && (
         <WorkflowPage
           eyebrow="Langkah 3 dari 4"
           title="Catat observasi"
-          subtitle={`${selectedTeam.name} · ${selectedMission.name}`}
+          subtitle={`${selectedTeam?.name || newTeamName || "Tim Baru"} · ${selectedMission.name}`}
           backLabel="Kembali ke pilihan misi"
           onBack={() => setStep("mission")}
           status={<span className="text-xs font-bold text-accent-light">{scoredCount}/{selectedMission.dimensions.length}</span>}
@@ -702,8 +804,8 @@ function TbosObservationContent() {
           <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
-              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
-              <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
+              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam?.name || newTeamName || "Tim Baru"}</h2>
+              <p className="mt-1 text-sm text-white/65">{selectedTeam?.batch || batches.find((b) => b.id === newTeamBatchId)?.name || ""} · {selectedMission?.name}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 p-5">
               <div>
@@ -764,8 +866,8 @@ function TbosObservationContent() {
           <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
-              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
-              <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
+              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam?.name || newTeamName || "Tim Baru"}</h2>
+              <p className="mt-1 text-sm text-white/65">{selectedTeam?.batch || batches.find((b) => b.id === newTeamBatchId)?.name || ""} · {selectedMission?.name}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 p-5">
               <div>
@@ -774,7 +876,7 @@ function TbosObservationContent() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">Kapten sesi</p>
-                <p className="mt-1 truncate text-sm font-bold text-primary-dark">{sessionCaptain.member_name}</p>
+                <p className="mt-1 truncate text-sm font-bold text-primary-dark">{sessionCaptain?.member_name}</p>
               </div>
               <div className="col-span-2 border-t border-slate-100 pt-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar hadir</p>

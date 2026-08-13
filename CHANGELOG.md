@@ -3,6 +3,55 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-08-13
+
+### Added — Modul LEP, Batch Fleksibel, Penugasan Fasilitator (Prompt 0–8)
+
+#### Modul Program & Module Selector (Prompt 0)
+- Menambahkan halaman `/admin/programs`: pengelolaan modul per program (T-BOS / LEP) yang menulis ke tabel `program_modules` via `GET/PUT /api/program-modules`.
+- Modul yang tidak aktif disembunyikan dari navigasi program tersebut.
+
+#### Batch Fleksibel (Prompt 1)
+- Menambahkan UI kelola batch di `/admin/tbos` — list batch per program aktif, tombol tambah batch, dan hapus batch dengan confirm dialog.
+- Tombol hapus batch di-disable (dengan alasan) jika masih ada team yang memakai `batch_id` tersebut.
+- `batch-comparison.tsx` kini merender kolom/seri dinamis sejumlah batch aktual dari tabel `batches` (bukan hardcode "Batch 1"/"Batch 2").
+
+#### Penugasan Fasilitator Sederhana (Prompt 2)
+- Form assignment fasilitator diubah: hanya pilih fasilitator (role `facilitator`) + mission, tanpa pemilihan tim.
+- Penulisan assignment beralih dari `tbos_facilitator_teams` ke tabel baru `facilitator_missions`.
+
+#### Pilih Tim & Roster Progresif Saat Observasi (Prompt 3)
+- Step baru "pilih tim" di `/fasilitator/tbos`: fasilitator melihat daftar tim di batch program aktif.
+- Opsi "+ Tim Baru" dengan validasi nama unik per (program, batch); saat tim baru dibuat, form roster (anggota + kapten) tampil sebelum form observasi dimensi.
+- Tim yang sudah ada langsung lanjut ke observasi tanpa form roster.
+- Validasi unik nama tim ditangani di level database (index unik parsial).
+
+#### Traceability Fasilitator & Scoping Dashboard (Prompt 4 & 5)
+- Menampilkan nama fasilitator penilai pada detail observasi/daftar di `/admin/tbos` dan laporan per-tim.
+- `/fasilitator/tbos/results` kini hanya menghitung statistik untuk mission milik fasilitator yang login (via `facilitator_missions`), namun menampilkan semua tim yang punya observasi di mission tsb.
+
+#### Ranking + Filter Mission/Dimensi (Prompt 6)
+- Perbaikan visual ranking (rounded-xl, gradient medali disederhanakan, border/shadow token standar).
+- Dua filter dropdown: "Filter Mission" (default semua / Overall Team Score) dan "Filter Dimensi" (default semua / rata-rata gabungan).
+- Ranking dihitung dari Final Mission Score atau Dimension Score sesuai filter, kombinasi filter didukung.
+
+#### Laporan Per Tim (Prompt 7)
+- `pdf-report.tsx` kini mendukung mode laporan per tim: nama tim & batch, kapten & anggota, radar chart 8 dimensi, tabel riwayat observasi per mission (skor + nama fasilitator), 3 kekuatan & 3 area pengembangan.
+- Menambahkan tombol "Unduh Laporan Tim" di halaman detail/roster tim admin.
+
+#### Modul LEP (Prompt 8)
+- Menambahkan halaman peserta `/peserta/lep`: form single-page — 4 pertanyaan skala 1–4 (radio horizontal), rating per pemateri (dinamis dari `lep_speakers`) dengan saran opsional, dan 3 pertanyaan open text (2 wajib).
+- Proteksi submit ganda via unique constraint `(program_id, profile_id)` — user yang sudah mengisi melihat pesan "Anda sudah mengisi evaluasi ini".
+- Menambahkan halaman admin `/admin/lep`: setup pemateri per program (CRUD), dashboard hasil (rata-rata 4 pertanyaan umum, rata-rata skor per pemateri bar chart, daftar jawaban open text dengan filter, response rate, tombol export CSV).
+- Menambahkan komponen `peserta-auth-gate.tsx` (gate role peserta+admin) dan nav "Evaluasi Program" (peserta) / "LEP" (admin) di `app-shell.tsx`.
+- Skoring & types diperbarui di `src/modules/tbos/` untuk mendukung filter mission/dimensi dan batch dinamis.
+
+#### Keamanan / Infrastruktur
+- RLS hardening: seluruh tabel `public` di-enable Row Level Security, akses `anon`/`authenticated` dicabut, `service_role` (backend) dipertahankan, `profiles` hanya bisa dibaca user pemiliknya sendiri (`auth.uid() = id`). Menutup alert "rls_disabled_in_public".
+- Verifikasi: `npm run typecheck`, `npm run lint`, `npm run build` lolos.
+
+---
+
 ## [0.4.0] - 2026-08-08
 
 ### Added — PRD v0.4, Cross-Repo API Alignment, Admin Workflow & SLJ Auth Redesign

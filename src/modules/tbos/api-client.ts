@@ -26,6 +26,8 @@ export interface TbosDbTeam {
   id: string;
   name: string;
   batch: string;
+  batchId: string | null;
+  batchName: string;
   members: {
     id: string;
     profile_id: string | null;
@@ -147,7 +149,7 @@ export async function fetchTeams(programId?: string): Promise<TbosDbTeam[]> {
  */
 export async function createTeam(input: {
   name: string;
-  batch: "Batch 1" | "Batch 2";
+  batchId: string;
   organizationId?: string;
   programId: string;
 }): Promise<{ success: boolean; team?: any; error?: string }> {
@@ -257,6 +259,137 @@ export async function fetchTbosPrograms(): Promise<TbosProgram[]> {
   return (data.engagements || []).filter((program: TbosProgram) => ["active", "in_progress", "review"].includes(program.status));
 }
 
+export interface TbosBatch {
+  id: string;
+  program_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export async function fetchBatches(programId: string): Promise<TbosBatch[]> {
+  const res = await fetch(`/api/tbos/batches?programId=${encodeURIComponent(programId)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat daftar batch.");
+  return data.batches || [];
+}
+
+export async function createBatch(input: {
+  programId: string;
+  name: string;
+}): Promise<{ success: boolean; batch?: TbosBatch; error?: string }> {
+  try {
+    const res = await fetch("/api/tbos/batches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (data.success) {
+      return { success: true, batch: data.batch };
+    }
+    return { success: false, error: data.error || "Gagal membuat batch." };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  }
+}
+
+export async function deleteBatch(
+  batchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch(`/api/tbos/batches/${batchId}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) {
+      return { success: true };
+    }
+    return { success: false, error: data.error || "Gagal menghapus batch." };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  }
+}
+
+export interface TbosFacilitatorMission {
+  profileId: string;
+  missionId: string;
+  programId: string;
+  facilitatorName: string;
+  facilitatorEmail: string;
+  missionCode: string;
+  missionName: string;
+  createdAt: string;
+}
+
+export async function fetchFacilitatorMissions(
+  programId: string,
+  facilitatorId?: string
+): Promise<TbosFacilitatorMission[]> {
+  const params = new URLSearchParams({ programId });
+  if (facilitatorId) params.set("facilitatorId", facilitatorId);
+  const res = await fetch(`/api/tbos/facilitator-missions?${params}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat penugasan fasilitator.");
+  return data.assignments || [];
+}
+
+export async function assignFacilitatorToMission(input: {
+  facilitatorId: string;
+  missionId: string;
+  programId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/tbos/facilitator-missions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (data.success) return { success: true };
+    return { success: false, error: data.error || "Gagal menugaskan fasilitator." };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  }
+}
+
+export async function bulkAssignFacilitatorToMissions(input: {
+  facilitatorId: string;
+  programId: string;
+  missionIds: string[];
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/tbos/facilitator-missions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json();
+    if (data.success) return { success: true };
+    return { success: false, error: data.error || "Gagal menugaskan fasilitator." };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  }
+}
+
+export async function removeFacilitatorMission(input: {
+  facilitatorId: string;
+  missionId: string;
+  programId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const params = new URLSearchParams({
+      facilitatorId: input.facilitatorId,
+      missionId: input.missionId,
+      programId: input.programId,
+    });
+    const res = await fetch(`/api/tbos/facilitator-missions?${params}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.success) return { success: true };
+    return { success: false, error: data.error || "Gagal menghapus penugasan." };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  }
+}
+
 /**
  * Fetch single observation detail from GET /api/tbos/observations/[id].
  */
@@ -341,6 +474,7 @@ export async function toggleLockObservation(
 export interface TbosViewerStats {
   role: "admin" | "facilitator";
   assignedTeamCount: number | null;
+  assignedMissionCount: number | null;
   organizationCount: number | null;
   scopedTeamCount: number;
   ownObservationCount: number;
@@ -349,7 +483,7 @@ export interface TbosViewerStats {
 }
 
 export async function fetchDashboardRawData(programId?: string): Promise<{
-  teams: { id: string; name: string; batch: string }[];
+  teams: { id: string; name: string; batch: string; batchId: string | null; batchName: string }[];
   observations: any[];
   viewerStats: TbosViewerStats | null;
 }> {

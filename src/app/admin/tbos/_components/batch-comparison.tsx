@@ -8,8 +8,10 @@ interface Props {
   comparisons: BatchComparison[];
 }
 
+const BATCH_COLORS = ["#0B2C6B", "#D9A441", "#2563EB", "#DC2626", "#059669", "#7C3AED", "#EA580C", "#0891B2"];
+
 export function TbosBatchComparison({ comparisons }: Props) {
-  const hasData = comparisons.some((c) => c.batch1Avg !== null || c.batch2Avg !== null);
+  const hasData = comparisons.some((c) => c.batchAverages.some((ba) => ba.avg !== null));
 
   if (!hasData) {
     return (
@@ -19,16 +21,25 @@ export function TbosBatchComparison({ comparisons }: Props) {
     );
   }
 
-  const chartData = comparisons.map((c) => ({
-    name: c.dimensionName.length > 20
-      ? c.dimensionName.split(" ")[0]
-      : c.dimensionName,
-    fullName: c.dimensionName,
-    batch1: c.batch1Avg ?? 0,
-    batch2: c.batch2Avg ?? 0,
-    batch1HasData: c.batch1Avg !== null,
-    batch2HasData: c.batch2Avg !== null,
-  }));
+  const allBatchNames = new Set<string>();
+  for (const c of comparisons) {
+    for (const ba of c.batchAverages) {
+      allBatchNames.add(ba.batchName);
+    }
+  }
+  const batchNames = [...allBatchNames].sort();
+
+  const chartData = comparisons.map((c) => {
+    const row: Record<string, any> = {
+      name: c.dimensionName.length > 20 ? c.dimensionName.split(" ")[0] : c.dimensionName,
+      fullName: c.dimensionName,
+    };
+    for (const ba of c.batchAverages) {
+      row[ba.batchName] = ba.avg ?? 0;
+      row[`${ba.batchName}_hasData`] = ba.avg !== null;
+    }
+    return row;
+  });
 
   return (
     <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
@@ -36,21 +47,18 @@ export function TbosBatchComparison({ comparisons }: Props) {
       <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
         <div>
           <h3 className="text-base font-bold text-[#0B2C6B]">
-            Perbandingan Batch — Batch 1 vs Batch 2
+            Perbandingan Batch
           </h3>
           <p className="text-xs text-[#4A4C54]/70 mt-0.5">Analisis rata-rata skor per dimensi perilaku antar angkatan</p>
         </div>
 
-        {/* Legend in Header */}
-        <div className="flex items-center gap-4 bg-white/80 px-3 py-1.5 rounded-xl border border-[#0B2C6B]/10">
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-[#0B2C6B]" />
-            <span className="text-xs font-semibold text-[#0B2C6B]">Batch 1</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-[#D9A441]" />
-            <span className="text-xs font-semibold text-[#8A641D]">Batch 2</span>
-          </div>
+        <div className="flex items-center gap-3 bg-white/80 px-3 py-1.5 rounded-xl border border-[#0B2C6B]/10">
+          {batchNames.map((name, i) => (
+            <div key={name} className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: BATCH_COLORS[i % BATCH_COLORS.length] }} />
+              <span className="text-xs font-semibold" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>{name}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -87,13 +95,14 @@ export function TbosBatchComparison({ comparisons }: Props) {
                 labelStyle={{ color: "#D9A441", fontWeight: 600 }}
                 itemStyle={{ color: "#FFFFFF" }}
                 formatter={(value: any, name: any, props: any) => {
-                  const hasData = name === "Batch 1" ? props.payload.batch1HasData : props.payload.batch2HasData;
+                  const hasData = props.payload[`${name}_hasData`];
                   return [hasData ? `${value.toFixed(1)} / 5.0` : "Belum ada data", name];
                 }}
                 labelFormatter={(_label: any, payload: any) => payload?.[0]?.payload?.fullName || ""}
               />
-              <Bar dataKey="batch1" name="Batch 1" fill="#0B2C6B" radius={[0, 6, 6, 0]} barSize={14} />
-              <Bar dataKey="batch2" name="Batch 2" fill="#D9A441" radius={[0, 6, 6, 0]} barSize={14} />
+              {batchNames.map((name, i) => (
+                <Bar key={name} dataKey={name} name={name} fill={BATCH_COLORS[i % BATCH_COLORS.length]} radius={[0, 6, 6, 0]} barSize={14} />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -109,50 +118,54 @@ export function TbosBatchComparison({ comparisons }: Props) {
             <thead>
               <tr className="bg-[#0B2C6B]/[0.03]">
                 <th className="text-left py-3 px-6 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Dimensi Perilaku</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Batch 1</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#8A641D] uppercase tracking-wide">Batch 2</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Selisih</th>
+                {batchNames.map((name, i) => (
+                  <th key={name} className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>{name}</th>
+                ))}
+                {batchNames.length >= 2 && (
+                  <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Selisih</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {comparisons.map((c, idx) => {
-                const diff =
-                  c.batch1Avg !== null && c.batch2Avg !== null
-                    ? c.batch2Avg - c.batch1Avg
-                    : null;
+                const batchAvgs = c.batchAverages.filter((ba) => ba.avg !== null);
+                const diff = batchAvgs.length >= 2
+                  ? batchAvgs[batchAvgs.length - 1].avg! - batchAvgs[0].avg!
+                  : null;
                 return (
                   <tr key={c.dimensionCode} className={`border-b border-black/[0.03] hover:bg-[#0B2C6B]/[0.02] transition-colors ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
                     <td className="py-3 px-6 font-medium text-[#0B2C6B]">{c.dimensionName}</td>
-                    <td className="py-3 px-4 text-center font-bold text-[#0B2C6B] tabular-nums">
-                      {c.batch1Avg !== null ? c.batch1Avg.toFixed(1) : "—"}
-                    </td>
-                    <td className="py-3 px-4 text-center font-bold text-[#8A641D] tabular-nums">
-                      {c.batch2Avg !== null ? c.batch2Avg.toFixed(1) : "—"}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {diff !== null ? (
-                        <span
-                          className={`inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums ${
-                            diff > 0
-                              ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                              : diff < 0
-                              ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {diff > 0 ? (
-                            <ArrowUpRight className="w-3 h-3 text-emerald-600" />
-                          ) : diff < 0 ? (
-                            <ArrowDownRight className="w-3 h-3 text-rose-600" />
-                          ) : (
-                            <Minus className="w-3 h-3 text-gray-400" />
-                          )}
-                          {diff > 0 ? "+" : ""}{diff.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
+                    {c.batchAverages.map((ba, i) => (
+                      <td key={ba.batchName} className="py-3 px-4 text-center font-bold tabular-nums" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>
+                        {ba.avg !== null ? ba.avg.toFixed(1) : "—"}
+                      </td>
+                    ))}
+                    {batchNames.length >= 2 && (
+                      <td className="py-3 px-4 text-center">
+                        {diff !== null ? (
+                          <span
+                            className={`inline-flex items-center gap-0.5 px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums ${
+                              diff > 0
+                                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                : diff < 0
+                                ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {diff > 0 ? (
+                              <ArrowUpRight className="w-3 h-3 text-emerald-600" />
+                            ) : diff < 0 ? (
+                              <ArrowDownRight className="w-3 h-3 text-rose-600" />
+                            ) : (
+                              <Minus className="w-3 h-3 text-gray-400" />
+                            )}
+                            {diff > 0 ? "+" : ""}{diff.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

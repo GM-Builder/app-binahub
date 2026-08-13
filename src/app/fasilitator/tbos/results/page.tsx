@@ -41,6 +41,7 @@ export default function TbosResultsPage() {
 function TbosResultsContent() {
   const [data, setData] = useState<TbosDashboardData | null>(null);
   const [ownObservationCount, setOwnObservationCount] = useState(0);
+  const [assignedMissionCount, setAssignedMissionCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedProgramId, setSelectedProgramId] = useState("");
@@ -51,6 +52,7 @@ function TbosResultsContent() {
     try {
       const result = await fetchDashboardRawData(selectedProgramId);
       setOwnObservationCount(result.viewerStats?.ownObservationCount ?? 0);
+      setAssignedMissionCount(result.viewerStats?.assignedMissionCount ?? null);
       setData(generateDashboardData(result.teams, result.observations));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Gagal memuat hasil T-BOS.");
@@ -107,10 +109,10 @@ function TbosResultsContent() {
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#F3CE7A]">
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Cakupan fasilitator
+              Cakupan fasilitator{assignedMissionCount !== null ? ` • ${assignedMissionCount} mission` : ""}
             </div>
             <h2 id="results-overview-title" className="mt-4 text-2xl font-bold tracking-[-0.03em] sm:text-3xl">Potret perilaku tim Anda</h2>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-blue-100/75">Hasil teragregasi dari observasi yang berada dalam penugasan Anda. Halaman ini hanya-baca dan tidak mengubah data observasi.</p>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-blue-100/75">Hasil teragregasi dari observasi pada mission yang menjadi penugasan Anda. Semua tim yang telah melalui pos tersebut ikut ditampilkan — halaman ini hanya-baca dan tidak mengubah data observasi.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-3 backdrop-blur-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-100/60">Rata-rata tim</p>

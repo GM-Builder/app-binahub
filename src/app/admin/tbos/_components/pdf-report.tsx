@@ -461,7 +461,7 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
             <Text style={styles.tagline}>Batch Comparison Analysis</Text>
           </View>
           <View style={styles.reportMeta}>
-            <Text style={styles.reportTitle}>Perbandingan Batch 1 vs 2</Text>
+            <Text style={styles.reportTitle}>Perbandingan Batch</Text>
           </View>
         </View>
 
@@ -469,21 +469,28 @@ function TbosReportDocument({ data }: { data: TbosDashboardData }) {
           <Text style={styles.sectionTitle}>Analisis Rata-rata Skor Dimensi per Batch</Text>
           <View style={styles.tableHeader}>
             <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Dimensi Perilaku</Text>
-            <Text style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>Batch 1</Text>
-            <Text style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>Batch 2</Text>
+            {(() => {
+              const allBatchNames = new Set<string>();
+              for (const bc of batchComparisons) {
+                for (const ba of bc.batchAverages) allBatchNames.add(ba.batchName);
+              }
+              return [...allBatchNames].sort().map((name) => (
+                <Text key={name} style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>{name}</Text>
+              ));
+            })()}
             <Text style={[styles.tableHeaderCell, { width: 70, textAlign: "center" }]}>Selisih</Text>
           </View>
           {batchComparisons.map((bc, idx) => {
-            const diff = bc.batch1Avg !== null && bc.batch2Avg !== null ? bc.batch2Avg - bc.batch1Avg : null;
+            const batchAvgs = bc.batchAverages.filter((ba) => ba.avg !== null);
+            const diff = batchAvgs.length >= 2 ? batchAvgs[batchAvgs.length - 1].avg! - batchAvgs[0].avg! : null;
             return (
               <View key={bc.dimensionCode} style={[styles.tableRow, idx % 2 === 1 ? styles.tableRowAlt : {}]}>
                 <Text style={[styles.tableCell, { flex: 1, fontWeight: 600 }]}>{bc.dimensionName}</Text>
-                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: NAVY }]}>
-                  {bc.batch1Avg !== null ? bc.batch1Avg.toFixed(1) : "—"}
-                </Text>
-                <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: GOLD }]}>
-                  {bc.batch2Avg !== null ? bc.batch2Avg.toFixed(1) : "—"}
-                </Text>
+                {bc.batchAverages.map((ba) => (
+                  <Text key={ba.batchName} style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: NAVY }]}>
+                    {ba.avg !== null ? ba.avg.toFixed(1) : "—"}
+                  </Text>
+                ))}
                 <Text style={[styles.tableCell, { width: 70, textAlign: "center", fontWeight: 700, color: diff !== null && diff > 0 ? "#10B981" : diff !== null && diff < 0 ? "#EF4444" : TEXT_MUTED }]}>
                   {diff !== null ? `${diff > 0 ? "+" : ""}${diff.toFixed(1)}` : "—"}
                 </Text>

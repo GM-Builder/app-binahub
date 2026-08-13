@@ -1,14 +1,16 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "@/components/lazy-charts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "@/components/lazy-charts";
 import type { BatchComparison } from "@/modules/tbos/types";
+
+const BATCH_COLORS = ["#0B2C6B", "#D9A441", "#2563EB", "#DC2626", "#059669", "#7C3AED", "#EA580C", "#0891B2"];
 
 interface Props {
   comparisons: BatchComparison[];
 }
 
 export function TbosBatchComparison({ comparisons }: Props) {
-  const hasData = comparisons.some((c) => c.batch1Avg !== null || c.batch2Avg !== null);
+  const hasData = comparisons.some((c) => c.batchAverages.some((ba) => ba.avg !== null));
 
   if (!hasData) {
     return (
@@ -18,21 +20,30 @@ export function TbosBatchComparison({ comparisons }: Props) {
     );
   }
 
-  const chartData = comparisons.map((c) => ({
-    name: c.dimensionName.length > 20
-      ? c.dimensionName.split(" ")[0]
-      : c.dimensionName,
-    fullName: c.dimensionName,
-    batch1: c.batch1Avg ?? 0,
-    batch2: c.batch2Avg ?? 0,
-    batch1HasData: c.batch1Avg !== null,
-    batch2HasData: c.batch2Avg !== null,
-  }));
+  const allBatchNames = new Set<string>();
+  for (const c of comparisons) {
+    for (const ba of c.batchAverages) {
+      allBatchNames.add(ba.batchName);
+    }
+  }
+  const batchNames = [...allBatchNames].sort();
+
+  const chartData = comparisons.map((c) => {
+    const row: Record<string, any> = {
+      name: c.dimensionName.length > 20 ? c.dimensionName.split(" ")[0] : c.dimensionName,
+      fullName: c.dimensionName,
+    };
+    for (const ba of c.batchAverages) {
+      row[ba.batchName] = ba.avg ?? 0;
+      row[`${ba.batchName}_hasData`] = ba.avg !== null;
+    }
+    return row;
+  });
 
   return (
     <div className="bg-white rounded-xl p-6 border border-black/[0.04]">
       <h3 className="text-sm font-semibold text-[#0B2C6B] mb-4">
-        Rata-rata per Batch — Batch 1 vs Batch 2
+        Rata-rata per Batch
       </h3>
 
       <div className="w-full h-[400px]">
@@ -64,27 +75,26 @@ export function TbosBatchComparison({ comparisons }: Props) {
               labelStyle={{ color: "#D9A441", fontWeight: 600 }}
               itemStyle={{ color: "#FFFFFF" }}
               formatter={(value: any, name: any, props: any) => {
-                const hasData = name === "Batch 1" ? props.payload.batch1HasData : props.payload.batch2HasData;
+                const hasData = props.payload[`${name}_hasData`];
                 return [hasData ? value.toFixed(1) : "Belum ada data", name];
               }}
               labelFormatter={(_label: any, payload: any) => payload?.[0]?.payload?.fullName || ""}
             />
-            <Bar dataKey="batch1" name="Batch 1" fill="#0B2C6B" radius={[0, 4, 4, 0]} barSize={12} />
-            <Bar dataKey="batch2" name="Batch 2" fill="#D9A441" radius={[0, 4, 4, 0]} barSize={12} />
+            {batchNames.map((name, i) => (
+              <Bar key={name} dataKey={name} name={name} fill={BATCH_COLORS[i % BATCH_COLORS.length]} radius={[0, 4, 4, 0]} barSize={12} />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-4 justify-center">
-        <div className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded bg-[#0B2C6B]" />
-          <span className="text-xs text-[#4A4C54]">Batch 1</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded bg-[#D9A441]" />
-          <span className="text-xs text-[#4A4C54]">Batch 2</span>
-        </div>
+        {batchNames.map((name, i) => (
+          <div key={name} className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded" style={{ backgroundColor: BATCH_COLORS[i % BATCH_COLORS.length] }} />
+            <span className="text-xs text-[#4A4C54]">{name}</span>
+          </div>
+        ))}
       </div>
 
       {/* Table View */}
@@ -93,39 +103,37 @@ export function TbosBatchComparison({ comparisons }: Props) {
           <thead>
             <tr className="border-b border-black/[0.06]">
               <th className="text-left py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Dimensi</th>
-              <th className="text-center py-2 px-3 text-xs font-medium text-[#0B2C6B] uppercase">Batch 1</th>
-              <th className="text-center py-2 px-3 text-xs font-medium text-[#D9A441] uppercase">Batch 2</th>
-              <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Selisih</th>
+              {batchNames.map((name, i) => (
+                <th key={name} className="text-center py-2 px-3 text-xs font-medium uppercase" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>{name}</th>
+              ))}
+              {batchNames.length >= 2 && (
+                <th className="text-center py-2 px-3 text-xs font-medium text-[#4A4C54] uppercase">Selisih</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {comparisons.map((c) => {
-              const diff =
-                c.batch1Avg !== null && c.batch2Avg !== null
-                  ? c.batch2Avg - c.batch1Avg
-                  : null;
+              const batchAvgs = c.batchAverages.filter((ba) => ba.avg !== null);
+              const diff = batchAvgs.length >= 2
+                ? batchAvgs[batchAvgs.length - 1].avg! - batchAvgs[0].avg!
+                : null;
               return (
                 <tr key={c.dimensionCode} className="border-b border-black/[0.03]">
                   <td className="py-2.5 px-3 text-[#4A4C54]">{c.dimensionName}</td>
-                  <td className="py-2.5 px-3 text-center font-medium text-[#0B2C6B]">
-                    {c.batch1Avg !== null ? c.batch1Avg.toFixed(1) : "—"}
-                  </td>
-                  <td className="py-2.5 px-3 text-center font-medium text-[#D9A441]">
-                    {c.batch2Avg !== null ? c.batch2Avg.toFixed(1) : "—"}
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    {diff !== null ? (
-                      <span
-                        className={`text-xs font-medium ${
-                          diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-400"
-                        }`}
-                      >
-                        {diff > 0 ? "+" : ""}{diff.toFixed(1)}
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
+                  {c.batchAverages.map((ba, i) => (
+                    <td key={ba.batchName} className="py-2.5 px-3 text-center font-medium" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>
+                      {ba.avg !== null ? ba.avg.toFixed(1) : "—"}
+                    </td>
+                  ))}
+                  {batchNames.length >= 2 && (
+                    <td className="py-2.5 px-3 text-center">
+                      {diff !== null ? (
+                        <span className={`text-xs font-medium ${diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-400"}`}>
+                          {diff > 0 ? "+" : ""}{diff.toFixed(1)}
+                        </span>
+                      ) : "—"}
+                    </td>
+                  )}
                 </tr>
               );
             })}

@@ -36,6 +36,7 @@ User login lagi → sistem baca role terbaru dari profiles → auto-redirect ke 
 | Edit observasi dalam revision window | ❌ | ❌ | ✅ (punya sendiri) | ✅ (override, tercatat di audit log) |
 | Lock / Unlock observasi | ❌ | ❌ | ❌ | ✅ |
 | Lihat dashboard admin (radar, heatmap, ranking) | ❌ | ❌ | ❌ | ✅ |
+| Lihat dashboard fasilitator (hasil & statistik terbatas per mission miliknya) | ❌ | ❌ | ✅ (mission miliknya saja) | ❌ |
 | Lihat dashboard peserta (skor tim sendiri) | ✅ | ❌ | ❌ | ❌ |
 | Assign fasilitator ke mission (`tbos_facilitator_missions`) | ❌ | ❌ | ❌ | ✅ |
 | Assign role fasilitator ke user | ❌ | ❌ | ❌ | ✅ |

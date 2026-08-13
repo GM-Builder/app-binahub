@@ -21,6 +21,7 @@ import {
   Trophy,
   UsersRound,
   X,
+  ClipboardPenLine,
 } from "lucide-react";
 
 import type { Role } from "@/lib/roles";
@@ -30,6 +31,7 @@ import { HelpSidebar } from "@/components/help-sidebar";
 const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNode }[]> = {
   peserta: [
     { href: "/peserta/dashboard", label: "Dashboard", icon: <Home size={16} /> },
+    { href: "/peserta/lep", label: "Evaluasi Program", icon: <ClipboardPenLine size={16} /> },
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   client: [
@@ -44,8 +46,10 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", icon: <Home size={16} /> },
     { href: "/admin/organizations", label: "Organisasi", icon: <UsersRound size={16} /> },
+    { href: "/admin/programs", label: "Program", icon: <ClipboardCheck size={16} /> },
     { href: "/admin/assessments", label: "Assessment", icon: <ClipboardList size={16} /> },
     { href: "/admin/tbos", label: "T-BOS", icon: <Trophy size={16} /> },
+    { href: "/admin/lep", label: "LEP", icon: <ClipboardPenLine size={16} /> },
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   facilitator: [
@@ -63,6 +67,7 @@ const tbosAdminNav = [
 const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon: React.ReactNode }[]>> = {
   peserta: [
     { href: "/peserta/dashboard", label: "Dashboard", icon: <Home size={20} /> },
+    { href: "/peserta/lep", label: "Evaluasi", icon: <ClipboardPenLine size={20} /> },
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={20} /> },
   ],
   facilitator: [
@@ -72,7 +77,9 @@ const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon:
   ],
   admin: [
     { href: "/admin", label: "Dashboard", icon: <Home size={20} /> },
+    { href: "/admin/programs", label: "Program", icon: <ClipboardCheck size={20} /> },
     { href: "/admin/tbos", label: "T-BOS", icon: <Trophy size={20} /> },
+    { href: "/admin/lep", label: "LEP", icon: <ClipboardPenLine size={20} /> },
     { href: "/admin/assessments", label: "Assessment", icon: <ClipboardList size={20} /> },
   ],
 };

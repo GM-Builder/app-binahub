@@ -168,35 +168,43 @@ export function calculateTeamScoreSummary(
 
 /**
  * Calculate batch comparisons (average per dimension per batch).
+ * Supports N batches dynamically.
  */
 export function calculateBatchComparisons(
   observations: TbosObservation[]
 ): BatchComparison[] {
   const allDimensions = Object.keys(DIMENSIONS) as DimensionCode[];
 
+  const batchNames = new Set<string>();
+  for (const obs of observations) {
+    if (obs.status !== "draft" && obs.batch) {
+      batchNames.add(obs.batch);
+    }
+  }
+  const sortedBatchNames = [...batchNames].sort();
+
   return allDimensions.map((dimCode) => {
     const dim = DIMENSIONS[dimCode];
 
-    const batch1Values: number[] = [];
-    const batch2Values: number[] = [];
-
-    for (const obs of observations) {
-      if (obs.status === "draft") continue;
-      const score = obs.scores.find((s) => s.dimensionCode === dimCode);
-      if (!score) continue;
-
-      if (obs.batch === "Batch 1") {
-        batch1Values.push(score.levelValue);
-      } else if (obs.batch === "Batch 2") {
-        batch2Values.push(score.levelValue);
+    const batchAverages = sortedBatchNames.map((batchName) => {
+      const values: number[] = [];
+      for (const obs of observations) {
+        if (obs.status === "draft" || obs.batch !== batchName) continue;
+        const score = obs.scores.find((s) => s.dimensionCode === dimCode);
+        if (score) {
+          values.push(score.levelValue);
+        }
       }
-    }
+      return {
+        batchName,
+        avg: values.length > 0 ? round1(values.reduce((a, b) => a + b, 0) / values.length) : null,
+      };
+    });
 
     return {
       dimensionCode: dimCode,
       dimensionName: dim.name,
-      batch1Avg: batch1Values.length > 0 ? round1(batch1Values.reduce((a, b) => a + b, 0) / batch1Values.length) : null,
-      batch2Avg: batch2Values.length > 0 ? round1(batch2Values.reduce((a, b) => a + b, 0) / batch2Values.length) : null,
+      batchAverages,
     };
   });
 }
@@ -352,9 +360,12 @@ function getBatchInsight(
   batchComparisons: BatchComparison[]
 ): string {
   const bc = batchComparisons.find((b) => b.dimensionCode === dimCode);
-  if (!bc || bc.batch1Avg === null || bc.batch2Avg === null) return "";
-  const diff = bc.batch2Avg - bc.batch1Avg;
+  if (!bc || bc.batchAverages.length < 2) return "";
+  const first = bc.batchAverages[0];
+  const last = bc.batchAverages[bc.batchAverages.length - 1];
+  if (first.avg === null || last.avg === null) return "";
+  const diff = last.avg - first.avg;
   if (Math.abs(diff) < 0.2) return "Tidak ada perbedaan signifikan antar batch. ";
-  if (diff > 0) return `Batch 2 menunjukkan peningkatan (+${diff.toFixed(1)}) dibanding Batch 1. `;
-  return `Batch 2 menunjukkan penurunan (${diff.toFixed(1)}) dibanding Batch 1. `;
+  if (diff > 0) return `${last.batchName} menunjukkan peningkatan (+${diff.toFixed(1)}) dibanding ${first.batchName}. `;
+  return `${last.batchName} menunjukkan penurunan (${diff.toFixed(1)}) dibanding ${first.batchName}. `;
 }

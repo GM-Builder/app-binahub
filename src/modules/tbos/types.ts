@@ -77,8 +77,7 @@ export interface TeamScoreSummary {
 export interface BatchComparison {
   dimensionCode: DimensionCode;
   dimensionName: string;
-  batch1Avg: number | null;
-  batch2Avg: number | null;
+  batchAverages: { batchName: string; avg: number | null }[];
 }
 
 export interface ExecutiveSummary {
