@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageSquareText,
   Mic,
+  Pencil,
   Plus,
   RefreshCw,
   Trash2,
@@ -69,7 +70,7 @@ const OPEN_TEXT_TABS: { key: OpenTextTab; label: string }[] = [
 export default function AdminLepPage() {
   return (
     <AdminAuthGate>
-      <AppShell role="admin" navigation="tbos" title="LEP — Evaluasi Program" eyebrow="Lembar Evaluasi Program">
+      <AppShell role="admin" title="LEP — Evaluasi Program" eyebrow="Lembar Evaluasi Program">
         <AdminLepContent />
       </AppShell>
     </AdminAuthGate>
@@ -86,6 +87,7 @@ function AdminLepContent() {
   // Speaker CRUD state
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [newSpeakerName, setNewSpeakerName] = useState("");
+  const [editingSpeaker, setEditingSpeaker] = useState<LepSpeaker | null>(null);
   const [deletingSpeaker, setDeletingSpeaker] = useState<LepSpeaker | null>(null);
   const [mutationError, setMutationError] = useState("");
   const [mutating, setMutating] = useState(false);
@@ -210,6 +212,33 @@ function AdminLepContent() {
     }
   };
 
+  const handleEditSpeaker = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingSpeaker) return;
+    if (!newSpeakerName.trim()) {
+      setMutationError("Nama pemateri wajib diisi.");
+      return;
+    }
+    setMutating(true);
+    setMutationError("");
+    const token = await getToken();
+    try {
+      const response = await fetch(`/api/lep/speakers/${editingSpeaker.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newSpeakerName.trim() }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.success) throw new Error(json.error || "Gagal mengubah nama pemateri.");
+      setEditingSpeaker(null);
+      await loadData();
+    } catch (err) {
+      setMutationError(err instanceof Error ? err.message : "Gagal mengubah nama pemateri.");
+    } finally {
+      setMutating(false);
+    }
+  };
+
   const handleExportCsv = async () => {
     if (!results) return;
     const rows: string[][] = [];
@@ -318,6 +347,7 @@ function AdminLepContent() {
               <button
                 type="button"
                 onClick={() => {
+                  setEditingSpeaker(null);
                   setNewSpeakerName("");
                   setMutationError("");
                   setShowSpeakerModal(true);
@@ -342,6 +372,20 @@ function AdminLepContent() {
                       <span className="inline-flex items-center rounded-full bg-[#0B2C6B]/[0.06] px-2.5 py-1 text-[10px] font-semibold text-[#0B2C6B]/70">
                         {results?.responseRate.respondents ?? 0} dievaluasi
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingSpeaker(speaker);
+                          setNewSpeakerName(speaker.name);
+                          setMutationError("");
+                          setShowSpeakerModal(true);
+                        }}
+                        title={`Ubah ${speaker.name}`}
+                        aria-label={`Ubah pemateri ${speaker.name}`}
+                        className="text-[#0B2C6B]/50 transition hover:text-[#0B2C6B]"
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => setDeletingSpeaker(speaker)}
@@ -472,17 +516,19 @@ function AdminLepContent() {
         </>
       )}
 
-      {/* Add speaker modal */}
+      {/* Add / edit speaker modal */}
       {showSpeakerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="add-speaker-title">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-4">
-              <h2 id="add-speaker-title" className="font-bold text-[#0B2C6B]">Tambah Pemateri</h2>
+              <h2 id="add-speaker-title" className="font-bold text-[#0B2C6B]">
+                {editingSpeaker ? "Ubah Pemateri" : "Tambah Pemateri"}
+              </h2>
               <button type="button" onClick={() => setShowSpeakerModal(false)} aria-label="Tutup" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100">
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
-            <form onSubmit={handleAddSpeaker} className="space-y-4 p-5">
+            <form onSubmit={editingSpeaker ? handleEditSpeaker : handleAddSpeaker} className="space-y-4 p-5">
               {mutationError && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{mutationError}</p>}
               <div>
                 <label htmlFor="lep-speaker-name" className="mb-1.5 block text-xs font-semibold text-[#0B2C6B]">
@@ -505,7 +551,7 @@ function AdminLepContent() {
                 </button>
                 <button type="submit" disabled={mutating || !newSpeakerName.trim()} className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
                   {mutating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Check className="h-4 w-4" aria-hidden="true" />}
-                  Simpan
+                  {editingSpeaker ? "Simpan Perubahan" : "Simpan"}
                 </button>
               </div>
             </form>
