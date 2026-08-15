@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, Minus, Target, FileText, Download, Loader2 } from "lucide-react";
+import { Target, FileText, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import {
@@ -23,7 +23,7 @@ import { ClientAuthGate } from "@/components/client-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { useCapabilities, useEngagements } from "@/hooks/use-transformation-data";
 import type { ParticipantCapability } from "@/lib/transformation-types";
-import { ProgressBar, TrendIcon, EmptyState } from "@/components/ui";
+import { ProgressBar, TrendIcon } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 const CAPABILITY_COLORS = ["#0B2C6B", "#D9A441", "#10b981", "#6366f1", "#f59e0b"];

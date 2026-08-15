@@ -26,6 +26,7 @@ import {
 
 import type { Role } from "@/lib/roles";
 import { supabase } from "@/lib/supabase";
+import { clearTbosLocalData } from "@/modules/tbos/api-client";
 import { HelpSidebar } from "@/components/help-sidebar";
 
 const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNode }[]> = {
@@ -89,6 +90,16 @@ function routeIsActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+type ModuleAvailability = { tbos: boolean; lep: boolean };
+
+function filterModuleNavigation<T extends { href: string }>(items: T[], availability: ModuleAvailability | null) {
+  return items.filter((item) => {
+    if (item.href.includes("/tbos")) return availability?.tbos === true;
+    if (item.href.includes("/lep")) return availability?.lep === true;
+    return true;
+  });
+}
+
 export function AppShell({
   role,
   title,
@@ -108,20 +119,43 @@ export function AppShell({
   const showLogout = true;
   const [showTips, setShowTips] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [moduleAvailability, setModuleAvailability] = useState<ModuleAvailability | null>(() => role === "client" ? { tbos: false, lep: false } : null);
   const drawerRef = useRef<HTMLElement>(null);
   const tipsPanelRef = useRef<HTMLDivElement>(null);
-  const navigationItems = navigation === "tbos" && role === "admin" ? tbosAdminNav : navByRole[role];
-  const mobileItems = navigation === "tbos" && role === "admin"
+  const rawNavigationItems = navigation === "tbos" && role === "admin" ? tbosAdminNav : navByRole[role];
+  const rawMobileItems = navigation === "tbos" && role === "admin"
     ? tbosAdminNav.map((item) => ({ ...item, icon: item.href === "/admin/tbos" ? <Trophy size={20} /> : <Eye size={20} /> }))
     : mobileNavByRole[role] || [];
+  const navigationItems = filterModuleNavigation(rawNavigationItems, moduleAvailability);
+  const mobileItems = filterModuleNavigation(rawMobileItems, moduleAvailability);
   const roleHomeHref = role === "facilitator" ? "/home" : role === "admin" ? "/admin" : `/${role}/dashboard`;
   const showBackLink = pathname !== roleHomeHref && pathname !== "/facilitator/dashboard";
 
   const logout = useCallback(async () => {
+    clearTbosLocalData();
     await supabase.auth.signOut();
     router.replace("/");
     router.refresh();
   }, [router]);
+
+  useEffect(() => {
+    let active = true;
+    if (role === "client") {
+      return () => { active = false; };
+    }
+
+    void Promise.all(["tbos", "lep"].map(async (moduleKey) => {
+      const response = await fetch(`/api/programs/available?moduleKey=${moduleKey}`);
+      const body = await response.json().catch(() => ({}));
+      return response.ok && body.success && Array.isArray(body.programs) && body.programs.length > 0;
+    })).then(([tbos, lep]) => {
+      if (active) setModuleAvailability({ tbos, lep });
+    }).catch(() => {
+      if (active) setModuleAvailability({ tbos: false, lep: false });
+    });
+
+    return () => { active = false; };
+  }, [role]);
 
   useEffect(() => {
     const openPanel = showMobileNav ? drawerRef.current : showTips ? tipsPanelRef.current : null;

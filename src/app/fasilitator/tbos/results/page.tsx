@@ -47,6 +47,11 @@ function TbosResultsContent() {
   const [selectedProgramId, setSelectedProgramId] = useState("");
 
   const loadResults = useCallback(async () => {
+    if (!selectedProgramId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -65,7 +70,12 @@ function TbosResultsContent() {
     void Promise.resolve().then(loadResults);
   }, [loadResults]);
 
-  if (loading) return <ResultsLoading />;
+  if (loading) return (
+    <div className="space-y-5">
+      <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+      <ResultsLoading />
+    </div>
+  );
 
   if (error) {
     return (
@@ -85,12 +95,15 @@ function TbosResultsContent() {
 
   if (!data || data.teams.length === 0) {
     return (
-      <section className="relative overflow-hidden rounded-md border border-[#0B2C6B]/10 bg-white p-7 text-center shadow-[0_24px_70px_-42px_rgba(11,44,107,0.5)] sm:p-10" aria-labelledby="empty-results-title">
+      <div className="space-y-5">
+        <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+        <section className="relative overflow-hidden rounded-md border border-[#0B2C6B]/10 bg-white p-7 text-center shadow-[0_24px_70px_-42px_rgba(11,44,107,0.5)] sm:p-10" aria-labelledby="empty-results-title">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0B2C6B] via-[#D9A441] to-[#0B2C6B]" />
         <UsersRound className="mx-auto h-12 w-12 text-[#0B2C6B]/35" aria-hidden="true" />
         <h2 id="empty-results-title" className="mt-4 text-xl font-bold text-[#0B2C6B]">Belum ada hasil dalam cakupan Anda</h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">Ringkasan akan tersedia setelah tim dalam penugasan Anda memiliki observasi T-BOS yang dikirim.</p>
-      </section>
+        </section>
+      </div>
     );
   }
 

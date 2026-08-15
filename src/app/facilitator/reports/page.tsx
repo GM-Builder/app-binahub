@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Download, FileText, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { AppShell } from "@/components/app-shell";
@@ -18,6 +17,10 @@ const CAPABILITIES = [
   { name: "Eksekusi", score: 73, trend: "up", evidenceCount: 11 },
   { name: "Berpikir Strategis", score: 67, trend: "down", evidenceCount: 6 },
 ];
+
+function reportFilename(engagementId: string) {
+  return `laporan-${engagementId.slice(0, 8)}-${Date.now()}.csv`;
+}
 
 export default function FacilitatorReportsPage() {
   const { engagements } = useEngagements();
@@ -49,7 +52,7 @@ export default function FacilitatorReportsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `laporan-${engagementId.slice(0, 8)}-${Date.now()}.csv`;
+      a.download = reportFilename(engagementId);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

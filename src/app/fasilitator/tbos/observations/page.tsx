@@ -45,6 +45,12 @@ function TbosObservationsContent() {
   const [selectedProgramId, setSelectedProgramId] = useState("");
 
   const loadObservations = useCallback(async () => {
+    if (!selectedProgramId) {
+      setObservations([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id || "";
@@ -59,7 +65,7 @@ function TbosObservationsContent() {
       const adminRole = profile?.role === "admin";
       setIsAdmin(adminRole);
 
-       const obsList = await fetchObservations(userId, adminRole, selectedProgramId);
+      const obsList = await fetchObservations(selectedProgramId);
       setObservations(obsList);
     } catch {
       setError("Gagal memuat observasi.");
@@ -74,8 +80,11 @@ function TbosObservationsContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
+      <div className="space-y-4">
+        <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
+        </div>
       </div>
     );
   }
@@ -90,9 +99,12 @@ function TbosObservationsContent() {
 
   if (observations.length === 0) {
     return (
-      <div className="py-16 text-center">
-        <p className="text-sm text-[#4A4C54]">Belum ada observasi.</p>
-        <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Buat observasi</Link>
+      <div className="space-y-4">
+        <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+        <div className="py-16 text-center">
+          <p className="text-sm text-[#4A4C54]">Belum ada observasi.</p>
+          <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Buat observasi</Link>
+        </div>
       </div>
     );
   }
@@ -186,7 +198,7 @@ function ObservationDetailPanel({
 
   const loadDetail = useCallback(async () => {
     try {
-      const obs = await fetchObservationDetail(observationId, userId, isAdmin);
+      const obs = await fetchObservationDetail(observationId);
       if (obs) {
         setDetail(obs);
         setEditedNotes(obs.notes || "");
@@ -203,7 +215,7 @@ function ObservationDetailPanel({
     } finally {
       setLoading(false);
     }
-  }, [observationId, userId, isAdmin]);
+  }, [observationId]);
 
   useEffect(() => {
     void Promise.resolve().then(loadDetail);
@@ -276,7 +288,7 @@ function ObservationDetailPanel({
   const handleLockUnlock = async (action: "lock" | "unlock") => {
     setActionError("");
     try {
-      const res = await toggleLockObservation(observationId, action, userId);
+      const res = await toggleLockObservation(observationId, action);
       if (res.success) {
         loadDetail();
         onUpdated();

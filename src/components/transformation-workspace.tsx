@@ -39,13 +39,6 @@ const fallbackData: Required<TransformationWorkspaceData> = {
   events: [],
 };
 
-function normalizeStatus(status: string) {
-  return status
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 function mapEngagement(item: Record<string, unknown>): TransformationEngagement {
   return {
     id: String(item.id),

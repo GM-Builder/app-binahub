@@ -2,6 +2,11 @@
 // Sources: ARCHITECTURE.md, ADR-006, ApiFetchBridge
 
 import type { MissionCode, DimensionCode, LevelValue } from "./config";
+import type { TbosObservation } from "./types";
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export interface TbosDbMission {
   id: string;
@@ -88,7 +93,7 @@ export interface TbosDbAuditEntry {
   action: string;
   previousStatus: string | null;
   newStatus: string | null;
-  changes: any;
+  changes: unknown;
   createdAt: string;
 }
 
@@ -106,7 +111,12 @@ export interface QueuedObservation {
   id: string;
   profileId: string;
   clientSubmissionId?: string;
-  teamId: string;
+  teamId?: string;
+  newTeam?: {
+    name: string;
+    batchId: string;
+    programId: string;
+  };
   missionId: string;
   batch: string;
   notes: string;
@@ -122,8 +132,9 @@ export interface QueuedObservation {
 /**
  * Fetch assigned missions for facilitator from backend API.
  */
-export async function fetchMissions(): Promise<TbosDbMission[]> {
-  const res = await fetch("/api/tbos/missions");
+export async function fetchMissions(programId?: string): Promise<TbosDbMission[]> {
+  const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
+  const res = await fetch(`/api/tbos/missions${query}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success || !Array.isArray(data.missions)) {
     throw new Error(data.error || "Gagal memuat daftar misi.");
@@ -134,9 +145,8 @@ export async function fetchMissions(): Promise<TbosDbMission[]> {
 /**
  * Fetch active teams from backend API.
  */
-export async function fetchTeams(programId?: string): Promise<TbosDbTeam[]> {
-  const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
-  const res = await fetch(`/api/tbos/teams${query}`);
+export async function fetchTeams(programId: string): Promise<TbosDbTeam[]> {
+  const res = await fetch(`/api/tbos/teams?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success || !Array.isArray(data.teams)) {
     throw new Error(data.error || "Gagal memuat daftar tim.");
@@ -152,7 +162,7 @@ export async function createTeam(input: {
   batchId: string;
   organizationId?: string;
   programId: string;
-}): Promise<{ success: boolean; team?: any; error?: string }> {
+}): Promise<{ success: boolean; team?: { id: string; name: string; batch: string; batch_id: string | null }; error?: string }> {
   try {
     const res = await fetch("/api/tbos/teams", {
       method: "POST",
@@ -164,8 +174,8 @@ export async function createTeam(input: {
       return { success: true, team: data.team };
     }
     return { success: false, error: data.error || "Gagal membuat tim." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -173,7 +183,12 @@ export async function createTeam(input: {
  * Submit observation to backend API via POST /api/tbos/observations.
  */
 export async function submitObservation(input: {
-  teamId: string;
+  teamId?: string;
+  newTeam?: {
+    name: string;
+    batchId: string;
+    programId: string;
+  };
   missionId: string;
   clientSubmissionId?: string;
   profileId: string;
@@ -183,16 +198,9 @@ export async function submitObservation(input: {
   members?: TbosObservationMemberInput[];
 }): Promise<{ success: boolean; observationId?: string; error?: string; retryable?: boolean }> {
   try {
-    let members = input.members;
+    const members = input.members;
     if (!members) {
-      const team = (await fetchTeams()).find((candidate) => candidate.id === input.teamId);
-      if (!team) throw new Error("Tim untuk snapshot anggota tidak ditemukan.");
-      members = team.members.map((member) => ({
-        teamMemberId: member.id,
-        memberName: member.member_name,
-        isPresent: true,
-        isCaptain: Boolean(member.is_captain),
-      }));
+      throw new Error("Snapshot roster wajib tersedia sebelum observasi disimpan.");
     }
 
     const res = await fetch("/api/tbos/observations", {
@@ -208,7 +216,7 @@ export async function submitObservation(input: {
     const data = await res.json();
 
     if (data.success) {
-      clearDraft(input.teamId, input.missionId);
+      if (input.teamId) clearDraft(input.teamId, input.missionId);
       return { success: true, observationId: data.observationId || data.id };
     }
 
@@ -217,8 +225,8 @@ export async function submitObservation(input: {
       error: data.error || "Gagal menyimpan observasi.",
       retryable: res.status >= 500,
     };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API.", retryable: true };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API."), retryable: true };
   }
 }
 
@@ -226,13 +234,11 @@ export async function submitObservation(input: {
  * Fetch observations list from GET /api/tbos/observations.
  */
 export async function fetchObservations(
-  profileId: string,
-  isAdmin: boolean = false,
-  programId?: string
+  programId: string,
 ): Promise<TbosDbObservation[]> {
   try {
-    const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
-    const res = await fetch(`/api/tbos/observations${query}`);
+    if (!programId) throw new Error("Pilih program terlebih dahulu.");
+    const res = await fetch(`/api/tbos/observations?programId=${encodeURIComponent(programId)}`);
     const data = await res.json().catch(() => ({}));
     if (data.success && Array.isArray(data.observations)) {
       return data.observations;
@@ -252,11 +258,11 @@ export interface TbosProgram {
   status: string;
 }
 
-export async function fetchTbosPrograms(): Promise<TbosProgram[]> {
-  const res = await fetch("/api/engagements");
+export async function fetchTbosPrograms(moduleKey: "tbos" | "lep" = "tbos"): Promise<TbosProgram[]> {
+  const res = await fetch(`/api/programs/available?moduleKey=${encodeURIComponent(moduleKey)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat program.");
-  return (data.engagements || []).filter((program: TbosProgram) => ["active", "in_progress", "review"].includes(program.status));
+  return data.programs || [];
 }
 
 export interface TbosBatch {
@@ -289,8 +295,8 @@ export async function createBatch(input: {
       return { success: true, batch: data.batch };
     }
     return { success: false, error: data.error || "Gagal membuat batch." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -304,8 +310,8 @@ export async function deleteBatch(
       return { success: true };
     }
     return { success: false, error: data.error || "Gagal menghapus batch." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -346,8 +352,8 @@ export async function assignFacilitatorToMission(input: {
     const data = await res.json();
     if (data.success) return { success: true };
     return { success: false, error: data.error || "Gagal menugaskan fasilitator." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -365,8 +371,8 @@ export async function bulkAssignFacilitatorToMissions(input: {
     const data = await res.json();
     if (data.success) return { success: true };
     return { success: false, error: data.error || "Gagal menugaskan fasilitator." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -385,8 +391,8 @@ export async function removeFacilitatorMission(input: {
     const data = await res.json();
     if (data.success) return { success: true };
     return { success: false, error: data.error || "Gagal menghapus penugasan." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -395,8 +401,6 @@ export async function removeFacilitatorMission(input: {
  */
 export async function fetchObservationDetail(
   observationId: string,
-  userId: string,
-  isAdmin: boolean = false
 ): Promise<TbosDbObservationDetail | null> {
   try {
     const res = await fetch(`/api/tbos/observations/${observationId}`);
@@ -438,8 +442,8 @@ export async function updateObservation(
       return { success: true };
     }
     return { success: false, error: data.error || "Gagal mengupdate observasi." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -449,7 +453,6 @@ export async function updateObservation(
 export async function toggleLockObservation(
   observationId: string,
   action: "lock" | "unlock",
-  actorId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch(`/api/tbos/observations/${observationId}`, {
@@ -463,8 +466,8 @@ export async function toggleLockObservation(
       return { success: true };
     }
     return { success: false, error: data.error || "Gagal mengubah status lock." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Gagal terhubung ke backend API." };
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
   }
 }
 
@@ -482,13 +485,13 @@ export interface TbosViewerStats {
   ownAverageScore: number | null;
 }
 
-export async function fetchDashboardRawData(programId?: string): Promise<{
+export async function fetchDashboardRawData(programId: string): Promise<{
   teams: { id: string; name: string; batch: string; batchId: string | null; batchName: string }[];
-  observations: any[];
+  observations: TbosObservation[];
   viewerStats: TbosViewerStats | null;
 }> {
-  const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
-  const res = await fetch(`/api/tbos/dashboard${query}`);
+  if (!programId) throw new Error("Pilih program terlebih dahulu.");
+  const res = await fetch(`/api/tbos/dashboard?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     const detail = data.detail || data.hint || data.code;
@@ -504,7 +507,7 @@ export async function fetchDashboardRawData(programId?: string): Promise<{
 /**
  * Fetch Participant Team Info from GET /api/tbos/participant/team-info.
  */
-export async function fetchParticipantTeamInfo(userId: string): Promise<{
+export async function fetchParticipantTeamInfo(programId: string): Promise<{
   teamName: string;
   batch: string;
   missionsCompleted: number;
@@ -513,7 +516,7 @@ export async function fetchParticipantTeamInfo(userId: string): Promise<{
   weakestDimension: string | null;
   rank: number | null;
 } | null> {
-  const res = await fetch("/api/tbos/participant/team-info");
+  const res = await fetch(`/api/tbos/participant/team-info?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     throw new Error(data.error || "Gagal memuat data tim peserta.");
@@ -556,7 +559,12 @@ export function clearDraft(teamId: string, missionId: string) {
 }
 
 export function queueObservation(profileId: string, input: {
-  teamId: string;
+  teamId?: string;
+  newTeam?: {
+    name: string;
+    batchId: string;
+    programId: string;
+  };
   missionId: string;
   clientSubmissionId?: string;
   batch: string;
@@ -595,29 +603,15 @@ export async function flushQueuedObservations(profileId: string): Promise<number
 
   let successCount = 0;
   const remaining: QueuedObservation[] = [];
-  let teams: TbosDbTeam[] | undefined;
-
   for (const item of queued) {
     if (!item.members) {
-      try {
-        teams ||= await fetchTeams();
-        const team = teams.find((candidate) => candidate.id === item.teamId);
-        if (!team) throw new Error("Tim untuk snapshot anggota tidak ditemukan.");
-        item.members = team.members.map((member) => ({
-          teamMemberId: member.id,
-          memberName: member.member_name,
-          isPresent: true,
-          isCaptain: Boolean(member.is_captain),
-        }));
-        localStorage.setItem(queueKey(profileId), JSON.stringify(queued));
-      } catch {
-        remaining.push(item);
-        continue;
-      }
+      remaining.push(item);
+      continue;
     }
 
     const res = await submitObservation({
       teamId: item.teamId,
+      newTeam: item.newTeam,
       missionId: item.missionId,
       clientSubmissionId: item.clientSubmissionId || item.id,
       profileId,
@@ -639,4 +633,14 @@ export async function flushQueuedObservations(profileId: string): Promise<number
   }
 
   return successCount;
+}
+
+export function clearTbosLocalData() {
+  if (typeof window === "undefined") return;
+  for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(DRAFT_KEY_PREFIX) || key?.startsWith(QUEUE_KEY_PREFIX)) {
+      localStorage.removeItem(key);
+    }
+  }
 }

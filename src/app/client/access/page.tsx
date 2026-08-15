@@ -53,8 +53,11 @@ export default function ClientAccessPage() {
 
       toast.success(`Selamat datang, ${json.client?.companyName || "Client"}!`);
 
-      const nextPath = new URLSearchParams(window.location.search).get("next") || "/client/dashboard";
-      router.push(nextPath.startsWith("/") ? nextPath : "/client/dashboard");
+      const requestedPath = new URLSearchParams(window.location.search).get("next") || "";
+      const nextPath = requestedPath.startsWith("/") && !requestedPath.startsWith("//")
+        ? requestedPath
+        : "/client/dashboard";
+      router.push(nextPath);
     } catch (err) {
       console.error("Client access error:", err);
       const msg = "Gagal menghubungi server. Pastikan backend sudah aktif.";

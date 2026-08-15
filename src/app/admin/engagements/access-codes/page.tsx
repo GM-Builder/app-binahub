@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Copy, KeyRound, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { Breadcrumb } from "@/components/ui";
@@ -26,9 +26,7 @@ function AccessCodesContent() {
   const engagementTitle = searchParams.get("title") || "Program";
   const [codes, setCodes] = useState<AccessCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(false);
-
-  const fetchCodes = async () => {
+  const fetchCodes = useCallback(async () => {
     if (!engagementId) return;
     setLoading(true);
     try {
@@ -46,9 +44,9 @@ function AccessCodesContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [engagementId]);
 
-  useEffect(() => { void fetchCodes(); }, [engagementId]);
+  useEffect(() => { void Promise.resolve().then(fetchCodes); }, [fetchCodes]);
 
   const handleCopy = (code: string, name: string) => {
     navigator.clipboard.writeText(code);

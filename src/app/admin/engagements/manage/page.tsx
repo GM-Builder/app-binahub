@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, Eye, KeyRound, Plus, UsersRound, X, MessageSquare, Send, Trash2, Archive, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, KeyRound, Plus, UsersRound, X, MessageSquare, Send, Trash2, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements, useEvidence } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
@@ -30,6 +30,7 @@ interface DraftParticipant {
 }
 
 function ManageEngagementContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") || "";
   const { engagements } = useEngagements();
@@ -48,11 +49,13 @@ function ManageEngagementContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [enabledModules, setEnabledModules] = useState<Array<"tbos" | "lep">>([]);
+  const [savingModules, setSavingModules] = useState(false);
 
   const currentIndex = engagement ? STATUS_ORDER.indexOf(engagement.status as typeof STATUS_ORDER[number]) : -1;
   const nextStates = engagement ? STATUS_FLOW[engagement.status] || [] : [];
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     if (!id) return;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -69,11 +72,52 @@ function ManageEngagementContent() {
     } catch {
       // Silent fail for notes
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    void fetchNotes();
+    void Promise.resolve().then(fetchNotes);
+  }, [fetchNotes]);
+
+  useEffect(() => {
+    let active = true;
+    if (!id) return () => { active = false; };
+    void fetch(`/api/program-modules?programId=${encodeURIComponent(id)}`)
+      .then((response) => response.json())
+      .then((body) => {
+        if (!active || !body.success) return;
+        setEnabledModules((body.modules || []).filter((row: { enabled: boolean }) => row.enabled).map((row: { module_key: "tbos" | "lep" }) => row.module_key));
+      })
+      .catch(() => {});
+    return () => { active = false; };
   }, [id]);
+
+  const handleModuleToggle = async (moduleKey: "tbos" | "lep") => {
+    if (!engagement) return;
+    const next = enabledModules.includes(moduleKey)
+      ? enabledModules.filter((key) => key !== moduleKey)
+      : [...enabledModules, moduleKey];
+    if (next.length === 0) {
+      toast.error("Minimal satu modul harus aktif.");
+      return;
+    }
+    setSavingModules(true);
+    const response = await fetch("/api/program-modules", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        programId: engagement.id,
+        modules: ["tbos", "lep"].map((key) => ({ moduleKey: key, enabled: next.includes(key as "tbos" | "lep") })),
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok && body.success) {
+      setEnabledModules(next);
+      toast.success("Modul program diperbarui.");
+    } else {
+      toast.error(body.error || "Gagal memperbarui modul.");
+    }
+    setSavingModules(false);
+  };
 
   const handleSendNote = async () => {
     if (!newNote.trim() || !id) return;
@@ -184,7 +228,7 @@ function ManageEngagementContent() {
     const response = await fetch(`/api/engagements/${engagement.id}`, { method: "DELETE" });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.success) toast.error(result.error || "Program tidak dapat dihapus.");
-    else window.location.href = "/admin/engagements";
+    else router.push("/admin/engagements");
   };
 
   const handleAddParticipant = async () => {
@@ -265,6 +309,17 @@ function ManageEngagementContent() {
               <div><dt className="text-[#4A4C54]/50">Catatan</dt><dd className="font-semibold text-[#0B2C6B]">{evidence.length}</dd></div>
               <div><dt className="text-[#4A4C54]/50">Dibuat</dt><dd className="font-semibold text-[#0B2C6B]">{new Date(engagement.created_at).toLocaleDateString("id-ID")}</dd></div>
             </dl>
+            <fieldset className="mt-5 border-t border-slate-100 pt-5" disabled={savingModules}>
+              <legend className="text-xs font-semibold uppercase tracking-[0.12em] text-[#D9A441]">Modul Program</legend>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {(["tbos", "lep"] as const).map((moduleKey) => (
+                  <label key={moduleKey} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#0B2C6B]/10 px-4 text-sm font-semibold text-[#0B2C6B]">
+                    <input type="checkbox" checked={enabledModules.includes(moduleKey)} onChange={() => { void handleModuleToggle(moduleKey); }} />
+                    {moduleKey === "tbos" ? "T-BOS" : "LEP"}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             <div className="mt-5">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#D9A441]">Transisi Status</p>

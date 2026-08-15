@@ -58,12 +58,13 @@ export function calculateTbosScore(
 ): { score: number | null; dimensionScores: DimensionScore[] } {
   const mission = MISSIONS[missionCode];
   if (!mission) return { score: null, dimensionScores: [] };
+  const missionObservations = observations.filter((observation) => observation.missionCode === missionCode);
 
   const dimensionScores: DimensionScore[] = [];
   const validScores: number[] = [];
 
   for (const dimCode of mission.dimensions) {
-    const { score, count } = calculateDimensionScore(observations, dimCode);
+    const { score, count } = calculateDimensionScore(missionObservations, dimCode);
     const dim = DIMENSIONS[dimCode];
     dimensionScores.push({
       dimensionCode: dimCode,

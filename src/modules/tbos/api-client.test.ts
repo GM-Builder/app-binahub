@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { getQueuedObservations, queueObservation } from "./api-client";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { flushQueuedObservations, getQueuedObservations, queueObservation } from "./api-client";
 
 describe("T-BOS offline queue", () => {
   beforeEach(() => localStorage.clear());
@@ -55,5 +55,32 @@ describe("T-BOS offline queue", () => {
       isPresent: true,
       isCaptain: true,
     }]);
+  });
+
+  it("keeps new-team data and forwards it during queue flush", async () => {
+    const newTeam = {
+      name: "Tim Offline",
+      batchId: crypto.randomUUID(),
+      programId: crypto.randomUUID(),
+    };
+    queueObservation("facilitator-a", {
+      newTeam,
+      missionId: crypto.randomUUID(),
+      batch: "Batch Lapangan",
+      notes: "Offline",
+      scores: [{ dimensionId: crypto.randomUUID(), levelValue: 4 }],
+      members: [{ memberName: "Captain Offline", isPresent: true, isCaptain: true }],
+    });
+
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+      success: true,
+      observationId: crypto.randomUUID(),
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+
+    await expect(flushQueuedObservations("facilitator-a")).resolves.toBe(1);
+    expect(getQueuedObservations("facilitator-a")).toHaveLength(0);
+    const request = fetchMock.mock.calls[0]?.[1];
+    expect(JSON.parse(String(request?.body))).toMatchObject({ newTeam });
+    fetchMock.mockRestore();
   });
 });

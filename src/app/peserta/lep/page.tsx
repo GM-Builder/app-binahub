@@ -213,7 +213,7 @@ function PesertaLepContent() {
     <div className="space-y-5 sm:space-y-6">
       {/* Program selector */}
       <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
-        <TbosProgramSelector value={programId} onChange={setProgramId} />
+        <TbosProgramSelector value={programId} onChange={setProgramId} moduleKey="lep" />
         <p className="mt-2 text-xs leading-5 text-[#4A4C54]/60">
           Pilih program pelatihan yang ingin Anda evaluasi. Evaluasi hanya dapat diisi satu kali per program.
         </p>

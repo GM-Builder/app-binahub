@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Lightbulb, AlertTriangle, TrendingUp, RefreshCw, Sparkles, Loader2, Filter, Shield } from "lucide-react";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { AppShell } from "@/components/app-shell";
-import { useInsights, useEngagements, generateInsight } from "@/hooks/use-transformation-data";
+import { useInsights, useEngagements } from "@/hooks/use-transformation-data";
 import { EmptyState, FilterTabs } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { toast } from "sonner";

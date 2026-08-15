@@ -10,7 +10,8 @@ function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const requestedSignup = searchParams.get('mode') === 'signup' || searchParams.get('mode') === 'register';
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(() => requestedSignup ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -22,20 +23,10 @@ function AuthContent() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [showEmailForm, setShowEmailForm] = useState(false);
-
-  useEffect(() => {
-    const paramMode = searchParams.get('mode');
-    if (paramMode === 'signup' || paramMode === 'register') {
-      setMode('signup');
-      setShowEmailForm(true);
-    }
-    const registered = searchParams.get('registered');
-    const confirmed = searchParams.get('confirmed');
-    if (registered) setSuccess('Akun berhasil dibuat. Silakan masuk.');
-    if (confirmed) setSuccess('Email terverifikasi. Silakan masuk.');
-  }, [searchParams]);
+  const [success, setSuccess] = useState(() => searchParams.get('registered')
+    ? 'Akun berhasil dibuat. Silakan masuk.'
+    : searchParams.get('confirmed') ? 'Email terverifikasi. Silakan masuk.' : '');
+  const [showEmailForm, setShowEmailForm] = useState(() => requestedSignup);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -229,11 +220,15 @@ function AuthContent() {
         {/* Genuine BinaHub Logo */}
         <div className="mb-8 flex items-center justify-center">
           <Link href="/" className="transition-transform hover:scale-[1.02]">
-            <img
+            <Image
               src="/binahub_logo.webp"
-              alt="BinaHub Logo"
-              className="h-10 sm:h-12 w-auto object-contain"
-            />
+               alt="BinaHub Logo"
+              width={1574}
+              height={448}
+              loading="eager"
+              sizes="200px"
+              className="h-auto w-[200px] max-w-full object-contain"
+             />
           </Link>
         </div>
 

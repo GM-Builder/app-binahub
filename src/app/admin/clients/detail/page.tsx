@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Mail, Building2, Calendar, FileText, Award, Users, BarChart3 } from "lucide-react";
+import { Mail, FileText, Award, Users, BarChart3 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { StatusPill, Breadcrumb, EmptyState, Skeleton } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -72,13 +72,11 @@ function ParticipantDetailContent() {
     totalEngagements: 0,
     avgCapabilityScore: 0,
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(() => Boolean(participantId));
+  const [error, setError] = useState(() => participantId ? "" : "ID peserta tidak ditemukan.");
 
   useEffect(() => {
     if (!participantId) {
-      setError("ID peserta tidak ditemukan.");
-      setLoading(false);
       return;
     }
 

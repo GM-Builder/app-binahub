@@ -1,55 +1,44 @@
 # T-BOS (BinaPlay) — Roles & Permissions
 
-Status: ✅ Final — diselaraskan dengan ADR-009, RLS migration `0010`, dan `roles.ts`.
+Status: Final — diselaraskan dengan revisi CEO dan implementasi API per 15 Agustus 2026.
 
 ## 1. Roles
 
-| Role | Deskripsi | Bagaimana didapat |
+| Role | Tanggung jawab | Pemberian role |
 |---|---|---|
-| Peserta | Akun umum peserta, default untuk semua user baru | Otomatis saat signup |
-| Client | Perwakilan klien / manajemen | Di-assign oleh Admin |
-| Fasilitator | Input observasi untuk mission yang menjadi tanggung jawabnya | Di-assign oleh Admin |
-| Admin / Program Manager | Melihat seluruh dashboard, rekap, export, lock/unlock observasi, assign roles | Seed data / DB admin setup |
+| Peserta | Mengikuti program, melihat hasil tim sendiri, dan mengisi LEP | Default saat signup; harus terdaftar pada program |
+| Client | Melihat data organisasi/program yang menjadi cakupannya | Admin |
+| Fasilitator | Mengobservasi semua tim yang datang ke mission/pos miliknya | Admin |
+| Admin / Program Manager | Mengelola program, modul, user, assignment, data, dashboard, dan laporan | Setup admin |
 
-## 2. Alur Signup → Jadi Fasilitator
+Perubahan role dilakukan lewat API admin. Sesi user yang rolenya berubah di-invalidasi agar token lama tidak mempertahankan hak akses sebelumnya. Admin tidak boleh menurunkan role atau menghapus akunnya sendiri lewat endpoint manajemen user.
 
-```
-User signup (Supabase Auth) → role default "peserta"
-        |
-        v
-Admin buka panel admin → assign role "facilitator" ke user tsb
-        |
-        v
-Sesi aktif user di-invalidate (force logout via API / Supabase Admin)
-        |
-        v
-User login lagi → sistem baca role terbaru dari profiles → auto-redirect ke /fasilitator/tbos
-```
-
-## 3. Permission Matrix
+## 2. Permission Matrix
 
 | Aksi | Peserta | Client | Fasilitator | Admin |
-|---|---|---|---|---|
+|---|---:|---:|---:|---:|
 | Lihat form observasi mission miliknya | ❌ | ❌ | ✅ | ✅ |
-| Lihat form observasi mission lain | ❌ | ❌ | ❌ | ✅ |
-| Submit observasi | ❌ | ❌ | ✅ (mission miliknya saja) | ❌ |
-| Edit observasi dalam revision window | ❌ | ❌ | ✅ (punya sendiri) | ✅ (override, tercatat di audit log) |
-| Lock / Unlock observasi | ❌ | ❌ | ❌ | ✅ |
-| Lihat dashboard admin (radar, heatmap, ranking) | ❌ | ❌ | ❌ | ✅ |
-| Lihat dashboard fasilitator (hasil & statistik terbatas per mission miliknya) | ❌ | ❌ | ✅ (mission miliknya saja) | ❌ |
-| Lihat dashboard peserta (skor tim sendiri) | ✅ | ❌ | ❌ | ❌ |
-| Assign fasilitator ke mission (`tbos_facilitator_missions`) | ❌ | ❌ | ❌ | ✅ |
-| Assign role fasilitator ke user | ❌ | ❌ | ❌ | ✅ |
+| Lihat/input observasi mission lain | ❌ | ❌ | ❌ | ✅ untuk melihat; submit operasional dilakukan fasilitator |
+| Pilih semua tim dalam program/batch pada pos miliknya | ❌ | ❌ | ✅ | ✅ |
+| Buat tim + roster saat tim pertama kali muncul | ❌ | ❌ | ✅ | ✅ |
+| Edit observasi sendiri dalam revision window | ❌ | ❌ | ✅ | ✅ override, tercatat di audit log |
+| Lock / unlock observasi | ❌ | ❌ | ❌ | ✅ |
+| Lihat dashboard (radar, heatmap, ranking) | Tim sendiri | Scope organisasi | ✅ hanya mission miliknya | ✅ seluruh program |
+| Kelola program, modul, batch, speaker LEP, dan assignment | ❌ | ❌ | ❌ | ✅ |
+| Isi LEP | ✅ satu respons per program yang diikuti | ❌ | ❌ | ❌ |
+| Lihat hasil dan export LEP | ❌ | Sesuai endpoint laporan organisasi | ❌ | ✅ |
+| Ubah role/user | ❌ | ❌ | ❌ | ✅ |
 
-## 4. Dashboard Peserta
+## 3. Assignment Fasilitator
 
-Diakses via `/peserta/dashboard`. Peserta yang terdaftar di `tbos_team_members` dapat melihat:
-- Ranking tim di batch
-- Skor tim (overall team score)
-- Jumlah mission selesai
-- Rincian 8 dimensi perilaku
+Assignment aktif memakai `facilitator_missions(profile_id, mission_id, program_id)`. Satu mission adalah satu pos fisik; fasilitator memilih tim yang datang bergiliran ke pos tersebut. Perubahan assignment mengganti daftar mission untuk kombinasi fasilitator+program secara atomik melalui RPC `replace_facilitator_missions`.
 
-## 5. Enforcement
+`tbos_facilitator_teams` tetap dipertahankan hanya sebagai histori lama. Alur baru tidak membaca atau menulis tabel tersebut.
 
-- Enforced di **level Database RLS** (migration `0010_fix_tbos_rls_and_roles.sql`).
-- Mapping fasilitator ↔ mission (`tbos_facilitator_missions`) di-query langsung saat memuat daftar mission.
+## 4. Enforcement
+
+- Browser memakai Supabase Auth untuk sesi dan hanya boleh membaca baris `profiles` miliknya sendiri.
+- Data aplikasi diakses lewat `binahub-api`; tabel `public` lain menolak akses langsung role `anon` dan `authenticated`.
+- API memverifikasi JWT, role, membership program, module enablement, dan scope mission pada setiap endpoint sensitif.
+- RPC transaksi hanya dapat dieksekusi oleh `service_role`; API tidak pernah mengirim service-role key ke browser.
+- Dashboard fasilitator memfilter agregasi berdasarkan mission yang ditugaskan pada program yang dipilih, bukan berdasarkan siapa yang membuat observasi.

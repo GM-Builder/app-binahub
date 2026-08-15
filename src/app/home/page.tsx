@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,7 +9,6 @@ import {
   ArrowUpRight,
   LayoutDashboard,
   Trophy,
-  ShieldCheck,
   Building2,
   FileCheck2,
   ClipboardList,
@@ -18,34 +17,10 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { ServiceMegaGrid } from "@/components/service-mega-grid";
-
-const ADMIN_EMAILS = ["admin@binahub.id"];
-const FACILITATOR_EMAILS = ["facilitator@binahub.id", "fasilitator@binahub.id"];
-
-function resolveRole(email: string, metadataRole?: string, profilesRole?: string): string {
-  const lowerEmail = email.trim().toLowerCase();
-
-  // 1. profiles table role (most authoritative)
-  if (profilesRole && profilesRole !== "peserta" && profilesRole !== "client") {
-    return profilesRole;
-  }
-
-  // 2. app_metadata / user_metadata
-  if (metadataRole && (metadataRole === "admin" || metadataRole === "facilitator")) {
-    return metadataRole;
-  }
-
-  // 3. email allowlist
-  if (ADMIN_EMAILS.includes(lowerEmail)) return "admin";
-  if (FACILITATOR_EMAILS.includes(lowerEmail)) return "facilitator";
-
-  // 4. profiles table default
-  if (profilesRole) return profilesRole;
-
-  return "peserta";
-}
 
 export default function HomePage() {
   const router = useRouter();
@@ -53,11 +28,7 @@ export default function HomePage() {
   const [userName, setUserName] = useState("");
   const [role, setRole] = useState("");
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
@@ -67,29 +38,24 @@ export default function HomePage() {
 
       const session = sessionData.session;
       const email = session.user?.email || "";
-      const metadataRole =
-        (session.user?.app_metadata?.role as string) ||
-        (session.user?.user_metadata?.role as string) ||
-        "";
-
-      let profilesRole = "";
       let fullName = session.user?.user_metadata?.full_name || "";
 
-      try {
-        const res = await fetch("/api/auth/role", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const data = await res.json();
-        if (data.success) {
-          profilesRole = data.role;
-          fullName = data.fullName || fullName;
-        }
-      } catch {
-        // Fallback to JWT role resolution
+      const res = await fetch("/api/auth/role", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      const authoritativeRole = data.role as string | undefined;
+      if (
+        !res.ok ||
+        !data.success ||
+        !authoritativeRole ||
+        !["admin", "facilitator", "client", "peserta"].includes(authoritativeRole)
+      ) {
+        throw new Error(data.error || "Role pengguna tidak valid.");
       }
 
-      const resolvedRole = resolveRole(email, metadataRole, profilesRole);
-      setRole(resolvedRole);
+      fullName = data.fullName || fullName;
+      setRole(authoritativeRole);
       setUserName(fullName || email.split("@")[0]);
     } catch {
       router.replace("/");
@@ -97,7 +63,11 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    void Promise.resolve().then(checkAuth);
+  }, [checkAuth]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -122,7 +92,7 @@ export default function HomePage() {
   const currentBadge = roleBadgeConfig[role] || roleBadgeConfig.peserta;
 
   // Curated, non-redundant workspace shortcuts per role
-  const quickLinks: Record<string, { href: string; label: string; desc: string; icon: any }[]> = {
+  const quickLinks: Record<string, { href: string; label: string; desc: string; icon: LucideIcon }[]> = {
     admin: [
       {
         href: "/admin/tbos",
@@ -213,10 +183,14 @@ export default function HomePage() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 h-16 flex items-center justify-between">
           <Link href="/home" className="flex items-center gap-3 transition-opacity hover:opacity-90">
-            <img
+            <Image
               src="/binahub_logo.webp"
               alt="BinaHub Logo"
-              className="h-9 sm:h-10 w-auto object-contain"
+              width={1574}
+              height={448}
+              loading="eager"
+              sizes="150px"
+              className="h-auto w-[150px] object-contain"
             />
           </Link>
 
@@ -254,7 +228,7 @@ export default function HomePage() {
             <div>
               <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#C79A3C] mb-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Workspace Operasional</span>
+                <span>BinaHub Workspace</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
                 Selamat Datang, {userName}

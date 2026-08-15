@@ -29,7 +29,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
   const batchNames = [...allBatchNames].sort();
 
   const chartData = comparisons.map((c) => {
-    const row: Record<string, any> = {
+    const row: Record<string, string | number | boolean> = {
       name: c.dimensionName.length > 20 ? c.dimensionName.split(" ")[0] : c.dimensionName,
       fullName: c.dimensionName,
     };
@@ -74,11 +74,13 @@ export function TbosBatchComparison({ comparisons }: Props) {
               }}
               labelStyle={{ color: "#D9A441", fontWeight: 600 }}
               itemStyle={{ color: "#FFFFFF" }}
-              formatter={(value: any, name: any, props: any) => {
-                const hasData = props.payload[`${name}_hasData`];
-                return [hasData ? value.toFixed(1) : "Belum ada data", name];
+              formatter={(value: unknown, name: unknown, props: { payload?: Record<string, unknown> }) => {
+                const seriesName = String(name);
+                const hasData = props.payload?.[`${seriesName}_hasData`] === true;
+                const score = typeof value === "number" ? value.toFixed(1) : "-";
+                return [hasData ? score : "Belum ada data", seriesName];
               }}
-              labelFormatter={(_label: any, payload: any) => payload?.[0]?.payload?.fullName || ""}
+              labelFormatter={(_label: unknown, payload: readonly { payload?: { fullName?: string } }[]) => payload?.[0]?.payload?.fullName || ""}
             />
             {batchNames.map((name, i) => (
               <Bar key={name} dataKey={name} name={name} fill={BATCH_COLORS[i % BATCH_COLORS.length]} radius={[0, 4, 4, 0]} barSize={12} />

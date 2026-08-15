@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Users, Mail, Shield, Calendar, Search, Plus, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Users, Mail, Plus, RefreshCw, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
-import { StatusPill, Breadcrumb, EmptyState, SearchInput, ConfirmDialog } from "@/components/ui";
+import { Breadcrumb, EmptyState, SearchInput, ConfirmDialog } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { supabase } from "@/lib/supabase";
 
@@ -15,20 +15,6 @@ interface UserRecord {
   created_at: string;
   last_sign_in_at: string | null;
 }
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  facilitator: "Fasilitator",
-  client: "Klien",
-  participant: "Peserta",
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-[#0B2C6B] text-white",
-  facilitator: "bg-[#D9A441] text-white",
-  client: "bg-[#16A34A] text-white",
-  participant: "bg-[#6B7280] text-white",
-};
 
 function UserManagementContent() {
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -68,7 +54,7 @@ function UserManagementContent() {
   };
 
   useEffect(() => {
-    void fetchUsers();
+    void Promise.resolve().then(fetchUsers);
   }, []);
 
   const filteredUsers = useMemo(() => {

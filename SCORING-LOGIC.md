@@ -42,7 +42,7 @@ Skor akhir mission = **4.0** (skala 1-5).
 | Dimensi belum diobservasi sama sekali untuk tim tsb | Dimension Score = `null`, tidak masuk perhitungan T-BOS Score (bukan dianggap 0) |
 | Observasi berstatus `draft` (belum submit) | Tidak dihitung |
 | Dua observasi untuk tim+dimensi yang sama (multi-fasilitator) | Dirata-rata (lihat STATE-MACHINE.md §3) |
-| Fasilitator input observasi untuk mission yang bukan tanggung jawabnya | Ditolak di level query/permission (`tbos_facilitator_missions`) |
+| Fasilitator input observasi untuk mission/program yang bukan tanggung jawabnya | Ditolak oleh API dan RPC berdasarkan `facilitator_missions` |
 
 ## 4. Rounding & Display
 

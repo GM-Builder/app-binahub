@@ -13,7 +13,9 @@ export default function BinaImpactEntryPage() {
 
   useEffect(() => {
     let alive = true;
-    let timeout: NodeJS.Timeout;
+    const timeout: NodeJS.Timeout = setTimeout(() => {
+      if (alive) setChecking(false);
+    }, 5000);
 
     async function checkAccess() {
       try {
@@ -21,7 +23,16 @@ export default function BinaImpactEntryPage() {
 
         if (!alive) return;
 
-        const role = session?.user?.app_metadata?.role || session?.user?.user_metadata?.role;
+        if (!session) {
+          if (alive) setChecking(false);
+          return;
+        }
+
+        const response = await fetch("/api/auth/role", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const result = await response.json();
+        const role = response.ok && result.success ? result.role : null;
 
         if (role === "client") {
           router.replace("/client/binaimpact");
@@ -38,10 +49,6 @@ export default function BinaImpactEntryPage() {
 
       if (alive) setChecking(false);
     }
-
-    timeout = setTimeout(() => {
-      if (alive) setChecking(false);
-    }, 5000);
 
     void checkAccess();
 

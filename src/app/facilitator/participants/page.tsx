@@ -3,11 +3,11 @@
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Eye, FileText, Target, TrendingUp, TrendingDown, Minus, UsersRound } from "lucide-react";
+import { Eye, Target, UsersRound } from "lucide-react";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { useEngagements, useEvidence, useActions } from "@/hooks/use-transformation-data";
-import { ProgressBar, TrendIcon, Breadcrumb, EmptyState, ListSkeleton } from "@/components/ui";
+import { ProgressBar, Breadcrumb, ListSkeleton } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 interface Participant {

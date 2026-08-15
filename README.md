@@ -1,68 +1,49 @@
 # BinaHub App
 
-Operational platform for `app.binahub.id`.
+Frontend authenticated untuk `app.binahub.id`. Backend berada di repositori sejajar `../binahub-api` dan ditargetkan ke `api.binahub.id`.
 
-`binahub.id` remains the public company profile website. This app owns
-authenticated workflows such as client dashboards, admin dashboards,
-facilitator reviews, BinaInsight forms, BinaImpact assessments, scoring, and
-reports.
+## Stack
 
-## Current Foundation
+- Next.js App Router, React, TypeScript, Tailwind CSS
+- Supabase Auth
+- Recharts dan `@react-pdf/renderer`
+- Vitest dan Playwright
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- Supabase client helpers
-- Role shells for `client`, `admin`, and `facilitator`
-- BinaInsight module placeholder
-- BinaImpact MVP module placeholder
-- Supabase migration and seed files
-
-## Getting Started
+## Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Salin `.env.example` menjadi `.env.local`, lalu isi URL/key Supabase dan URL API. Service-role key hanya boleh berada pada environment backend, bukan frontend.
 
-## Environment
-
-Copy `.env.example` to `.env.local` and fill Supabase values after the
-existing Supabase project has been audited:
+## Validasi
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+npm run lint
+npm run typecheck
+npm run test:run
+npm run build
 ```
 
-## Supabase
+Untuk E2E pertama kali:
 
-Before applying migrations to an existing project, audit the current schema.
-Reuse existing `profiles` and `organizations` tables if they already exist.
-Do not rename or delete existing BinaInsight tables.
-
-Migration files live in `supabase/migrations`.
-Seed files live in `supabase/seed`.
-
-## Product Split
-
-Recommended BinaInsight flow:
-
-```txt
-binahub.id/bina-insight
-  -> public explanation and CTA
-
-app.binahub.id/client/binainsight/start
-  -> authenticated assessment workflow
+```bash
+npx playwright install chromium
+npm run test:e2e
 ```
 
-## Next Steps
+## Arsitektur Data
 
-- Connect Supabase Auth.
-- Replace demo role links with real login.
-- Migrate BinaInsight form logic.
-- Implement BinaImpact database-driven form flow.
-- Add admin progress and facilitator review persistence.
+Frontend memakai Supabase secara langsung hanya untuk autentikasi dan pembacaan profil sendiri. Semua data bisnis melalui `binahub-api`, yang memvalidasi role/scope dan menjalankan query atau RPC dengan kredensial server.
+
+Migration fondasi historis berada di `supabase/migrations`. Migration backend dan hardening terbaru berada di `../binahub-api/supabase/migrations`. Ikuti `../binahub-api/supabase/DEPLOYMENT.md`; nomor historis kedua folder bertumpang tindih dan tidak boleh digabung tanpa runbook tersebut.
+
+Dokumen implementasi utama:
+
+- `ARCHITECTURE.md`
+- `DATA-MODEL.md`
+- `ROLES-PERMISSIONS.md`
+- `STATE-MACHINE.md`
+- `SCORING-LOGIC.md`

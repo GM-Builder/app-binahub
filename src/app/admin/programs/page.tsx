@@ -72,21 +72,17 @@ function CreateProgramModal({
       const res = await fetch("/api/engagements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId, code, title: name.trim(), type: "assessment", status: "draft" }),
+        body: JSON.stringify({
+          organizationId,
+          code,
+          title: name.trim(),
+          type: "assessment",
+          status: "draft",
+          modules: MODULE_OPTIONS.map((module) => ({ moduleKey: module.key, enabled: enabledModules.includes(module.key) })),
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) throw new Error(json.error || "Gagal membuat program.");
-
-      const modulesRes = await fetch("/api/program-modules", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          programId: json.engagement.id,
-          modules: MODULE_OPTIONS.map((m) => ({ moduleKey: m.key, enabled: enabledModules.includes(m.key) })),
-        }),
-      });
-      const modulesJson = await modulesRes.json().catch(() => ({}));
-      if (!modulesRes.ok || !modulesJson.success) throw new Error(modulesJson.error || "Gagal menyimpan modul program.");
 
       toast.success("Program berhasil dibuat");
       onCreated();

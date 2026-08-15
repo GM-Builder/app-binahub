@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Copy, Plus, UsersRound, X, Search, KeyRound } from "lucide-react";
 import { useEngagements, useUsers } from "@/hooks/use-transformation-data";
@@ -9,6 +8,11 @@ import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { toast } from "sonner";
 
 const ENGAGEMENT_TYPES = ["assessment", "coaching", "training", "transformation"] as const;
+const MODULE_OPTIONS = [
+  { key: "tbos", label: "T-BOS", description: "Observasi perilaku tim berbasis mission" },
+  { key: "lep", label: "LEP", description: "Evaluasi program oleh peserta" },
+] as const;
+type ModuleKey = typeof MODULE_OPTIONS[number]["key"];
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draf" },
@@ -31,7 +35,6 @@ interface DraftFacilitator {
 }
 
 function CreateEngagementContent() {
-  const router = useRouter();
   const { engagements } = useEngagements();
   const { users } = useUsers();
   const availableFacilitators = users.filter((u) => u.role === "facilitator" || u.role === "admin");
@@ -45,6 +48,7 @@ function CreateEngagementContent() {
   const [endDate, setEndDate] = useState("");
   const [participants, setParticipants] = useState<DraftParticipant[]>([]);
   const [facilitators, setFacilitators] = useState<DraftFacilitator[]>([]);
+  const [enabledModules, setEnabledModules] = useState<ModuleKey[]>(["tbos"]);
 
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -66,11 +70,11 @@ function CreateEngagementContent() {
   }, [engagements]);
 
   const canNext = useMemo(() => {
-    if (step === 0) return title.trim().length >= 3 && code.trim().length >= 2;
+    if (step === 0) return title.trim().length >= 3 && code.trim().length >= 2 && enabledModules.length > 0;
     if (step === 1) return participants.length > 0;
     if (step === 2) return true;
     return true;
-  }, [step, title, participants]);
+  }, [step, title, participants, code, enabledModules]);
 
   const addParticipant = () => {
     if (!newName.trim()) return;
@@ -107,6 +111,10 @@ function CreateEngagementContent() {
             name: p.name,
             email: p.email || undefined,
             role: p.role,
+          })),
+          modules: MODULE_OPTIONS.map((module) => ({
+            moduleKey: module.key,
+            enabled: enabledModules.includes(module.key),
           })),
         }),
       });
@@ -229,6 +237,25 @@ function CreateEngagementContent() {
                   </select>
                 </label>
               </div>
+              <fieldset className="mt-5">
+                <legend className="text-xs font-semibold text-[#0B2C6B]/60">Modul Program *</legend>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {MODULE_OPTIONS.map((module) => {
+                    const checked = enabledModules.includes(module.key);
+                    return (
+                      <label key={module.key} className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition-colors ${checked ? "border-[#D9A441] bg-[#FFF9EA]" : "border-[#0B2C6B]/10 bg-white"}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => setEnabledModules((current) => checked ? current.filter((key) => key !== module.key) : [...current, module.key])}
+                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0B2C6B]"
+                        />
+                        <span><strong className="block text-sm text-[#0B2C6B]">{module.label}</strong><span className="mt-1 block text-xs text-[#4A4C54]/65">{module.description}</span></span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <label className="block">
                   <span className="text-xs font-semibold text-[#0B2C6B]/60">Tanggal Mulai</span>

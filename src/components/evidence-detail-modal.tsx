@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import type { Evidence } from "@/lib/transformation-types";
-import { calculateQualityScore, getQualityGrade, QualityBadge, WeightIndicator } from "./evidence-quality";
+import { calculateQualityScore, getTypeWeight, QualityBadge } from "./evidence-quality";
 
 const TYPE_LABELS: Record<string, string> = {
   assessment: "Penilaian",
@@ -46,7 +46,6 @@ export function EvidenceDetailModal({
 }) {
   const content = item.content as Record<string, unknown>;
   const qualityScore = calculateQualityScore(item.confidence_score, item.type, item.source);
-  const grade = getQualityGrade(qualityScore);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") onClose();
@@ -82,7 +81,7 @@ export function EvidenceDetailModal({
           <InfoRow label="Sumber" value={SOURCE_LABELS[item.source] || item.source} />
           <InfoRow label="Keyakinan" value={`${Math.round(item.confidence_score * 100)}%`} />
           <InfoRow label="Skor Kualitas" value={<QualityBadge score={qualityScore} />} />
-          <InfoRow label="Bobot" value={`${((item as any).weight || 0.5).toFixed(2)}`} />
+          <InfoRow label="Bobot" value={getTypeWeight(item.type).toFixed(2)} />
           <InfoRow label="Dibuat" value={new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })} />
         </div>
 

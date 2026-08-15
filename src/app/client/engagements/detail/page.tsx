@@ -3,11 +3,10 @@
 import { useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Calendar, FileClock, ListChecks, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { FileClock, ListChecks, Target } from "lucide-react";
 import { ClientAuthGate } from "@/components/client-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { useEngagements, useEvidence, useActions, useCapabilities } from "@/hooks/use-transformation-data";
-import type { Engagement, Evidence, Action, ParticipantCapability } from "@/lib/transformation-types";
 import { StatusPill, ProgressBar, TrendIcon, Breadcrumb } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 

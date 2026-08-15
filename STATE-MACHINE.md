@@ -1,37 +1,35 @@
 # T-BOS (BinaPlay) — Observation State Machine
 
-Status: Draft — jawab Open Question PRD #2 (multi-observasi) secara desain, perlu dikonfirmasi ke stakeholder.
+Status: Final — diimplementasikan melalui RPC `tbos_submit_observation_v2` dan `tbos_mutate_observation`.
 
-## 1. Kenapa perlu state machine
+## 1. States dan Transisi
 
-PRD awal tidak mendefinisikan apa yang terjadi setelah fasilitator submit observasi: apakah bisa diedit, apakah bisa ada lebih dari satu observasi untuk kombinasi tim+mission yang sama, dan siapa yang berwenang mengubahnya.
-
-## 2. States
-
-```
-   [draft] --submit--> [submitted] --lock (admin/otomatis)--> [locked]
-      |                     |
-   (auto-save,          (fasilitator masih bisa
-    belum final)          edit dalam window tertentu)
+```text
+draft lokal --submit atomik--> submitted --lock oleh admin--> locked
+                                  ^                         |
+                                  +----unlock oleh admin----+
 ```
 
-| State | Deskripsi | Siapa bisa edit |
+`draft` adalah state lokal/autosave dan tidak ikut agregasi. Submit production langsung membuat observasi `submitted`, skor, snapshot roster, dan audit log dalam satu transaksi.
+
+| State | Dampak | Hak edit |
 |---|---|---|
-| `draft` | Form sedang diisi, belum disubmit (opsional — jika ada auto-save) | Fasilitator pemilik |
-| `submitted` | Observasi sudah masuk, terhitung di skor | Fasilitator pemilik (dalam window revisi, mis. sampai akhir hari batch) |
-| `locked` | Tidak bisa diubah lagi, final untuk agregasi | Tidak ada (kecuali admin override + audit log) |
+| `draft` | Belum tersimpan sebagai hasil final; tidak dihitung | Fasilitator pada perangkatnya |
+| `submitted` | Masuk agregasi skor | Pemilik sampai `revision_deadline`; admin dapat override |
+| `locked` | Final dan tetap masuk agregasi | Hanya dapat dibuka kembali oleh admin |
 
-⚠️ Durasi window revisi belum diputuskan — usul: terkunci otomatis di akhir hari/batch, atau dikunci manual oleh admin setelah program selesai.
+## 2. Revision Window
 
-## 3. Kasus: Observasi Duplikat (tim yang sama, mission yang sama)
+Database menetapkan `revision_deadline` pada akhir hari berikutnya berdasarkan `observed_at` dalam zona waktu Asia/Jakarta. API dan RPC sama-sama menolak edit fasilitator setelah deadline. Admin dapat edit kapan pun dan seluruh edit/lock/unlock tercatat pada `tbos_observation_audit_log`.
 
-Dari Open Question PRD: apakah satu tim bisa diobservasi lebih dari sekali dalam mission yang sama (misal 2 fasilitator berbeda)?
+## 3. Retry dan Duplikasi
 
-**Rekomendasi desain** (perlu konfirmasi):
-- Diizinkan lebih dari satu observasi per kombinasi tim+mission, **selama dari fasilitator yang berbeda** — karena tiap fasilitator hanya bertanggung jawab atas mission miliknya, kemungkinan dua fasilitator menilai mission yang sama kecil, tapi tidak nol (misal shift/sesi berbeda).
-- Jika terjadi duplikat, **Dimension Score dihitung sebagai rata-rata dari seluruh observasi yang submitted/locked** untuk kombinasi tim+dimensi tersebut — bukan overwrite satu sama lain.
-- Alternatif lebih ketat: satu observasi per tim per mission per **sesi** (bukan per hari), dengan field `session_id` tambahan jika dibutuhkan.
+- Setiap submit membawa `client_submission_id` unik per fasilitator.
+- Retry dengan ID yang sama mengembalikan observasi yang sudah dibuat dan tidak menggandakan tim, roster, skor, atau audit log.
+- Beberapa fasilitator boleh mengobservasi tim+mission yang sama pada sesi berbeda. Semua observasi `submitted`/`locked` yang sah dirata-ratakan; tidak saling overwrite.
 
-## 4. Audit Trail
+## 4. Locking dan Audit
 
-Setiap perubahan status (`submitted` → `locked`, atau edit dalam window revisi) sebaiknya dicatat di tabel `observation_audit_log` (siapa, kapan, perubahan apa) — terutama untuk kasus admin override. Belum ada di PRD awal, diusulkan sebagai requirement tambahan.
+- Hanya admin dapat melakukan `lock` dan `unlock`.
+- Mutasi mengambil row lock database, mengubah observasi/skor, dan menulis audit log secara atomik.
+- Observasi locked tidak dapat diedit sampai admin melakukan unlock.

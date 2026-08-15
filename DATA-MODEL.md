@@ -1,120 +1,69 @@
-# T-BOS (BinaPlay) — Data Model
+# T-BOS dan LEP — Data Model
 
-Status: ✅ Final — diselaraskan dengan Supabase migration `0005_tbos_tables.sql`, `0007_tbos_state_machine.sql`, dan `0010_fix_tbos_rls_and_roles.sql`.
+Status: Final — ringkasan schema runtime setelah hardening revisi CEO.
 
-## 1. Entities
+## 1. Fondasi Program dan Akses
 
-### `profiles` (extend Supabase Auth `auth.users`)
-| Kolom | Tipe | Keterangan |
+| Entitas | Kolom/relasi penting | Fungsi |
 |---|---|---|
-| id | uuid | PK, = `auth.users.id` |
-| full_name | text | Nama lengkap user |
-| role | text | `peserta` (default saat signup) / `client` / `facilitator` / `admin` |
-| role_updated_at | timestamp | Dipakai untuk trigger force-logout saat role berubah |
+| `profiles` | `id = auth.users.id`, `full_name`, `role`, `organization_id` | Identitas dan role aplikasi |
+| `engagements` | `organization_id`, `code`, `title`, `status`, tanggal | Container program |
+| `participants` | `profile_id`, `organization_id`, identitas peserta | Master peserta |
+| `engagement_participants` | `engagement_id`, `participant_id` | Membership peserta ke program |
+| `program_modules` | `program_id`, `module_key`, `enabled` | Mengaktifkan `tbos`/`lep` per program |
 
-### `tbos_missions`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| code | text | unique code (`lost_detonator`, `goldsmith_precision`, `ore_extraction`, `lean_bridge`, `x_case`) |
-| name | text | Nama mission |
-| description | text | Deskripsi mission |
+Semua `program_id` pada modul secara teknis mereferensikan `engagements(id)`.
 
-### `tbos_behavioral_dimensions` (8 total)
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| code | text | unique code (`goal_alignment`, `communication`, dst) |
-| name | text | Nama dimensi |
-| question | text | Pertanyaan kunci observasi |
-| order_index | int | Urutan |
+## 2. T-BOS
 
-### `tbos_mission_dimensions` (mapping many-to-many)
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| mission_id | uuid | FK → tbos_missions |
-| dimension_id | uuid | FK → tbos_behavioral_dimensions |
+| Entitas | Kolom/relasi penting |
+|---|---|
+| `tbos_missions` | `id`, `code`, `name`, `description` |
+| `tbos_behavioral_dimensions` | `id`, `code`, `name`, `question`, `order_index` |
+| `tbos_mission_dimensions` | mapping `mission_id` ↔ `dimension_id` |
+| `tbos_dimension_levels` | `dimension_id`, `level_value` 1–5, label, deskripsi |
+| `batches` | `program_id`, `name`, `sort_order`; nama unik case-insensitive per program |
+| `tbos_teams` | `engagement_id`, `batch_id`, snapshot `batch`, `name`, `organization_id` |
+| `tbos_team_members` | `id`, `team_id`, `profile_id` opsional, `member_name`, `is_captain` |
+| `facilitator_missions` | PK `(profile_id, mission_id, program_id)`; assignment aktif |
+| `tbos_facilitator_teams` | histori assignment lama; tidak dipakai flow baru |
+| `tbos_observations` | tim, program, mission, fasilitator, batch, status, deadline, `client_submission_id` |
+| `tbos_observation_scores` | observasi, dimensi, level 1–5 |
+| `tbos_observation_members` | snapshot nama, kehadiran, dan kapten per observasi |
+| `tbos_observation_audit_log` | actor, role, action, status lama/baru, perubahan, waktu |
 
-### `tbos_dimension_levels` (40 baris seed data)
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| dimension_id | uuid | FK → tbos_behavioral_dimensions |
-| level_value | int | 1-5 |
-| level_label | text | Reactive/Emerging/Functional/Effective/Exemplary |
-| description | text | Deskripsi perilaku spesifik per level |
+Relasi utama:
 
-### `tbos_teams`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| name | text | Nama tim (Alpha, Bravo, dst) |
-| batch | text | Batch 1 / Batch 2 |
-
-### `tbos_team_members`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| team_id | uuid | FK → tbos_teams |
-| profile_id | uuid | FK → profiles (role `peserta`) |
-| member_name | text | Nama anggota |
-
-### `tbos_facilitator_teams`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| profile_id | uuid | FK → profiles (role `facilitator`) |
-| team_id | uuid | FK → tbos_teams |
-
-### `tbos_observations`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| team_id | uuid | FK → tbos_teams |
-| mission_id | uuid | FK → tbos_missions |
-| profile_id | uuid | FK → profiles (role `facilitator`), pengisi observasi |
-| batch | text | Denormalized untuk query cepat |
-| observed_at | date | Tanggal pelaksanaan |
-| submitted_at | timestamp | Waktu input (auto) |
-| status | text | `draft` / `submitted` / `locked` |
-| notes | text | max 50 karakter, opsional |
-| locked_at | timestamp | Waktu dikunci (admin) |
-| locked_by | uuid | FK → profiles (admin yang mengunci) |
-| revision_deadline | timestamp | Batas waktu revisi fasilitator |
-
-### `tbos_observation_scores`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| observation_id | uuid | FK → tbos_observations |
-| dimension_id | uuid | FK → tbos_behavioral_dimensions |
-| level_value | int | 1-5, nilai yang dipilih fasilitator |
-
-### `tbos_observation_audit_log`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | uuid | PK |
-| observation_id | uuid | FK → tbos_observations |
-| actor_id | uuid | FK → profiles |
-| actor_role | text | `facilitator` / `admin` / `system` |
-| action | text | `create` / `submit` / `edit` / `lock` / `unlock` / `delete` |
-| previous_status | text | Status sebelum aksi |
-| new_status | text | Status sesudah aksi |
-| changes | jsonb | Detail perubahan |
-| created_at | timestamp | Waktu aksi |
-
-## 2. Relasi Kunci
-
-```
-tbos_teams 1---N tbos_observations N---1 tbos_missions
-tbos_observations 1---N tbos_observation_scores N---1 tbos_behavioral_dimensions
-tbos_missions N---N tbos_behavioral_dimensions (via tbos_mission_dimensions)
-profiles(facilitator) N---N tbos_teams (via tbos_facilitator_teams)
-tbos_teams N---N profiles(peserta) (via tbos_team_members)
-tbos_observations 1---N tbos_observation_audit_log
+```text
+engagements 1--N batches 1--N tbos_teams 1--N tbos_observations
+tbos_missions N--N tbos_behavioral_dimensions
+facilitator_missions N--1 engagements / missions / profiles
+tbos_observations 1--N scores / observation_members / audit_log
 ```
 
-## 3. Turunan Skor
+`program_id`, batch, roster, kapten, dan fasilitator pada observasi merupakan snapshot pelaporan. Perubahan master roster atau nama batch sesudah submit tidak mengubah rekam observasi yang sudah ada.
 
-Dihitung secara dinamis oleh `src/modules/tbos/scoring.ts`:
-- **Dimension Score** per tim = rata-rata `level_value` dari seluruh `observation_scores` untuk dimensi & tim tsb.
-- **T-BOS Score** per mission = rata-rata Dimension Score yang relevan dengan mission tsb.
-- **Overall Team Score** = rata-rata T-BOS Score seluruh mission yang diikuti tim (ADR-005).
+## 3. LEP
+
+| Entitas | Kolom/relasi penting |
+|---|---|
+| `lep_speakers` | `program_id`, `name`, `sort_order`, `deleted_at` |
+| `lep_responses` | `program_id`, `profile_id`, empat skor 1–4, tiga jawaban teks, waktu submit |
+| `lep_speaker_ratings` | `(response_id, speaker_id)`, skor 1–4, komentar |
+
+Constraint `(program_id, profile_id)` menjamin satu respons per peserta per program. Speaker menggunakan soft delete; foreign key rating memakai `ON DELETE RESTRICT` untuk menjaga histori.
+
+## 4. Konsistensi Transaksi
+
+- `create_program_batch`: urutan dan nama batch race-safe.
+- `replace_facilitator_missions`: penggantian assignment atomik.
+- `tbos_submit_observation_v2`: tim baru, roster, observasi, skor, snapshot, dan audit log atomik serta idempotent.
+- `tbos_mutate_observation`: edit/lock/unlock beserta audit log atomik.
+- `submit_lep_response`: respons dan seluruh rating speaker atomik.
+- `consume_api_rate_limit`: counter rate limit endpoint publik yang persisten lintas instance serverless.
+
+## 5. Skor Turunan
+
+- Dimension Score = rata-rata nilai dimensi dari observasi `submitted`/`locked` yang sesuai.
+- Mission Score = rata-rata dimensi yang dipetakan pada mission tersebut.
+- Overall Team Score = rata-rata Mission Score; agregasi tidak mencampur data lintas program.

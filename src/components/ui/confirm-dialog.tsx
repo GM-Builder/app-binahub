@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { AlertTriangle } from "lucide-react";
 
 export function ConfirmDialog({

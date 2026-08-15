@@ -3,9 +3,29 @@
 import { useEffect, useState } from "react";
 import { fetchTbosPrograms, type TbosProgram } from "@/modules/tbos/api-client";
 
-export function TbosProgramSelector({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function TbosProgramSelector({
+  value,
+  onChange,
+  moduleKey = "tbos",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  moduleKey?: "tbos" | "lep";
+}) {
   const [programs, setPrograms] = useState<TbosProgram[]>([]);
-  useEffect(() => { void fetchTbosPrograms().then((items) => { setPrograms(items); if (!value && items[0]) onChange(items[0].id); }).catch(() => setPrograms([])); }, []);
+  useEffect(() => {
+    let active = true;
+    void fetchTbosPrograms(moduleKey)
+      .then((items) => {
+        if (!active) return;
+        setPrograms(items);
+        if (!value && items[0]) onChange(items[0].id);
+      })
+      .catch(() => {
+        if (active) setPrograms([]);
+      });
+    return () => { active = false; };
+  }, [moduleKey, onChange, value]);
   return (
     <label className="flex items-center gap-2 text-xs font-semibold text-[#0B2C6B]">
       Program

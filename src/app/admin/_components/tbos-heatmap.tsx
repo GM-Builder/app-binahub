@@ -8,15 +8,6 @@ interface Props {
   teams: TeamScoreSummary[];
 }
 
-function getScoreColor(score: number | null): string {
-  if (score === null) return "#F1F5F9";
-  if (score >= 4.5) return "#16A34A";
-  if (score >= 3.5) return "#65A30D";
-  if (score >= 2.5) return "#CA8A04";
-  if (score >= 1.5) return "#EA580C";
-  return "#DC2626";
-}
-
 function getScoreBg(score: number | null): string {
   if (score === null) return "bg-gray-50 text-gray-400";
   if (score >= 4.5) return "bg-green-100 text-green-800";

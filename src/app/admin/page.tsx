@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, LogOut, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -12,7 +13,6 @@ import { Overview } from "./_components/overview";
 import { SmartCenterPanel } from "./_components/smart-center-panel";
 import { DashboardSkeleton, NotificationBadge } from "./_components/shared";
 import { TAB_META, tabs } from "./_lib/constants";
-import { isProjectCompleted } from "./_lib/utils";
 import type { DashboardData } from "./_lib/types";
 
 export default function AdminDashboardPage() {
@@ -168,16 +168,6 @@ export default function AdminDashboardPage() {
   };
 
   const activeMeta = TAB_META[activeTab];
-  const activeProjectCount = data?.projects?.filter((project) => !isProjectCompleted(project)).length || 0;
-  const pendingSmartActionCount =
-    data?.smartActions?.filter((action) => (action.status || "").toLowerCase() === "pending").length || 0;
-  const focusStats = [
-    { label: "Assessment baru", value: newAssessmentCount },
-    { label: "Inquiry baru", value: newInquiryCount },
-    { label: "Smart action", value: pendingSmartActionCount },
-    { label: "Project aktif", value: activeProjectCount },
-  ];
-
   return (
     <>
       <main className="admin-root min-h-screen bg-[#FAF8F4] text-slate-900 font-sans selection:bg-[#C79A3C]/20 selection:text-[#0B2C6B]">
@@ -187,10 +177,14 @@ export default function AdminDashboardPage() {
             {/* Genuine Logo */}
             <div className="mb-8 px-2">
               <Link href="/home" className="inline-block transition-opacity hover:opacity-90">
-                <img
+                <Image
                   src="/binahub_logo.webp"
                   alt="BinaHub Logo"
-                  className="h-9 w-auto object-contain brightness-0 invert"
+                  width={1574}
+                  height={448}
+                  loading="eager"
+                  sizes="135px"
+                  className="h-auto w-[135px] object-contain brightness-0 invert"
                 />
               </Link>
               <div className="mt-2.5 flex items-center gap-2">

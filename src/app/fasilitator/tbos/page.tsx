@@ -101,7 +101,14 @@ function TbosObservationContent() {
       setUserId(currentUserId);
       setQueuedCount(getQueuedObservations(currentUserId).length);
 
-       const [missionList, teamList] = await Promise.all([fetchMissions(), fetchTeams(selectedProgramId)]);
+      if (!selectedProgramId) {
+        setMissions([]);
+        setTeams([]);
+        setBatches([]);
+        return;
+      }
+
+      const [missionList, teamList] = await Promise.all([fetchMissions(selectedProgramId), fetchTeams(selectedProgramId)]);
       setMissions(missionList);
       setTeams(teamList);
 
@@ -112,7 +119,7 @@ function TbosObservationContent() {
       }
 
       // Completion data is useful context, but must never block field work.
-       void fetchObservations(currentUserId, false, selectedProgramId).then(setObservations).catch(() => setObservations(null));
+      void fetchObservations(selectedProgramId).then(setObservations).catch(() => setObservations(null));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat penugasan.");
     } finally {
@@ -297,7 +304,7 @@ function TbosObservationContent() {
   };
 
   const continueToObservation = () => {
-    if (!selectedTeam || !selectedMission) return;
+    if ((!selectedTeam && !isCreatingNewTeam) || !selectedMission) return;
     const draft = selectedTeam ? loadDraft(selectedTeam.id, selectedMission.id) : null;
     setScores(draft?.scores || {});
     setNotes(draft?.notes || "");
@@ -335,7 +342,7 @@ function TbosObservationContent() {
       isCaptain: member.isPresent && member.id === sessionCaptainId,
     }));
 
-    const payload: any = {
+    const basePayload = {
       missionId: selectedMission.id,
       clientSubmissionId: crypto.randomUUID(),
       profileId: userId,
@@ -346,18 +353,13 @@ function TbosObservationContent() {
       })),
       members,
     };
-
-    if (isCreatingNewTeam) {
-      payload.newTeam = {
-        name: newTeamName.trim(),
-        batchId: newTeamBatchId,
-        programId: selectedProgramId,
-      };
-      payload.batch = batches.find((b) => b.id === newTeamBatchId)?.name || "";
-    } else {
-      payload.teamId = selectedTeam!.id;
-      payload.batch = selectedTeam!.batch;
-    }
+    const payload: Parameters<typeof queueObservation>[1] & { profileId: string } = isCreatingNewTeam
+      ? {
+          ...basePayload,
+          newTeam: { name: newTeamName.trim(), batchId: newTeamBatchId, programId: selectedProgramId },
+          batch: batches.find((batch) => batch.id === newTeamBatchId)?.name || "",
+        }
+      : { ...basePayload, teamId: selectedTeam!.id, batch: selectedTeam!.batch };
 
     if (!navigator.onLine) {
       queueObservation(userId, payload);
@@ -387,9 +389,9 @@ function TbosObservationContent() {
     setError("");
     try {
       const [missionList, teamList, observationList] = await Promise.all([
-        fetchMissions(),
-        fetchTeams(),
-        fetchObservations(userId),
+        fetchMissions(selectedProgramId),
+        fetchTeams(selectedProgramId),
+        fetchObservations(selectedProgramId),
       ]);
       setMissions(missionList);
       setTeams(teamList);
@@ -417,6 +419,9 @@ function TbosObservationContent() {
   if (loading) {
     return (
       <Shell isOnline={isOnline} queuedCount={queuedCount}>
+        <div className="mx-auto max-w-2xl px-4 pt-4">
+          <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+        </div>
         <div className="flex min-h-[65vh] flex-col items-center justify-center gap-3" role="status">
           <Loader2 className="h-9 w-9 animate-spin text-[#0B2C6B] motion-reduce:animate-none" aria-hidden="true" />
           <p className="text-sm font-semibold text-slate-600">Memuat penugasan lapangan...</p>
@@ -445,7 +450,7 @@ function TbosObservationContent() {
             </div>
             <div className="space-y-5 p-6">
               <div className="rounded-2xl border border-accent/30 bg-[#F7F6F2] p-4">
-                <p className="font-bold text-[#0B2C6B]">{selectedTeam?.name}</p>
+                <p className="font-bold text-[#0B2C6B]">{selectedTeam?.name || newTeamName || "Tim Baru"}</p>
                 <p className="mt-1 text-sm text-slate-600">{selectedMission?.name}</p>
               </div>
               <button type="button" onClick={() => void resetForm()} className={`flex min-h-12 w-full items-center justify-center rounded-xl bg-[#0B2C6B] px-4 font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>
@@ -791,7 +796,7 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "review" && selectedTeam && selectedMission && sessionCaptain && (
+      {step === "review" && (selectedTeam || isCreatingNewTeam) && selectedMission && sessionCaptain && (
         <WorkflowPage
           eyebrow="Langkah 4 dari 4"
           title="Tinjau & konfirmasi"
@@ -842,18 +847,22 @@ function TbosObservationContent() {
                 );
               })}
             </dl>
-            <div className="flex items-center justify-between gap-3">
-              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan lapangan</label>
-              <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
-            </div>
-            <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Konteks singkat yang membantu pembacaan skor..." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
           </section>
 
-          <BottomAction disabled={!allDimensionsScored} onClick={() => setStep("review")} label={allDimensionsScored ? "Tinjau Observasi" : `${scoredCount}/${selectedMission.dimensions.length} Dimensi Dinilai`} />
+          <section className="rounded-md border border-accent/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
+            <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
+          </section>
+          <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-[#F7F6F2]/95 p-3 backdrop-blur">
+            <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
+              <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-white px-3 text-sm font-bold text-[#0B2C6B] ${FOCUS}`}>Edit</button>
+              <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>Simpan <Check className="h-4 w-4" aria-hidden="true" /></button>
+            </div>
+          </div>
         </WorkflowPage>
       )}
 
-      {step === "review" && selectedTeam && selectedMission && sessionCaptain && (
+      {step === "review" && isCreatingNewTeam && selectedTeam && selectedMission && sessionCaptain && (
         <WorkflowPage
           eyebrow="Langkah 4 dari 4"
           title="Tinjau & konfirmasi"

@@ -218,20 +218,20 @@ create trigger tbos_observations_revision_trigger before insert or update on pub
 for each row execute function public.tbos_set_revision_deadline();
 
 insert into public.tbos_missions (code, name, description) values
-  ('lost_detonator', 'Lost Detonator Mission', 'Tim menemukan dan menonaktifkan detonator dengan koordinasi penuh.'),
-  ('goldsmith_precision', 'Goldsmith Precision Lab', 'Tim mengolah bahan baku menjadi emas dengan kerja presisi.'),
-  ('ore_extraction', 'Ore Extraction Challenge', 'Tim mengekstraksi bijih dengan efisiensi terbaik.'),
+  ('lost_detonator', 'Lost Detonator Mission', 'Tim harus menemukan dan menonaktifkan detonator dengan koordinasi penuh.'),
+  ('goldsmith_precision', 'Goldsmith Precision Lab', 'Tim bekerja di lab presisi untuk mengolah bahan baku menjadi emas murni.'),
+  ('ore_extraction', 'Ore Extraction Challenge', 'Tim bersaing mengekstraksi bijih dengan efisiensi tertinggi.'),
   ('lean_bridge', 'Lean Bridge Challenge', 'Tim membangun jembatan dengan sumber daya terbatas.'),
-  ('x_case', 'X-Case', 'Skenario kompleks dengan banyak pemangku kepentingan.')
+  ('x_case', 'X-Case', 'Mission khusus dengan skenario kompleks dan multi-stakeholder.')
 on conflict (code) do update set name = excluded.name, description = excluded.description;
 
 insert into public.tbos_behavioral_dimensions (code, name, question, order_index) values
-  ('goal_alignment', 'Goal Alignment', 'Bagaimana tim memulai misi?', 1),
-  ('communication', 'Communication', 'Bagaimana komunikasi berlangsung selama misi?', 2),
+  ('goal_alignment', 'Goal Alignment', 'Bagaimana tim memulai mission?', 1),
+  ('communication', 'Communication', 'Bagaimana komunikasi berlangsung selama mission?', 2),
   ('data_based_decision', 'Data-Based Decision Making', 'Bagaimana keputusan diambil oleh tim?', 3),
   ('execution_discipline', 'Execution Discipline', 'Bagaimana tim menuntaskan pekerjaannya?', 4),
   ('accountability', 'Accountability', 'Bagaimana tim merespons ketika muncul masalah?', 5),
-  ('adaptability', 'Adaptability', 'Bagaimana tim merespons perubahan?', 6),
+  ('adaptability', 'Adaptability', 'Bagaimana tim merespons perubahan (twist)?', 6),
   ('collaboration', 'Collaboration', 'Bagaimana anggota tim bekerja sama?', 7),
   ('org_ownership', 'Organizational Ownership', 'Bagaimana kepedulian tim terhadap target organisasi?', 8)
 on conflict (code) do update set name = excluded.name, question = excluded.question, order_index = excluded.order_index;

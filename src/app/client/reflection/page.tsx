@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Lightbulb, Target, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -45,7 +45,6 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 }
 
 function ReflectionForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const engagementId = searchParams.get("engagement") || "";
   const { engagements } = useEngagements();

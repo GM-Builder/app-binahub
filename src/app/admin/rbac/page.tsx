@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield, ShieldCheck, ShieldX, User, Users, UserCog, Eye, EyeOff, Pen, Trash2, Plus, FileText } from "lucide-react";
+import { ShieldCheck, ShieldX, User, Users, UserCog } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -112,8 +112,8 @@ export default function RBACPage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D9A441]">Arsitektur RBAC</p>
             <h3 className="mt-2 text-base font-semibold">Bagaimana akses ditentukan</h3>
             <div className="mt-4 space-y-3 text-sm text-[#4A4C54]/80">
-              <p><strong className="text-[#0B2C6B]">1. Role disimpan di Supabase Auth</strong> — metadata pengguna (`app_metadata.role`) menentukan role: `admin`, `facilitator`, atau `client`.</p>
-              <p><strong className="text-[#0B2C6B]">2. Auth Gate memeriksa session endpoint</strong> — setiap halaman di-bungkus oleh `AdminAuthGate`, `FacilitatorAuthGate`, atau `ClientAuthGate` yang memanggil `/api/[role]/session` untuk validasi.</p>
+              <p><strong className="text-[#0B2C6B]">1. Role otoritatif disimpan di profil</strong> — API membaca `profiles.role`; `app_metadata.role` hanya dipakai saat bootstrap sebelum profil tersedia.</p>
+              <p><strong className="text-[#0B2C6B]">2. Auth Gate memeriksa endpoint role</strong> — setiap halaman dilindungi `AdminAuthGate`, `FacilitatorAuthGate`, `PesertaAuthGate`, atau `ClientAuthGate` yang memanggil `/api/auth/role`.</p>
               <p><strong className="text-[#0B2C6B]">3. PermissionGate untuk UI granular</strong> — `PermissionGate` memungkinkan render kondisional komponen berdasarkan role pengguna saat ini.</p>
               <p><strong className="text-[#0B2C6B]">4. API Server memvalidasi via middleware</strong> — endpoint server menggunakan `requireAdmin()` / `requireFacilitator()` untuk memastikan hanya akses yang sah.</p>
               <p className="mt-4 rounded-lg bg-[#F5F7FA] p-3 text-xs">

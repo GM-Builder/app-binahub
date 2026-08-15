@@ -58,4 +58,31 @@ describe("T-BOS scoring", () => {
     expect(result.overallTeamScore).toBe(4);
     expect(result.totalObservations).toBe(1);
   });
+
+  it("does not mix a shared dimension across different missions", () => {
+    const result = calculateTeamScoreSummary("team-1", "Tim Satu", "Batch 1", [
+      observation({
+        scores: [
+          { dimensionCode: "goal_alignment", dimensionName: "Goal Alignment", levelValue: 5, levelLabel: "Exemplary" },
+          { dimensionCode: "communication", dimensionName: "Communication", levelValue: 5, levelLabel: "Exemplary" },
+          { dimensionCode: "adaptability", dimensionName: "Adaptability", levelValue: 5, levelLabel: "Exemplary" },
+        ],
+      }),
+      observation({
+        id: "goldsmith-observation",
+        missionId: "mission-2",
+        missionCode: "goldsmith_precision",
+        missionName: "Goldsmith Precision Lab",
+        scores: [
+          { dimensionCode: "communication", dimensionName: "Communication", levelValue: 1, levelLabel: "Reactive" },
+          { dimensionCode: "execution_discipline", dimensionName: "Execution Discipline", levelValue: 1, levelLabel: "Reactive" },
+          { dimensionCode: "accountability", dimensionName: "Accountability", levelValue: 1, levelLabel: "Reactive" },
+        ],
+      }),
+    ]);
+
+    expect(result.missionScores.find((mission) => mission.missionCode === "lost_detonator")?.tbosScore).toBe(5);
+    expect(result.missionScores.find((mission) => mission.missionCode === "goldsmith_precision")?.tbosScore).toBe(1);
+    expect(result.overallTeamScore).toBe(3);
+  });
 });

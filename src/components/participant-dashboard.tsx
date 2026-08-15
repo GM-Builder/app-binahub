@@ -8,13 +8,8 @@ import {
   FileClock,
   Gauge,
   ListChecks,
-  Target,
-  TrendingUp,
-  TrendingDown,
-  Minus,
 } from "lucide-react";
 import { useEngagements, useEvidence, useActions, useCapabilities } from "@/hooks/use-transformation-data";
-import type { Engagement, Evidence, Action, ParticipantCapability } from "@/lib/transformation-types";
 import { StatusPill, ProgressBar, TrendIcon, StatCardSkeleton } from "@/components/ui";
 
 export function ParticipantDashboard() {
@@ -32,7 +27,7 @@ export function ParticipantDashboard() {
 
   useEffect(() => {
     if (activeEngagement && !selectedEngagementId) {
-      setSelectedEngagementId(activeEngagement.id);
+      void Promise.resolve().then(() => setSelectedEngagementId(activeEngagement.id));
     }
   }, [activeEngagement, selectedEngagementId]);
 

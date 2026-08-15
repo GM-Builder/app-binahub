@@ -54,7 +54,7 @@ export function FacilitatorScoringForm() {
   const updateScore = (key: ScoringCriterionKey, direction: 1 | -1) => {
     setScores((current) => ({
       ...current,
-      [key]: current[key] + direction,
+      [key]: Math.max(0, Math.min(1000, current[key] + direction)),
     }));
   };
 

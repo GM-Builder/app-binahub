@@ -59,6 +59,11 @@ interface LepResults {
   totalResponses: number;
 }
 
+function escapeCsvCell(value: string) {
+  const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /[,"\n]/.test(safeValue) ? `"${safeValue.replace(/"/g, '""')}"` : safeValue;
+}
+
 type OpenTextTab = "halTerpenting" | "halMenarik" | "saranProgram";
 
 const OPEN_TEXT_TABS: { key: OpenTextTab; label: string }[] = [
@@ -258,15 +263,15 @@ function AdminLepContent() {
     }
     rows.push(["", "", ""]);
     rows.push(["HAL TERPENTING"]);
-    for (const item of results.openText.halTerpenting) rows.push([`"${item.text.replace(/"/g, '""')}"`]);
+    for (const item of results.openText.halTerpenting) rows.push([item.text]);
     rows.push(["", "", ""]);
     rows.push(["HAL MENARIK"]);
-    for (const item of results.openText.halMenarik) rows.push([`"${item.text.replace(/"/g, '""')}"`]);
+    for (const item of results.openText.halMenarik) rows.push([item.text]);
     rows.push(["", "", ""]);
     rows.push(["SARAN PROGRAM"]);
-    for (const item of results.openText.saranProgram) rows.push([`"${item.text.replace(/"/g, '""')}"`]);
+    for (const item of results.openText.saranProgram) rows.push([item.text]);
 
-    const csvContent = rows.map((row) => row.join(",")).join("\n");
+    const csvContent = rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -298,7 +303,7 @@ function AdminLepContent() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <TbosProgramSelector value={programId} onChange={setProgramId} />
+          <TbosProgramSelector value={programId} onChange={setProgramId} moduleKey="lep" />
           <button
             type="button"
             onClick={() => void loadData()}

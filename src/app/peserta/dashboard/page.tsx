@@ -6,12 +6,15 @@ import { Loader2, Users, Trophy, Target, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AppShell } from "@/components/app-shell";
 import { fetchParticipantTeamInfo } from "@/modules/tbos/api-client";
+import { TbosProgramSelector } from "@/components/tbos-program-selector";
 
 export default function PesertaDashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [error, setError] = useState("");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
+  const [loadingTeam, setLoadingTeam] = useState(false);
   const [teamInfo, setTeamInfo] = useState<{
     teamName: string;
     batch: string;
@@ -45,8 +48,6 @@ export default function PesertaDashboardPage() {
       }
       setUserName(name);
 
-      const info = await fetchParticipantTeamInfo(userId);
-      setTeamInfo(info);
     } catch (err) {
       console.error("[Peserta Dashboard] Error loading session or team info:", err);
       setError(err instanceof Error ? err.message : "Gagal memuat dashboard peserta.");
@@ -59,6 +60,21 @@ export default function PesertaDashboardPage() {
     void Promise.resolve().then(checkAuth);
   }, [checkAuth]);
 
+  useEffect(() => {
+    if (!selectedProgramId) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return null;
+      setLoadingTeam(true);
+      setError("");
+      return fetchParticipantTeamInfo(selectedProgramId);
+    })
+      .then((info) => { if (active) setTeamInfo(info); })
+      .catch((fetchError) => { if (active) setError(fetchError instanceof Error ? fetchError.message : "Gagal memuat data tim peserta."); })
+      .finally(() => { if (active) setLoadingTeam(false); });
+    return () => { active = false; };
+  }, [selectedProgramId]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
@@ -70,6 +86,9 @@ export default function PesertaDashboardPage() {
   return (
     <AppShell role="peserta" title="Dashboard Peserta" eyebrow={`Selamat datang, ${userName}`}>
       <div className="space-y-6">
+        <div className="flex justify-end">
+          <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+        </div>
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
             <p>{error}</p>
@@ -88,7 +107,9 @@ export default function PesertaDashboardPage() {
         </div>
 
         {/* Team Score Overview */}
-        {!error && teamInfo ? (
+        {loadingTeam ? (
+          <div className="flex justify-center rounded-xl bg-white p-6"><Loader2 className="h-5 w-5 animate-spin text-[#0B2C6B]" /></div>
+        ) : !error && teamInfo ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard
               icon={<Trophy className="w-4 h-4 text-[#D9A441]" />}

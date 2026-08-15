@@ -48,7 +48,11 @@ export function exportCsv(filename: string, rows: Array<Record<string, string | 
     headers.join(","),
     ...rows.map((row) =>
       headers
-        .map((header) => `"${String(row[header] ?? "").replace(/"/g, '""')}"`)
+        .map((header) => {
+          const value = String(row[header] ?? "");
+          const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+          return `"${safeValue.replace(/"/g, '""')}"`;
+        })
         .join(",")
     ),
   ].join("\n");

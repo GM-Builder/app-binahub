@@ -22,7 +22,6 @@ export function TbosRanking({ teams }: Props) {
     );
   }
 
-  const medalColors = ["bg-[#D9A441]", "bg-gray-300", "bg-orange-300"];
   const medalLabels = ["🥇", "🥈", "🥉"];
 
   return (

@@ -125,19 +125,6 @@ export function recalculateCapabilities(
   return recalculated.sort((a, b) => b.score - a.score);
 }
 
-function _inferCategory(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.includes("leadership") || lower.includes("kepemimpinan")) return "Kepemimpinan";
-  if (lower.includes("communication") || lower.includes("komunikasi")) return "Komunikasi";
-  if (lower.includes("collaboration") || lower.includes("kolaborasi")) return "Kolaborasi";
-  if (lower.includes("execution") || lower.includes("eksekusi")) return "Eksekusi";
-  if (lower.includes("strategic") || lower.includes("strategis")) return "Strategi";
-  if (lower.includes("innovation") || lower.includes("inovasi")) return "Inovasi";
-  if (lower.includes("problem") || lower.includes("masalah")) return "Pemecahan Masalah";
-  if (lower.includes("emotional") || lower.includes("emosi")) return "Kecerdasan Emosional";
-  return "Umum";
-}
-
 export function calculateEngagementProgress(evidence: Evidence[], participantCount: number): number {
   if (participantCount === 0) return 0;
   const evidencePerParticipant = evidence.length / participantCount;

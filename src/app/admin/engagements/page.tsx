@@ -6,7 +6,7 @@ import { Plus, Settings, ArrowUpRight, KeyRound, Trash2, Archive } from "lucide-
 import { toast } from "sonner";
 import { useEngagements } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
-import { StatusPill, ProgressBar, EmptyState, ConfirmDialog } from "@/components/ui";
+import { StatusPill, ProgressBar, ConfirmDialog } from "@/components/ui";
 
 function AdminEngagementsPageContent() {
   const { engagements, loading } = useEngagements();

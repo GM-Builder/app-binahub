@@ -13,17 +13,27 @@ export function ClientAuthGate({ children }: { children: React.ReactNode }) {
 
     async function checkAccess() {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.app_metadata?.role === "client" || session?.user?.user_metadata?.role === "client") {
-        if (alive) setAllowed(true);
+      if (!session) {
+        if (alive) router.replace("/login");
         return;
       }
 
-      if (session?.user?.app_metadata?.role === "admin" || session?.user?.user_metadata?.role === "admin") {
-        if (alive) setAllowed(true);
-        return;
-      }
+      try {
+        const response = await fetch("/api/auth/role", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const result = await response.json();
+        const role = response.ok && result.success ? result.role : null;
 
-      if (alive) router.replace("/login");
+        if (role !== "client" && role !== "admin") {
+          if (alive) router.replace("/login");
+          return;
+        }
+
+        if (alive) setAllowed(true);
+      } catch {
+        if (alive) router.replace("/");
+      }
     }
 
     void checkAccess();

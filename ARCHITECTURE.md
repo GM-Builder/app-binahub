@@ -1,59 +1,64 @@
 # T-BOS (BinaPlay) — Architecture
 
-Status: Active — keputusan arsitektur utama sudah dikonfirmasi dan diimplementasi. Lihat ADR.md untuk daftar lengkap.
+Status: Active — mencerminkan implementasi per 15 Agustus 2026.
 
 ## 1. Ringkasan
 
-T-BOS adalah aplikasi web untuk fasilitator mengisi observasi perilaku tim selama mission, dengan dashboard agregat untuk admin/program manager.
+T-BOS dan LEP adalah modul program di `app.binahub.id`. `engagements` menjadi container program; `program_modules` menentukan apakah `tbos` dan/atau `lep` aktif pada tiap program.
 
-## 2. Tech Stack
+## 2. Stack Aktual
 
-| Layer | Pilihan | Status |
-|---|---|---|
-| Frontend | Next.js | Dikonfirmasi (sudah in-progress) |
-| UI | Shadcn UI + Tailwind | ⚠️ Asumsi, mengikuti pola SLJ/AMS — konfirmasi ke Ucet |
-| Auth | Supabase Auth | ⚠️ Asumsi |
-| Database | Supabase PostgreSQL | ⚠️ Asumsi |
-| ORM | Drizzle ORM | ⚠️ Asumsi, mengikuti pola SLJ |
-| Charting (dashboard) | Recharts / Chart.js | ⚠️ Belum diputuskan — perlu dukung radar chart & heatmap |
-| Hosting | Vercel + Supabase | ⚠️ Asumsi |
-| Analytics | PostHog | ⚠️ Opsional, mengikuti pola SLJ jika dibutuhkan |
+| Layer | Implementasi |
+|---|---|
+| Frontend | Next.js App Router, React, TypeScript |
+| UI | Tailwind CSS dan komponen lokal |
+| Auth | Supabase Auth |
+| API | Next.js Route Handlers pada `binahub-api` |
+| Database | Supabase PostgreSQL; query melalui `@supabase/supabase-js` |
+| Grafik / laporan | Recharts dan `@react-pdf/renderer` |
+| Hosting | Vercel + Supabase |
 
-## 3. T-BOS sebagai modul di app.binahub.id
+Tidak ada ORM Drizzle pada alur ini. Frontend tidak mengakses tabel bisnis secara langsung; `ApiFetchBridge` meneruskan `/api/*` ke `binahub-api` dan menyisipkan access token. Pengecualian langsung dari browser hanya Supabase Auth dan pembacaan profil sendiri yang dilindungi RLS.
 
-✅ **Keputusan final (ADR-002, direvisi).** T-BOS dibangun sebagai modul baru di `app.binahub.id`, reuse fondasi yang sudah ada (auth, role, Supabase project).
+## 3. Alur Utama
 
-**Alasan**: role login fasilitator sudah tersedia di app.binahub.id, jadi tidak perlu bangun auth & user management terpisah dari nol.
-
-**Implikasi teknis**:
-- **Reuse** auth Supabase, tabel `profiles`/`organizations` yang sudah ada di app-binahub.
-- **Reuse** role `facilitator` dan `admin` yang sudah ada; role `peserta` masih open question (ADR-009) — apakah role baru atau relabel dari `client`.
-- **Tambah baru**: skema login diubah jadi role-based auto-redirect (ADR-009) — saat ini kemungkinan user masih pilih dashboard manual di frontend, perlu diganti jadi otomatis berdasarkan role tersimpan di database.
-- **Tambah baru**: tabel-tabel T-BOS sendiri (lihat DATA-MODEL.md) dengan prefix `tbos_`, mengikuti pola BinaImpact yang pakai prefix `impact_`.
-- **Rombak**: landing page app.binahub.id dan dashboard fasilitator existing (ADR-010) untuk mengakomodasi T-BOS.
-
-### 3.1 Catatan: PRD v0.4 Menggantikan v0.3
-
-✅ **Resolved.** PRD.md sudah di-update ke v0.4 — arsitektur generik 7-layer Evidence/Capability dari v0.3 diturunkan jadi visi jangka panjang (Bagian 9 PRD v0.4), bukan fondasi wajib. Platform sekarang modular per layanan, selaras dengan prinsip yang sudah ada di ROADMAP.md.
-
-## 4. High-Level Component
-
-```
-[Fasilitator - Mobile/Tablet Web]
-        |
-        v
-  Observation Form (Next.js)
-        |
-        v
-  API / Server Action  ---->  Scoring Engine (hitung skor per dimensi & mission)
-        |
-        v
-     Database  ---->  Dashboard (Admin) - Radar Chart, Heatmap, Ranking, Executive Summary
+```text
+Browser app-binahub
+  -> Supabase Auth (session/JWT)
+  -> ApiFetchBridge + Bearer token
+  -> binahub-api
+       -> validasi input, role, program, module, assignment/membership
+       -> Supabase service_role
+       -> PostgreSQL/RPC atomik
 ```
 
-## 5. Pertimbangan Teknis Kunci
+Write yang menyentuh beberapa tabel memakai RPC transaksi: pembuatan batch, penggantian assignment, submit observasi beserta tim/roster/skor/audit, mutasi status observasi, dan submit LEP beserta seluruh rating pemateri.
 
-- **Offline-first**: ✅ Diimplementasi via localStorage (ADR-006). Auto-save draft, antrian offline, dan flush otomatis saat online kembali. Bukan full PWA/Service Worker.
-- **Role-based access**: Fasilitator hanya melihat tim yang di-assign via `tbos_facilitator_teams`; semua misi aktif dipilih ketika observasi. Backend memvalidasi JWT dan assignment tim pada setiap operasi.
-- **API Architecture**: Frontend (`app-binahub`) tidak mengakses Supabase langsung — semua operasi data dikirim ke `binahub-api` via HTTP fetch. `ApiFetchBridge` di root layout otomatis meng-intercept `/api/*` calls, mengarahkan ke backend, dan menyisipkan auth token.
-- **Real-time dashboard**: Auto-refresh setiap 30 detik via `setInterval` di client (bukan Supabase Realtime). Cukup untuk kebutuhan saat ini.
+## 4. Scope T-BOS
+
+- Program aktif dipilih eksplisit; semua query T-BOS membawa `programId`.
+- Assignment aktif memakai `facilitator_missions`, scoped oleh `(profile_id, mission_id, program_id)`.
+- Fasilitator melihat semua tim dalam batch program untuk kebutuhan round-robin, tetapi hanya dapat submit pada mission yang ditugaskan.
+- Dashboard fasilitator menghitung semua observasi pada mission miliknya; dashboard admin menghitung seluruh mission dalam program.
+- Observasi menyimpan snapshot `program_id`, batch, roster, kapten, fasilitator, dan skor agar laporan historis tidak berubah ketika master data diperbarui.
+- `client_submission_id` membuat retry antrean offline idempotent.
+
+## 5. Scope LEP
+
+- Peserta hanya dapat mengakses program yang benar-benar diikutinya dan memiliki modul LEP aktif.
+- Satu profil hanya dapat mengirim satu respons per program.
+- Semua pemateri aktif wajib dinilai tepat satu kali; respons dan rating disimpan dalam satu transaksi.
+- Penghapusan pemateri adalah soft delete agar hasil historis tetap utuh.
+
+## 6. Security Boundary
+
+- Semua tabel bisnis `public` mengaktifkan RLS dan mencabut privilege `anon`/`authenticated`; `profiles` hanya membuka self-select.
+- Endpoint publik memakai validasi ukuran/format, rate limit persisten, token kepemilikan/expiry, escaping HTML, dan security headers.
+- Rahasia hanya berasal dari environment server. `SUPABASE_SERVICE_ROLE_KEY` dan `PROPOSAL_LINK_SECRET` tidak boleh menggunakan prefix `NEXT_PUBLIC_`.
+- CORS dan daftar origin production harus ditinjau saat domain berubah.
+
+## 7. Operasional
+
+- Draft dan antrean offline disimpan lokal; logout menghapus data tersebut dari perangkat.
+- Dashboard memakai polling periodik, bukan Supabase Realtime.
+- Urutan migrasi lintas repositori dijelaskan di `binahub-api/supabase/DEPLOYMENT.md`; jangan menjalankan dua folder migration secara sembarang karena prefix historisnya bertumpang tindih.

@@ -52,7 +52,7 @@ export function useEngagement(id: string | null) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) { setLoading(false); return; }
+    if (!id) { void Promise.resolve().then(() => setLoading(false)); return; }
     let alive = true;
     apiFetch<{ success: boolean; engagement: Engagement }>(`/api/engagements/${id}`)
       .then((res) => {
@@ -82,8 +82,6 @@ export function useEvidence(params?: { engagement_id?: string; participant_id?: 
   if (params?.engagement_id) queryParts.push(`engagement_id=${params.engagement_id}`);
   if (params?.participant_id) queryParts.push(`participant_id=${params.participant_id}`);
   const query = queryParts.length ? `?${queryParts.join("&")}` : "";
-  const deps = [query, params?.key];
-
   useEffect(() => {
     let alive = true;
     apiFetch<{ success: boolean; evidence: Evidence[] }>(`/api/evidence${query}`)
@@ -100,7 +98,7 @@ export function useEvidence(params?: { engagement_id?: string; participant_id?: 
         }
       });
     return () => { alive = false; };
-  }, deps);
+  }, [query, params?.key]);
 
   return { evidence, loading, error };
 }

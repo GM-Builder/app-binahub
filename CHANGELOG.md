@@ -3,6 +3,20 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] - 2026-08-15
+
+### Fixed — Audit revisi CEO dan production hardening
+
+- Menutup kebocoran scope lintas program pada T-BOS/LEP serta menerapkan RBAC admin, fasilitator, client, dan peserta di endpoint API.
+- Submit observasi sekarang atomik dan idempotent, termasuk pembuatan tim baru, roster, kapten, skor, snapshot anggota, dan audit trail.
+- Assignment fasilitator berpindah penuh ke `facilitator_missions` per program+mission tanpa menghapus histori `tbos_facilitator_teams`.
+- Pembuatan batch dan penggantian assignment menggunakan RPC race-safe; nama tim, batch, dan speaker aktif dilindungi unique index case-insensitive.
+- Submit LEP menjadi satu transaksi, memverifikasi membership serta seluruh speaker aktif, memakai soft delete speaker, dan memperbaiki response rate.
+- Dashboard, ranking, filter mission/dimensi, laporan per tim, radar PDF, program selector, module selector, dan antrean offline diselaraskan dengan PRD.
+- Endpoint publik mendapat persistent rate limiting, token kepemilikan sesi chat, token link proposal bertanggal kedaluwarsa, escaping HTML, dan security headers.
+- Dependensi diperbarui ke patch aman Next.js; `npm audit` frontend dan API tidak lagi melaporkan vulnerability.
+- Dokumentasi architecture, data model, permission, state machine, dan deployment database diselaraskan dengan implementasi aktual.
+
 ## [0.5.0] - 2026-08-13
 
 ### Added — Modul LEP, Batch Fleksibel, Penugasan Fasilitator (Prompt 0–8)

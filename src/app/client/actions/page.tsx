@@ -7,7 +7,7 @@ import { ClientAuthGate } from "@/components/client-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { useActions, updateAction } from "@/hooks/use-transformation-data";
 import type { Action, ActionStatus } from "@/lib/transformation-types";
-import { StatusPill, ProgressBar, FilterTabs, EmptyState, ListSkeleton, SearchInput } from "@/components/ui";
+import { StatusPill, ProgressBar, ListSkeleton, SearchInput } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 import Link from "next/link";
 

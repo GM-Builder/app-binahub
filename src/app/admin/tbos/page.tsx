@@ -39,9 +39,9 @@ import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/ui";
 import { useEngagements } from "@/hooks/use-transformation-data";
 import { generateDashboardData } from "@/modules/tbos/scoring";
-import { createTeam, fetchTeams } from "@/modules/tbos/api-client";
+import { createTeam } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
-import type { TbosDashboardData } from "@/modules/tbos/types";
+import type { TbosDashboardData, TbosObservation } from "@/modules/tbos/types";
 import { TbosRadarChart } from "./_components/radar-chart";
 import { TbosHeatmap } from "./_components/heatmap";
 import { TbosRanking } from "./_components/ranking";
@@ -75,7 +75,7 @@ function TbosDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [teamRoster, setTeamRoster] = useState<TbosDbTeam[]>([]);
-  const [observations, setObservations] = useState<any[]>([]);
+  const [observations, setObservations] = useState<TbosObservation[]>([]);
   const { engagements } = useEngagements();
   const activePrograms = engagements.filter((program) => ["active", "in_progress", "review"].includes(program.status));
   const [selectedProgramId, setSelectedProgramId] = useState("");
@@ -112,6 +112,15 @@ function TbosDashboardContent() {
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!selectedProgramId) {
+      setDashboardData(null);
+      setTeamRoster([]);
+      setObservations([]);
+      setBatches([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const { fetchDashboardRawData, fetchTeams, fetchBatches } = await import("@/modules/tbos/api-client");
       const [{ teams, observations }, roster] = await Promise.all([
@@ -140,7 +149,7 @@ function TbosDashboardContent() {
 
   useEffect(() => {
     if (!selectedProgramId && activePrograms[0]?.id) {
-      setSelectedProgramId(activePrograms[0].id);
+      void Promise.resolve().then(() => setSelectedProgramId(activePrograms[0].id));
     }
   }, [activePrograms, selectedProgramId]);
 
@@ -164,7 +173,8 @@ function TbosDashboardContent() {
       setFacilitators(available);
       setSelectedFacilitatorId(available[0]?.id || "");
 
-      const missionList = (missionsResult.missions || []).map((m: any) => ({ id: m.id, code: m.code, name: m.name }));
+      const missionList = ((missionsResult.missions || []) as Array<{ id: string; code: string; name: string }>)
+        .map((mission) => ({ id: mission.id, code: mission.code, name: mission.name }));
       setMissions(missionList);
 
       // Pre-select missions already assigned to the first facilitator
@@ -186,10 +196,6 @@ function TbosDashboardContent() {
       setAssignmentError("Pilih fasilitator terlebih dahulu.");
       return;
     }
-    if (selectedMissionIds.length === 0) {
-      setAssignmentError("Pilih minimal satu misi.");
-      return;
-    }
     setAssigning(true);
     setAssignmentError("");
     try {
@@ -205,6 +211,21 @@ function TbosDashboardContent() {
       setAssignmentError(err instanceof Error ? err.message : "Gagal menugaskan fasilitator.");
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleFacilitatorSelection = async (facilitatorId: string) => {
+    setSelectedFacilitatorId(facilitatorId);
+    setSelectedMissionIds([]);
+    setAssignmentError("");
+    setAssignmentSuccess(false);
+    if (!facilitatorId || !selectedProgramId) return;
+    try {
+      const { fetchFacilitatorMissions } = await import("@/modules/tbos/api-client");
+      const existing = await fetchFacilitatorMissions(selectedProgramId, facilitatorId);
+      setSelectedMissionIds(existing.map((assignment) => assignment.missionId));
+    } catch (error) {
+      setAssignmentError(error instanceof Error ? error.message : "Gagal memuat penugasan fasilitator.");
     }
   };
 
@@ -273,7 +294,7 @@ function TbosDashboardContent() {
       const organizationResponse = await fetch("/api/organizations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newCompanyName.trim() }) });
       const organizationResult = await organizationResponse.json().catch(() => ({}));
       if (!organizationResponse.ok || !organizationResult.success) throw new Error(organizationResult.error || "Gagal menyimpan perusahaan.");
-      const response = await fetch("/api/engagements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organizationResult.organization.id, code: newProgramCode.trim().toUpperCase(), title: newProgramTitle.trim(), type: "assessment", status: "active" }) });
+      const response = await fetch("/api/engagements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organizationResult.organization.id, code: newProgramCode.trim().toUpperCase(), title: newProgramTitle.trim(), type: "assessment", status: "active", modules: [{ moduleKey: "tbos", enabled: true }, { moduleKey: "lep", enabled: false }] }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) throw new Error(result.error || "Gagal membuat program.");
       setShowProgramModal(false);
@@ -393,8 +414,35 @@ function TbosDashboardContent() {
         <p className="text-sm text-[#4A4C54] mb-6">
           Mulai dengan menambahkan tim dan batch peserta untuk diobservasi oleh fasilitator.
         </p>
+        <form onSubmit={handleCreateBatch} className="mx-auto mb-5 flex max-w-md gap-2 text-left">
+          <label className="sr-only" htmlFor="first-batch-name">Nama batch pertama</label>
+          <input
+            id="first-batch-name"
+            value={newBatchName}
+            onChange={(event) => setNewBatchName(event.target.value)}
+            placeholder="Nama batch, mis. Gelombang Agustus"
+            maxLength={50}
+            className="min-h-11 flex-1 rounded-xl border border-[#0B2C6B]/15 px-3 text-sm outline-none focus:border-[#D9A441]"
+          />
+          <button type="submit" disabled={creatingBatch || !newBatchName.trim()} className="min-h-11 rounded-xl bg-[#D9A441] px-4 text-sm font-bold text-[#071B3D] disabled:opacity-50">
+            {creatingBatch ? "Menyimpan…" : "+ Tambah Batch"}
+          </button>
+        </form>
+        {batchError && <p className="mb-4 text-sm text-red-700" role="alert">{batchError}</p>}
+        {batches.length > 0 && (
+          <div className="mx-auto mb-5 flex max-w-md flex-wrap justify-center gap-2">
+            {batches.map((batch) => (
+              <span key={batch.id} className="inline-flex items-center gap-2 rounded-lg border border-[#0B2C6B]/10 bg-[#0B2C6B]/[0.03] px-3 py-2 text-sm font-semibold text-[#0B2C6B]">
+                {batch.name}
+                <button type="button" onClick={() => handleDeleteBatch(batch.id, batch.name)} title={`Hapus batch ${batch.name}`} className="text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+              </span>
+            ))}
+          </div>
+        )}
         <button
           onClick={() => setShowAddTeamModal(true)}
+          disabled={batches.length === 0}
+          title={batches.length === 0 ? "Buat minimal satu batch terlebih dahulu." : "Tambah tim pertama"}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -446,8 +494,9 @@ function TbosDashboardContent() {
                   <span className="font-semibold text-[#0B2C6B]">{b.name}</span>
                   <button
                     onClick={() => handleDeleteBatch(b.id, b.name)}
-                    className="text-red-400 hover:text-red-600 transition-colors"
-                    title={`Hapus batch ${b.name}`}
+                    disabled={teamRoster.some((team) => team.batchId === b.id)}
+                    className="text-red-400 hover:text-red-600 transition-colors disabled:cursor-not-allowed disabled:text-slate-300"
+                    title={teamRoster.some((team) => team.batchId === b.id) ? "Batch tidak dapat dihapus karena masih memiliki tim." : `Hapus batch ${b.name}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -580,7 +629,7 @@ function TbosDashboardContent() {
           ))}
         </div>
 
-        <ExportButtons data={dashboardData} programId={selectedProgramId} />
+        <ExportButtons programId={selectedProgramId} />
       </div>
 
       {/* Tab Content */}
@@ -649,7 +698,7 @@ function TbosDashboardContent() {
           missions={missions}
           facilitatorId={selectedFacilitatorId}
           missionIds={selectedMissionIds}
-          setFacilitatorId={setSelectedFacilitatorId}
+          setFacilitatorId={(value) => { void handleFacilitatorSelection(value); }}
           setMissionIds={setSelectedMissionIds}
           loading={assigning}
           error={assignmentError}
@@ -878,7 +927,7 @@ function AddTeamModal({
   );
 }
 
-function ExportButtons({ data, programId }: { data: TbosDashboardData; programId: string }) {
+function ExportButtons({ programId }: { programId: string }) {
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -916,18 +965,22 @@ function ExportButtons({ data, programId }: { data: TbosDashboardData; programId
     setExporting("csv");
     try {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
-      const { observations } = await fetchDashboardRawData();
+      const { observations } = await fetchDashboardRawData(programId);
 
       const headers = ["ID", "Team", "Batch", "Mission", "Facilitator", "Observed Date", "Status", "Notes"];
+      const csvCell = (value: string) => {
+        const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+        return `"${safeValue.replace(/"/g, '""')}"`;
+      };
       const rows = observations.map((o) => [
-        o.id,
-        `"${o.teamName}"`,
-        `"${o.batch}"`,
-        `"${o.missionName}"`,
-        `"${o.facilitatorName}"`,
-        o.observedAt,
-        o.status,
-        `"${(o.notes || "").replace(/"/g, '""')}"`,
+        csvCell(o.id),
+        csvCell(o.teamName),
+        csvCell(o.batch),
+        csvCell(o.missionName),
+        csvCell(o.facilitatorName),
+        csvCell(o.observedAt),
+        csvCell(o.status),
+        csvCell(o.notes || ""),
       ]);
 
       const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
@@ -1022,7 +1075,7 @@ function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
   );
 }
 
-function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: { data: TbosDashboardData; roster: TbosDbTeam[]; observations: any[]; onEditTeam: (id: string, name: string) => void; onDeleteTeam: (id: string, name: string) => void }) {
+function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: { data: TbosDashboardData; roster: TbosDbTeam[]; observations: TbosObservation[]; onEditTeam: (id: string, name: string) => void; onDeleteTeam: (id: string, name: string) => void }) {
   const { executiveSummary: summary } = data;
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
@@ -1287,7 +1340,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                                     {observationsByTeam(team.teamId).map((obs) => {
                                       const avg =
                                         obs.scores && obs.scores.length > 0
-                                          ? Math.round((obs.scores.reduce((a: number, s: any) => a + s.levelValue, 0) / obs.scores.length) * 10) / 10
+                                          ? Math.round((obs.scores.reduce((total, score) => total + score.levelValue, 0) / obs.scores.length) * 10) / 10
                                           : null;
                                       return (
                                         <tr key={obs.id} className="border-t border-black/[0.03]">

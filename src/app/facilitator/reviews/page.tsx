@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { useEngagements, useEvidence, useActions } from "@/hooks/use-transformation-data";
-import { StatusPill, ProgressBar, FilterTabs, EmptyState, ListSkeleton, SearchInput } from "@/components/ui";
+import { StatusPill, ProgressBar, EmptyState, ListSkeleton, SearchInput } from "@/components/ui";
 import { ErrorBoundary } from "@/components/error-boundary";
 import Link from "next/link";
 
@@ -26,7 +26,7 @@ const STATUS_CONFIG = {
 };
 
 export default function FacilitatorReviewsPage() {
-  const { engagements, loading: engLoading } = useEngagements();
+  const { loading: engLoading } = useEngagements();
   const { evidence, loading: evLoading } = useEvidence();
   const { actions, loading: actLoading } = useActions();
   const [filter, setFilter] = useState<"all" | "pending" | "reviewed">("all");

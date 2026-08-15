@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, Target, AlertCircle, ArrowUpRight, Users } from "lucide-react";
+import { CheckCircle2, Eye, Target, AlertCircle, ArrowUpRight } from "lucide-react";
 import { useEngagements, useEvidence, useActions } from "@/hooks/use-transformation-data";
 import { CAPABILITY_NAMES } from "@/lib/transformation-types";
 import { supabase } from "@/lib/supabase";
@@ -35,7 +35,7 @@ export function ObservationInput() {
 
   useEffect(() => {
     if (!engagementId) {
-      setApiParticipants([]);
+      void Promise.resolve().then(() => setApiParticipants([]));
       return;
     }
     let alive = true;
@@ -100,7 +100,6 @@ export function ObservationInput() {
     setSubmitting(true);
     setError("");
     try {
-      const participant = participants.find((p) => p.id === participantId);
       const response = await fetch("/api/evidence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

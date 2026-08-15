@@ -128,9 +128,9 @@ export function TbosRadarChart({ teams }: Props) {
                   }}
                   labelStyle={{ color: "#D9A441", fontWeight: 600 }}
                   itemStyle={{ color: "#FFFFFF" }}
-                  formatter={(value: any, _name: any, props: any) => [
-                    props.payload.hasData ? `${value} / 5` : "Belum diobservasi",
-                    props.payload.dimension,
+                  formatter={(value: unknown, _name: unknown, props: { payload?: { hasData?: boolean; dimension?: string } }) => [
+                    props.payload?.hasData ? `${String(value)} / 5` : "Belum diobservasi",
+                    props.payload?.dimension || "",
                   ]}
                 />
               </RadarChart>
