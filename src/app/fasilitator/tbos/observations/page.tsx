@@ -26,8 +26,8 @@ export default function TbosObservationsListPage() {
       <AppShell
         role="facilitator"
         navigation="tbos"
-        title="Kelola & Lihat Observasi"
-        eyebrow="Team Behavioral Observation System"
+        title="Hasil Observasi T-BOS"
+        eyebrow="Area Fasilitator"
       >
         <TbosObservationsContent />
       </AppShell>
@@ -102,8 +102,8 @@ function TbosObservationsContent() {
       <div className="space-y-4">
         <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
         <div className="py-16 text-center">
-          <p className="text-sm text-[#4A4C54]">Belum ada observasi.</p>
-          <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Buat observasi</Link>
+          <p className="text-sm text-[#4A4C54]">Belum ada hasil observasi pada pos Anda.</p>
+          <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Kembali ke daftar tim</Link>
         </div>
       </div>
     );
@@ -112,9 +112,12 @@ function TbosObservationsContent() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[#0B2C6B]">Riwayat Observasi</h2>
-        <span className="text-xs text-[#4A4C54]">{observations.length} observasi</span>
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-bold text-[#0B2C6B]">Tim yang sudah dinilai</h2>
+          <p className="mt-0.5 text-xs text-[#4A4C54]">Hasil hanya menampilkan misi yang menjadi tanggung jawab Anda.</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{observations.length} selesai</span>
       </div>
 
       <div className="space-y-2">
@@ -145,7 +148,7 @@ function TbosObservationsContent() {
               <div className="text-right shrink-0">
                 <p className="text-xs text-[#4A4C54]">{obs.scores.length} dimensi</p>
                 {obs.canEdit && (
-                  <span className="text-[10px] text-green-600 font-medium">Bisa edit</span>
+                  <span className="text-[10px] text-green-600 font-medium">Dapat dikoreksi</span>
                 )}
                 {obs.status === "locked" && (
                   <span className="text-[10px] text-red-600 font-medium flex items-center gap-0.5 justify-end">
@@ -344,14 +347,14 @@ function ObservationDetailPanel({
                     onClick={() => handleLockUnlock("unlock")}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-xs font-medium hover:bg-amber-100"
                   >
-                    <Unlock className="w-3.5 h-3.5" /> Unlock
+                    <Unlock className="w-3.5 h-3.5" /> Buka kunci
                   </button>
                 ) : (
                   <button
                     onClick={() => handleLockUnlock("lock")}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-xs font-medium hover:bg-red-100"
                   >
-                    <Lock className="w-3.5 h-3.5" /> Lock
+                    <Lock className="w-3.5 h-3.5" /> Kunci data
                   </button>
                 )
               )}
@@ -396,7 +399,7 @@ function ObservationDetailPanel({
                   </p>
                 </div>
                 <div>
-                  <p className="text-[#4A4C54]">Waktu Submit</p>
+                  <p className="text-[#4A4C54]">Waktu tersimpan</p>
                   <p className="font-medium text-[#0B2C6B]">
                     {new Date(detail.submittedAt).toLocaleString("id-ID", {
                       day: "numeric",
@@ -409,7 +412,7 @@ function ObservationDetailPanel({
                 {detail.revisionDeadline && detail.status === "submitted" && (
                   <div className="col-span-2">
                     <p className="text-[#4A4C54] flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Revision Window
+                      <Clock className="w-3 h-3" /> Batas waktu koreksi
                     </p>
                     <p className={`font-medium ${detail.canEdit ? "text-green-600" : "text-red-600"}`}>
                       {detail.canEdit ? "Aktif hingga" : "Berakhir"}:{" "}
@@ -480,7 +483,7 @@ function ObservationDetailPanel({
                       onClick={() => setEditing(true)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30"
                     >
-                      <Edit3 className="w-3.5 h-3.5" /> Edit
+                      <Edit3 className="w-3.5 h-3.5" /> Koreksi
                     </button>
                   )}
                   {editing && (
@@ -594,7 +597,7 @@ function ObservationDetailPanel({
                               : ""}
                           </p>
                           <p className="text-[10px] text-[#4A4C54]">
-                            {entry.actorName || "System"} •{" "}
+                            {entry.actorName || "Sistem"} •{" "}
                             {entry.actorRole} •{" "}
                             {new Date(entry.createdAt).toLocaleString("id-ID", {
                               day: "numeric",
@@ -632,8 +635,8 @@ function ActionIcon({ action }: { action: string }) {
 function actionLabel(action: string): string {
   const labels: Record<string, string> = {
     create: "Dibuat",
-    submit: "Disubmit",
-    edit: "Diedit",
+    submit: "Dikirim",
+    edit: "Dikoreksi",
     lock: "Dikunci",
     unlock: "Dibuka kunci",
     delete: "Dihapus",

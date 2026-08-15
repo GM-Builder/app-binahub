@@ -5,10 +5,13 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  CircleCheck,
   ChevronRight,
   ClipboardCheck,
   Crown,
+  Eye,
   Loader2,
+  MapPin,
   Trash2,
   UserPlus,
   Users,
@@ -26,7 +29,6 @@ import type { LevelValue } from "@/modules/tbos";
 import {
   fetchMissions,
   fetchFacilitatorMissionSelection,
-  fetchObservations,
   fetchTeams,
   flushQueuedObservations,
   getQueuedObservations,
@@ -36,7 +38,6 @@ import {
   selectFacilitatorMission,
   submitObservation,
   type TbosDbMission,
-  type TbosDbObservation,
   type TbosDbTeam,
   type TbosObservationMemberInput,
 } from "@/modules/tbos/api-client";
@@ -60,8 +61,8 @@ export default function TbosObservationPage() {
       <AppShell
         role="facilitator"
         navigation="tbos"
-        title="Form Observasi T-BOS"
-        eyebrow="Team Behavioral Observation System"
+        title="Observasi T-BOS"
+        eyebrow="Area Fasilitator"
       >
         <TbosObservationContent />
       </AppShell>
@@ -74,7 +75,6 @@ function TbosObservationContent() {
   const [step, setStep] = useState<Step>("tasks");
   const [missions, setMissions] = useState<TbosDbMission[]>([]);
   const [teams, setTeams] = useState<TbosDbTeam[]>([]);
-  const [observations, setObservations] = useState<TbosDbObservation[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState("");
@@ -123,8 +123,6 @@ function TbosObservationContent() {
         ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
         : null);
 
-      // Completion data is useful context, but must never block field work.
-      void fetchObservations(selectedProgramId).then(setObservations).catch(() => setObservations(null));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat penugasan.");
     } finally {
@@ -156,6 +154,10 @@ function TbosObservationContent() {
   }, []);
 
   const prepareTeam = async (team: TbosDbTeam) => {
+    if (team.observation) {
+      toast.info(`${team.name} sudah selesai dinilai pada pos ini.`);
+      return;
+    }
     setSelectedTeam(team);
     setScores({});
     setNotes("");
@@ -391,7 +393,8 @@ function TbosObservationContent() {
     setMissionSelectionTarget(null);
     setLockingMission(false);
     toast.success(`Pos ${lockedMission.name} berhasil dikunci sampai program selesai.`);
-    void fetchObservations(selectedProgramId).then(setObservations).catch(() => setObservations(null));
+    const teamList = await fetchTeams(selectedProgramId).catch(() => null);
+    if (teamList) setTeams(teamList);
   };
 
   const handleProgramChange = useCallback((programId: string) => {
@@ -409,15 +412,13 @@ function TbosObservationContent() {
     setLoading(true);
     setError("");
     try {
-      const [selection, missionList, teamList, observationList] = await Promise.all([
+      const [selection, missionList, teamList] = await Promise.all([
         fetchFacilitatorMissionSelection(selectedProgramId),
         fetchMissions(selectedProgramId),
         fetchTeams(selectedProgramId),
-        fetchObservations(selectedProgramId),
       ]);
       setMissions(missionList);
       setTeams(teamList);
-      setObservations(observationList);
       setSelectedMission(selection.selectedMissionId
         ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
         : null);
@@ -435,11 +436,8 @@ function TbosObservationContent() {
     }
   };
 
-  const completedMissionIds = (teamId: string) => new Set(
-    (observations || [])
-      .filter((observation) => observation.teamId === teamId && observation.status !== "draft")
-      .map((observation) => observation.missionId),
-  );
+  const completedTeamCount = teams.filter((team) => Boolean(team.observation)).length;
+  const pendingTeamCount = teams.length - completedTeamCount;
 
   if (loading) {
     return (
@@ -459,7 +457,7 @@ function TbosObservationContent() {
     return (
       <Shell isOnline={isOnline} queuedCount={queuedCount}>
         <main className="mx-auto flex min-h-[75vh] max-w-lg items-center px-4 py-10">
-          <section className="w-full overflow-hidden rounded-md bg-white shadow-[0_24px_70px_rgba(8,29,66,0.18)]" role="status">
+          <section className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(8,29,66,0.14)]" role="status">
             <div className="relative overflow-hidden bg-primary-dark px-6 py-10 text-center text-white">
               <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full bg-[#17447F]" />
               <div className="absolute -bottom-16 -left-10 h-36 w-36 rounded-full border-[22px] border-accent/20" />
@@ -467,10 +465,10 @@ function TbosObservationContent() {
                 {savedLocally ? <WifiOff className="h-8 w-8" /> : <Check className="h-8 w-8" />}
               </div>
               <h1 className="relative text-2xl font-bold tracking-tight">
-                {savedLocally ? "Tersimpan di perangkat" : "Observasi tersimpan"}
+                {savedLocally ? "Tersimpan sementara" : "Observasi selesai"}
               </h1>
               <p className="relative mt-2 text-sm text-white/70">
-                {savedLocally ? "Data masuk antrean dan akan dikirim saat kembali online." : "Snapshot sesi berhasil disimpan ke server."}
+                {savedLocally ? "Data akan dikirim otomatis saat perangkat kembali online." : "Penilaian tim pada pos Anda telah tersimpan."}
               </p>
             </div>
             <div className="space-y-5 p-6">
@@ -479,10 +477,10 @@ function TbosObservationContent() {
                 <p className="mt-1 text-sm text-slate-600">{selectedMission?.name}</p>
               </div>
               <button type="button" onClick={() => void resetForm()} className={`flex min-h-12 w-full items-center justify-center rounded-xl bg-[#0B2C6B] px-4 font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>
-                Kembali ke Penugasan
+                Kembali ke Daftar Tim
               </button>
               <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 font-semibold text-slate-700 ${FOCUS}`}>
-                Lihat Riwayat
+                Lihat Hasil Observasi
               </button>
             </div>
           </section>
@@ -494,96 +492,103 @@ function TbosObservationContent() {
   return (
     <Shell isOnline={isOnline} queuedCount={queuedCount}>
       {step === "tasks" && (
-        <main>
-          <div className="mx-auto max-w-2xl px-4 pt-4"><TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} /></div>
-          <section className="relative overflow-hidden bg-primary-dark px-4 pb-14 pt-8 text-white">
-            <div className="absolute -right-14 -top-20 h-60 w-60 rounded-full bg-[#123A72]" />
-            <div className="absolute right-12 top-16 h-28 w-28 rounded-full border-[18px] border-accent/15" />
-            <div className="relative mx-auto max-w-2xl">
-              <div className="mb-8 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-                    <ClipboardCheck className="h-5 w-5 text-accent-light" aria-hidden="true" />
+        <main className="pb-[calc(7rem+env(safe-area-inset-bottom))]">
+          <div className="mx-auto max-w-3xl px-4 pt-4"><TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} /></div>
+          <section className="mx-auto mt-4 max-w-3xl px-4">
+            <div className="relative overflow-hidden rounded-3xl bg-primary-dark px-5 py-6 text-white shadow-[0_20px_50px_rgba(8,29,66,0.2)] sm:px-7 sm:py-8">
+              <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#17447F]" />
+              <div className="absolute -bottom-20 right-16 h-36 w-36 rounded-full border-[22px] border-accent/15" />
+              <div className="relative">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                      <ClipboardCheck className="h-5 w-5 text-accent-light" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">T-BOS Fasilitator</p>
+                      <p className="mt-0.5 text-sm text-white/70">Observasi perilaku tim di lapangan</p>
+                    </div>
                   </div>
-                  <div>
-                   <p className="font-sans text-xl font-extrabold tracking-[-0.04em]"><span className="text-white">Bina</span><span className="text-accent-light">Hub</span></p>
-                    <p className="text-sm font-semibold text-white/75">T-BOS Field Console</p>
-                  </div>
+                  <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
                 </div>
-                <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
-              </div>
-              <p className="text-sm font-semibold text-accent-light">Penugasan hari ini</p>
-              <h1 className="mt-2 max-w-md text-3xl font-bold leading-tight tracking-[-0.03em]">Tetap di satu pos, lalu nilai seluruh tim yang melaluinya.</h1>
-              <div className="mt-7 inline-flex items-end gap-3 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/10 backdrop-blur">
-                <strong className="text-3xl leading-none text-accent-light">{teams.length}</strong>
-                <span className="pb-0.5 text-sm text-white/75">tim dalam program</span>
+                <h1 className="mt-7 max-w-xl text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-3xl">Selesaikan satu observasi untuk setiap tim di pos Anda.</h1>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">Tim yang sudah selesai otomatis dikunci agar tidak dinilai dua kali.</p>
               </div>
             </div>
           </section>
 
-          <section className="mx-auto -mt-7 max-w-2xl space-y-4 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))]" aria-labelledby="assigned-teams-title">
-            <div className="relative rounded-2xl bg-white p-5 shadow-[0_12px_34px_rgba(8,29,66,0.1)]">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#D9A441]">Langkah 1</p>
-              <h2 className="mt-1 font-bold text-[#0B2C6B]">Pilih misi T-BOS</h2>
-              <p className="mt-1 text-xs text-slate-500">Pos hanya dipilih sekali dan tidak dapat diubah sampai program selesai.</p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {missions.map((mission) => {
-                  const selected = selectedMission?.id === mission.id;
-                  return (
-                    <button key={mission.id} type="button" disabled={Boolean(selectedMission)} onClick={() => setMissionSelectionTarget(mission)} aria-pressed={selected} className={`min-h-14 rounded-xl border px-3 py-2 text-left transition disabled:cursor-default ${selected ? "border-[#0B2C6B] bg-[#0B2C6B] text-white" : "border-slate-200 bg-[#F7F6F2] text-[#0B2C6B] hover:border-[#D9A441]"}`}>
-                      <span className="block text-sm font-bold">{mission.name}</span>
-                      <span className={`mt-0.5 block text-[10px] ${selected ? "text-white/70" : "text-slate-500"}`}>{selected ? "Pos terkunci" : `${mission.dimensions.length} dimensi`}</span>
-                    </button>
-                  );
-                })}
+          <section className="mx-auto mt-4 max-w-3xl space-y-4 px-4" aria-labelledby="assigned-teams-title">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(8,29,66,0.07)]">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF4D6] text-[#9A6A12]"><MapPin className="h-5 w-5" aria-hidden="true" /></div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#B47B13]">Pos observasi</p>
+                  <h2 className="mt-1 text-lg font-bold text-primary-dark">{selectedMission?.name || "Pilih satu misi"}</h2>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-500">{selectedMission ? `${selectedMission.dimensions.length} dimensi perilaku akan dinilai untuk setiap tim.` : "Pilihan misi akan terkunci sampai program selesai."}</p>
+                </div>
+                {selectedMission && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700"><CircleCheck className="h-3.5 w-3.5" /> Terkunci</span>}
               </div>
-              {missions.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi T-BOS yang tersedia. Hubungi admin.</p>}
+              {!selectedMission && (
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  {missions.map((mission) => (
+                    <button key={mission.id} type="button" onClick={() => setMissionSelectionTarget(mission)} className={`group min-h-16 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-[#D9A441] hover:bg-[#FFF9EA] ${FOCUS}`}>
+                      <span className="block text-sm font-bold text-primary-dark">{mission.name}</span>
+                      <span className="mt-1 block text-xs text-slate-500">{mission.dimensions.length} dimensi penilaian</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {missions.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi T-BOS yang tersedia. Hubungi admin program.</p>}
             </div>
 
-            <div className="relative rounded-2xl bg-white px-5 py-4 shadow-[0_12px_34px_rgba(8,29,66,0.1)]">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#D9A441]">Langkah 2</p>
-                <h2 id="assigned-teams-title" className="mt-1 font-bold text-[#0B2C6B]">Semua tim program</h2>
-                <p className="mt-0.5 text-xs text-slate-500">{selectedMission ? `Anda menilai ${selectedMission.name} untuk setiap tim.` : "Kunci satu pos terlebih dahulu untuk membuka daftar tim."}</p>
+            {selectedMission && (
+              <div className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Kemajuan observasi tim">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Total</p><p className="mt-1 text-2xl font-extrabold text-primary-dark">{teams.length}</p><p className="text-xs text-slate-500">tim</p></div>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 sm:p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-amber-700">Belum dinilai</p><p className="mt-1 text-2xl font-extrabold text-amber-800">{pendingTeamCount}</p><p className="text-xs text-amber-700">tim</p></div>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 sm:p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Selesai</p><p className="mt-1 text-2xl font-extrabold text-emerald-800">{completedTeamCount}</p><p className="text-xs text-emerald-700">tim</p></div>
               </div>
+            )}
+
+            <div className="flex items-end justify-between gap-3 pt-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#B47B13]">Daftar tim</p>
+                <h2 id="assigned-teams-title" className="mt-1 text-xl font-bold text-primary-dark">{selectedMission ? "Pilih tim berikutnya" : "Daftar tim belum dibuka"}</h2>
+                <p className="mt-1 text-sm text-slate-500">{selectedMission ? `Penilaian hanya untuk ${selectedMission.name}.` : "Kunci pos observasi terlebih dahulu."}</p>
+              </div>
+              {selectedMission && completedTeamCount > 0 && (
+                <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-primary-dark ${FOCUS}`}><Eye className="h-4 w-4" /> Hasil</button>
+              )}
             </div>
 
             {error && <Alert>{error}</Alert>}
             {selectedMission && teams.length === 0 && (
-              <div className="rounded-md bg-white p-7 text-center shadow-sm">
-                <p className="font-semibold text-[#0B2C6B]">Belum ada tim ditugaskan</p>
-                <p className="mt-1 text-sm text-slate-500">Hubungi admin untuk mendapatkan assignment.</p>
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+                <p className="font-semibold text-primary-dark">Belum ada tim dalam program</p>
+                <p className="mt-1 text-sm text-slate-500">Hubungi admin program untuk menambahkan tim.</p>
               </div>
             )}
-            {selectedMission && teams.map((team, index) => {
-              const completedCount = completedMissionIds(team.id).size;
+            {selectedMission && [...teams].sort((a, b) => Number(Boolean(a.observation)) - Number(Boolean(b.observation))).map((team, index) => {
+              const completed = Boolean(team.observation);
               const captain = team.members?.find((member) => member.is_captain);
               return (
-                <article key={team.id} className={`rounded-md border border-black/[0.04] bg-white p-5 ${index % 2 === 0 ? "shadow-[0_14px_35px_rgba(8,29,66,0.1)]" : "shadow-[0_6px_18px_rgba(8,29,66,0.07)]"}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="inline-flex rounded-full bg-[#0B2C6B]/7 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#0B2C6B]">{team.batch}</span>
-                      <h3 className="mt-3 text-xl font-bold tracking-tight text-primary-dark">{team.name}</h3>
+                <article key={team.id} className={`rounded-2xl border p-4 transition sm:p-5 ${completed ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-white shadow-[0_10px_28px_rgba(8,29,66,0.07)]"}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${completed ? "bg-emerald-100 text-emerald-700" : "bg-[#FFF4D6] text-[#9A6A12]"}`}>{completed ? <Check className="h-5 w-5" /> : String(index + 1).padStart(2, "0")}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-primary-dark">{team.name}</h3>
+                        <span className="rounded-full bg-primary-dark/[0.06] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark">{team.batch}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">{team.members?.length || 0} anggota · Kapten: {captain?.member_name || "belum ditentukan"}</p>
+                      {completed && team.observation && <p className="mt-2 text-xs font-semibold text-emerald-700">Selesai {new Date(team.observation.submittedAt).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>}
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F3E7CA] font-bold text-accent-dark">{String(index + 1).padStart(2, "0")}</div>
                   </div>
-                  <dl className="mt-5 grid grid-cols-2 gap-3 border-y border-slate-100 py-4 text-sm">
-                    <div>
-                      <dt className="text-xs text-slate-500">Roster master</dt>
-                      <dd className="mt-1 font-bold text-slate-800">{team.members?.length || 0} anggota</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-slate-500">Kapten default</dt>
-                      <dd className="mt-1 truncate font-bold text-slate-800">{captain?.member_name || "Belum ada"}</dd>
-                    </div>
-                  </dl>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold text-slate-500">
-                      {observations === null ? "Riwayat tidak tersedia" : completedCount > 0 ? "Observasi pos ini selesai" : "Belum dinilai di pos ini"}
-                    </p>
-                    <button type="button" onClick={() => void prepareTeam(team)} className={`inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[#0B2C6B] px-4 text-sm font-bold text-white shadow-md shadow-[#0B2C6B]/15 ${FOCUS}`}>
-                      Siapkan Tim <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                    </button>
+                  <div className="mt-4 border-t border-slate-200/70 pt-4">
+                    {completed ? (
+                      <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white text-sm font-bold text-emerald-700 ${FOCUS}`}><Eye className="h-4 w-4" /> Lihat hasil observasi</button>
+                    ) : (
+                      <button type="button" onClick={() => void prepareTeam(team)} className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-dark px-4 text-sm font-bold text-white shadow-md shadow-primary-dark/15 ${FOCUS}`}>Mulai observasi <ChevronRight className="h-4 w-4" aria-hidden="true" /></button>
+                    )}
                   </div>
                 </article>
               );
@@ -594,18 +599,18 @@ function TbosObservationContent() {
 
       {step === "prepare" && selectedTeam && (
         <WorkflowPage
-          eyebrow="Langkah 2 dari 4"
+          eyebrow="Tahap 1 dari 3"
           title="Siapkan tim"
           subtitle={`${selectedTeam.name} · ${selectedTeam.batch}`}
-          backLabel="Kembali ke daftar penugasan"
+          backLabel="Kembali ke daftar tim"
           onBack={() => setStep("tasks")}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
         >
            <section className="rounded-2xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Kehadiran sesi</h2>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500">Roster dan kapten diisi sekali saat tim pertama kali masuk pos. Setelah observasi pertama, data master terkunci.</p>
+                <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Anggota yang hadir</h2>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">Daftar anggota dan kapten diisi oleh fasilitator pertama yang menerima tim. Setelah observasi pertama tersimpan, daftar ini tidak dapat diubah.</p>
               </div>
               <Users className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
             </div>
@@ -617,7 +622,7 @@ function TbosObservationContent() {
               </div>
             ) : (
               <div className="mt-5 space-y-3">
-                {teamMembers.length === 0 && <p className="rounded-2xl bg-[#F7F6F2] p-4 text-sm text-slate-500">Roster masih kosong. Tambahkan anggota di bawah.</p>}
+                {teamMembers.length === 0 && <p className="rounded-2xl bg-[#F7F6F2] p-4 text-sm text-slate-500">Daftar anggota masih kosong. Tambahkan seluruh anggota tim, lalu tentukan kapten.</p>}
                 {teamMembers.map((member) => {
                   const isSessionCaptain = member.isPresent && sessionCaptainId === member.id;
                   return (
@@ -638,7 +643,7 @@ function TbosObservationContent() {
                         </button>
                         <div className="min-w-0 flex-1">
                           <h3 className={`truncate text-sm font-bold ${member.isPresent ? "text-slate-800" : "text-slate-400"}`}>{member.member_name}</h3>
-                          <p className="mt-0.5 text-xs text-slate-500">{member.isPresent ? "Hadir" : "Tidak hadir"}{member.is_captain ? " · Kapten master" : ""}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">{member.isPresent ? "Hadir" : "Tidak hadir"}{member.is_captain ? " · Kapten tim" : ""}</p>
                         </div>
                         <button
                           type="button"
@@ -651,7 +656,7 @@ function TbosObservationContent() {
                           <Crown className="h-4 w-4" aria-hidden="true" />
                         </button>
                         {canEditRoster && !member.is_captain && (
-                          <button type="button" onClick={() => handleRemoveMember(member)} aria-label={`Hapus ${member.member_name} dari roster master`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 ${FOCUS}`}>
+                          <button type="button" onClick={() => handleRemoveMember(member)} aria-label={`Hapus ${member.member_name} dari daftar anggota`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 ${FOCUS}`}>
                             <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </button>
                         )}
@@ -663,32 +668,32 @@ function TbosObservationContent() {
             )}
 
             {canEditRoster ? <form onSubmit={handleAddMember} className="mt-5 border-t border-slate-100 pt-5">
-              <label htmlFor="new-member" className="text-sm font-bold text-[#0B2C6B]">Tambah ke roster master</label>
+              <label htmlFor="new-member" className="text-sm font-bold text-[#0B2C6B]">Tambah anggota tim</label>
               <div className="mt-2 flex gap-2">
                 <input id="new-member" type="text" value={newMemberName} onChange={(event) => setNewMemberName(event.target.value)} placeholder="Nama anggota" className={`min-h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
-                <button type="submit" disabled={!newMemberName.trim() || addingMember} aria-label="Tambah anggota ke roster master" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-white disabled:opacity-40 ${FOCUS}`}>
+                <button type="submit" disabled={!newMemberName.trim() || addingMember} aria-label="Tambah anggota tim" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-white disabled:opacity-40 ${FOCUS}`}>
                   {addingMember ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <UserPlus className="h-4 w-4" />}
                 </button>
               </div>
             </form> : (
-              <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Roster master sudah tersedia. Anda hanya perlu mengatur kehadiran dan mengisi observasi untuk pos Anda.</p>
+              <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Daftar anggota sudah tersedia. Tandai kehadiran, lalu lanjutkan penilaian pada pos Anda.</p>
             )}
           </section>
 
            <div className="rounded-xl border border-accent/35 bg-[#FFF9EA] p-4" role="status">
             <p className="text-sm font-bold text-[#6D511B]">Ringkasan sesi</p>
             <p className="mt-1 text-sm text-[#7A642F]">{presentMembers.length} hadir · Kapten: {sessionCaptain?.member_name || "belum dipilih"}</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten mengikuti roster master tim dan wajib hadir pada sesi observasi.</p>
+            <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten tim wajib tercatat hadir dalam observasi ini.</p>
           </div>
 
-          <BottomAction disabled={!preparationValid || membersLoading} onClick={continueToObservation} label="Lanjut Isi Observasi" />
+          <BottomAction disabled={!preparationValid || membersLoading} onClick={continueToObservation} label="Lanjut ke Penilaian" />
         </WorkflowPage>
       )}
 
       {step === "observe" && selectedTeam && selectedMission && (
         <WorkflowPage
-          eyebrow="Langkah 3 dari 4"
-          title="Catat observasi"
+          eyebrow="Tahap 2 dari 3"
+          title="Nilai perilaku tim"
           subtitle={`${selectedTeam.name} · ${selectedMission.name}`}
           backLabel="Kembali ke persiapan tim"
           onBack={() => setStep("prepare")}
@@ -710,9 +715,8 @@ function TbosObservationContent() {
           <div className="space-y-4">
             {selectedMission.dimensions.map((dimension, index) => {
               const selectedLevel = scores[dimension.id];
-              const selectedDefinition = dimension.levels.find((level) => level.level_value === selectedLevel);
               return (
-                   <fieldset key={dimension.id} className={`rounded-2xl border border-black/[0.04] bg-white p-4 shadow-[0_9px_26px_rgba(8,29,66,0.08)] sm:p-5 ${index % 2 ? "sm:ml-3" : "sm:mr-3"}`}>
+                <fieldset key={dimension.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_9px_26px_rgba(8,29,66,0.06)] sm:p-5">
                   <legend className="sr-only">{dimension.name}</legend>
                   <div className="flex items-start gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-sm font-bold text-accent-light">{index + 1}</span>
@@ -722,7 +726,7 @@ function TbosObservationContent() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-5 gap-1 sm:gap-2" role="radiogroup" aria-label={`Skor ${dimension.name}`}>
+                  <div className="mt-5 space-y-2" role="radiogroup" aria-label={`Skor ${dimension.name}`}>
                     {dimension.levels.map((level) => {
                       const selected = selectedLevel === level.level_value;
                       return (
@@ -731,18 +735,21 @@ function TbosObservationContent() {
                           type="button"
                           role="radio"
                           aria-checked={selected}
-                          aria-label={`Level ${level.level_value}, ${level.level_label}`}
+                          aria-label={`${level.level_label}: ${level.description}`}
                           onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
-                          className={`min-h-[76px] min-w-0 rounded-xl border px-0.5 py-2 text-center transition motion-reduce:transition-none sm:px-1 ${selected ? `${LEVEL_STYLES[level.level_value]} border-2 shadow-sm` : "border-slate-200 bg-[#F7F6F2] text-slate-500"} ${FOCUS}`}
+                          className={`flex min-h-[72px] w-full items-start gap-3 rounded-xl border p-3 text-left transition motion-reduce:transition-none sm:p-4 ${selected ? `${LEVEL_STYLES[level.level_value]} border-2 shadow-sm` : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white"} ${FOCUS}`}
                         >
-                          <span className="block text-lg font-extrabold leading-none">{level.level_value}</span>
-                          <span className="mt-2 block break-words text-[9px] font-bold leading-[1.15] sm:text-[10px]">{level.level_label}</span>
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${selected ? "bg-white/80" : "bg-white text-primary-dark ring-1 ring-slate-200"}`}>{level.level_value}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-bold">{level.level_label}</span>
+                            <span className={`mt-1 block text-xs leading-relaxed ${selected ? "opacity-90" : "text-slate-500"}`}>{level.description}</span>
+                          </span>
+                          <span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? "border-current bg-white/80" : "border-slate-300 bg-white"}`} aria-hidden="true">
+                            {selected && <Check className="h-3 w-3" />}
+                          </span>
                         </button>
                       );
                     })}
-                  </div>
-                  <div className={`mt-4 min-h-16 rounded-2xl p-3 text-xs leading-relaxed ${selectedDefinition ? "bg-[#F7F6F2] text-slate-600" : "border border-dashed border-slate-200 text-slate-400"}`} aria-live="polite">
-                    {selectedDefinition?.description || "Pilih level yang paling sesuai dengan perilaku yang diamati."}
                   </div>
                 </fieldset>
               );
@@ -751,10 +758,10 @@ function TbosObservationContent() {
 
            <section className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(8,29,66,0.08)]" aria-labelledby="notes-title">
             <div className="flex items-center justify-between gap-3">
-              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan lapangan</label>
+              <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan observasi <span className="font-normal text-slate-400">(opsional)</span></label>
               <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
             </div>
-            <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Konteks singkat yang membantu pembacaan skor..." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
+            <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Contoh: Tim mengubah strategi setelah twist." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
           </section>
 
           <BottomAction disabled={!allDimensionsScored} onClick={() => setStep("review")} label={allDimensionsScored ? "Tinjau Observasi" : `${scoredCount}/${selectedMission.dimensions.length} Dimensi Dinilai`} />
@@ -763,9 +770,9 @@ function TbosObservationContent() {
 
       {step === "review" && selectedTeam && selectedMission && sessionCaptain && (
         <WorkflowPage
-          eyebrow="Langkah 4 dari 4"
-          title="Tinjau & konfirmasi"
-          subtitle="Pastikan snapshot sesi sudah tepat sebelum disimpan."
+          eyebrow="Tahap 3 dari 3"
+          title="Tinjau dan simpan"
+          subtitle="Pastikan daftar hadir, skor, dan catatan sudah tepat sebelum disimpan."
           backLabel="Kembali mengedit skor observasi"
           onBack={() => setStep("observe")}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
@@ -773,7 +780,7 @@ function TbosObservationContent() {
           {error && <Alert>{error}</Alert>}
           <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Ringkasan observasi</p>
               <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
               <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
             </div>
@@ -821,7 +828,7 @@ function TbosObservationContent() {
           <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-[#F7F6F2]/95 p-3 backdrop-blur">
             <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
               <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-white px-3 text-sm font-bold text-[#0B2C6B] ${FOCUS}`}>Edit</button>
-              <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>Simpan <Check className="h-4 w-4" aria-hidden="true" /></button>
+              <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>Simpan observasi <Check className="h-4 w-4" aria-hidden="true" /></button>
             </div>
           </div>
         </WorkflowPage>
@@ -832,7 +839,7 @@ function TbosObservationContent() {
           <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[#0B2C6B] shadow-xl shadow-[#0B2C6B]/20">
             <Loader2 className="h-8 w-8 animate-spin text-accent-light motion-reduce:animate-none" aria-hidden="true" />
           </div>
-          <h2 className="mt-5 text-xl font-bold text-primary-dark">Menyimpan snapshot sesi</h2>
+          <h2 className="mt-5 text-xl font-bold text-primary-dark">Menyimpan observasi</h2>
           <p className="mt-2 text-sm text-slate-500">Jangan tutup halaman sampai proses selesai.</p>
         </div>
       )}
@@ -841,7 +848,7 @@ function TbosObservationContent() {
         onClose={() => { if (!deletingMember) setMemberDeleteTarget(null); }}
         onConfirm={confirmRemoveMember}
         title="Hapus Anggota Tim?"
-        description={memberDeleteTarget ? `"${memberDeleteTarget.member_name}" akan dihapus dari roster master tim.` : undefined}
+        description={memberDeleteTarget ? `"${memberDeleteTarget.member_name}" akan dihapus dari daftar anggota tim.` : undefined}
         confirmLabel="Ya, Hapus"
         variant="danger"
         loading={deletingMember}

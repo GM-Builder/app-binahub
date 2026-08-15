@@ -42,9 +42,9 @@ export function TbosRanking({ teams }: Props) {
     if (missionFilter && dimensionFilter) {
       return `${MISSIONS[missionFilter]?.name || missionFilter} • ${DIMENSIONS[dimensionFilter]?.name || dimensionFilter}`;
     }
-    if (missionFilter) return `Skor Mission ${MISSIONS[missionFilter]?.name || missionFilter}`;
+    if (missionFilter) return `Skor Misi ${MISSIONS[missionFilter]?.name || missionFilter}`;
     if (dimensionFilter) return `Skor Dimensi ${DIMENSIONS[dimensionFilter]?.name || dimensionFilter}`;
-    return "Overall Team Score";
+    return "Skor Keseluruhan Tim";
   }, [missionFilter, dimensionFilter]);
 
   const sorted = useMemo(() => {
@@ -84,13 +84,13 @@ export function TbosRanking({ teams }: Props) {
           </span>
 
           <label className="flex items-center gap-2 text-xs text-[#4A4C54]">
-            <span className="font-semibold">Mission</span>
+            <span className="font-semibold">Misi</span>
             <select
               value={missionFilter}
               onChange={(event) => setMissionFilter(event.target.value as MissionFilter)}
               className="rounded-lg border border-black/[0.08] bg-white px-2.5 py-1.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441]"
             >
-              <option value="">Semua Mission (Overall)</option>
+              <option value="">Semua Misi (Keseluruhan)</option>
               {availableMissions.map((code) => (
                 <option key={code} value={code}>
                   {MISSIONS[code as keyof typeof MISSIONS]?.name || code}

@@ -17,7 +17,6 @@ import {
   UserPlus,
   UsersRound,
   Lock,
-  Eye,
   Check,
   X,
   ClipboardList,
@@ -46,22 +45,24 @@ import { TbosHeatmap } from "./_components/heatmap";
 import { TbosRanking } from "./_components/ranking";
 import { TbosBatchComparison } from "./_components/batch-comparison";
 import { TbosExecutiveSummary } from "./_components/executive-summary";
+import { TbosTeamReports } from "./_components/team-reports";
 
-type Tab = "overview" | "summary" | "radar" | "heatmap" | "ranking" | "batch";
+type Tab = "overview" | "summary" | "teams" | "radar" | "heatmap" | "ranking" | "batch";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: "overview", label: "Overview", icon: <BarChart3 size={16} /> },
-  { key: "summary", label: "Executive Summary", icon: <FileText size={16} /> },
-  { key: "radar", label: "Radar Chart", icon: <RadarIcon size={16} /> },
+  { key: "overview", label: "Ringkasan", icon: <BarChart3 size={16} /> },
+  { key: "summary", label: "Ringkasan Eksekutif", icon: <FileText size={16} /> },
+  { key: "teams", label: "Laporan per Tim", icon: <UsersRound size={16} /> },
+  { key: "radar", label: "Grafik Radar", icon: <RadarIcon size={16} /> },
   { key: "heatmap", label: "Heatmap", icon: <Grid3x3 size={16} /> },
-  { key: "ranking", label: "Ranking", icon: <Trophy size={16} /> },
-  { key: "batch", label: "Batch", icon: <Users size={16} /> },
+  { key: "ranking", label: "Peringkat", icon: <Trophy size={16} /> },
+  { key: "batch", label: "Perbandingan Batch", icon: <Users size={16} /> },
 ];
 
 export default function TbosDashboardPage() {
   return (
     <AdminAuthGate>
-      <AppShell role="admin" navigation="tbos" title="T-BOS Dashboard" eyebrow="Team Behavioral Observation System">
+      <AppShell role="admin" navigation="tbos" title="Dashboard T-BOS" eyebrow="Observasi Perilaku Tim">
         <TbosDashboardContent />
       </AppShell>
     </AdminAuthGate>
@@ -496,7 +497,7 @@ function TbosDashboardContent() {
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
           </span>
           <span className="text-xs font-medium text-[#4A4C54]">
-            Auto-refresh (30s)
+            Diperbarui otomatis setiap 30 detik
             {lastUpdated && (
               <span className="text-[#0B2C6B] font-semibold ml-1">
                 • {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -512,7 +513,7 @@ function TbosDashboardContent() {
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
           >
             <RefreshCw className="w-3 h-3" />
-            Refresh
+            Perbarui
           </button>
         </div>
 
@@ -523,7 +524,7 @@ function TbosDashboardContent() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
           >
             <Home className="w-3.5 h-3.5" />
-            Kembali ke Home Admin
+            Kembali ke Admin
           </Link>
           <button
             onClick={() => setShowAddTeamModal(true)}
@@ -546,21 +547,14 @@ function TbosDashboardContent() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#0B2C6B] bg-[#0B2C6B]/[0.04] text-xs font-semibold hover:bg-[#0B2C6B]/[0.08] transition-colors"
           >
             <Lock className="w-3.5 h-3.5 text-[#D9A441]" />
-            Kelola & Kunci Observasi
+            Kelola Observasi
           </Link>
           <Link
             href="/fasilitator/tbos"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
           >
             <ClipboardList className="w-3.5 h-3.5" />
-            Form Observasi
-          </Link>
-          <Link
-            href="/peserta/dashboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            Tampilan Peserta
+            Buka Form Fasilitator
           </Link>
         </div>
       </div>
@@ -616,6 +610,7 @@ function TbosDashboardContent() {
       <div>
         {activeTab === "overview" && <OverviewTab data={dashboardData} roster={teamRoster} observations={observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
         {activeTab === "summary" && <TbosExecutiveSummary data={dashboardData} />}
+        {activeTab === "teams" && <TbosTeamReports teams={dashboardData.teams} roster={teamRoster} />}
         {activeTab === "radar" && <TbosRadarChart teams={dashboardData.teams} />}
         {activeTab === "heatmap" && <TbosHeatmap teams={dashboardData.teams} />}
         {activeTab === "ranking" && <TbosRanking teams={dashboardData.teams} />}
@@ -776,9 +771,6 @@ function AssignmentModal({
               </select>
             </div>
           )}
-          <div className="rounded-xl border border-[#0B2C6B]/10 bg-[#F5F7FA] p-4 text-sm text-[#4A4C54]">
-            Admin hanya memilih orangnya. Fasilitator kemudian memilih satu pos/misi yang langsung terkunci sampai program selesai, lalu menilai seluruh tim pada pos tersebut.
-          </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold">Batal</button>
             <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
@@ -920,7 +912,7 @@ function ExportButtons({ programId }: { programId: string }) {
       a.download = `TBOS_Report_${new Date().toISOString().split("T")[0]}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("PDF report berhasil diunduh.");
+      toast.success("Laporan PDF berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] PDF export failed:", err);
       toast.error(err instanceof Error ? err.message : "Gagal mengekspor PDF. Coba lagi.");
@@ -935,7 +927,7 @@ function ExportButtons({ programId }: { programId: string }) {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
       const { observations } = await fetchDashboardRawData(programId);
 
-      const headers = ["ID", "Team", "Batch", "Mission", "Facilitator", "Observed Date", "Status", "Notes"];
+      const headers = ["ID", "Tim", "Batch", "Misi", "Fasilitator", "Tanggal Observasi", "Status", "Catatan"];
       const csvCell = (value: string) => {
         const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
         return `"${safeValue.replace(/"/g, '""')}"`;
@@ -980,7 +972,7 @@ function ExportButtons({ programId }: { programId: string }) {
           ) : (
             <Download className="w-3.5 h-3.5" />
           )}
-          PDF Report
+          Laporan PDF Grup
         </button>
         <button
           onClick={handleExportCsv}
@@ -992,7 +984,7 @@ function ExportButtons({ programId }: { programId: string }) {
           ) : (
             <FileSpreadsheet className="w-3.5 h-3.5" />
           )}
-          CSV Data
+          Data CSV
         </button>
       </div>
   );
@@ -1026,35 +1018,9 @@ function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
 function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: { data: TbosDashboardData; roster: TbosDbTeam[]; observations: TbosObservation[]; onEditTeam: (id: string, name: string) => void; onDeleteTeam: (id: string, name: string) => void }) {
   const { executiveSummary: summary } = data;
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
-  const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
-  const [reportError, setReportError] = useState("");
 
   const rosterById = new Map(roster.map((team) => [team.id, team]));
   const observationsByTeam = (teamId: string) => observations.filter((o) => o.teamId === teamId);
-
-  const handleDownloadTeamReport = async (teamId: string, teamName: string) => {
-    setDownloadingReport(teamId);
-    setReportError("");
-    try {
-      const response = await fetch(`/api/tbos/export?format=pdf&teamId=${encodeURIComponent(teamId)}`);
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || "Gagal membuat laporan tim.");
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `TBOS_Tim_${teamName.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("[T-BOS] Team report export failed:", err);
-      setReportError(err instanceof Error ? err.message : "Gagal mengunduh laporan tim.");
-    } finally {
-      setDownloadingReport(null);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -1132,10 +1098,10 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Batch</th>
                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Skor</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kekuatan</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Area Dev.</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Obs.</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Area Pengembangan</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Observasi</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Fasilitator</th>
-                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Roster</th>
+                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Anggota</th>
                  <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kelola</th>
               </tr>
             </thead>
@@ -1231,10 +1197,10 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                       <tr className="bg-[#F8F9FC] border-b border-black/[0.03]">
                          <td colSpan={9} className="py-4 px-4 sm:px-6">
                           <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
-                            Roster & Kapten
+                            Anggota dan Kapten
                           </p>
                           {members.length === 0 ? (
-                            <p className="mt-2 text-sm text-slate-400 italic">Roster belum diisi.</p>
+                            <p className="mt-2 text-sm text-slate-400 italic">Daftar anggota belum diisi.</p>
                           ) : (
                             <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Anggota ${team.teamName}`}>
                               {members.map((member) => (
@@ -1249,27 +1215,9 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                           )}
 
                           <div className="mt-4">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
-                                Riwayat Observasi per Mission
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadTeamReport(team.teamId, team.teamName)}
-                                disabled={downloadingReport !== null}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#071B3D] disabled:opacity-40"
-                              >
-                                {downloadingReport === team.teamId ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Download className="h-3.5 w-3.5" />
-                                )}
-                                Unduh Laporan Tim
-                              </button>
-                            </div>
-                            {reportError && (
-                              <p className="mt-2 text-xs text-red-600" role="alert">{reportError}</p>
-                            )}
+                            <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
+                              Riwayat observasi per misi
+                            </p>
                             {observationsByTeam(team.teamId).length === 0 ? (
                               <p className="mt-2 text-sm text-slate-400 italic">Belum ada observasi untuk tim ini.</p>
                             ) : (
@@ -1277,7 +1225,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                                 <table className="w-full text-xs bg-white">
                                   <thead>
                                     <tr className="bg-[#0B2C6B]/[0.03]">
-                                      <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Mission</th>
+                                      <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Misi</th>
                                       <th className="text-center py-2 px-3 font-semibold text-[#0B2C6B]">Skor</th>
                                       <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Fasilitator</th>
                                       <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Tanggal</th>
@@ -1309,7 +1257,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                                                 ? "bg-emerald-50 text-emerald-700"
                                                 : "bg-amber-50 text-amber-700"
                                             }`}>
-                                              {obs.status === "locked" ? "Terkunci" : obs.status === "submitted" ? "Submitted" : "Draft"}
+                                              {obs.status === "locked" ? "Terkunci" : obs.status === "submitted" ? "Tersimpan" : "Draf"}
                                             </span>
                                           </td>
                                         </tr>

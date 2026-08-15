@@ -39,6 +39,11 @@ export interface TbosDbTeam {
     member_name: string;
     is_captain?: boolean;
   }[];
+  observation: {
+    id: string;
+    status: string;
+    submittedAt: string;
+  } | null;
 }
 
 export interface TbosDbObservation {
@@ -640,7 +645,7 @@ export async function flushQueuedObservations(profileId: string): Promise<number
 
     if (res.success) {
       successCount++;
-    } else {
+    } else if (res.retryable) {
       remaining.push(item);
     }
   }
