@@ -7,11 +7,14 @@ import { toast } from "sonner";
 import { useEngagements } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { StatusPill, ProgressBar, ConfirmDialog } from "@/components/ui";
+import { AppShell } from "@/components/app-shell";
 
 function AdminEngagementsPageContent() {
   const { engagements, loading } = useEngagements();
   const [archiveTarget, setArchiveTarget] = useState<{ id: string; title: string } | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const grouped = useMemo(() => {
     const groups: Record<string, typeof engagements> = { active: [], draft: [], completed: [], archived: [] };
     engagements.forEach((e) => {
@@ -23,12 +26,26 @@ function AdminEngagementsPageContent() {
     return groups;
   }, [engagements]);
 
-  const deleteProgram = async (id: string, title: string) => {
-    if (!window.confirm(`Hapus program ${title}? Program dengan observasi hanya dapat diarsipkan.`)) return;
-    const response = await fetch(`/api/engagements/${id}`, { method: "DELETE" });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) window.alert(result.error || "Program tidak dapat dihapus.");
-    else window.location.reload();
+  const deleteProgram = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/engagements/${target.id}`, { method: "DELETE" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Program tidak dapat dihapus.", result.canArchive ? {
+          action: { label: "Arsipkan", onClick: () => setArchiveTarget(target) },
+        } : undefined);
+        return;
+      }
+      toast.success("Program berhasil dihapus.");
+      window.location.reload();
+    } catch {
+      toast.error("Gagal menghubungi server. Coba lagi.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const archiveProgram = async () => {
@@ -55,7 +72,7 @@ function AdminEngagementsPageContent() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">Organization Core</p>
@@ -97,7 +114,7 @@ function AdminEngagementsPageContent() {
                         <div><dt className="text-[#4A4C54]/50">Peserta</dt><dd className="font-semibold text-[#0B2C6B]">{e.participants ?? 0}</dd></div>
                         <div><dt className="text-[#4A4C54]/50">Dibuat</dt><dd className="font-semibold text-[#0B2C6B]">{new Date(e.created_at).toLocaleDateString("id-ID")}</dd></div>
                       </dl>
-                      <div className="mt-4 flex gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2">
                         <Link href={`/admin/engagements/access-codes?engagement_id=${e.id}&title=${encodeURIComponent(e.title)}`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#D9A441]/30 bg-[#D9A441]/10 px-3 py-1.5 text-xs font-semibold text-[#D9A441] hover:bg-[#D9A441]/20">
                           <KeyRound size={12} /> Kode
                         </Link>
@@ -109,7 +126,7 @@ function AdminEngagementsPageContent() {
                             <Archive size={12} /> Arsipkan
                           </button>
                         )}
-                        <button type="button" onClick={() => void deleteProgram(e.id, e.title)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50">
+                        <button type="button" onClick={() => setDeleteTarget({ id: e.id, title: e.title })} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50">
                           <Trash2 size={12} /> Hapus
                         </button>
                         <div className="flex-1" />
@@ -134,16 +151,33 @@ function AdminEngagementsPageContent() {
       <ConfirmDialog
         open={!!archiveTarget}
         onClose={() => setArchiveTarget(null)}
-        onConfirm={() => void archiveProgram()}
+        onConfirm={archiveProgram}
         title="Arsipkan Program?"
         description={archiveTarget ? `Program "${archiveTarget.title}" tidak lagi muncul di daftar aktif. Data observasi tetap dipertahankan.` : undefined}
         confirmLabel={archiving ? "Mengarsipkan..." : "Ya, Arsipkan"}
         variant="warning"
+        loading={archiving}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => { if (!deleting) setDeleteTarget(null); }}
+        onConfirm={deleteProgram}
+        title="Hapus Program?"
+        description={deleteTarget ? `Program "${deleteTarget.title}" beserta tim kosongnya akan dihapus permanen. Program yang memiliki histori observasi atau LEP harus diarsipkan.` : undefined}
+        confirmLabel="Ya, Hapus"
+        variant="danger"
+        loading={deleting}
       />
     </div>
   );
 }
 
 export default function AdminEngagementsPage() {
-  return <AdminAuthGate><AdminEngagementsPageContent /></AdminAuthGate>;
+  return (
+    <AdminAuthGate>
+      <AppShell role="admin" title="Program Engagements" eyebrow="Organization Core">
+        <AdminEngagementsPageContent />
+      </AppShell>
+    </AdminAuthGate>
+  );
 }

@@ -365,10 +365,10 @@ export function InsightPreview({ insights = [] }: { insights?: Array<{ id: strin
 export function WorkspaceCta() {
   return (
     <a
-      href="/facilitator/evidence"
+      href="/fasilitator/tbos"
       className="inline-flex items-center gap-2 rounded-[8px] bg-[#0B2C6B] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0A255A]"
     >
-      Add evidence <ArrowUpRight size={16} />
+      Mulai observasi T-BOS <ArrowUpRight size={16} />
     </a>
   );
 }

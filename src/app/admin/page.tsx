@@ -262,6 +262,12 @@ export default function AdminDashboardPage() {
                 Form Input Observasi
               </Link>
               <Link
+                href="/admin/lep"
+                className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+              >
+                Kelola Evaluasi LEP
+              </Link>
+              <Link
                 href="/peserta/dashboard"
                 className="flex rounded-xl px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
               >
@@ -309,6 +315,14 @@ export default function AdminDashboardPage() {
                 >
                   <RefreshCw size={13} className={loading ? "animate-spin text-[#C79A3C]" : "text-slate-500"} />
                   Refresh
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  aria-label="Keluar dari sesi"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 shadow-xs hover:bg-red-50 lg:hidden"
+                >
+                  <LogOut size={15} />
                 </button>
               </div>
             </div>

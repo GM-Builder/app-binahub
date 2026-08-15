@@ -70,7 +70,7 @@ export default function PesertaLepPage() {
   );
 }
 
-function PesertaLepContent() {
+export function PesertaLepContent({ accessPath = "/login" }: { accessPath?: string } = {}) {
   const router = useRouter();
   const [programId, setProgramId] = useState("");
   const [speakers, setSpeakers] = useState<LepSpeaker[]>([]);
@@ -96,7 +96,7 @@ function PesertaLepContent() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) {
-        router.replace("/login");
+        router.replace(accessPath);
         return;
       }
 
@@ -134,7 +134,7 @@ function PesertaLepContent() {
     } finally {
       setLoading(false);
     }
-  }, [programId, router]);
+  }, [accessPath, programId, router]);
 
   useEffect(() => {
     if (!programId) return;
@@ -168,7 +168,7 @@ function PesertaLepContent() {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) {
-        router.replace("/login");
+        router.replace(accessPath);
         return;
       }
 

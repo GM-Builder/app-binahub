@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, ArrowRight, KeyRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, KeyRound, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +13,8 @@ export default function ClientAccessPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [program, setProgram] = useState<{ code: string; title: string } | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -23,7 +25,10 @@ export default function ClientAccessPage() {
       const response = await fetch("/api/client/access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim().toUpperCase() }),
+        body: JSON.stringify({
+          code: code.trim().toUpperCase(),
+          displayName: program ? displayName.trim() : undefined,
+        }),
       });
 
       const json = await response.json();
@@ -32,6 +37,12 @@ export default function ClientAccessPage() {
         const msg = json.error || "Kode akses tidak valid.";
         setError(msg);
         toast.error(msg);
+        setLoading(false);
+        return;
+      }
+
+      if (json.needsProfile && json.program) {
+        setProgram(json.program);
         setLoading(false);
         return;
       }
@@ -51,12 +62,12 @@ export default function ClientAccessPage() {
         }
       }
 
-      toast.success(`Selamat datang, ${json.client?.companyName || "Client"}!`);
+      toast.success(`Selamat datang, ${json.client?.displayName || json.client?.companyName || "Peserta"}!`);
 
       const requestedPath = new URLSearchParams(window.location.search).get("next") || "";
       const nextPath = requestedPath.startsWith("/") && !requestedPath.startsWith("//")
         ? requestedPath
-        : "/client/dashboard";
+        : json.redirectPath || "/client/dashboard";
       router.push(nextPath);
     } catch (err) {
       console.error("Client access error:", err);
@@ -78,7 +89,13 @@ export default function ClientAccessPage() {
         <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">
           Client Access
         </p>
-        <h1 className="mt-2 text-3xl font-light tracking-[-0.04em]">Masukkan Kode</h1>
+        <h1 className="mt-2 text-3xl font-light tracking-[-0.04em]">{program ? "Isi Nama Anda" : "Masukkan Kode Program"}</h1>
+        {program && (
+          <div className="mt-4 rounded-xl border border-[#D9A441]/30 bg-[#FFF9EA] p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A6817]">{program.code}</p>
+            <p className="mt-1 font-semibold text-[#0B2C6B]">{program.title}</p>
+          </div>
+        )}
 
         {error && (
           <div className="mt-5 flex gap-3 rounded-[12px] border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -88,7 +105,7 @@ export default function ClientAccessPage() {
         )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          <label className="block">
+          {!program ? <label className="block">
             <span className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0B2C6B]/50">
               <KeyRound size={13} /> Kode Akses
             </span>
@@ -99,15 +116,40 @@ export default function ClientAccessPage() {
               placeholder="MASMINDO-A"
               required
             />
-          </label>
+          </label> : (
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0B2C6B]/50">
+                <UserRound size={13} /> Nama Lengkap
+              </span>
+              <input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                className="h-[52px] w-full rounded-[12px] border border-black/10 bg-[#FAFAF8] px-4 text-sm font-medium text-[#0B2C6B] outline-none transition focus:border-[#D9A441]"
+                placeholder="Tulis nama Anda"
+                minLength={2}
+                maxLength={120}
+                autoFocus
+                required
+              />
+            </label>
+          )}
 
           <button
             disabled={loading}
             className="flex h-[54px] w-full items-center justify-center gap-3 rounded-[12px] bg-[#0B2C6B] text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Memeriksa..." : "Masuk Client"}
+            {loading ? "Memproses..." : program ? "Masuk ke Program" : "Lanjut"}
             <ArrowRight size={17} />
           </button>
+          {program && (
+            <button
+              type="button"
+              onClick={() => { setProgram(null); setDisplayName(""); setError(""); }}
+              className="w-full text-sm font-semibold text-[#0B2C6B]/60 hover:text-[#0B2C6B]"
+            >
+              Gunakan kode lain
+            </button>
+          )}
         </form>
       </section>
     </main>

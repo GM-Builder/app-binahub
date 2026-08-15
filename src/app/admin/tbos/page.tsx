@@ -25,19 +25,18 @@ import {
   Activity,
   Target,
   Layers,
-  CheckCircle2,
-  AlertTriangle,
   Pencil,
   Trash2,
-  Building2,
   ChevronDown,
   ChevronUp,
   Home,
+  Building2,
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/ui";
-import { useEngagements } from "@/hooks/use-transformation-data";
+import { ConfirmDialog } from "@/components/ui";
+import { toast } from "sonner";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
@@ -76,15 +75,8 @@ function TbosDashboardContent() {
   const [error, setError] = useState("");
   const [teamRoster, setTeamRoster] = useState<TbosDbTeam[]>([]);
   const [observations, setObservations] = useState<TbosObservation[]>([]);
-  const { engagements } = useEngagements();
-  const activePrograms = engagements.filter((program) => ["active", "in_progress", "review"].includes(program.status));
+  const [activePrograms, setActivePrograms] = useState<Array<{ id: string; code: string | null; title: string }>>([]);
   const [selectedProgramId, setSelectedProgramId] = useState("");
-  const [showProgramModal, setShowProgramModal] = useState(false);
-  const [newProgramCode, setNewProgramCode] = useState("");
-  const [newProgramTitle, setNewProgramTitle] = useState("");
-  const [newCompanyName, setNewCompanyName] = useState("");
-  const [creatingProgram, setCreatingProgram] = useState(false);
-  const [programError, setProgramError] = useState("");
 
   // Create Team Modal State
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -104,12 +96,15 @@ function TbosDashboardContent() {
   // Facilitator assignment state
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [facilitators, setFacilitators] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
-  const [missions, setMissions] = useState<Array<{ id: string; code: string; name: string }>>([]);
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
-  const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "batch" | "team"; id: string; name: string } | null>(null);
+  const [deletingItem, setDeletingItem] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<{ id: string; name: string } | null>(null);
+  const [editTeamName, setEditTeamName] = useState("");
+  const [savingTeam, setSavingTeam] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!selectedProgramId) {
@@ -136,12 +131,21 @@ function TbosDashboardContent() {
         const batchList = await fetchBatches(selectedProgramId);
         setBatches(batchList);
       }
-    } catch {
-      setError("Gagal memuat data dashboard.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Gagal memuat data dashboard.");
     } finally {
       setLoading(false);
     }
   }, [selectedProgramId]);
+
+  useEffect(() => {
+    let active = true;
+    void import("@/modules/tbos/api-client")
+      .then(({ fetchTbosPrograms }) => fetchTbosPrograms("tbos"))
+      .then((programs) => { if (active) setActivePrograms(programs); })
+      .catch((error) => { if (active) setError(error instanceof Error ? error.message : "Gagal memuat program T-BOS."); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     void Promise.resolve().then(fetchData);
@@ -156,33 +160,16 @@ function TbosDashboardContent() {
   const openAssignmentModal = async () => {
     setAssignmentError("");
     setAssignmentSuccess(false);
-    setSelectedMissionIds([]);
     try {
-      const [usersRes, missionsRes] = await Promise.all([
-        fetch("/api/users"),
-        fetch("/api/tbos/missions"),
-      ]);
+      const usersRes = await fetch("/api/users");
       const usersResult = await usersRes.json();
-      const missionsResult = await missionsRes.json();
 
       if (!usersRes.ok || !usersResult.success) throw new Error(usersResult.error || "Gagal memuat fasilitator.");
-      if (!missionsRes.ok || !missionsResult.success) throw new Error(missionsResult.error || "Gagal memuat misi.");
 
       const available = (usersResult.users as Array<{ id: string; full_name: string; email: string; role: string }>)
         .filter((user) => user.role === "facilitator");
       setFacilitators(available);
       setSelectedFacilitatorId(available[0]?.id || "");
-
-      const missionList = ((missionsResult.missions || []) as Array<{ id: string; code: string; name: string }>)
-        .map((mission) => ({ id: mission.id, code: mission.code, name: mission.name }));
-      setMissions(missionList);
-
-      // Pre-select missions already assigned to the first facilitator
-      if (available[0]?.id && selectedProgramId) {
-        const { fetchFacilitatorMissions } = await import("@/modules/tbos/api-client");
-        const existing = await fetchFacilitatorMissions(selectedProgramId, available[0].id);
-        setSelectedMissionIds(existing.map((e) => e.missionId));
-      }
 
       setShowAssignmentModal(true);
     } catch (err) {
@@ -199,11 +186,10 @@ function TbosDashboardContent() {
     setAssigning(true);
     setAssignmentError("");
     try {
-      const { bulkAssignFacilitatorToMissions } = await import("@/modules/tbos/api-client");
-      const result = await bulkAssignFacilitatorToMissions({
+      const { assignFacilitatorToProgram } = await import("@/modules/tbos/api-client");
+      const result = await assignFacilitatorToProgram({
         facilitatorId: selectedFacilitatorId,
         programId: selectedProgramId,
-        missionIds: selectedMissionIds,
       });
       if (!result.success) throw new Error(result.error || "Gagal menugaskan fasilitator.");
       setAssignmentSuccess(true);
@@ -211,21 +197,6 @@ function TbosDashboardContent() {
       setAssignmentError(err instanceof Error ? err.message : "Gagal menugaskan fasilitator.");
     } finally {
       setAssigning(false);
-    }
-  };
-
-  const handleFacilitatorSelection = async (facilitatorId: string) => {
-    setSelectedFacilitatorId(facilitatorId);
-    setSelectedMissionIds([]);
-    setAssignmentError("");
-    setAssignmentSuccess(false);
-    if (!facilitatorId || !selectedProgramId) return;
-    try {
-      const { fetchFacilitatorMissions } = await import("@/modules/tbos/api-client");
-      const existing = await fetchFacilitatorMissions(selectedProgramId, facilitatorId);
-      setSelectedMissionIds(existing.map((assignment) => assignment.missionId));
-    } catch (error) {
-      setAssignmentError(error instanceof Error ? error.message : "Gagal memuat penugasan fasilitator.");
     }
   };
 
@@ -282,32 +253,6 @@ function TbosDashboardContent() {
     setCreatingTeam(false);
   };
 
-  const handleCreateProgram = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!newProgramCode.trim() || !newProgramTitle.trim() || !newCompanyName.trim()) {
-      setProgramError("Kode, nama program, dan perusahaan wajib diisi.");
-      return;
-    }
-    setCreatingProgram(true);
-    setProgramError("");
-    try {
-      const organizationResponse = await fetch("/api/organizations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newCompanyName.trim() }) });
-      const organizationResult = await organizationResponse.json().catch(() => ({}));
-      if (!organizationResponse.ok || !organizationResult.success) throw new Error(organizationResult.error || "Gagal menyimpan perusahaan.");
-      const response = await fetch("/api/engagements", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organizationResult.organization.id, code: newProgramCode.trim().toUpperCase(), title: newProgramTitle.trim(), type: "assessment", status: "active", modules: [{ moduleKey: "tbos", enabled: true }, { moduleKey: "lep", enabled: false }] }) });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.success) throw new Error(result.error || "Gagal membuat program.");
-      setShowProgramModal(false);
-      setNewProgramCode(""); setNewProgramTitle(""); setNewCompanyName("");
-      setSelectedProgramId(result.engagement.id);
-      window.location.reload();
-    } catch (error) {
-      setProgramError(error instanceof Error ? error.message : "Gagal membuat program.");
-    } finally {
-      setCreatingProgram(false);
-    }
-  };
-
   const handleCreateBatch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!newBatchName.trim() || !selectedProgramId) return;
@@ -330,37 +275,71 @@ function TbosDashboardContent() {
     }
   };
 
-  const handleDeleteBatch = async (batchId: string, name: string) => {
-    if (!window.confirm(`Hapus batch "${name}"? Batch yang masih digunakan oleh tim tidak dapat dihapus.`)) return;
+  const handleDeleteBatch = (batchId: string, name: string) => {
+    setDeleteTarget({ type: "batch", id: batchId, name });
+  };
+
+  const confirmDeleteItem = async () => {
+    if (!deleteTarget) return;
+    setDeletingItem(true);
     try {
-      const { deleteBatch } = await import("@/modules/tbos/api-client");
-      const result = await deleteBatch(batchId);
-      if (!result.success) {
-        window.alert(result.error || "Batch tidak dapat dihapus.");
+      if (deleteTarget.type === "batch") {
+        const { deleteBatch } = await import("@/modules/tbos/api-client");
+        const result = await deleteBatch(deleteTarget.id);
+        if (!result.success) throw new Error(result.error || "Batch tidak dapat dihapus.");
       } else {
-        fetchData();
+        const response = await fetch(`/api/tbos/teams/${deleteTarget.id}`, { method: "DELETE" });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || "Tim tidak dapat dihapus.");
       }
+      toast.success(`${deleteTarget.type === "batch" ? "Batch" : "Tim"} berhasil dihapus.`);
+      await fetchData();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Gagal menghapus batch.");
+      toast.error(err instanceof Error ? err.message : "Gagal menghapus data.");
+    } finally {
+      setDeletingItem(false);
     }
   };
 
-  const handleEditTeam = async (teamId: string, currentName: string) => {
-    const name = window.prompt("Nama tim", currentName);
-    if (!name?.trim()) return;
-    const response = await fetch(`/api/tbos/teams/${teamId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) window.alert(result.error || "Gagal mengubah tim.");
-    else await fetchData();
+  const handleEditTeam = (teamId: string, currentName: string) => {
+    setEditingTeam({ id: teamId, name: currentName });
+    setEditTeamName(currentName);
   };
 
-  const handleDeleteTeam = async (teamId: string, name: string) => {
-    if (!window.confirm(`Hapus tim ${name}? Tim dengan histori observasi tidak dapat dihapus.`)) return;
-    const response = await fetch(`/api/tbos/teams/${teamId}`, { method: "DELETE" });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) window.alert(result.error || "Tim tidak dapat dihapus.");
-    else await fetchData();
+  const saveTeamName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingTeam || !editTeamName.trim()) return;
+    setSavingTeam(true);
+    try {
+      const response = await fetch(`/api/tbos/teams/${editingTeam.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: editTeamName.trim() }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal mengubah tim.");
+      toast.success("Nama tim diperbarui.");
+      setEditingTeam(null);
+      await fetchData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal mengubah tim.");
+    } finally {
+      setSavingTeam(false);
+    }
   };
+
+  const handleDeleteTeam = (teamId: string, name: string) => {
+    setDeleteTarget({ type: "team", id: teamId, name });
+  };
+
+  const deleteConfirmation = (
+    <ConfirmDialog
+      open={!!deleteTarget}
+      onClose={() => { if (!deletingItem) setDeleteTarget(null); }}
+      onConfirm={confirmDeleteItem}
+      title={`Hapus ${deleteTarget?.type === "batch" ? "Batch" : "Tim"}?`}
+      description={deleteTarget ? `${deleteTarget.type === "batch" ? "Batch" : "Tim"} "${deleteTarget.name}" akan dihapus permanen. Data yang masih digunakan atau memiliki histori akan ditolak oleh sistem.` : undefined}
+      confirmLabel="Ya, Hapus"
+      variant="danger"
+      loading={deletingItem}
+    />
+  );
 
   const summary = dashboardData?.executiveSummary;
 
@@ -391,7 +370,7 @@ function TbosDashboardContent() {
         <select
           value={selectedProgramId}
           onChange={(event) => setSelectedProgramId(event.target.value)}
-          className="h-10 min-w-64 rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm font-semibold text-[#0B2C6B] outline-none focus:border-[#D9A441]"
+          className="h-11 w-full min-w-0 rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm font-semibold text-[#0B2C6B] outline-none focus:border-[#D9A441] sm:w-auto sm:min-w-64"
           aria-label="Pilih program aktif"
         >
           {activePrograms.map((program) => (
@@ -399,7 +378,7 @@ function TbosDashboardContent() {
           ))}
         </select>
       ) : null}
-      <button type="button" onClick={() => setShowProgramModal(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#071B3D]"><Plus className="h-3.5 w-3.5" /> Buat Program</button>
+      <Link href="/admin/engagements/new" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#071B3D]"><Plus className="h-3.5 w-3.5" /> Buat Program</Link>
       </div>
     </div>
   );
@@ -463,6 +442,7 @@ function TbosDashboardContent() {
             onClose={() => setShowAddTeamModal(false)}
           />
         )}
+        {deleteConfirmation}
         </div>
       </div>
     );
@@ -475,7 +455,7 @@ function TbosDashboardContent() {
       {/* Batch Management */}
       {selectedProgramId && (
         <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Kelola Batch</p>
               <p className="mt-0.5 text-xs text-[#4A4C54]/70">Buat dan kelola batch untuk mengelompokkan tim dalam program ini.</p>
@@ -611,8 +591,8 @@ function TbosDashboardContent() {
       </div>
 
       {/* Tab Navigation + Export */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1 p-1 bg-[#0B2C6B]/[0.04] rounded-xl overflow-x-auto">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full gap-1 overflow-x-auto rounded-xl bg-[#0B2C6B]/[0.04] p-1 lg:w-auto">
           {TABS.map((tab) => (
             <button
               key={tab.key}
@@ -657,7 +637,6 @@ function TbosDashboardContent() {
           onClose={() => setShowAddTeamModal(false)}
         />
       )}
-      {showProgramModal && <CreateProgramModal code={newProgramCode} title={newProgramTitle} company={newCompanyName} setCode={setNewProgramCode} setTitle={setNewProgramTitle} setCompany={setNewCompanyName} loading={creatingProgram} error={programError} onSubmit={handleCreateProgram} onClose={() => setShowProgramModal(false)} />}
       {showBatchModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden">
@@ -695,11 +674,12 @@ function TbosDashboardContent() {
       {showAssignmentModal && (
         <AssignmentModal
           facilitators={facilitators}
-          missions={missions}
           facilitatorId={selectedFacilitatorId}
-          missionIds={selectedMissionIds}
-          setFacilitatorId={(value) => { void handleFacilitatorSelection(value); }}
-          setMissionIds={setSelectedMissionIds}
+          setFacilitatorId={(value) => {
+            setSelectedFacilitatorId(value);
+            setAssignmentError("");
+            setAssignmentSuccess(false);
+          }}
           loading={assigning}
           error={assignmentError}
           success={assignmentSuccess}
@@ -707,17 +687,55 @@ function TbosDashboardContent() {
           onClose={() => setShowAssignmentModal(false)}
         />
       )}
+      {editingTeam && (
+        <TeamNameModal
+          value={editTeamName}
+          onChange={setEditTeamName}
+          loading={savingTeam}
+          onSubmit={saveTeamName}
+          onClose={() => { if (!savingTeam) setEditingTeam(null); }}
+        />
+      )}
+      {deleteConfirmation}
+    </div>
+  );
+}
+
+function TeamNameModal({
+  value,
+  onChange,
+  loading,
+  onSubmit,
+  onClose,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  loading: boolean;
+  onSubmit: (event: React.FormEvent) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center" role="dialog" aria-modal="true" aria-labelledby="edit-team-title">
+      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+        <h2 id="edit-team-title" className="text-base font-bold text-[#0B2C6B]">Ubah Nama Tim</h2>
+        <label htmlFor="edit-team-name" className="mt-4 block text-xs font-semibold text-[#0B2C6B]">Nama tim</label>
+        <input id="edit-team-name" autoFocus required maxLength={50} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-[#0B2C6B]" />
+        <div className="mt-5 flex gap-2">
+          <button type="button" onClick={onClose} disabled={loading} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-[#0B2C6B] disabled:opacity-50">Batal</button>
+          <button type="submit" disabled={loading || !value.trim()} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            Simpan
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
 
 function AssignmentModal({
   facilitators,
-  missions,
   facilitatorId,
-  missionIds,
   setFacilitatorId,
-  setMissionIds,
   loading,
   error,
   success,
@@ -725,35 +743,21 @@ function AssignmentModal({
   onClose,
 }: {
   facilitators: Array<{ id: string; full_name: string; email: string }>;
-  missions: Array<{ id: string; code: string; name: string }>;
   facilitatorId: string;
-  missionIds: string[];
   setFacilitatorId: (value: string) => void;
-  setMissionIds: (value: string[]) => void;
   loading: boolean;
   error: string;
   success: boolean;
   onSubmit: (event: React.FormEvent) => void;
   onClose: () => void;
 }) {
-  const toggleMission = (missionId: string) => {
-    setMissionIds(
-      missionIds.includes(missionId)
-        ? missionIds.filter((id) => id !== missionId)
-        : [...missionIds, missionId]
-    );
-  };
-
-  const selectAll = () => setMissionIds(missions.map((m) => m.id));
-  const clearAll = () => setMissionIds([]);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="assignment-title">
       <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-4">
           <div className="flex items-center gap-2">
             <UsersRound className="h-5 w-5 text-[#0B2C6B]" />
-            <h2 id="assignment-title" className="font-bold text-[#0B2C6B]">Tugaskan Fasilitator ke Misi</h2>
+            <h2 id="assignment-title" className="font-bold text-[#0B2C6B]">Tugaskan Fasilitator ke Program</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Tutup penugasan" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100">
             <X className="h-5 w-5" />
@@ -761,7 +765,7 @@ function AssignmentModal({
         </div>
         <form onSubmit={onSubmit} className="space-y-4 p-5">
           {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-          {success && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Penugasan fasilitator berhasil disimpan.</p>}
+          {success && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Fasilitator berhasil ditugaskan ke program.</p>}
           {facilitators.length === 0 ? (
             <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada akun dengan role fasilitator.</p>
           ) : (
@@ -772,41 +776,12 @@ function AssignmentModal({
               </select>
             </div>
           )}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-[#0B2C6B]">Misi yang Ditugaskan</label>
-              <div className="flex gap-2">
-                <button type="button" onClick={selectAll} className="text-[10px] font-semibold text-[#0B2C6B] hover:underline">Pilih Semua</button>
-                <button type="button" onClick={clearAll} className="text-[10px] font-semibold text-red-500 hover:underline">Hapus Semua</button>
-              </div>
-            </div>
-            {missions.length === 0 ? (
-              <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi yang tersedia.</p>
-            ) : (
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
-                {missions.map((mission) => (
-                  <label key={mission.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={missionIds.includes(mission.id)}
-                      onChange={() => toggleMission(mission.id)}
-                      className="h-4 w-4 rounded border-slate-300 text-[#0B2C6B] focus:ring-[#0B2C6B]"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span className="block text-sm font-medium text-[#0B2C6B] truncate">{mission.name}</span>
-                      <span className="block text-[10px] text-[#4A4C54]/60 uppercase tracking-wide">{mission.code}</span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            )}
-            {missions.length > 0 && (
-              <p className="mt-1.5 text-[10px] text-[#4A4C54]/50">{missionIds.length} dari {missions.length} misi dipilih</p>
-            )}
+          <div className="rounded-xl border border-[#0B2C6B]/10 bg-[#F5F7FA] p-4 text-sm text-[#4A4C54]">
+            Admin hanya memilih orangnya. Fasilitator kemudian memilih satu pos/misi yang langsung terkunci sampai program selesai, lalu menilai seluruh tim pada pos tersebut.
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold">Batal</button>
-            <button type="submit" disabled={loading || success || facilitators.length === 0 || missionIds.length === 0} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
               {loading ? "Menyimpan..." : "Simpan Penugasan"}
             </button>
           </div>
@@ -929,13 +904,6 @@ function AddTeamModal({
 
 function ExportButtons({ programId }: { programId: string }) {
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const handleExportPdf = async () => {
     setExporting("pdf");
@@ -952,10 +920,10 @@ function ExportButtons({ programId }: { programId: string }) {
       a.download = `TBOS_Report_${new Date().toISOString().split("T")[0]}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-      setToast({ type: "success", message: "PDF report berhasil diunduh." });
+      toast.success("PDF report berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] PDF export failed:", err);
-      setToast({ type: "error", message: "Gagal mengekspor PDF. Coba lagi." });
+      toast.error(err instanceof Error ? err.message : "Gagal mengekspor PDF. Coba lagi.");
     } finally {
       setExporting(null);
     }
@@ -991,22 +959,21 @@ function ExportButtons({ programId }: { programId: string }) {
       a.download = `TBOS_Observations_${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      setToast({ type: "success", message: "CSV data berhasil diunduh." });
+      toast.success("CSV data berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] CSV export failed:", err);
-      setToast({ type: "error", message: "Gagal mengekspor CSV. Coba lagi." });
+      toast.error(err instanceof Error ? err.message : "Gagal mengekspor CSV. Coba lagi.");
     } finally {
       setExporting(null);
     }
   };
 
   return (
-    <>
-      <div className="flex gap-2 shrink-0">
+      <div className="flex w-full shrink-0 gap-2 sm:w-auto">
         <button
           onClick={handleExportPdf}
           disabled={exporting !== null}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-all duration-200 disabled:opacity-40 shadow-sm hover:shadow-md"
+          className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0B2C6B] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#071B3D] hover:shadow-md disabled:opacity-40"
         >
           {exporting === "pdf" ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1018,7 +985,7 @@ function ExportButtons({ programId }: { programId: string }) {
         <button
           onClick={handleExportCsv}
           disabled={exporting !== null}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-black/[0.08] text-[#4A4C54] text-xs font-semibold hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-all duration-200 disabled:opacity-40 hover:shadow-sm"
+          className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-black/[0.08] px-3.5 py-2 text-xs font-semibold text-[#4A4C54] transition-all duration-200 hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] hover:shadow-sm disabled:opacity-40"
         >
           {exporting === "csv" ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1028,25 +995,6 @@ function ExportButtons({ programId }: { programId: string }) {
           CSV Data
         </button>
       </div>
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[60] animate-in slide-in-from-bottom-4 fade-in duration-300">
-          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-600 text-white"
-              : "bg-red-600 text-white"
-          }`}>
-            {toast.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-            )}
-            {toast.message}
-          </div>
-        </div>
-      )}
-    </>
   );
 }
 
@@ -1386,7 +1334,9 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
   );
 }
 
-function CreateProgramModal({
+// Kept exported for backward-compatible imports; the dashboard now routes all
+// creation through the canonical program wizard so module selection is not duplicated.
+export function CreateProgramModal({
   code,
   title,
   company,

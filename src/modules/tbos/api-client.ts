@@ -250,6 +250,41 @@ export async function fetchObservations(
   }
 }
 
+export interface FacilitatorMissionSelection {
+  programId: string;
+  selectedMissionId: string | null;
+  assignedAt: string;
+  selectedAt: string | null;
+  locked: boolean;
+}
+
+export async function fetchFacilitatorMissionSelection(programId: string): Promise<FacilitatorMissionSelection> {
+  const res = await fetch(`/api/tbos/facilitator-mission-selection?programId=${encodeURIComponent(programId)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success || !data.assignment) {
+    throw new Error(data.error || "Gagal memuat pilihan pos fasilitator.");
+  }
+  return data.assignment;
+}
+
+export async function selectFacilitatorMission(input: {
+  programId: string;
+  missionId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch("/api/tbos/facilitator-mission-selection", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) return { success: true };
+    return { success: false, error: data.error || "Gagal mengunci pilihan pos." };
+  } catch (error) {
+    return { success: false, error: getErrorMessage(error, "Gagal terhubung ke backend API.") };
+  }
+}
+
 export interface TbosProgram {
   id: string;
   code: string | null;
@@ -317,13 +352,17 @@ export async function deleteBatch(
 
 export interface TbosFacilitatorMission {
   profileId: string;
-  missionId: string;
+  missionId: string | null;
+  selectedMissionId: string | null;
   programId: string;
   facilitatorName: string;
   facilitatorEmail: string;
   missionCode: string;
   missionName: string;
   createdAt: string;
+  assignedAt: string;
+  selectedAt: string | null;
+  locked: boolean;
 }
 
 export async function fetchFacilitatorMissions(
@@ -338,9 +377,8 @@ export async function fetchFacilitatorMissions(
   return data.assignments || [];
 }
 
-export async function assignFacilitatorToMission(input: {
+export async function assignFacilitatorToProgram(input: {
   facilitatorId: string;
-  missionId: string;
   programId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
@@ -357,34 +395,13 @@ export async function assignFacilitatorToMission(input: {
   }
 }
 
-export async function bulkAssignFacilitatorToMissions(input: {
+export async function removeFacilitatorFromProgram(input: {
   facilitatorId: string;
-  programId: string;
-  missionIds: string[];
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    const res = await fetch("/api/tbos/facilitator-missions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
-    const data = await res.json();
-    if (data.success) return { success: true };
-    return { success: false, error: data.error || "Gagal menugaskan fasilitator." };
-  } catch (err: unknown) {
-    return { success: false, error: getErrorMessage(err, "Gagal terhubung ke backend API.") };
-  }
-}
-
-export async function removeFacilitatorMission(input: {
-  facilitatorId: string;
-  missionId: string;
   programId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const params = new URLSearchParams({
       facilitatorId: input.facilitatorId,
-      missionId: input.missionId,
       programId: input.programId,
     });
     const res = await fetch(`/api/tbos/facilitator-missions?${params}`, { method: "DELETE" });

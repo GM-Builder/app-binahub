@@ -14,7 +14,7 @@ export function ClientAuthGate({ children }: { children: React.ReactNode }) {
     async function checkAccess() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        if (alive) router.replace("/login");
+        if (alive) router.replace("/client/access");
         return;
       }
 
@@ -26,7 +26,7 @@ export function ClientAuthGate({ children }: { children: React.ReactNode }) {
         const role = response.ok && result.success ? result.role : null;
 
         if (role !== "client" && role !== "admin") {
-          if (alive) router.replace("/login");
+          if (alive) router.replace("/client/access");
           return;
         }
 

@@ -46,11 +46,6 @@ const HELP_TIPS: Record<string, string[]> = {
     "Lihat program aktif dan pengamatan terbaru.",
     "Gunakan akses cepat untuk navigasi ke fitur utama.",
   ],
-  "/facilitator/evidence": [
-    "Gunakan form 4 langkah untuk observasi yang terstruktur.",
-    "Pastikan memilih partisipan dan engagement yang tepat.",
-    "Observasi langsung menjadi catatan peserta.",
-  ],
   "/facilitator/participants": [
     "Lihat daftar partisipan per engagement.",
     "Klik partisipan untuk melihat detail kapabilitas.",

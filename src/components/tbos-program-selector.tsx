@@ -27,9 +27,9 @@ export function TbosProgramSelector({
     return () => { active = false; };
   }, [moduleKey, onChange, value]);
   return (
-    <label className="flex items-center gap-2 text-xs font-semibold text-[#0B2C6B]">
+    <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#0B2C6B] sm:flex-row sm:items-center sm:gap-2">
       Program
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-10 min-w-56 rounded-lg border border-[#0B2C6B]/15 bg-white px-3 text-sm font-semibold outline-none focus:border-[#D9A441]">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full min-w-0 rounded-lg border border-[#0B2C6B]/15 bg-white px-3 text-sm font-semibold outline-none focus:border-[#D9A441] sm:w-auto sm:min-w-56">
         {programs.length === 0 && <option value="">Tidak ada program aktif</option>}
         {programs.map((program) => <option key={program.id} value={program.id}>{program.code ? `${program.code} · ` : ""}{program.title}</option>)}
       </select>

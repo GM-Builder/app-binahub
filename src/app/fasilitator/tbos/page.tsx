@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckCircle2,
   ChevronRight,
   ClipboardCheck,
   Crown,
@@ -20,10 +19,13 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { TbosProgramSelector } from "@/components/tbos-program-selector";
+import { ConfirmDialog } from "@/components/ui";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import type { LevelValue } from "@/modules/tbos";
 import {
   fetchMissions,
+  fetchFacilitatorMissionSelection,
   fetchObservations,
   fetchTeams,
   flushQueuedObservations,
@@ -31,6 +33,7 @@ import {
   loadDraft,
   queueObservation,
   saveDraft,
+  selectFacilitatorMission,
   submitObservation,
   type TbosDbMission,
   type TbosDbObservation,
@@ -38,7 +41,7 @@ import {
   type TbosObservationMemberInput,
 } from "@/modules/tbos/api-client";
 
-type Step = "tasks" | "prepare" | "mission" | "observe" | "review" | "submitting" | "done";
+type Step = "tasks" | "prepare" | "observe" | "review" | "submitting" | "done";
 type TeamMember = { id: string; member_name: string; is_captain: boolean; isPresent: boolean };
 
 const LEVEL_STYLES: Record<number, string> = {
@@ -89,10 +92,11 @@ function TbosObservationContent() {
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(0);
   const [savedLocally, setSavedLocally] = useState(false);
-  const [isCreatingNewTeam, setIsCreatingNewTeam] = useState(false);
-  const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamBatchId, setNewTeamBatchId] = useState("");
-  const [batches, setBatches] = useState<Array<{ id: string; name: string }>>([]);
+  const [canEditRoster, setCanEditRoster] = useState(false);
+  const [missionSelectionTarget, setMissionSelectionTarget] = useState<TbosDbMission | null>(null);
+  const [lockingMission, setLockingMission] = useState(false);
+  const [memberDeleteTarget, setMemberDeleteTarget] = useState<TeamMember | null>(null);
+  const [deletingMember, setDeletingMember] = useState(false);
 
   const initData = useCallback(async () => {
     try {
@@ -104,19 +108,20 @@ function TbosObservationContent() {
       if (!selectedProgramId) {
         setMissions([]);
         setTeams([]);
-        setBatches([]);
+        setSelectedMission(null);
         return;
       }
 
-      const [missionList, teamList] = await Promise.all([fetchMissions(selectedProgramId), fetchTeams(selectedProgramId)]);
+      const [selection, missionList, teamList] = await Promise.all([
+        fetchFacilitatorMissionSelection(selectedProgramId),
+        fetchMissions(selectedProgramId),
+        fetchTeams(selectedProgramId),
+      ]);
       setMissions(missionList);
       setTeams(teamList);
-
-      if (selectedProgramId) {
-        const { fetchBatches } = await import("@/modules/tbos/api-client");
-        const batchList = await fetchBatches(selectedProgramId);
-        setBatches(batchList);
-      }
+      setSelectedMission(selection.selectedMissionId
+        ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
+        : null);
 
       // Completion data is useful context, but must never block field work.
       void fetchObservations(selectedProgramId).then(setObservations).catch(() => setObservations(null));
@@ -152,24 +157,24 @@ function TbosObservationContent() {
 
   const prepareTeam = async (team: TbosDbTeam) => {
     setSelectedTeam(team);
-    setSelectedMission(null);
     setScores({});
     setNotes("");
     setMemberError("");
     setMembersLoading(true);
-    setIsCreatingNewTeam(false);
     setStep("prepare");
 
     try {
-      let roster = team.members || [];
-      if (roster.length === 0) {
-        const response = await fetch(`/api/tbos/teams/members?teamId=${encodeURIComponent(team.id)}`);
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.success || !Array.isArray(result.members)) {
-          throw new Error(result.error || "Gagal memuat roster tim.");
-        }
-        roster = result.members;
+      const response = await fetch(`/api/tbos/teams/members?teamId=${encodeURIComponent(team.id)}`);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !Array.isArray(result.members)) {
+        throw new Error(result.error || "Gagal memuat roster tim.");
       }
+      const roster = result.members as Array<{
+        id: string;
+        member_name: string;
+        is_captain?: boolean;
+      }>;
+      setCanEditRoster(Boolean(result.canEditRoster));
 
       const members = roster.map((member) => ({
         id: member.id,
@@ -178,27 +183,15 @@ function TbosObservationContent() {
         isPresent: true,
       }));
       setTeamMembers(members);
-      setSessionCaptainId(members.find((member) => member.is_captain)?.id || members[0]?.id || null);
+      setSessionCaptainId(members.find((member) => member.is_captain)?.id || null);
     } catch (err) {
       setTeamMembers([]);
       setSessionCaptainId(null);
+      setCanEditRoster(false);
       setMemberError(err instanceof Error ? err.message : "Gagal memuat roster tim.");
     } finally {
       setMembersLoading(false);
     }
-  };
-
-  const startCreateNewTeam = () => {
-    setIsCreatingNewTeam(true);
-    setSelectedTeam(null);
-    setSelectedMission(null);
-    setScores({});
-    setNotes("");
-    setTeamMembers([]);
-    setSessionCaptainId(null);
-    setNewTeamName("");
-    setNewTeamBatchId(batches[0]?.id || "");
-    setStep("prepare");
   };
 
   const handleAddMember = async (event: React.FormEvent) => {
@@ -206,20 +199,6 @@ function TbosObservationContent() {
     if (!newMemberName.trim()) return;
     setAddingMember(true);
     setMemberError("");
-
-    if (isCreatingNewTeam) {
-      const newMember: TeamMember = {
-        id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        member_name: newMemberName.trim(),
-        is_captain: teamMembers.length === 0,
-        isPresent: true,
-      };
-      setTeamMembers((current) => [...current, newMember]);
-      setSessionCaptainId((current) => current || newMember.id);
-      setNewMemberName("");
-      setAddingMember(false);
-      return;
-    }
 
     if (!selectedTeam) { setAddingMember(false); return; }
 
@@ -248,17 +227,20 @@ function TbosObservationContent() {
     }
   };
 
-  const handleRemoveMember = async (member: TeamMember) => {
-    if (!window.confirm(`Hapus ${member.member_name} dari roster master tim?`)) return;
+  const handleRemoveMember = (member: TeamMember) => {
+    setMemberDeleteTarget(member);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!memberDeleteTarget) return;
+    const member = memberDeleteTarget;
+    setDeletingMember(true);
     setMemberError("");
 
-    if (isCreatingNewTeam) {
-      setTeamMembers((current) => current.filter((item) => item.id !== member.id));
-      if (sessionCaptainId === member.id) setSessionCaptainId(null);
+    if (!selectedTeam) {
+      setDeletingMember(false);
       return;
     }
-
-    if (!selectedTeam) return;
 
     try {
       const response = await fetch(
@@ -269,43 +251,51 @@ function TbosObservationContent() {
       if (!response.ok || !result.success) throw new Error(result.error || "Gagal menghapus anggota.");
       setTeamMembers((current) => current.filter((item) => item.id !== member.id));
       if (sessionCaptainId === member.id) setSessionCaptainId(null);
+      toast.success("Anggota dihapus dari roster tim.");
     } catch (err) {
       setMemberError(err instanceof Error ? err.message : "Gagal menghapus anggota.");
+    } finally {
+      setDeletingMember(false);
     }
   };
 
   const toggleAttendance = (memberId: string) => {
     setMemberError("");
+    const member = teamMembers.find((item) => item.id === memberId);
+    if (member?.is_captain) {
+      setMemberError("Kapten tim wajib hadir pada sesi observasi.");
+      return;
+    }
     setTeamMembers((current) =>
       current.map((member) => member.id === memberId ? { ...member, isPresent: !member.isPresent } : member),
     );
-    const member = teamMembers.find((item) => item.id === memberId);
-    if (member?.isPresent && sessionCaptainId === memberId) {
-      setSessionCaptainId(null);
-      setMemberError("Kapten sesi ditandai tidak hadir. Pilih satu kapten dari anggota yang hadir.");
+  };
+
+  const handleSetCaptain = async (member: TeamMember) => {
+    if (!selectedTeam || !canEditRoster || member.is_captain) return;
+    setMemberError("");
+    const response = await fetch("/api/tbos/teams/members", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamId: selectedTeam.id, memberId: member.id, isCaptain: true }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) {
+      setMemberError(result.error || "Gagal menetapkan kapten tim.");
+      return;
     }
+    setTeamMembers((current) => current.map((item) => ({ ...item, is_captain: item.id === member.id })));
+    setSessionCaptainId(member.id);
+    toast.success(`${member.member_name} ditetapkan sebagai kapten tim.`);
   };
 
   const presentMembers = teamMembers.filter((member) => member.isPresent);
   const sessionCaptain = presentMembers.find((member) => member.id === sessionCaptainId) || null;
   const preparationValid = presentMembers.length > 0 && Boolean(sessionCaptain);
 
-  const continueToMissions = () => {
-    if (presentMembers.length === 0) {
-      setMemberError("Tandai minimal satu anggota hadir untuk melanjutkan.");
-      return;
-    }
-    if (!sessionCaptain) {
-      setMemberError("Pilih tepat satu kapten sesi dari anggota yang hadir.");
-      return;
-    }
-    setMemberError("");
-    setStep("mission");
-  };
-
   const continueToObservation = () => {
-    if ((!selectedTeam && !isCreatingNewTeam) || !selectedMission) return;
-    const draft = selectedTeam ? loadDraft(selectedTeam.id, selectedMission.id) : null;
+    if (!selectedTeam || !selectedMission) return;
+    const draft = loadDraft(selectedTeam.id, selectedMission.id);
     setScores(draft?.scores || {});
     setNotes(draft?.notes || "");
     setStep("observe");
@@ -330,13 +320,12 @@ function TbosObservationContent() {
 
   const handleSubmit = async () => {
     if (!selectedMission || !allDimensionsScored || !preparationValid) return;
-    if (!selectedTeam && !isCreatingNewTeam) return;
-    if (isCreatingNewTeam && (!newTeamName.trim() || !newTeamBatchId || !selectedProgramId)) return;
+    if (!selectedTeam) return;
     setError("");
     setStep("submitting");
 
     const members: TbosObservationMemberInput[] = teamMembers.map((member) => ({
-      teamMemberId: isCreatingNewTeam ? null : member.id,
+      teamMemberId: member.id,
       memberName: member.member_name,
       isPresent: member.isPresent,
       isCaptain: member.isPresent && member.id === sessionCaptainId,
@@ -353,13 +342,11 @@ function TbosObservationContent() {
       })),
       members,
     };
-    const payload: Parameters<typeof queueObservation>[1] & { profileId: string } = isCreatingNewTeam
-      ? {
-          ...basePayload,
-          newTeam: { name: newTeamName.trim(), batchId: newTeamBatchId, programId: selectedProgramId },
-          batch: batches.find((batch) => batch.id === newTeamBatchId)?.name || "",
-        }
-      : { ...basePayload, teamId: selectedTeam!.id, batch: selectedTeam!.batch };
+    const payload: Parameters<typeof queueObservation>[1] & { profileId: string } = {
+      ...basePayload,
+      teamId: selectedTeam.id,
+      batch: selectedTeam.batch,
+    };
 
     if (!navigator.onLine) {
       queueObservation(userId, payload);
@@ -384,11 +371,46 @@ function TbosObservationContent() {
     }
   };
 
+  const confirmMissionSelection = async () => {
+    if (!missionSelectionTarget || !selectedProgramId) return;
+    setLockingMission(true);
+    setError("");
+    const result = await selectFacilitatorMission({
+      programId: selectedProgramId,
+      missionId: missionSelectionTarget.id,
+    });
+    if (!result.success) {
+      setError(result.error || "Gagal mengunci pilihan pos.");
+      setLockingMission(false);
+      setMissionSelectionTarget(null);
+      return;
+    }
+    const lockedMission = missionSelectionTarget;
+    setSelectedMission(lockedMission);
+    setMissions([lockedMission]);
+    setMissionSelectionTarget(null);
+    setLockingMission(false);
+    toast.success(`Pos ${lockedMission.name} berhasil dikunci sampai program selesai.`);
+    void fetchObservations(selectedProgramId).then(setObservations).catch(() => setObservations(null));
+  };
+
+  const handleProgramChange = useCallback((programId: string) => {
+    setSelectedProgramId(programId);
+    setSelectedMission(null);
+    setSelectedTeam(null);
+    setTeamMembers([]);
+    setCanEditRoster(false);
+    setStep("tasks");
+    setError("");
+    setLoading(true);
+  }, []);
+
   const resetForm = async () => {
     setLoading(true);
     setError("");
     try {
-      const [missionList, teamList, observationList] = await Promise.all([
+      const [selection, missionList, teamList, observationList] = await Promise.all([
+        fetchFacilitatorMissionSelection(selectedProgramId),
         fetchMissions(selectedProgramId),
         fetchTeams(selectedProgramId),
         fetchObservations(selectedProgramId),
@@ -396,14 +418,17 @@ function TbosObservationContent() {
       setMissions(missionList);
       setTeams(teamList);
       setObservations(observationList);
+      setSelectedMission(selection.selectedMissionId
+        ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
+        : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memperbarui penugasan.");
     } finally {
       setLoading(false);
       setStep("tasks");
       setSelectedTeam(null);
-      setSelectedMission(null);
       setTeamMembers([]);
+      setCanEditRoster(false);
       setSessionCaptainId(null);
       setScores({});
       setNotes("");
@@ -420,7 +445,7 @@ function TbosObservationContent() {
     return (
       <Shell isOnline={isOnline} queuedCount={queuedCount}>
         <div className="mx-auto max-w-2xl px-4 pt-4">
-          <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
+          <TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} />
         </div>
         <div className="flex min-h-[65vh] flex-col items-center justify-center gap-3" role="status">
           <Loader2 className="h-9 w-9 animate-spin text-[#0B2C6B] motion-reduce:animate-none" aria-hidden="true" />
@@ -450,7 +475,7 @@ function TbosObservationContent() {
             </div>
             <div className="space-y-5 p-6">
               <div className="rounded-2xl border border-accent/30 bg-[#F7F6F2] p-4">
-                <p className="font-bold text-[#0B2C6B]">{selectedTeam?.name || newTeamName || "Tim Baru"}</p>
+                <p className="font-bold text-[#0B2C6B]">{selectedTeam?.name || "Tim"}</p>
                 <p className="mt-1 text-sm text-slate-600">{selectedMission?.name}</p>
               </div>
               <button type="button" onClick={() => void resetForm()} className={`flex min-h-12 w-full items-center justify-center rounded-xl bg-[#0B2C6B] px-4 font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>
@@ -470,7 +495,7 @@ function TbosObservationContent() {
     <Shell isOnline={isOnline} queuedCount={queuedCount}>
       {step === "tasks" && (
         <main>
-          <div className="mx-auto max-w-2xl px-4 pt-4"><TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} /></div>
+          <div className="mx-auto max-w-2xl px-4 pt-4"><TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} /></div>
           <section className="relative overflow-hidden bg-primary-dark px-4 pb-14 pt-8 text-white">
             <div className="absolute -right-14 -top-20 h-60 w-60 rounded-full bg-[#123A72]" />
             <div className="absolute right-12 top-16 h-28 w-28 rounded-full border-[18px] border-accent/15" />
@@ -488,37 +513,49 @@ function TbosObservationContent() {
                 <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
               </div>
               <p className="text-sm font-semibold text-accent-light">Penugasan hari ini</p>
-              <h1 className="mt-2 max-w-md text-3xl font-bold leading-tight tracking-[-0.03em]">Mulai dari tim, catat sesi dengan yakin.</h1>
+              <h1 className="mt-2 max-w-md text-3xl font-bold leading-tight tracking-[-0.03em]">Tetap di satu pos, lalu nilai seluruh tim yang melaluinya.</h1>
               <div className="mt-7 inline-flex items-end gap-3 rounded-2xl bg-white/10 px-4 py-3 ring-1 ring-white/10 backdrop-blur">
                 <strong className="text-3xl leading-none text-accent-light">{teams.length}</strong>
-                <span className="pb-0.5 text-sm text-white/75">tim ditugaskan</span>
+                <span className="pb-0.5 text-sm text-white/75">tim dalam program</span>
               </div>
             </div>
           </section>
 
           <section className="mx-auto -mt-7 max-w-2xl space-y-4 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))]" aria-labelledby="assigned-teams-title">
-            <div className="relative flex items-center justify-between rounded-2xl bg-white px-5 py-4 shadow-[0_12px_34px_rgba(8,29,66,0.1)]">
-              <div>
-                <h2 id="assigned-teams-title" className="font-bold text-[#0B2C6B]">Tim Anda</h2>
-                <p className="mt-0.5 text-xs text-slate-500">Pilih tim atau buat baru untuk observasi.</p>
+            <div className="relative rounded-2xl bg-white p-5 shadow-[0_12px_34px_rgba(8,29,66,0.1)]">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#D9A441]">Langkah 1</p>
+              <h2 className="mt-1 font-bold text-[#0B2C6B]">Pilih misi T-BOS</h2>
+              <p className="mt-1 text-xs text-slate-500">Pos hanya dipilih sekali dan tidak dapat diubah sampai program selesai.</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {missions.map((mission) => {
+                  const selected = selectedMission?.id === mission.id;
+                  return (
+                    <button key={mission.id} type="button" disabled={Boolean(selectedMission)} onClick={() => setMissionSelectionTarget(mission)} aria-pressed={selected} className={`min-h-14 rounded-xl border px-3 py-2 text-left transition disabled:cursor-default ${selected ? "border-[#0B2C6B] bg-[#0B2C6B] text-white" : "border-slate-200 bg-[#F7F6F2] text-[#0B2C6B] hover:border-[#D9A441]"}`}>
+                      <span className="block text-sm font-bold">{mission.name}</span>
+                      <span className={`mt-0.5 block text-[10px] ${selected ? "text-white/70" : "text-slate-500"}`}>{selected ? "Pos terkunci" : `${mission.dimensions.length} dimensi`}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <button
-                type="button"
-                onClick={startCreateNewTeam}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-primary-dark hover:bg-accent-light transition-colors"
-              >
-                <UserPlus className="h-3.5 w-3.5" /> Buat Tim Baru
-              </button>
+              {missions.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi T-BOS yang tersedia. Hubungi admin.</p>}
+            </div>
+
+            <div className="relative rounded-2xl bg-white px-5 py-4 shadow-[0_12px_34px_rgba(8,29,66,0.1)]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#D9A441]">Langkah 2</p>
+                <h2 id="assigned-teams-title" className="mt-1 font-bold text-[#0B2C6B]">Semua tim program</h2>
+                <p className="mt-0.5 text-xs text-slate-500">{selectedMission ? `Anda menilai ${selectedMission.name} untuk setiap tim.` : "Kunci satu pos terlebih dahulu untuk membuka daftar tim."}</p>
+              </div>
             </div>
 
             {error && <Alert>{error}</Alert>}
-            {teams.length === 0 && (
+            {selectedMission && teams.length === 0 && (
               <div className="rounded-md bg-white p-7 text-center shadow-sm">
                 <p className="font-semibold text-[#0B2C6B]">Belum ada tim ditugaskan</p>
                 <p className="mt-1 text-sm text-slate-500">Hubungi admin untuk mendapatkan assignment.</p>
               </div>
             )}
-            {teams.map((team, index) => {
+            {selectedMission && teams.map((team, index) => {
               const completedCount = completedMissionIds(team.id).size;
               const captain = team.members?.find((member) => member.is_captain);
               return (
@@ -542,7 +579,7 @@ function TbosObservationContent() {
                   </dl>
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <p className="text-xs font-semibold text-slate-500">
-                      {observations === null ? "Riwayat tidak tersedia" : `${completedCount}/${missions.length} misi selesai`}
+                      {observations === null ? "Riwayat tidak tersedia" : completedCount > 0 ? "Observasi pos ini selesai" : "Belum dinilai di pos ini"}
                     </p>
                     <button type="button" onClick={() => void prepareTeam(team)} className={`inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[#0B2C6B] px-4 text-sm font-bold text-white shadow-md shadow-[#0B2C6B]/15 ${FOCUS}`}>
                       Siapkan Tim <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -555,58 +592,23 @@ function TbosObservationContent() {
         </main>
       )}
 
-      {step === "prepare" && (selectedTeam || isCreatingNewTeam) && (
+      {step === "prepare" && selectedTeam && (
         <WorkflowPage
-          eyebrow="Langkah 1 dari 4"
+          eyebrow="Langkah 2 dari 4"
           title="Siapkan tim"
-          subtitle={isCreatingNewTeam ? (newTeamName || "Tim Baru") : `${selectedTeam!.name} · ${selectedTeam!.batch}`}
+          subtitle={`${selectedTeam.name} · ${selectedTeam.batch}`}
           backLabel="Kembali ke daftar penugasan"
-          onBack={() => { setStep("tasks"); setIsCreatingNewTeam(false); }}
+          onBack={() => setStep("tasks")}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
         >
            <section className="rounded-2xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Kehadiran sesi</h2>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500">Atur kehadiran dan pilih satu kapten untuk snapshot sesi ini.</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-500">Roster dan kapten diisi sekali saat tim pertama kali masuk pos. Setelah observasi pertama, data master terkunci.</p>
               </div>
               <Users className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
             </div>
-
-            {isCreatingNewTeam && (
-              <div className="mt-4 rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-3">
-                <h3 className="text-sm font-bold text-primary-dark">Data Tim Baru</h3>
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1">Nama Tim</label>
-                  <input
-                    type="text"
-                    required
-                    value={newTeamName}
-                    onChange={(e) => setNewTeamName(e.target.value)}
-                    placeholder="Contoh: Team Alpha, Bravo 1"
-                    maxLength={50}
-                    className="w-full px-3 py-2 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1">Batch</label>
-                  {batches.length > 0 ? (
-                    <select
-                      value={newTeamBatchId}
-                      onChange={(e) => setNewTeamBatchId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] bg-white"
-                    >
-                      <option value="">Pilih batch...</option>
-                      {batches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2">Belum ada batch. Hubungi admin.</p>
-                  )}
-                </div>
-              </div>
-            )}
 
             {memberError && <div className="mt-4"><Alert>{memberError}</Alert></div>}
             {membersLoading ? (
@@ -640,17 +642,19 @@ function TbosObservationContent() {
                         </div>
                         <button
                           type="button"
-                          disabled={!member.isPresent}
+                          disabled={!canEditRoster || !member.isPresent || member.is_captain}
                           aria-pressed={isSessionCaptain}
-                          aria-label={`Pilih ${member.member_name} sebagai kapten sesi`}
-                          onClick={() => { setSessionCaptainId(member.id); setMemberError(""); }}
+                          aria-label={`Tetapkan ${member.member_name} sebagai kapten tim`}
+                          onClick={() => void handleSetCaptain(member)}
                           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-30 ${isSessionCaptain ? "border-accent bg-accent text-primary-dark" : "border-slate-200 text-slate-400"} ${FOCUS}`}
                         >
                           <Crown className="h-4 w-4" aria-hidden="true" />
                         </button>
-                        <button type="button" onClick={() => void handleRemoveMember(member)} aria-label={`Hapus ${member.member_name} dari roster master`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 ${FOCUS}`}>
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        </button>
+                        {canEditRoster && !member.is_captain && (
+                          <button type="button" onClick={() => handleRemoveMember(member)} aria-label={`Hapus ${member.member_name} dari roster master`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 ${FOCUS}`}>
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        )}
                       </div>
                     </article>
                   );
@@ -658,7 +662,7 @@ function TbosObservationContent() {
               </div>
             )}
 
-            <form onSubmit={handleAddMember} className="mt-5 border-t border-slate-100 pt-5">
+            {canEditRoster ? <form onSubmit={handleAddMember} className="mt-5 border-t border-slate-100 pt-5">
               <label htmlFor="new-member" className="text-sm font-bold text-[#0B2C6B]">Tambah ke roster master</label>
               <div className="mt-2 flex gap-2">
                 <input id="new-member" type="text" value={newMemberName} onChange={(event) => setNewMemberName(event.target.value)} placeholder="Nama anggota" className={`min-h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
@@ -666,67 +670,28 @@ function TbosObservationContent() {
                   {addingMember ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <UserPlus className="h-4 w-4" />}
                 </button>
               </div>
-            </form>
+            </form> : (
+              <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Roster master sudah tersedia. Anda hanya perlu mengatur kehadiran dan mengisi observasi untuk pos Anda.</p>
+            )}
           </section>
 
            <div className="rounded-xl border border-accent/35 bg-[#FFF9EA] p-4" role="status">
             <p className="text-sm font-bold text-[#6D511B]">Ringkasan sesi</p>
             <p className="mt-1 text-sm text-[#7A642F]">{presentMembers.length} hadir · Kapten: {sessionCaptain?.member_name || "belum dipilih"}</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten sesi hanya tersimpan pada observasi ini dan tidak mengubah kapten master.</p>
+            <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten mengikuti roster master tim dan wajib hadir pada sesi observasi.</p>
           </div>
 
-          <BottomAction disabled={!preparationValid || membersLoading} onClick={continueToMissions} label="Lanjut Pilih Misi" />
+          <BottomAction disabled={!preparationValid || membersLoading} onClick={continueToObservation} label="Lanjut Isi Observasi" />
         </WorkflowPage>
       )}
 
-      {step === "mission" && (selectedTeam || isCreatingNewTeam) && (
-        <WorkflowPage
-          eyebrow="Langkah 2 dari 4"
-          title="Pilih misi"
-          subtitle={`${selectedTeam?.name || newTeamName || "Tim Baru"} · ${presentMembers.length} anggota hadir`}
-          backLabel="Kembali ke persiapan tim"
-          onBack={() => setStep("prepare")}
-          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
-        >
-          <section aria-labelledby="missions-title">
-            <div className="mb-4">
-              <h2 id="missions-title" className="text-lg font-bold text-primary-dark">Semua misi</h2>
-              <p className="mt-1 text-sm text-slate-500">Misi yang sudah selesai tetap dapat diobservasi kembali.</p>
-            </div>
-            <div className="space-y-3">
-              {missions.map((mission, index) => {
-                const completed = selectedTeam ? completedMissionIds(selectedTeam.id).has(mission.id) : false;
-                const selected = selectedMission?.id === mission.id;
-                return (
-                  <button key={mission.id} type="button" aria-pressed={selected} onClick={() => setSelectedMission(mission)} className={`w-full rounded-md border p-5 text-left transition motion-reduce:transition-none ${selected ? "border-accent bg-primary-dark text-white shadow-[0_18px_40px_rgba(8,29,66,0.2)]" : "border-black/[0.04] bg-white text-primary-dark shadow-[0_7px_20px_rgba(8,29,66,0.07)]"} ${FOCUS}`}>
-                    <div className="flex items-start gap-4">
-                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold ${selected ? "bg-accent text-primary-dark" : "bg-[#F3E7CA] text-accent-dark"}`}>{String(index + 1).padStart(2, "0")}</span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-bold">{mission.name}</h3>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${completed ? "bg-emerald-100 text-emerald-700" : selected ? "bg-white/10 text-white/70" : "bg-slate-100 text-slate-500"}`}>{completed ? "Selesai" : "Tersedia"}</span>
-                        </div>
-                        <p className={`mt-2 line-clamp-2 text-sm leading-relaxed ${selected ? "text-white/65" : "text-slate-500"}`}>{mission.description}</p>
-                        <p className={`mt-3 text-xs font-semibold ${selected ? "text-accent-light" : "text-[#0B2C6B]"}`}>{mission.dimensions.length} dimensi observasi</p>
-                      </div>
-                      {selected && <CheckCircle2 className="h-5 w-5 shrink-0 text-accent-light" aria-hidden="true" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-          <BottomAction disabled={!selectedMission} onClick={continueToObservation} label="Mulai Observasi" />
-        </WorkflowPage>
-      )}
-
-      {step === "observe" && (selectedTeam || isCreatingNewTeam) && selectedMission && (
+      {step === "observe" && selectedTeam && selectedMission && (
         <WorkflowPage
           eyebrow="Langkah 3 dari 4"
           title="Catat observasi"
-          subtitle={`${selectedTeam?.name || newTeamName || "Tim Baru"} · ${selectedMission.name}`}
-          backLabel="Kembali ke pilihan misi"
-          onBack={() => setStep("mission")}
+          subtitle={`${selectedTeam.name} · ${selectedMission.name}`}
+          backLabel="Kembali ke persiapan tim"
+          onBack={() => setStep("prepare")}
           status={<span className="text-xs font-bold text-accent-light">{scoredCount}/{selectedMission.dimensions.length}</span>}
         >
           <section className="rounded-md bg-[#0B2C6B] p-5 text-white shadow-[0_16px_40px_rgba(8,29,66,0.2)]" aria-label="Kemajuan observasi">
@@ -796,7 +761,7 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "review" && (selectedTeam || isCreatingNewTeam) && selectedMission && sessionCaptain && (
+      {step === "review" && selectedTeam && selectedMission && sessionCaptain && (
         <WorkflowPage
           eyebrow="Langkah 4 dari 4"
           title="Tinjau & konfirmasi"
@@ -809,8 +774,8 @@ function TbosObservationContent() {
           <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
             <div className="bg-[#0B2C6B] p-5 text-white">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
-              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam?.name || newTeamName || "Tim Baru"}</h2>
-              <p className="mt-1 text-sm text-white/65">{selectedTeam?.batch || batches.find((b) => b.id === newTeamBatchId)?.name || ""} · {selectedMission?.name}</p>
+              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
+              <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 p-5">
               <div>
@@ -862,72 +827,6 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "review" && isCreatingNewTeam && selectedTeam && selectedMission && sessionCaptain && (
-        <WorkflowPage
-          eyebrow="Langkah 4 dari 4"
-          title="Tinjau & konfirmasi"
-          subtitle="Pastikan snapshot sesi sudah tepat sebelum disimpan."
-          backLabel="Kembali mengedit skor observasi"
-          onBack={() => setStep("observe")}
-          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
-        >
-          {error && <Alert>{error}</Alert>}
-          <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
-            <div className="bg-[#0B2C6B] p-5 text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Konteks observasi</p>
-              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam?.name || newTeamName || "Tim Baru"}</h2>
-              <p className="mt-1 text-sm text-white/65">{selectedTeam?.batch || batches.find((b) => b.id === newTeamBatchId)?.name || ""} · {selectedMission?.name}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4 p-5">
-              <div>
-                <p className="text-xs text-slate-500">Hadir</p>
-                <p className="mt-1 text-lg font-bold text-primary-dark">{presentMembers.length} anggota</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Kapten sesi</p>
-                <p className="mt-1 truncate text-sm font-bold text-primary-dark">{sessionCaptain?.member_name}</p>
-              </div>
-              <div className="col-span-2 border-t border-slate-100 pt-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar hadir</p>
-                <ul className="mt-2 flex flex-wrap gap-2" aria-label="Anggota yang hadir">
-                  {presentMembers.map((member) => <li key={member.id} className="rounded-full bg-[#F7F6F2] px-3 py-1.5 text-xs font-semibold text-slate-700">{member.member_name}{member.id === sessionCaptainId ? " · Kapten" : ""}</li>)}
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-md bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
-            <h2 id="review-scores-title" className="text-lg font-bold text-primary-dark">Skor dimensi</h2>
-            <dl className="mt-4 divide-y divide-slate-100">
-              {selectedMission.dimensions.map((dimension) => {
-                const value = scores[dimension.id];
-                const level = dimension.levels.find((item) => item.level_value === value);
-                return (
-                  <div key={dimension.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                    <dd className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-lg font-extrabold ${LEVEL_STYLES[value]}`}>{value}</dd>
-                    <div className="min-w-0">
-                      <dt className="text-sm font-bold text-slate-800">{dimension.name}</dt>
-                      <dd className="mt-0.5 text-xs text-slate-500">{level?.level_label}</dd>
-                    </div>
-                  </div>
-                );
-              })}
-            </dl>
-          </section>
-
-          <section className="rounded-md border border-accent/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
-            <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
-          </section>
-          <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-[#F7F6F2]/95 p-3 backdrop-blur">
-            <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
-              <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-white px-3 text-sm font-bold text-[#0B2C6B] ${FOCUS}`}>Edit</button>
-              <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>Simpan <Check className="h-4 w-4" aria-hidden="true" /></button>
-            </div>
-          </div>
-        </WorkflowPage>
-      )}
-
       {step === "submitting" && (
         <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 text-center" role="status" aria-live="polite">
           <div className="flex h-16 w-16 items-center justify-center rounded-md bg-[#0B2C6B] shadow-xl shadow-[#0B2C6B]/20">
@@ -937,6 +836,27 @@ function TbosObservationContent() {
           <p className="mt-2 text-sm text-slate-500">Jangan tutup halaman sampai proses selesai.</p>
         </div>
       )}
+      <ConfirmDialog
+        open={!!memberDeleteTarget}
+        onClose={() => { if (!deletingMember) setMemberDeleteTarget(null); }}
+        onConfirm={confirmRemoveMember}
+        title="Hapus Anggota Tim?"
+        description={memberDeleteTarget ? `"${memberDeleteTarget.member_name}" akan dihapus dari roster master tim.` : undefined}
+        confirmLabel="Ya, Hapus"
+        variant="danger"
+        loading={deletingMember}
+      />
+      <ConfirmDialog
+        open={!!missionSelectionTarget}
+        onClose={() => { if (!lockingMission) setMissionSelectionTarget(null); }}
+        onConfirm={confirmMissionSelection}
+        title="Kunci Pos T-BOS?"
+        description={missionSelectionTarget
+          ? `Anda akan bertugas di ${missionSelectionTarget.name} dan menilai seluruh tim pada pos ini. Pilihan tidak dapat diubah sampai program selesai.`
+          : undefined}
+        confirmLabel="Ya, Kunci Pos"
+        loading={lockingMission}
+      />
     </Shell>
   );
 }

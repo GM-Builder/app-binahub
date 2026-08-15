@@ -71,10 +71,10 @@ function CreateEngagementContent() {
 
   const canNext = useMemo(() => {
     if (step === 0) return title.trim().length >= 3 && code.trim().length >= 2 && enabledModules.length > 0;
-    if (step === 1) return participants.length > 0;
+    if (step === 1) return true;
     if (step === 2) return true;
     return true;
-  }, [step, title, participants, code, enabledModules]);
+  }, [step, title, code, enabledModules]);
 
   const addParticipant = () => {
     if (!newName.trim()) return;
@@ -142,8 +142,13 @@ function CreateEngagementContent() {
           </div>
           <h2 className="mt-6 text-2xl font-semibold text-[#0B2C6B]">Program Dibuat</h2>
           <p className="mt-3 text-sm text-[#4A4C54]/70">
-            {title} telah dibuat dengan {participants.length} peserta.
+            {title} telah dibuat. Peserta dapat langsung masuk memakai kode program di bawah.
           </p>
+          <div className="mt-6 rounded-xl border border-[#D9A441]/30 bg-[#FFF9EA] p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A6817]">Kode Program</p>
+            <p className="mt-2 font-mono text-xl font-bold tracking-[0.14em] text-[#0B2C6B]">{code.trim().toUpperCase()}</p>
+            <button type="button" onClick={() => { void navigator.clipboard.writeText(code.trim().toUpperCase()); toast.success("Kode program disalin"); }} className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#0B2C6B]"><Copy size={14} /> Salin kode</button>
+          </div>
 
           {accessCodes.length > 0 && (
             <div className="mt-8 rounded-xl border border-[#0B2C6B]/10 bg-white p-6 text-left shadow-sm">
@@ -199,15 +204,15 @@ function CreateEngagementContent() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <Link href="/admin/engagements" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B2C6B]/70 hover:text-[#D9A441]">
         <ArrowLeft size={16} /> Kembali ke Program
       </Link>
 
       <div className="mx-auto mt-6 max-w-2xl">
-        <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">Buat Program</p>
-          <span className="text-xs font-semibold text-[#4A4C54]/50">Step {step + 1} of 3</span>
+          <span className="text-xs font-semibold text-[#4A4C54]/50">Step {step + 1} of 2</span>
         </div>
 
         <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-6 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
@@ -223,7 +228,7 @@ function CreateEngagementContent() {
                 <span className="text-xs font-semibold text-[#0B2C6B]/60">Judul *</span>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Leadership Readiness Sprint" className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-4 text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]" required />
               </label>
-              <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-xs font-semibold text-[#0B2C6B]/60">Tipe</span>
                   <select value={type} onChange={(e) => setType(e.target.value)} className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]">
@@ -256,7 +261,7 @@ function CreateEngagementContent() {
                   })}
                 </div>
               </fieldset>
-              <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-xs font-semibold text-[#0B2C6B]/60">Tanggal Mulai</span>
                   <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-4 text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]" />
@@ -271,8 +276,8 @@ function CreateEngagementContent() {
 
           {step === 1 && (
             <div>
-              <h2 className="text-xl font-semibold text-[#0B2C6B]">Tugaskan Peserta</h2>
-              <p className="mt-1 text-sm text-[#4A4C54]/60">Tambah peserta ke program ini.</p>
+              <h2 className="text-xl font-semibold text-[#0B2C6B]">Peserta Awal (Opsional)</h2>
+              <p className="mt-1 text-sm text-[#4A4C54]/60">Boleh dikosongkan. Peserta baru akan mengisi namanya sendiri setelah memasukkan kode program.</p>
               <div className="mt-5 flex flex-wrap items-end gap-3">
                 <label className="flex-1">
                   <span className="text-xs font-semibold text-[#0B2C6B]/60">Name</span>
@@ -422,12 +427,12 @@ function CreateEngagementContent() {
             <button type="button" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="rounded-lg border border-[#0B2C6B]/20 px-4 py-2 text-sm font-semibold text-[#0B2C6B] hover:bg-[#F5F7FA] disabled:opacity-40">
               <ArrowLeft size={16} className="inline mr-1" /> Kembali
             </button>
-            {step < 2 ? (
-              <button type="button" onClick={() => setStep((s) => Math.min(2, s + 1))} disabled={!canNext} className="inline-flex items-center gap-2 rounded-lg bg-[#0B2C6B] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0A255A] disabled:opacity-40">
+            {step < 1 ? (
+              <button type="button" onClick={() => setStep((s) => Math.min(1, s + 1))} disabled={!canNext} className="inline-flex items-center gap-2 rounded-lg bg-[#0B2C6B] px-5 py-2 text-sm font-semibold text-white hover:bg-[#0A255A] disabled:opacity-40">
                 Next <ArrowRight size={16} />
               </button>
             ) : (
-              <button type="button" onClick={handleSubmit} disabled={submitting || participants.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-[#D9A441] px-5 py-2 text-sm font-semibold text-[#071B3D] hover:bg-[#c49235] disabled:opacity-40">
+              <button type="button" onClick={handleSubmit} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-[#D9A441] px-5 py-2 text-sm font-semibold text-[#071B3D] hover:bg-[#c49235] disabled:opacity-40">
                 {submitting ? "Membuat..." : "Buat Program"} <CheckCircle2 size={16} />
               </button>
             )}

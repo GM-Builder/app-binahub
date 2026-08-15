@@ -150,10 +150,10 @@ export default function FacilitatorReviewsPage() {
                   </dl>
                   <div className="mt-4 flex gap-2">
                     <Link
-                      href={`/facilitator/evidence`}
+                      href="/fasilitator/tbos"
                       className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0A255A]"
                     >
-                      <Eye size={12} /> Tambah Pengamatan
+                      <Eye size={12} /> Buka T-BOS
                     </Link>
                     {p.status !== "reviewed" && (
                       <button

@@ -11,6 +11,7 @@ import { StatusPill, Breadcrumb, ConfirmDialog } from "@/components/ui";
 import { EngagementEditModal } from "@/components/engagement-edit-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { supabase } from "@/lib/supabase";
+import { AppShell } from "@/components/app-shell";
 
 const STATUS_ORDER = ["draft", "active", "in_progress", "review", "completed", "archived"] as const;
 const STATUS_FLOW: Record<string, string[]> = {
@@ -49,6 +50,8 @@ function ManageEngagementContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletingProgram, setDeletingProgram] = useState(false);
   const [enabledModules, setEnabledModules] = useState<Array<"tbos" | "lep">>([]);
   const [savingModules, setSavingModules] = useState(false);
 
@@ -224,11 +227,22 @@ function ManageEngagementContent() {
   };
 
   const handleDeleteProgram = async () => {
-    if (!engagement || !window.confirm("Hapus program ini? Program dengan histori observasi hanya dapat diarsipkan.")) return;
-    const response = await fetch(`/api/engagements/${engagement.id}`, { method: "DELETE" });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.success) toast.error(result.error || "Program tidak dapat dihapus.");
-    else router.push("/admin/engagements");
+    if (!engagement) return;
+    setDeletingProgram(true);
+    try {
+      const response = await fetch(`/api/engagements/${engagement.id}`, { method: "DELETE" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        toast.error(result.error || "Program tidak dapat dihapus.");
+        return;
+      }
+      toast.success("Program berhasil dihapus.");
+      router.push("/admin/engagements");
+    } catch {
+      toast.error("Gagal menghubungi server. Coba lagi.");
+    } finally {
+      setDeletingProgram(false);
+    }
   };
 
   const handleAddParticipant = async () => {
@@ -262,7 +276,7 @@ function ManageEngagementContent() {
 
   if (!engagement) {
     return (
-      <div className="p-6 lg:p-8">
+      <div>
         <Breadcrumb items={[
           { label: "Program", href: "/admin/engagements" },
           { label: "Tidak Ditemukan" },
@@ -273,7 +287,7 @@ function ManageEngagementContent() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div>
       <Breadcrumb items={[
         { label: "Program", href: "/admin/engagements" },
         { label: engagement.title },
@@ -294,7 +308,7 @@ function ManageEngagementContent() {
                     <Archive size={14} /> Arsipkan
                   </button>
                 )}
-                <button type="button" onClick={() => void handleDeleteProgram()} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700"><Trash2 size={14} /> Hapus</button>
+                <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700"><Trash2 size={14} /> Hapus</button>
                 <Link
                   href={`/admin/engagements/access-codes?engagement_id=${engagement.id}&title=${encodeURIComponent(engagement.title)}`}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#D9A441]/30 bg-[#D9A441]/10 px-3 py-1.5 text-xs font-semibold text-[#D9A441] hover:bg-[#D9A441]/20"
@@ -451,8 +465,8 @@ function ManageEngagementContent() {
             <Link href={`/client/engagements/detail?id=${id}`} className="flex items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0A255A]">
               <Eye size={16} /> Lihat sebagai Peserta
             </Link>
-            <Link href={`/facilitator/evidence`} className="flex items-center justify-center gap-2 rounded-xl border border-[#0B2C6B]/20 px-4 py-3 text-sm font-semibold text-[#0B2C6B] hover:bg-[#F5F7FA]">
-              <Eye size={16} /> Tambah Pengamatan
+            <Link href="/fasilitator/tbos" className="flex items-center justify-center gap-2 rounded-xl border border-[#0B2C6B]/20 px-4 py-3 text-sm font-semibold text-[#0B2C6B] hover:bg-[#F5F7FA]">
+              <Eye size={16} /> Buka Form T-BOS
             </Link>
           </div>
         </div>
@@ -481,11 +495,23 @@ function ManageEngagementContent() {
       <ConfirmDialog
         open={confirmArchive}
         onClose={() => setConfirmArchive(false)}
-        onConfirm={() => void handleArchiveProgram()}
+        onConfirm={handleArchiveProgram}
         title="Arsipkan Program?"
         description="Program yang diarsipkan tidak muncul di daftar program aktif. Data observasi tetap dipertahankan."
         confirmLabel="Ya, Arsipkan"
         variant="warning"
+        loading={archiving}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => { if (!deletingProgram) setConfirmDelete(false); }}
+        onConfirm={handleDeleteProgram}
+        title="Hapus Program?"
+        description="Program beserta tim kosongnya akan dihapus permanen. Program yang memiliki histori observasi atau LEP harus diarsipkan."
+        confirmLabel="Ya, Hapus"
+        variant="danger"
+        loading={deletingProgram}
       />
 
       {showEditModal && engagement && (
@@ -498,11 +524,13 @@ function ManageEngagementContent() {
 export default function ManageEngagementPage() {
   return (
     <AdminAuthGate>
-      <ErrorBoundary>
-        <Suspense fallback={<div className="p-6 lg:p-8 py-20 text-center text-sm text-[#4A4C54]/60">Memuat...</div>}>
-          <ManageEngagementContent />
-        </Suspense>
-      </ErrorBoundary>
+      <AppShell role="admin" title="Kelola Program" eyebrow="Organization Core">
+        <ErrorBoundary>
+          <Suspense fallback={<div className="py-20 text-center text-sm text-[#4A4C54]/60">Memuat...</div>}>
+            <ManageEngagementContent />
+          </Suspense>
+        </ErrorBoundary>
+      </AppShell>
     </AdminAuthGate>
   );
 }

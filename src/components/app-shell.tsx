@@ -11,13 +11,11 @@ import {
   ClipboardCheck,
   ClipboardList,
   Eye,
-  FileClock,
   HelpCircle,
   Home,
   Lightbulb,
   LogOut,
   Menu,
-  Target,
   Trophy,
   UsersRound,
   X,
@@ -36,16 +34,12 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   client: [
-    { href: "/client/dashboard", label: "Dashboard", icon: <Home size={16} /> },
-    { href: "/client/engagements", label: "Program", icon: <ClipboardCheck size={16} /> },
-    { href: "/client/reflection", label: "Refleksi", icon: <Lightbulb size={16} /> },
-    { href: "/client/evidence", label: "Catatan", icon: <FileClock size={16} /> },
-    { href: "/client/actions", label: "Tindakan", icon: <ClipboardList size={16} /> },
-    { href: "/client/capability", label: "Kemampuan", icon: <Target size={16} /> },
+    { href: "/client/program", label: "Program", icon: <Home size={16} /> },
+    { href: "/client/lep", label: "Evaluasi Program", icon: <ClipboardPenLine size={16} /> },
     { href: "/help", label: "Bantuan", icon: <HelpCircle size={16} /> },
   ],
   admin: [
-    { href: "/admin/dashboard", label: "Dashboard", icon: <Home size={16} /> },
+    { href: "/admin", label: "Dashboard", icon: <Home size={16} /> },
     { href: "/admin/organizations", label: "Organisasi", icon: <UsersRound size={16} /> },
     { href: "/admin/programs", label: "Program", icon: <ClipboardCheck size={16} /> },
     { href: "/admin/assessments", label: "Assessment", icon: <ClipboardList size={16} /> },
@@ -60,11 +54,6 @@ const navByRole: Record<Role, { href: string; label: string; icon: React.ReactNo
   ],
 };
 
-const tbosAdminNav = [
-  { href: "/admin/tbos", label: "Dashboard T-BOS", icon: <Trophy size={16} /> },
-  { href: "/fasilitator/tbos/observations", label: "Kelola Observasi", icon: <Eye size={16} /> },
-];
-
 const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon: React.ReactNode }[]>> = {
   peserta: [
     { href: "/peserta/dashboard", label: "Dashboard", icon: <Home size={20} /> },
@@ -76,12 +65,10 @@ const mobileNavByRole: Partial<Record<Role, { href: string; label: string; icon:
     { href: "/fasilitator/tbos/observations", label: "Kelola & Lihat", icon: <Eye size={20} /> },
     { href: "/fasilitator/tbos/results", label: "Hasil", icon: <BarChart3 size={20} /> },
   ],
-  admin: [
-    { href: "/admin", label: "Dashboard", icon: <Home size={20} /> },
-    { href: "/admin/programs", label: "Program", icon: <ClipboardCheck size={20} /> },
-    { href: "/admin/tbos", label: "T-BOS", icon: <Trophy size={20} /> },
-    { href: "/admin/lep", label: "LEP", icon: <ClipboardPenLine size={20} /> },
-    { href: "/admin/assessments", label: "Assessment", icon: <ClipboardList size={20} /> },
+  client: [
+    { href: "/client/program", label: "Program", icon: <Home size={20} /> },
+    { href: "/client/lep", label: "Evaluasi", icon: <ClipboardPenLine size={20} /> },
+    { href: "/help", label: "Bantuan", icon: <HelpCircle size={20} /> },
   ],
 };
 
@@ -119,16 +106,14 @@ export function AppShell({
   const showLogout = true;
   const [showTips, setShowTips] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
-  const [moduleAvailability, setModuleAvailability] = useState<ModuleAvailability | null>(() => role === "client" ? { tbos: false, lep: false } : null);
+  const [moduleAvailability, setModuleAvailability] = useState<ModuleAvailability | null>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const tipsPanelRef = useRef<HTMLDivElement>(null);
-  const rawNavigationItems = navigation === "tbos" && role === "admin" ? tbosAdminNav : navByRole[role];
-  const rawMobileItems = navigation === "tbos" && role === "admin"
-    ? tbosAdminNav.map((item) => ({ ...item, icon: item.href === "/admin/tbos" ? <Trophy size={20} /> : <Eye size={20} /> }))
-    : mobileNavByRole[role] || [];
-  const navigationItems = filterModuleNavigation(rawNavigationItems, moduleAvailability);
+  const rawNavigationItems = navByRole[role];
+  const rawMobileItems = role === "admin" ? [] : mobileNavByRole[role] || [];
+  const navigationItems = role === "admin" ? rawNavigationItems : filterModuleNavigation(rawNavigationItems, moduleAvailability);
   const mobileItems = filterModuleNavigation(rawMobileItems, moduleAvailability);
-  const roleHomeHref = role === "facilitator" ? "/home" : role === "admin" ? "/admin" : `/${role}/dashboard`;
+  const roleHomeHref = role === "facilitator" ? "/home" : role === "admin" ? "/admin" : role === "client" ? "/client/program" : `/${role}/dashboard`;
   const showBackLink = pathname !== roleHomeHref && pathname !== "/facilitator/dashboard";
 
   const logout = useCallback(async () => {
@@ -140,7 +125,7 @@ export function AppShell({
 
   useEffect(() => {
     let active = true;
-    if (role === "client") {
+    if (role === "admin") {
       return () => { active = false; };
     }
 
@@ -250,7 +235,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <div className="lg:hidden">
+      {role !== "admin" && <div className="lg:hidden">
         {showMobileNav && (
           <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Navigasi mobile">
             <div className="absolute inset-0 bg-black/30" onClick={() => setShowMobileNav(false)} />
@@ -298,7 +283,7 @@ export function AppShell({
             </aside>
           </div>
         )}
-      </div>
+      </div>}
 
       <main id="main-content" className={mobileItems.length ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-72" : "lg:pl-72"} role="main">
         <header className="border-b border-[#0B2C6B]/10 bg-white px-4 py-4 sm:px-6 sm:py-6">
@@ -324,7 +309,11 @@ export function AppShell({
                  <Lightbulb size={12} />
                  <span className="hidden sm:inline">Tips</span>
               </button>}
-               <button
+               {role === "admin" ? (
+                <button type="button" onClick={logout} aria-label="Keluar dari sesi" className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 lg:hidden">
+                  <LogOut size={18} />
+                </button>
+               ) : <button
                  type="button"
                 onClick={() => setShowMobileNav(true)}
                  aria-label="Buka navigasi mobile"
@@ -333,7 +322,7 @@ export function AppShell({
                  className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#0B2C6B]/10 text-[#0B2C6B]/70 hover:bg-[#F5F7FA] lg:hidden"
               >
                 <Menu size={20} />
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -349,7 +338,7 @@ export function AppShell({
         </div>
       </main>
 
-      {mobileItems.length > 0 && (
+      {role !== "admin" && mobileItems.length > 0 && (
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-[#0B2C6B]/10 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(11,44,107,0.08)] backdrop-blur lg:hidden" aria-label="Navigasi cepat">
           <div className="mx-auto flex max-w-lg items-stretch justify-around">
             {mobileItems.map((item) => {

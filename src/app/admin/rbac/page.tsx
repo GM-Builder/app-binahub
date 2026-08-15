@@ -59,7 +59,7 @@ export default function RBACPage() {
   return (
     <AdminAuthGate>
       <ErrorBoundary>
-        <main className="min-h-screen bg-[#F5F7FA] px-6 py-10 text-[#0B2C6B]">
+        <main className="min-h-screen bg-[#F5F7FA] px-4 py-8 text-[#0B2C6B] sm:px-6 sm:py-10">
           <div className="mx-auto max-w-5xl">
             <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">Kontrol Peran & Akses</div>
             <h1 className="text-3xl font-light tracking-[-0.04em]">Matriks Izin</h1>

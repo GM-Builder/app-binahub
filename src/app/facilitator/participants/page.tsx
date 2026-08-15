@@ -108,10 +108,10 @@ function ParticipantListContent() {
                   <h2 className="mt-1 text-lg font-semibold text-[#0B2C6B]">{selected.name}</h2>
                 </div>
                 <Link
-                  href={`/facilitator/evidence`}
+                  href="/fasilitator/tbos"
                   className="inline-flex items-center gap-1 rounded-lg bg-[#0B2C6B] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0A255A]"
                 >
-                  <Eye size={12} /> Amati
+                  <Eye size={12} /> Buka T-BOS
                 </Link>
               </div>
               <div className="mt-4 space-y-4">

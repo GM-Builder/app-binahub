@@ -73,7 +73,7 @@ function AccessCodesContent() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <Link href="/admin/engagements" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B2C6B]/70 hover:text-[#D9A441]">
         <ArrowLeft size={16} /> Kembali ke Program
       </Link>
@@ -87,7 +87,7 @@ function AccessCodesContent() {
           ]}
         />
 
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-xl font-bold text-[#0B2C6B]">Kode Akses Klien</h1>
             <p className="mt-1 text-sm text-[#4A4C54]/60">Bagikan kode ini kepada klien untuk login.</p>
@@ -117,24 +117,24 @@ function AccessCodesContent() {
             {codes.map((ac) => (
               <div
                 key={ac.id}
-                className={`flex items-center justify-between rounded-xl border p-4 transition ${
+                className={`flex flex-col items-stretch justify-between gap-3 rounded-xl border p-4 transition sm:flex-row sm:items-center ${
                   ac.is_active ? "border-[#0B2C6B]/10 bg-white" : "border-[#4A4C54]/10 bg-gray-50 opacity-60"
                 }`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#D9A441]/10">
                     <KeyRound size={18} className="text-[#D9A441]" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-[#0B2C6B]">{ac.participant_name || "Peserta"}</p>
-                    <p className="font-mono text-lg font-bold tracking-widest text-[#0B2C6B]">{ac.access_code}</p>
+                    <p className="break-all font-mono text-base font-bold tracking-wider text-[#0B2C6B] sm:text-lg sm:tracking-widest">{ac.access_code}</p>
                     <div className="mt-1 flex items-center gap-3 text-xs text-[#4A4C54]/40">
                       <span>Dibuat: {new Date(ac.created_at).toLocaleDateString("id-ID")}</span>
                       {ac.last_used_at && <span>Dipakai: {new Date(ac.last_used_at).toLocaleDateString("id-ID")}</span>}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end gap-2">
                   <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${ac.is_active ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"}`}>
                     {ac.is_active ? "Aktif" : "Nonaktif"}
                   </span>

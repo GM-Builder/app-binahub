@@ -40,7 +40,7 @@ export default function BinaImpactEntryPage() {
         }
 
         if (role === "facilitator" || role === "admin") {
-          router.replace("/facilitator/binaimpact");
+          router.replace("/fasilitator/tbos");
           return;
         }
       } catch (err) {
