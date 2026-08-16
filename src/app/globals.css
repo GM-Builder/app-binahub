@@ -24,14 +24,14 @@
   --color-secondary: var(--secondary);
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --font-sans: var(--font-jakarta-sans), "Segoe UI", sans-serif;
-  --font-secondary: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-secondary: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-jakarta-sans), "Segoe UI", sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

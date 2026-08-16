@@ -1,23 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ApiFetchBridge } from "@/components/api-fetch-bridge";
 import { GlobalErrorHandler } from "@/components/global-error-handler";
 import { Toaster } from "sonner";
 import "./globals.css";
-
-const jakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-jakarta-sans",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -52,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${jakartaSans.variable} ${inter.variable} h-full scroll-smooth antialiased`}
+      className="h-full scroll-smooth antialiased"
       data-scroll-behavior="smooth"
     >
       <body className="flex min-h-full flex-col selection:bg-[#0B2C6B] selection:text-white">
