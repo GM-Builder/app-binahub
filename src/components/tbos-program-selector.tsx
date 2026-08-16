@@ -19,13 +19,16 @@ export function TbosProgramSelector({
       .then((items) => {
         if (!active) return;
         setPrograms(items);
-        if (!value && items[0]) onChange(items[0].id);
       })
       .catch(() => {
         if (active) setPrograms([]);
       });
     return () => { active = false; };
-  }, [moduleKey, onChange, value]);
+  }, [moduleKey]);
+
+  useEffect(() => {
+    if (!value && programs[0]) onChange(programs[0].id);
+  }, [onChange, programs, value]);
   return (
     <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#0B2C6B] sm:flex-row sm:items-center sm:gap-2">
       Program

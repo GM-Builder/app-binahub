@@ -29,6 +29,7 @@ export default function TbosResultsPage() {
       <AppShell
         role="facilitator"
         navigation="tbos"
+        compactHeader
         title="Ringkasan Hasil T-BOS"
         eyebrow="Area Fasilitator"
       >

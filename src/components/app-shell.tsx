@@ -92,12 +92,14 @@ export function AppShell({
   title,
   eyebrow,
   navigation = "default",
+  compactHeader = false,
   children,
 }: {
   role: Role;
   title: string;
   eyebrow: string;
   navigation?: "default" | "tbos";
+  compactHeader?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -286,17 +288,17 @@ export function AppShell({
       </div>}
 
       <main id="main-content" className={mobileItems.length ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-72" : "lg:pl-72"} role="main">
-        <header className="border-b border-[#0B2C6B]/10 bg-white px-4 py-4 sm:px-6 sm:py-6">
-          <div className="flex items-start justify-between gap-3">
+        <header className={`border-b border-[#0B2C6B]/10 bg-white px-4 sm:px-6 ${compactHeader ? "py-3" : "py-4 sm:py-6"}`}>
+          <div className={`flex justify-between gap-3 ${compactHeader ? "items-center" : "items-start"}`}>
              <div className="min-w-0 flex-1">
                {showBackLink && (
-                 <Link href={roleHomeHref} className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-lg pr-3 text-sm font-semibold text-[#0B2C6B]/70 hover:text-[#0B2C6B]">
+                 <Link href={roleHomeHref} className={`inline-flex items-center gap-2 rounded-lg pr-3 font-semibold text-[#0B2C6B]/70 hover:text-[#0B2C6B] ${compactHeader ? "mb-0.5 min-h-8 text-xs" : "mb-2 min-h-11 text-sm"}`}>
                    <ArrowUpRight size={16} className="rotate-[-135deg]" aria-hidden="true" />
                    Kembali ke beranda
                  </Link>
                )}
-              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">{eyebrow}</p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#0B2C6B] sm:text-3xl">{title}</h1>
+              <p className={`font-bold uppercase text-[#D9A441] ${compactHeader ? "text-[9px] tracking-[0.2em]" : "text-[10px] tracking-[0.24em]"}`}>{eyebrow}</p>
+              <h1 className={`font-semibold tracking-[-0.03em] text-[#0B2C6B] ${compactHeader ? "mt-0.5 text-xl sm:text-2xl" : "mt-2 text-2xl sm:text-3xl"}`}>{title}</h1>
             </div>
             <div className="flex items-center gap-2">
               {navigation !== "tbos" && <button
@@ -328,7 +330,7 @@ export function AppShell({
 
 
         </header>
-        <div className="flex gap-6 px-4 py-6 sm:px-6 lg:px-6">
+        <div className={`flex gap-6 px-4 sm:px-6 lg:px-6 ${compactHeader ? "py-4" : "py-6"}`}>
           <div className="min-w-0 flex-1">{children}</div>
           {navigation !== "tbos" && <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-6">

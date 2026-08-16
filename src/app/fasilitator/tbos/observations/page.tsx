@@ -26,6 +26,7 @@ export default function TbosObservationsListPage() {
       <AppShell
         role="facilitator"
         navigation="tbos"
+        compactHeader
         title="Hasil Observasi T-BOS"
         eyebrow="Area Fasilitator"
       >

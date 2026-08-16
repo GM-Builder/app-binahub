@@ -12,6 +12,7 @@ import {
   Eye,
   Loader2,
   MapPin,
+  RefreshCw,
   Trash2,
   UserPlus,
   Users,
@@ -61,6 +62,7 @@ export default function TbosObservationPage() {
       <AppShell
         role="facilitator"
         navigation="tbos"
+        compactHeader
         title="Observasi T-BOS"
         eyebrow="Area Fasilitator"
       >
@@ -97,6 +99,7 @@ function TbosObservationContent() {
   const [lockingMission, setLockingMission] = useState(false);
   const [memberDeleteTarget, setMemberDeleteTarget] = useState<TeamMember | null>(null);
   const [deletingMember, setDeletingMember] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const initData = useCallback(async () => {
     try {
@@ -408,6 +411,29 @@ function TbosObservationContent() {
     setLoading(true);
   }, []);
 
+  const refreshDashboard = async () => {
+    if (!selectedProgramId || refreshing) return;
+    setRefreshing(true);
+    setError("");
+    try {
+      const [selection, missionList, teamList] = await Promise.all([
+        fetchFacilitatorMissionSelection(selectedProgramId),
+        fetchMissions(selectedProgramId),
+        fetchTeams(selectedProgramId),
+      ]);
+      setMissions(missionList);
+      setTeams(teamList);
+      setSelectedMission(selection.selectedMissionId
+        ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
+        : null);
+      toast.success("Data penugasan berhasil diperbarui.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memperbarui penugasan.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const resetForm = async () => {
     setLoading(true);
     setError("");
@@ -493,15 +519,21 @@ function TbosObservationContent() {
     <Shell isOnline={isOnline} queuedCount={queuedCount}>
       {step === "tasks" && (
         <main className="pb-[calc(7rem+env(safe-area-inset-bottom))]">
-          <div className="mx-auto max-w-3xl px-4 pt-4"><TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} /></div>
+          <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 sm:flex-row sm:items-end sm:justify-between">
+            <TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} />
+            <button type="button" onClick={() => void refreshDashboard()} disabled={!selectedProgramId || refreshing} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-primary-dark disabled:opacity-50 ${FOCUS}`}>
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+              {refreshing ? "Memperbarui..." : "Perbarui data"}
+            </button>
+          </div>
           <section className="mx-auto mt-4 max-w-3xl px-4">
-            <div className="relative overflow-hidden rounded-3xl bg-primary-dark px-5 py-6 text-white shadow-[0_20px_50px_rgba(8,29,66,0.2)] sm:px-7 sm:py-8">
+            <div className="relative overflow-hidden rounded-2xl bg-primary-dark px-4 py-4 text-white shadow-[0_16px_38px_rgba(8,29,66,0.18)] sm:px-5 sm:py-5">
               <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#17447F]" />
               <div className="absolute -bottom-20 right-16 h-36 w-36 rounded-full border-[22px] border-accent/15" />
               <div className="relative">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
                       <ClipboardCheck className="h-5 w-5 text-accent-light" aria-hidden="true" />
                     </div>
                     <div>
@@ -511,8 +543,8 @@ function TbosObservationContent() {
                   </div>
                   <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
                 </div>
-                <h1 className="mt-7 max-w-xl text-2xl font-bold leading-tight tracking-[-0.03em] sm:text-3xl">Selesaikan satu observasi untuk setiap tim di pos Anda.</h1>
-                <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">Tim yang sudah selesai otomatis dikunci agar tidak dinilai dua kali.</p>
+                <h1 className="mt-4 max-w-xl text-xl font-bold leading-tight tracking-[-0.03em] sm:text-2xl">Selesaikan satu observasi untuk setiap tim di pos Anda.</h1>
+                <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-white/70 sm:text-sm">Tim yang sudah selesai otomatis dikunci agar tidak dinilai dua kali.</p>
               </div>
             </div>
           </section>
