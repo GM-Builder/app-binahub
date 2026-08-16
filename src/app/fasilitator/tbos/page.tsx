@@ -172,7 +172,7 @@ function TbosObservationContent() {
       const response = await fetch(`/api/tbos/teams/members?teamId=${encodeURIComponent(team.id)}`);
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success || !Array.isArray(result.members)) {
-        throw new Error(result.error || "Gagal memuat roster tim.");
+        throw new Error(result.error || "Gagal memuat anggota tim.");
       }
       const roster = result.members as Array<{
         id: string;
@@ -193,7 +193,7 @@ function TbosObservationContent() {
       setTeamMembers([]);
       setSessionCaptainId(null);
       setCanEditRoster(false);
-      setMemberError(err instanceof Error ? err.message : "Gagal memuat roster tim.");
+      setMemberError(err instanceof Error ? err.message : "Gagal memuat anggota tim.");
     } finally {
       setMembersLoading(false);
     }
@@ -256,7 +256,7 @@ function TbosObservationContent() {
       if (!response.ok || !result.success) throw new Error(result.error || "Gagal menghapus anggota.");
       setTeamMembers((current) => current.filter((item) => item.id !== member.id));
       if (sessionCaptainId === member.id) setSessionCaptainId(null);
-      toast.success("Anggota dihapus dari roster tim.");
+      toast.success("Anggota berhasil dihapus dari tim.");
     } catch (err) {
       setMemberError(err instanceof Error ? err.message : "Gagal menghapus anggota.");
     } finally {
@@ -650,7 +650,7 @@ function TbosObservationContent() {
             {memberError && <div className="mt-4"><Alert>{memberError}</Alert></div>}
             {membersLoading ? (
               <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-slate-500" role="status">
-                <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" /> Memuat roster...
+                <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" /> Memuat anggota tim...
               </div>
             ) : (
               <div className="mt-5 space-y-3">

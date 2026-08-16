@@ -205,7 +205,7 @@ export async function submitObservation(input: {
   try {
     const members = input.members;
     if (!members) {
-      throw new Error("Snapshot roster wajib tersedia sebelum observasi disimpan.");
+      throw new Error("Snapshot anggota tim wajib tersedia sebelum observasi disimpan.");
     }
 
     const res = await fetch("/api/tbos/observations", {

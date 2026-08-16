@@ -178,7 +178,7 @@ function CreateEngagementContent() {
           </div>
 
           <div className="mt-5 rounded-lg border border-[#0B2C6B]/8 bg-[#F7F8FA] p-3 text-xs leading-5 text-[#4A4C54]/70">
-            Peserta tidak perlu didaftarkan saat program dibuat. Mereka mengisi nama sendiri melalui kode program; roster dan kapten T-BOS ditetapkan saat kunjungan pos pertama.
+            Peserta tidak perlu didaftarkan saat program dibuat. Mereka mengisi nama sendiri melalui kode program; anggota tim dan kapten T-BOS ditetapkan saat kunjungan pos pertama.
           </div>
 
           {error && <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle size={16} /> {error}</div>}

@@ -1155,7 +1155,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                           type="button"
                           onClick={() => setExpandedTeamId(isExpanded ? null : team.teamId)}
                           aria-expanded={isExpanded}
-                          aria-label={`Lihat roster ${team.teamName}`}
+                          aria-label={`Lihat anggota tim ${team.teamName}`}
                           className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                             isExpanded
                               ? "bg-[#0B2C6B] text-white"
