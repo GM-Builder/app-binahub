@@ -2,6 +2,8 @@
 
 Frontend authenticated untuk `app.binahub.id`. Backend berada di repositori sejajar `../binahub-api` dan ditargetkan ke `api.binahub.id`.
 
+Panduan build dan publikasi frontend tersedia di [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 ## Stack
 
 - Next.js App Router, React, TypeScript, Tailwind CSS

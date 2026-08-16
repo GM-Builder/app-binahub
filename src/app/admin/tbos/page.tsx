@@ -36,6 +36,7 @@ import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui";
 import { toast } from "sonner";
+import { downloadBlob } from "@/lib/download";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
@@ -117,6 +118,7 @@ function TbosDashboardContent() {
       return;
     }
     setLoading(true);
+    setError("");
     try {
       const { fetchDashboardRawData, fetchTeams, fetchBatches } = await import("@/modules/tbos/api-client");
       const [{ teams, observations }, roster] = await Promise.all([
@@ -584,27 +586,36 @@ function TbosDashboardContent() {
         />
       </div>
 
-      {/* Tab Navigation + Export */}
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex w-full gap-1 overflow-x-auto rounded-xl bg-[#0B2C6B]/[0.04] p-1 lg:w-auto">
+      {/* Report navigation + exports */}
+      <section className="space-y-3" aria-labelledby="tbos-report-navigation-title">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#B47B13]">Laporan &amp; Analitik</p>
+            <h2 id="tbos-report-navigation-title" className="mt-1 text-base font-bold text-[#0B2C6B]">Pilih jenis laporan</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Laporan per tim memuat anggota, kapten, skor rata-rata, dan delapan dimensi perilaku.</p>
+          </div>
+          <ExportButtons programId={selectedProgramId} />
+        </div>
+
+        <nav aria-label="Jenis laporan T-BOS" className="grid grid-cols-2 gap-1 rounded-xl bg-[#0B2C6B]/[0.04] p-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
           {TABS.map((tab) => (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+              aria-current={activeTab === tab.key ? "page" : undefined}
+              className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-all duration-200 ${
                 activeTab === tab.key
                   ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]"
                   : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
               }`}
             >
               {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
-        </div>
-
-        <ExportButtons programId={selectedProgramId} />
-      </div>
+        </nav>
+      </section>
 
       {/* Tab Content */}
       <div>
@@ -906,12 +917,7 @@ function ExportButtons({ programId }: { programId: string }) {
         throw new Error(body.error || "Gagal membuat PDF.");
       }
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `TBOS_Report_${new Date().toISOString().split("T")[0]}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `TBOS_Report_${new Date().toISOString().split("T")[0]}.pdf`);
       toast.success("Laporan PDF berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] PDF export failed:", err);
@@ -945,12 +951,7 @@ function ExportButtons({ programId }: { programId: string }) {
 
       const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `TBOS_Observations_${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `TBOS_Observations_${new Date().toISOString().split("T")[0]}.csv`);
       toast.success("CSV data berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] CSV export failed:", err);

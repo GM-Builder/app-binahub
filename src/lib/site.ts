@@ -1,8 +1,8 @@
 // Central site configuration used for metadata, SEO, sitemap, and robots.
 // Override the production URL via the NEXT_PUBLIC_SITE_URL env var when the
-// custom domain (e.g. https://binahub.id) goes live.
+// custom application domain changes.
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://preview-binahub.vercel.app"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://app.binahub.id"
 ).replace(/\/+$/, "");
 
 export const SITE_NAME = "BinaHub";

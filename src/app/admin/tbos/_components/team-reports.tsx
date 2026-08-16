@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BarChart3, Crown, Download, Loader2, Search, UsersRound } from "lucide-react";
 import { toast } from "sonner";
+import { downloadBlob } from "@/lib/download";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
 
@@ -46,13 +47,8 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
         throw new Error(body.error || "Gagal membuat laporan tim.");
       }
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
       const safeName = team.teamName.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_") || "Tim";
-      anchor.download = `T-BOS_Laporan_${safeName}_${new Date().toISOString().split("T")[0]}.pdf`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `T-BOS_Laporan_${safeName}_${new Date().toISOString().split("T")[0]}.pdf`);
       toast.success(`Laporan ${team.teamName} berhasil diunduh.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Gagal mengunduh laporan tim.");
