@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ApiFetchBridge } from "@/components/api-fetch-bridge";
 import { GlobalErrorHandler } from "@/components/global-error-handler";
+import { ServiceWorkerCleanup } from "@/components/service-worker-cleanup";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -48,6 +49,7 @@ export default function RootLayout({
           Lewati ke konten utama
         </a>
         <GlobalErrorHandler>
+          <ServiceWorkerCleanup />
           <ApiFetchBridge />
           <Toaster position="top-right" richColors closeButton />
           <div id="content" tabIndex={-1} className="contents">

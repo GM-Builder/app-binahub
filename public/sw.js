@@ -1,79 +1,22 @@
-const CACHE_NAME = "binahub-v1";
-const STATIC_CACHE = "binahub-static-v1";
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll([
-        "/",
-        "/login",
-        "/help",
-        "/help/support",
-        "/offline.html",
-      ]).catch(() => {});
-    })
-  );
+// Cleanup worker for the retired cache-first PWA implementation.
+// The previous worker cached every page and JavaScript chunk indefinitely,
+// which could keep an old deployment visible after a successful release.
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE)
-          .map((name) => caches.delete(name))
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-
-  if (request.method !== "GET") return;
-
-  const url = new URL(request.url);
-  if (url.protocol === "chrome-extension:" || url.protocol === "moz-extension:") return;
-
-  if (request.url.includes("/api/")) {
-    event.respondWith(
-      fetch(request).catch(() => {
-        return new Response(JSON.stringify({ error: "Offline" }), {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        });
-      })
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter((name) => name.startsWith("binahub-"))
+        .map((name) => caches.delete(name)),
     );
-    return;
-  }
+    await self.registration.unregister();
+    await self.clients.claim();
 
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetch(request)
-        .then((response) => {
-          if (!response || response.status !== 200) {
-            return response;
-          }
-
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-
-          return response;
-        })
-        .catch(() => {
-          if (request.destination === "document") {
-            return caches.match("/offline.html");
-          }
-          return new Response("Offline", { status: 503 });
-        });
-    })
-  );
+    const clients = await self.clients.matchAll({ type: "window" });
+    await Promise.all(clients.map((client) => client.navigate(client.url)));
+  })());
 });
