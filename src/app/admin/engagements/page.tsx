@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Settings, ArrowUpRight, KeyRound, Trash2, Archive } from "lucide-react";
+import { Plus, Settings, ArrowUpRight, KeyRound, Trash2, Archive, Building2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
@@ -103,6 +103,8 @@ function AdminEngagementsPageContent() {
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-semibold text-[#D9A441]">{e.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
                           <h3 className="mt-1 truncate text-base font-semibold text-[#0B2C6B]">{e.title}</h3>
+                          <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-[#4A4C54]/60"><Building2 size={12} aria-hidden="true" /> {e.organization?.name || "Perusahaan tidak tersedia"}</p>
+                          {e.location && <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-[#4A4C54]/60"><MapPin size={12} aria-hidden="true" /> {e.location}</p>}
                         </div>
                         <StatusPill status={e.status} />
                       </div>

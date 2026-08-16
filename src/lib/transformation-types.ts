@@ -12,12 +12,14 @@ export interface Engagement {
   type: EngagementType;
   status: EngagementStatus;
   code: string | null;
+  location?: string | null;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
   created_by: string | null;
   progress?: number;
   participants?: number;
+  organization?: { id: string; name: string } | null;
 }
 
 export interface Participant {
