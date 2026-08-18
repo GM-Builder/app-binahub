@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Building2 } from "lucide-react";
+import { X, Loader2, Building2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import type { Engagement, EngagementType, EngagementStatus } from "@/lib/transformation-types";
 
@@ -39,6 +39,7 @@ export function EngagementEditModal({
   const [status, setStatus] = useState<EngagementStatus>(engagement.status);
   const [startDate, setStartDate] = useState(engagement.start_date ? engagement.start_date.slice(0, 10) : "");
   const [endDate, setEndDate] = useState(engagement.end_date ? engagement.end_date.slice(0, 10) : "");
+  const [location, setLocation] = useState(engagement.location || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -73,6 +74,7 @@ export function EngagementEditModal({
           status,
           startDate: startDate || null,
           endDate: endDate || null,
+          location: location.trim() || null,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -88,8 +90,8 @@ export function EngagementEditModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="edit-engagement-title">
-      <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06]">
+      <div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-black/[0.06] bg-white px-6 py-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-[#0B2C6B]" />
             <h3 id="edit-engagement-title" className="text-base font-bold text-[#0B2C6B]">Kelola Program</h3>
@@ -105,6 +107,12 @@ export function EngagementEditModal({
               {error}
             </div>
           )}
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase text-[#0B2C6B]">Perusahaan</label>
+            <div className="flex min-h-11 items-center gap-2 rounded-xl bg-[#F5F7FA] px-3.5 text-sm font-semibold text-[#0B2C6B]/75"><Building2 className="h-4 w-4 text-[#D9A441]" /> {engagement.organization?.name || "Perusahaan program"}</div>
+            <p className="mt-1 text-[10px] text-[#4A4C54]/50">Perusahaan ditetapkan saat program dibuat.</p>
+          </div>
 
           <div>
             <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
@@ -163,6 +171,14 @@ export function EngagementEditModal({
                   <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase text-[#0B2C6B]">Lokasi Program</label>
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-[#4A4C54]/40" />
+              <input type="text" value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Opsional" maxLength={200} className="w-full rounded-xl border border-black/10 py-2.5 pl-10 pr-3.5 text-sm focus:border-[#0B2C6B] focus:outline-none focus:ring-1 focus:ring-[#0B2C6B]/20" />
             </div>
           </div>
 

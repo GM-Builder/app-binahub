@@ -2,22 +2,71 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, ArrowRight, KeyRound, UserRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, CheckCircle2, ClipboardCheck, Gamepad2, KeyRound, Loader2, MapPin, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
+interface ProgramPreview {
+  id: string;
+  title: string;
+  companyName: string;
+  location: string | null;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  modules: Array<"tbos" | "lep">;
+  available: boolean;
+}
+
+function formatDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+}
+
 export default function ClientAccessPage() {
   const router = useRouter();
+  const [programId, setProgramId] = useState("");
+  const [program, setProgram] = useState<ProgramPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(true);
   const [code, setCode] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [program, setProgram] = useState<{ code: string; title: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const linkedProgramId = new URLSearchParams(window.location.search).get("program") || "";
+    setProgramId(linkedProgramId);
+
+    if (!linkedProgramId) {
+      setPreviewLoading(false);
+      return () => { active = false; };
+    }
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user.app_metadata?.program_id === linkedProgramId) {
+        router.replace("/client/program");
+        return null;
+      }
+      return fetch(`/api/client/access?program=${encodeURIComponent(linkedProgramId)}`);
+    }).then(async (response) => {
+      if (!response) return;
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Tautan program tidak valid.");
+      if (active) setProgram(result.program);
+    }).catch((failure) => {
+      if (active) setError(failure instanceof Error ? failure.message : "Tautan program tidak valid.");
+    }).finally(() => {
+      if (active) setPreviewLoading(false);
+    });
+
+    return () => { active = false; };
+  }, [router]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (program && !program.available) return;
     setLoading(true);
     setError("");
 
@@ -27,131 +76,116 @@ export default function ClientAccessPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code: code.trim().toUpperCase(),
+          programId: program?.id || programId || undefined,
           displayName: program ? displayName.trim() : undefined,
         }),
       });
-
-      const json = await response.json();
-
-      if (!response.ok || !json.success) {
-        const msg = json.error || "Kode akses tidak valid.";
-        setError(msg);
-        toast.error(msg);
-        setLoading(false);
-        return;
-      }
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.success) throw new Error(json.error || "Kode akses tidak valid.");
 
       if (json.needsProfile && json.program) {
         setProgram(json.program);
-        setLoading(false);
+        setProgramId(json.program.id);
         return;
       }
 
-      if (json.session?.access_token && json.session?.refresh_token) {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: json.session.access_token,
-          refresh_token: json.session.refresh_token,
-        });
-
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          setError("Gagal membuat sesi. Coba lagi.");
-          toast.error("Gagal membuat sesi.");
-          setLoading(false);
-          return;
-        }
+      if (!json.session?.access_token || !json.session?.refresh_token) {
+        throw new Error("Sesi program tidak berhasil dibuat.");
       }
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: json.session.access_token,
+        refresh_token: json.session.refresh_token,
+      });
+      if (sessionError) throw new Error("Gagal menyimpan sesi program.");
 
-      toast.success(`Selamat datang, ${json.client?.displayName || json.client?.companyName || "Peserta"}!`);
-
+      toast.success(`Selamat datang, ${json.client?.displayName || "Peserta"}.`);
       const requestedPath = new URLSearchParams(window.location.search).get("next") || "";
-      const nextPath = requestedPath.startsWith("/") && !requestedPath.startsWith("//")
-        ? requestedPath
-        : json.redirectPath || "/client/dashboard";
-      router.push(nextPath);
-    } catch (err) {
-      console.error("Client access error:", err);
-      const msg = "Gagal menghubungi server. Pastikan backend sudah aktif.";
-      setError(msg);
-      toast.error(msg);
+      router.replace(requestedPath.startsWith("/client/") ? requestedPath : "/client/program");
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : "Gagal menghubungi server.";
+      setError(message);
+      toast.error(message);
+    } finally {
       setLoading(false);
     }
   };
 
+  const schedule = program?.startDate && program?.endDate
+    ? `${formatDate(program.startDate)} – ${formatDate(program.endDate)}`
+    : program?.startDate ? `Mulai ${formatDate(program.startDate)}` : program?.endDate ? `Sampai ${formatDate(program.endDate)}` : null;
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA] px-6 py-12 text-[#0B2C6B]">
-      <section className="w-full max-w-md rounded-[18px] border border-[#0B2C6B]/10 bg-white p-7 shadow-[0_24px_80px_-58px_rgba(11,44,107,0.42)]">
-        <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#0B2C6B]/70 transition hover:text-[#D9A441]">
-          <ArrowLeft size={16} />
-          Back
-        </Link>
-        <Image src="/full-logo.png" alt="BinaHub" width={150} height={42} className="h-10 w-auto object-contain" />
-        <p className="mt-8 text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">
-          Client Access
-        </p>
-        <h1 className="mt-2 text-3xl font-light tracking-[-0.04em]">{program ? "Isi Nama Anda" : "Masukkan Kode Program"}</h1>
-        {program && (
-          <div className="mt-4 rounded-xl border border-[#D9A441]/30 bg-[#FFF9EA] p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A6817]">{program.code}</p>
-            <p className="mt-1 font-semibold text-[#0B2C6B]">{program.title}</p>
+    <main className="min-h-screen bg-[#F3F5F8] px-4 py-5 text-[#0B2C6B] sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex items-center justify-between gap-4">
+          <Image src="/full-logo.png" alt="BinaHub" width={150} height={42} className="h-9 w-auto object-contain" priority />
+          <Link href="/" className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#0B2C6B]/65 hover:bg-white hover:text-[#0B2C6B]"><ArrowLeft className="h-4 w-4" /> Beranda</Link>
+        </div>
+
+        {previewLoading ? (
+          <div className="flex min-h-[70vh] items-center justify-center gap-3 text-sm font-semibold"><Loader2 className="h-5 w-5 animate-spin" /> Memuat program...</div>
+        ) : (
+          <div className="mt-6 grid overflow-hidden rounded-3xl border border-[#0B2C6B]/8 bg-white shadow-[0_30px_100px_-65px_rgba(11,44,107,0.65)] lg:grid-cols-[1.05fr_0.95fr]">
+            <section className="relative overflow-hidden bg-[#0B2C6B] p-6 text-white sm:p-8 lg:p-10">
+              <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#17447F]" />
+              <div className="absolute -bottom-24 -left-16 h-52 w-52 rounded-full border-[30px] border-[#D9A441]/10" />
+              <div className="relative">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#F3CE7A]">Akses Program BinaHub</p>
+                <h1 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.04em] sm:text-3xl">{program?.title || "Masuk ke program Anda"}</h1>
+                <p className="mt-3 max-w-lg text-sm leading-6 text-white/68">{program ? "Gunakan kode yang diberikan penyelenggara dan isi nama Anda untuk membuka modul program." : "Masukkan kode program yang diberikan oleh tim BinaHub atau penyelenggara program."}</p>
+
+                {program && (
+                  <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
+                    <p className="flex items-center gap-2 text-sm font-bold"><Building2 className="h-4 w-4 text-[#F3CE7A]" /> {program.companyName}</p>
+                    {program.location && <p className="flex items-center gap-2 text-xs text-white/70"><MapPin className="h-4 w-4 text-[#F3CE7A]" /> {program.location}</p>}
+                    {schedule && <p className="flex items-center gap-2 text-xs text-white/70"><CalendarDays className="h-4 w-4 text-[#F3CE7A]" /> {schedule}</p>}
+                  </div>
+                )}
+
+                {program && program.modules.length > 0 && (
+                  <div className="mt-6">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Modul program</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {program.modules.includes("lep") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-[#F3CE7A]" /> LEP</span>}
+                      {program.modules.includes("tbos") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><Gamepad2 className="h-3.5 w-3.5 text-[#F3CE7A]" /> T-BOS</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="p-6 sm:p-8 lg:p-10">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF4D8] text-[#9A6817]"><KeyRound className="h-5 w-5" /></div>
+              <h2 className="mt-5 text-xl font-bold tracking-[-0.02em]">{program ? "Verifikasi akses peserta" : "Masukkan kode program"}</h2>
+              <p className="mt-2 text-sm leading-6 text-[#4A4C54]/65">{program ? "Kode tidak tersimpan di tautan. Masukkan secara manual untuk memastikan Anda berada di program yang benar." : "Setelah kode diverifikasi, Anda akan diminta mengisi nama."}</p>
+
+              {error && <div className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"><AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0" /> <span>{error}</span></div>}
+              {program && !program.available && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Program ini belum aktif atau sudah selesai. Hubungi penyelenggara untuk memastikan jadwal akses.</div>}
+
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                <label className="block">
+                  <span className="mb-1.5 flex items-center gap-2 text-xs font-bold text-[#0B2C6B]/70"><KeyRound className="h-3.5 w-3.5" /> Kode akses</span>
+                  <input value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setError(""); }} className="h-12 w-full rounded-xl border border-[#0B2C6B]/14 bg-[#FAFAF8] px-4 font-mono text-sm font-bold uppercase tracking-[0.14em] outline-none transition focus:border-[#D9A441] focus:ring-4 focus:ring-[#D9A441]/10" placeholder="CONTOH-2026" maxLength={128} autoComplete="one-time-code" required />
+                </label>
+                {program && (
+                  <label className="block">
+                    <span className="mb-1.5 flex items-center gap-2 text-xs font-bold text-[#0B2C6B]/70"><UserRound className="h-3.5 w-3.5" /> Nama lengkap</span>
+                    <input value={displayName} onChange={(event) => { setDisplayName(event.target.value); setError(""); }} className="h-12 w-full rounded-xl border border-[#0B2C6B]/14 bg-[#FAFAF8] px-4 text-sm font-semibold outline-none transition focus:border-[#D9A441] focus:ring-4 focus:ring-[#D9A441]/10" placeholder="Tulis nama Anda" minLength={2} maxLength={120} autoComplete="name" required />
+                  </label>
+                )}
+                <button type="submit" disabled={loading || Boolean(program && !program.available)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-bold text-white transition hover:bg-[#071B3D] disabled:cursor-not-allowed disabled:opacity-45">
+                  {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</> : <>{program ? "Masuk ke program" : "Verifikasi kode"} <ArrowRight className="h-4 w-4" /></>}
+                </button>
+              </form>
+
+              <div className="mt-5 flex items-start gap-2 rounded-xl bg-[#F5F7FA] p-3 text-[11px] leading-5 text-[#4A4C54]/65"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Akses terikat pada satu program dan sesi perangkat ini. Jangan membagikan kode di luar peserta program.</div>
+              {program && <button type="button" onClick={() => { setProgram(null); setProgramId(""); setCode(""); setDisplayName(""); setError(""); window.history.replaceState(null, "", "/client/access"); }} className="mt-4 w-full text-xs font-bold text-[#0B2C6B]/55 hover:text-[#0B2C6B]">Gunakan kode program lain</button>}
+            </section>
           </div>
         )}
 
-        {error && (
-          <div className="mt-5 flex gap-3 rounded-[12px] border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            <AlertCircle size={18} className="mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          {!program ? <label className="block">
-            <span className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0B2C6B]/50">
-              <KeyRound size={13} /> Kode Akses
-            </span>
-            <input
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              className="h-[52px] w-full rounded-[12px] border border-black/10 bg-[#FAFAF8] px-4 text-sm font-medium uppercase tracking-[0.2em] text-[#0B2C6B] outline-none transition focus:border-[#D9A441]"
-              placeholder="MASMINDO-A"
-              required
-            />
-          </label> : (
-            <label className="block">
-              <span className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0B2C6B]/50">
-                <UserRound size={13} /> Nama Lengkap
-              </span>
-              <input
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                className="h-[52px] w-full rounded-[12px] border border-black/10 bg-[#FAFAF8] px-4 text-sm font-medium text-[#0B2C6B] outline-none transition focus:border-[#D9A441]"
-                placeholder="Tulis nama Anda"
-                minLength={2}
-                maxLength={120}
-                autoFocus
-                required
-              />
-            </label>
-          )}
-
-          <button
-            disabled={loading}
-            className="flex h-[54px] w-full items-center justify-center gap-3 rounded-[12px] bg-[#0B2C6B] text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "Memproses..." : program ? "Masuk ke Program" : "Lanjut"}
-            <ArrowRight size={17} />
-          </button>
-          {program && (
-            <button
-              type="button"
-              onClick={() => { setProgram(null); setDisplayName(""); setError(""); }}
-              className="w-full text-sm font-semibold text-[#0B2C6B]/60 hover:text-[#0B2C6B]"
-            >
-              Gunakan kode lain
-            </button>
-          )}
-        </form>
-      </section>
+        <p className="mt-5 flex items-center justify-center gap-2 text-center text-[11px] text-[#4A4C54]/50"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Tidak perlu membuat akun atau kata sandi.</p>
+      </div>
     </main>
   );
 }

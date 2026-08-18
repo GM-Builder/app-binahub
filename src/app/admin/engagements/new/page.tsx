@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, CheckCircle2, Copy, MapPin } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, MapPin } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
-import { toast } from "sonner";
+import { ProgramShareCard } from "@/components/program-share-card";
 
 const ENGAGEMENT_TYPES = ["assessment", "coaching", "training", "transformation"] as const;
 const MODULE_OPTIONS = [
@@ -25,18 +25,19 @@ function CreateEngagementContent() {
   const [title, setTitle] = useState("");
   const [code, setCode] = useState("");
   const [type, setType] = useState<string>("transformation");
-  const [status, setStatus] = useState<string>("draft");
+  const [status, setStatus] = useState<string>("active");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [enabledModules, setEnabledModules] = useState<ModuleKey[]>(["tbos"]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [createdProgramId, setCreatedProgramId] = useState("");
   const [error, setError] = useState("");
 
   const canSubmit = useMemo(() => (
     organizationName.trim().length >= 2
     && title.trim().length >= 3
-    && code.trim().length >= 2
+    && code.trim().length >= 6
     && enabledModules.length > 0
   ), [organizationName, title, code, enabledModules]);
 
@@ -66,6 +67,7 @@ function CreateEngagementContent() {
       });
       const engagementJson = await engagementRes.json();
       if (!engagementRes.ok || !engagementJson.success) throw new Error(engagementJson.error || "Gagal membuat program.");
+      setCreatedProgramId(engagementJson.engagement.id);
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal membuat program.");
@@ -77,7 +79,7 @@ function CreateEngagementContent() {
   if (submitted) {
     return (
       <div className="p-6 lg:p-8">
-        <div className="mx-auto max-w-lg py-16 text-center">
+        <div className="mx-auto max-w-xl py-10 text-center sm:py-14">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 size={32} className="text-emerald-500" />
           </div>
@@ -85,17 +87,11 @@ function CreateEngagementContent() {
           <p className="mt-3 text-sm text-[#4A4C54]/70">
             {title} untuk {organizationName} telah dibuat. Pengguna dapat memasukkan kode program dan mengisi namanya sendiri tanpa login.
           </p>
-          <div className="mt-6 rounded-xl border border-[#D9A441]/30 bg-[#FFF9EA] p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A6817]">Kode Program</p>
-            <p className="mt-2 font-mono text-xl font-bold tracking-[0.14em] text-[#0B2C6B]">{code.trim().toUpperCase()}</p>
-            <button type="button" onClick={() => { void navigator.clipboard.writeText(code.trim().toUpperCase()); toast.success("Kode program disalin"); }} className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#0B2C6B]">
-              <Copy size={14} /> Salin kode
-            </button>
-          </div>
+          {createdProgramId && <div className="mt-6"><ProgramShareCard programId={createdProgramId} code={code.trim().toUpperCase()} title={title} status={status} /></div>}
           <p className="mt-5 text-xs leading-5 text-[#4A4C54]/60">
             Anggota dan kapten tim T-BOS diisi oleh fasilitator ketika tim pertama kali tiba di salah satu pos.
           </p>
-          <Link href="/admin/engagements" className="mt-8 inline-flex rounded-lg bg-[#0B2C6B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0A255A]">
+          <Link href="/admin/programs" className="mt-8 inline-flex rounded-lg bg-[#0B2C6B] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0A255A]">
             Kembali ke Program
           </Link>
         </div>
@@ -105,7 +101,7 @@ function CreateEngagementContent() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <Link href="/admin/engagements" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B2C6B]/70 hover:text-[#D9A441]">
+      <Link href="/admin/programs" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B2C6B]/70 hover:text-[#D9A441]">
         <ArrowLeft size={16} /> Kembali ke Program
       </Link>
 
@@ -131,7 +127,7 @@ function CreateEngagementContent() {
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-[#0B2C6B]/70">Kode Program *</span>
-              <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="TBOS-MAS-2026-01" maxLength={50} className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-4 font-mono text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]" required />
+              <input value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="TBOS-MAS-2026-01" minLength={6} maxLength={50} className="mt-1.5 h-11 w-full rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-4 font-mono text-sm text-[#0B2C6B] outline-none focus:border-[#D9A441]" required />
             </label>
             <label className="block">
               <span className="text-xs font-semibold text-[#0B2C6B]/70">Nama Program *</span>

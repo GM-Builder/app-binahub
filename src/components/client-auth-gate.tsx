@@ -25,8 +25,8 @@ export function ClientAuthGate({ children }: { children: React.ReactNode }) {
         const result = await response.json();
         const role = response.ok && result.success ? result.role : null;
 
-        if (role !== "client" && role !== "admin") {
-          if (alive) router.replace("/client/access");
+        if (role !== "client") {
+          if (alive) router.replace(role === "admin" ? "/admin/programs" : role === "facilitator" ? "/facilitator/tbos" : "/client/access");
           return;
         }
 

@@ -70,9 +70,15 @@ export default function PesertaLepPage() {
   );
 }
 
-export function PesertaLepContent({ accessPath = "/login" }: { accessPath?: string } = {}) {
+export function PesertaLepContent({
+  accessPath = "/login",
+  lockedProgramId,
+}: {
+  accessPath?: string;
+  lockedProgramId?: string;
+} = {}) {
   const router = useRouter();
-  const [programId, setProgramId] = useState("");
+  const [programId, setProgramId] = useState(lockedProgramId || "");
   const [speakers, setSpeakers] = useState<LepSpeaker[]>([]);
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [submittedDate, setSubmittedDate] = useState<string | null>(null);
@@ -211,13 +217,18 @@ export function PesertaLepContent({ accessPath = "/login" }: { accessPath?: stri
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* Program selector */}
-      <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
-        <TbosProgramSelector value={programId} onChange={setProgramId} moduleKey="lep" />
-        <p className="mt-2 text-xs leading-5 text-[#4A4C54]/60">
-          Pilih program pelatihan yang ingin Anda evaluasi. Evaluasi hanya dapat diisi satu kali per program.
-        </p>
-      </section>
+      {lockedProgramId ? (
+        <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 text-xs leading-5 text-[#4A4C54]/65 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          Evaluasi ini otomatis terhubung ke program Anda dan hanya dapat dikirim satu kali.
+        </section>
+      ) : (
+        <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <TbosProgramSelector value={programId} onChange={setProgramId} moduleKey="lep" />
+          <p className="mt-2 text-xs leading-5 text-[#4A4C54]/60">
+            Pilih program pelatihan yang ingin Anda evaluasi. Evaluasi hanya dapat diisi satu kali per program.
+          </p>
+        </section>
+      )}
 
       {error && (
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">

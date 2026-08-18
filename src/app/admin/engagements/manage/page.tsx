@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Eye, KeyRound, Plus, UsersRound, X, MessageSquare, Send, Trash2, Archive, Pencil } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, MessageSquare, Send, Trash2, Archive, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements, useEvidence } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
@@ -12,6 +12,8 @@ import { EngagementEditModal } from "@/components/engagement-edit-modal";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { supabase } from "@/lib/supabase";
 import { AppShell } from "@/components/app-shell";
+import { ProgramShareCard } from "@/components/program-share-card";
+import { programAccessPath } from "@/lib/program-access-link";
 
 const STATUS_ORDER = ["draft", "active", "in_progress", "review", "completed", "archived"] as const;
 const STATUS_FLOW: Record<string, string[]> = {
@@ -23,25 +25,15 @@ const STATUS_FLOW: Record<string, string[]> = {
   archived: [],
 };
 
-interface DraftParticipant {
-  id: string;
-  name: string;
-  email: string;
-  role: "participant" | "leader" | "observer";
-}
-
 function ManageEngagementContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id") || "";
-  const { engagements } = useEngagements();
+  const { engagements, loading: engagementsLoading, error: engagementsError } = useEngagements();
   const { evidence } = useEvidence(id ? { engagement_id: id } : {});
 
   const engagement = useMemo(() => engagements.find((e) => e.id === id) || null, [engagements, id]);
   const [transitioning, setTransitioning] = useState(false);
-  const [newParticipantName, setNewParticipantName] = useState("");
-  const [addingParticipant, setAddingParticipant] = useState(false);
-  const [participants, setParticipants] = useState<DraftParticipant[]>([]);
   const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
   const [notes, setNotes] = useState<Array<{ id: string; content: string; author_id: string; created_at: string; author?: { email: string } }>>([]);
   const [newNote, setNewNote] = useState("");
@@ -237,7 +229,7 @@ function ManageEngagementContent() {
         return;
       }
       toast.success("Program berhasil dihapus.");
-      router.push("/admin/engagements");
+      router.push("/admin/programs");
     } catch {
       toast.error("Gagal menghubungi server. Coba lagi.");
     } finally {
@@ -245,43 +237,18 @@ function ManageEngagementContent() {
     }
   };
 
-  const handleAddParticipant = async () => {
-    if (!engagement || !newParticipantName.trim()) return;
-    setAddingParticipant(true);
-    try {
-      await fetch("/api/participants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId: engagement.organization_id,
-          engagementId: engagement.id,
-          name: newParticipantName.trim(),
-          engagementRole: "participant",
-        }),
-      });
-      setParticipants((prev) => [...prev, {
-        id: crypto.randomUUID(),
-        name: newParticipantName.trim(),
-        email: "",
-        role: "participant",
-      }]);
-      setNewParticipantName("");
-      toast.success("Peserta ditambahkan");
-    } catch {
-      toast.error("Gagal menambahkan peserta");
-    } finally {
-      setAddingParticipant(false);
-    }
-  };
+  if (engagementsLoading) {
+    return <div className="py-20 text-center text-sm font-semibold text-[#0B2C6B]/60">Memuat program...</div>;
+  }
 
-  if (!engagement) {
+  if (engagementsError || !engagement) {
     return (
       <div>
         <Breadcrumb items={[
-          { label: "Program", href: "/admin/engagements" },
+          { label: "Program", href: "/admin/programs" },
           { label: "Tidak Ditemukan" },
         ]} />
-        <div className="py-20 text-center text-sm text-[#4A4C54]/60">Program tidak ditemukan.</div>
+        <div className="py-20 text-center text-sm text-[#4A4C54]/60">{engagementsError || "Program tidak ditemukan."}</div>
       </div>
     );
   }
@@ -289,7 +256,7 @@ function ManageEngagementContent() {
   return (
     <div>
       <Breadcrumb items={[
-        { label: "Program", href: "/admin/engagements" },
+        { label: "Program", href: "/admin/programs" },
         { label: engagement.title },
       ]} />
 
@@ -309,17 +276,11 @@ function ManageEngagementContent() {
                   </button>
                 )}
                 <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700"><Trash2 size={14} /> Hapus</button>
-                <Link
-                  href={`/admin/engagements/access-codes?engagement_id=${engagement.id}&title=${encodeURIComponent(engagement.title)}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#D9A441]/30 bg-[#D9A441]/10 px-3 py-1.5 text-xs font-semibold text-[#D9A441] hover:bg-[#D9A441]/20"
-                >
-                  <KeyRound size={14} /> Kode Akses
-                </Link>
                 <StatusPill status={engagement.status} />
               </div>
             </div>
             <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-              <div><dt className="text-[#4A4C54]/50">Peserta</dt><dd className="font-semibold text-[#0B2C6B]">{engagement.participants ?? participants.length}</dd></div>
+              <div><dt className="text-[#4A4C54]/50">Peserta masuk</dt><dd className="font-semibold text-[#0B2C6B]">{engagement.participants ?? 0}</dd></div>
               <div><dt className="text-[#4A4C54]/50">Catatan</dt><dd className="font-semibold text-[#0B2C6B]">{evidence.length}</dd></div>
               <div><dt className="text-[#4A4C54]/50">Dibuat</dt><dd className="font-semibold text-[#0B2C6B]">{new Date(engagement.created_at).toLocaleDateString("id-ID")}</dd></div>
             </dl>
@@ -370,41 +331,10 @@ function ManageEngagementContent() {
             )}
           </section>
 
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Peserta</p>
-                <h3 className="mt-1 text-lg font-semibold text-[#0B2C6B]">{participants.length} ditugaskan</h3>
-              </div>
-              <button type="button" onClick={handleAddParticipant} disabled={!newParticipantName.trim() || addingParticipant}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0A255A] disabled:opacity-50">
-                <Plus size={12} /> Tambah
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <input value={newParticipantName} onChange={(e) => setNewParticipantName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAddParticipant()}
-                placeholder="Nama peserta..." className="flex-1 h-9 rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm outline-none focus:border-[#D9A441]" />
-            </div>
-            {participants.length === 0 ? (
-              <p className="mt-4 text-sm text-[#4A4C54]/50">Belum ada peserta ditugaskan.</p>
-            ) : (
-              <div className="mt-4 space-y-2">
-                {participants.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between rounded-lg border border-[#0B2C6B]/8 p-3">
-                    <div className="flex items-center gap-2">
-                      <UsersRound size={16} className="text-[#0B2C6B]/50" />
-                      <span className="text-sm font-medium text-[#0B2C6B]">{p.name}</span>
-                      <span className="text-xs text-[#4A4C54]/50">({p.role})</span>
-                    </div>
-                    <button type="button" className="text-[#4A4C54]/40 hover:text-red-500"><X size={14} /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
         </div>
 
         <div className="space-y-6">
+          {engagement.code && <ProgramShareCard programId={engagement.id} code={engagement.code} title={engagement.title} status={engagement.status} />}
           <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Catatan</p>
             <h3 className="mt-1 text-lg font-semibold text-[#0B2C6B]">{evidence.length} items</h3>
@@ -462,8 +392,8 @@ function ManageEngagementContent() {
           </section>
 
           <div className="space-y-3">
-            <Link href={`/client/engagements/detail?id=${id}`} className="flex items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0A255A]">
-              <Eye size={16} /> Lihat sebagai Peserta
+            <Link href={programAccessPath(id)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0A255A]">
+              <Eye size={16} /> Buka Halaman Masuk Peserta
             </Link>
             <Link href="/fasilitator/tbos" className="flex items-center justify-center gap-2 rounded-xl border border-[#0B2C6B]/20 px-4 py-3 text-sm font-semibold text-[#0B2C6B] hover:bg-[#F5F7FA]">
               <Eye size={16} /> Buka Form T-BOS

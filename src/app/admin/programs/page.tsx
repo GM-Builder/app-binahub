@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Copy, Plus, Settings, Trash2 } from "lucide-react";
+import { Building2, CalendarDays, MapPin, Plus, Send, Settings, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
 import { Breadcrumb, ConfirmDialog, EmptyState, StatusPill } from "@/components/ui";
+import { ProgramShareCard } from "@/components/program-share-card";
+import type { Engagement } from "@/lib/transformation-types";
 
 type ModuleKey = "tbos" | "lep";
 const MODULE_LABELS: Record<ModuleKey, string> = { tbos: "T-BOS", lep: "LEP" };
@@ -23,6 +25,7 @@ function AdminProgramsPageContent() {
   const [modulesByProgram, setModulesByProgram] = useState<Record<string, ProgramModuleRow[]>>({});
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [shareTarget, setShareTarget] = useState<Engagement | null>(null);
 
   useEffect(() => {
     void fetch("/api/program-modules")
@@ -87,7 +90,7 @@ function AdminProgramsPageContent() {
       ) : (
         ["active", "draft", "completed", "archived"].map((group) => groups[group].length > 0 && (
           <section key={group} className="mb-8">
-            <h2 className="mb-4 text-lg font-semibold capitalize text-[#0B2C6B]">{group} ({groups[group].length})</h2>
+            <h2 className="mb-4 text-lg font-semibold text-[#0B2C6B]">{{ active: "Berjalan", draft: "Draf", completed: "Selesai", archived: "Diarsipkan" }[group]} ({groups[group].length})</h2>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {groups[group].map((program) => {
                 const modules = (modulesByProgram[program.id] || []).filter((module) => module.enabled);
@@ -104,9 +107,14 @@ function AdminProgramsPageContent() {
                       {modules.map((module) => <span key={module.module_key} className="rounded-full bg-[#0B2C6B]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#0B2C6B]">{MODULE_LABELS[module.module_key]}</span>)}
                       {modules.length === 0 && <span className="text-xs text-slate-500">Belum ada modul aktif</span>}
                     </div>
+                    <dl className="mt-4 space-y-2 border-t border-[#0B2C6B]/[0.07] pt-4 text-xs text-[#4A4C54]/65">
+                      <div className="flex items-center gap-2"><Building2 size={14} className="shrink-0 text-[#D9A441]" /><dt className="sr-only">Perusahaan</dt><dd className="truncate">{program.organization?.name || "Perusahaan belum tercatat"}</dd></div>
+                      {program.location && <div className="flex items-center gap-2"><MapPin size={14} className="shrink-0 text-[#D9A441]" /><dt className="sr-only">Lokasi</dt><dd className="truncate">{program.location}</dd></div>}
+                      {(program.start_date || program.end_date) && <div className="flex items-center gap-2"><CalendarDays size={14} className="shrink-0 text-[#D9A441]" /><dt className="sr-only">Periode</dt><dd>{program.start_date ? new Date(program.start_date).toLocaleDateString("id-ID") : "–"} – {program.end_date ? new Date(program.end_date).toLocaleDateString("id-ID") : "–"}</dd></div>}
+                    </dl>
                     <div className="mt-5 flex flex-wrap gap-2">
                       <Link href={`/admin/engagements/manage?id=${program.id}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 px-3 text-xs font-semibold text-[#0B2C6B]"><Settings size={13} /> Kelola</Link>
-                      <button type="button" onClick={() => { void navigator.clipboard.writeText(`${window.location.origin}/client/access\nKode: ${program.code || ""}`); toast.success("Tautan dan kode program disalin."); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white"><Copy size={13} /> Salin Akses</button>
+                      <button type="button" onClick={() => setShareTarget(program)} disabled={!program.code} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"><Send size={13} /> Bagikan</button>
                       <button type="button" onClick={() => setDeleteTarget({ id: program.id, title: program.title })} className="ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-700"><Trash2 size={13} /> Hapus</button>
                     </div>
                   </article>
@@ -118,6 +126,15 @@ function AdminProgramsPageContent() {
       )}
 
       <ConfirmDialog open={Boolean(deleteTarget)} onClose={() => { if (!deleting) setDeleteTarget(null); }} onConfirm={deleteProgram} title="Hapus Program?" description={deleteTarget ? `Program "${deleteTarget.title}" beserta tim kosongnya akan dihapus permanen. Program yang memiliki histori observasi atau LEP harus diarsipkan.` : undefined} confirmLabel="Ya, Hapus" variant="danger" loading={deleting} />
+
+      {shareTarget?.code && (
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#071B3D]/55 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={`Bagikan ${shareTarget.title}`} onMouseDown={(event) => { if (event.currentTarget === event.target) setShareTarget(null); }}>
+          <div className="relative max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[#F7F8FA] p-4 shadow-2xl sm:rounded-3xl sm:p-5">
+            <button type="button" onClick={() => setShareTarget(null)} aria-label="Tutup" className="absolute right-6 top-6 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0B2C6B] shadow-sm"><X size={17} /></button>
+            <ProgramShareCard programId={shareTarget.id} code={shareTarget.code} title={shareTarget.title} status={shareTarget.status} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
