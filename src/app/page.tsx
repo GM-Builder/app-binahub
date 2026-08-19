@@ -110,7 +110,7 @@ function AuthContent() {
 
     try {
       const defaultName = fullName.trim() || normalizedEmail.split('@')[0] || 'Peserta BinaHub';
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/home` : undefined;
 
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
@@ -171,7 +171,7 @@ function AuthContent() {
     }
 
     try {
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/home` : undefined;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo,
       });
@@ -193,7 +193,7 @@ function AuthContent() {
     setError('');
 
     try {
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/home` : undefined;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
