@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import Link from "next/link";
 import {
   Loader2,
@@ -79,6 +79,7 @@ function TbosDashboardContent() {
   const [observations, setObservations] = useState<TbosObservation[]>([]);
   const [activePrograms, setActivePrograms] = useState<Array<{ id: string; code: string | null; title: string }>>([]);
   const [selectedProgramId, setSelectedProgramId] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState("");
 
   // Create Team Modal State
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -148,6 +149,23 @@ function TbosDashboardContent() {
       else setRefreshing(false);
     }
   }, [selectedProgramId]);
+
+  const handleProgramSelect = (programId: string) => {
+    setSelectedBatch("");
+    setSelectedProgramId(programId);
+  };
+
+  const viewData = useMemo(() => {
+    if (!dashboardData) return null;
+    if (!selectedBatch) return { data: dashboardData, roster: teamRoster, observations };
+    const roster = teamRoster.filter((team) => team.batch === selectedBatch);
+    const filteredObservations = observations.filter((obs) => obs.batch === selectedBatch);
+    return {
+      data: generateDashboardData(roster, filteredObservations),
+      roster,
+      observations: filteredObservations,
+    };
+  }, [dashboardData, teamRoster, observations, selectedBatch]);
 
   useEffect(() => {
     let active = true;
@@ -337,7 +355,7 @@ function TbosDashboardContent() {
     />
   );
 
-  const summary = dashboardData?.executiveSummary;
+  const summary = viewData?.data?.executiveSummary ?? dashboardData?.executiveSummary;
 
   if (loading) {
     return (
@@ -365,7 +383,7 @@ function TbosDashboardContent() {
       {activePrograms.length > 0 ? (
         <select
           value={selectedProgramId}
-          onChange={(event) => setSelectedProgramId(event.target.value)}
+          onChange={(event) => handleProgramSelect(event.target.value)}
           className="h-11 w-full min-w-0 rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm font-semibold text-[#0B2C6B] outline-none focus:border-[#D9A441] sm:w-auto sm:min-w-64"
           aria-label="Pilih program aktif"
         >
@@ -447,6 +465,54 @@ function TbosDashboardContent() {
   return (
     <div className="space-y-4">
       {programSelector}
+
+      {/* Batch Filter (per-batch dashboard) */}
+      {batches.length > 0 && (
+        <section className="flex flex-col gap-3 rounded-xl border border-[#0B2C6B]/10 bg-white p-3 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:flex-row sm:items-center sm:justify-between" aria-label="Filter dashboard per batch">
+          <div className="shrink-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B47B13]">Dashboard per Batch</p>
+            <p className="mt-0.5 text-xs text-[#4A4C54]/70">
+              {selectedBatch
+                ? `Menampilkan dashboard & laporan khusus ${selectedBatch} — tidak tercampur dengan batch lain.`
+                : "Menampilkan seluruh batch dalam satu program."}
+            </p>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSelectedBatch("")}
+              aria-pressed={!selectedBatch}
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                !selectedBatch
+                  ? "bg-[#0B2C6B] text-white shadow-sm"
+                  : "border border-[#0B2C6B]/15 bg-white text-[#0B2C6B] hover:bg-[#0B2C6B]/[0.04]"
+              }`}
+            >
+              Semua Batch
+            </button>
+            {batches.map((batch) => {
+              const active = selectedBatch === batch.name;
+              const count = teamRoster.filter((team) => team.batch === batch.name).length;
+              return (
+                <button
+                  key={batch.id}
+                  type="button"
+                  onClick={() => setSelectedBatch(batch.name)}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors ${
+                    active
+                      ? "bg-[#0B2C6B] text-white shadow-sm"
+                      : "border border-[#0B2C6B]/15 bg-white text-[#0B2C6B] hover:bg-[#0B2C6B]/[0.04]"
+                  }`}
+                >
+                  {batch.name}
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-[#F3CE7A]" : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/70"}`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Batch Management */}
       {selectedProgramId && (
@@ -542,13 +608,15 @@ function TbosDashboardContent() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Tim" value={dashboardData.teams.length} icon={<Users size={16} />} />
+      {viewData && viewData.data.teams.length > 0 ? (
+        <>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Total Tim" value={viewData.data.teams.length} icon={<Users size={16} />} />
         <StatCard label="Total Observasi" value={summary?.totalObservations || 0} icon={<Activity size={16} />} />
         <StatCard
           label="Dimensi Terobservasi"
-          value={dashboardData.batchComparisons.filter((b) => b.batchAverages.some((ba) => ba.avg !== null)).length}
-          detail={`dari ${dashboardData.batchComparisons.length} dimensi`}
+          value={viewData.data.batchComparisons.filter((b) => b.batchAverages.some((ba) => ba.avg !== null)).length}
+          detail={`dari ${viewData.data.batchComparisons.length} dimensi`}
           icon={<Layers size={16} />}
         />
         <StatCard
@@ -561,20 +629,20 @@ function TbosDashboardContent() {
                 ).toFixed(1)
               : "-"
           }
-          detail="dari 3 kekuatan utama"
+          detail="rata-rata kekuatan utama"
           icon={<Target size={16} />}
         />
-      </div>
+        </div>
 
       {/* Report navigation + exports */}
       <section className="space-y-3" aria-labelledby="tbos-report-navigation-title">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#B47B13]">Laporan &amp; Analitik</p>
-            <h2 id="tbos-report-navigation-title" className="mt-1 text-base font-bold text-[#0B2C6B]">Pilih jenis laporan</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Laporan per tim memuat anggota, kapten, skor rata-rata, dan delapan dimensi perilaku.</p>
+            <h2 id="tbos-report-navigation-title" className="mt-1 text-base font-bold text-[#0B2C6B]">Pilih jenis laporan{selectedBatch ? ` • ${selectedBatch}` : ""}</h2>
+            <p className="mt-0.5 text-xs text-slate-500">Laporan per tim memuat anggota, kapten, skor rata-rata, dan delapan dimensi perilaku{selectedBatch ? ` untuk ${selectedBatch} saja.` : "."}</p>
           </div>
-          <ExportButtons programId={selectedProgramId} />
+          <ExportButtons programId={selectedProgramId} batch={selectedBatch} />
         </div>
 
         <nav aria-label="Jenis laporan T-BOS" className="grid grid-cols-2 gap-1 rounded-xl bg-[#0B2C6B]/[0.04] p-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
@@ -599,14 +667,26 @@ function TbosDashboardContent() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === "overview" && <OverviewTab data={dashboardData} roster={teamRoster} observations={observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
-        {activeTab === "summary" && <TbosExecutiveSummary data={dashboardData} />}
-        {activeTab === "teams" && <TbosTeamReports teams={dashboardData.teams} roster={teamRoster} />}
-        {activeTab === "radar" && <TbosRadarChart teams={dashboardData.teams} />}
-        {activeTab === "heatmap" && <TbosHeatmap teams={dashboardData.teams} />}
-        {activeTab === "ranking" && <TbosRanking teams={dashboardData.teams} />}
-        {activeTab === "batch" && <TbosBatchComparison comparisons={dashboardData.batchComparisons} />}
+        {activeTab === "overview" && <OverviewTab data={viewData.data} roster={viewData.roster} observations={viewData.observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
+        {activeTab === "summary" && <TbosExecutiveSummary data={viewData.data} />}
+        {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} />}
+        {activeTab === "radar" && <TbosRadarChart teams={viewData.data.teams} />}
+        {activeTab === "heatmap" && <TbosHeatmap teams={viewData.data.teams} />}
+        {activeTab === "ranking" && <TbosRanking teams={viewData.data.teams} />}
+        {activeTab === "batch" && <TbosBatchComparison comparisons={viewData.data.batchComparisons} />}
       </div>
+        </>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-black/[0.1] bg-white p-8 text-center">
+          <Users className="mx-auto mb-3 h-10 w-10 text-[#0B2C6B]/35" />
+          <h3 className="text-sm font-bold text-[#0B2C6B]">Belum ada tim pada batch ini</h3>
+          <p className="mt-1 text-xs text-[#4A4C54]">
+            {selectedBatch
+              ? `Batch "${selectedBatch}" belum memiliki tim yang terobservasi. Pilih batch lain atau tambahkan tim.`
+              : "Belum ada data tim untuk program ini."}
+          </p>
+        </div>
+      )}
 
       {/* Tambah Tim Modal */}
       {showAddTeamModal && (
@@ -885,20 +965,27 @@ function AddTeamModal({
   );
 }
 
-function ExportButtons({ programId }: { programId: string }) {
+function ExportButtons({ programId, batch }: { programId: string; batch?: string }) {
   const [exporting, setExporting] = useState<"pdf" | "csv" | null>(null);
+
+  const batchParam = batch
+    ? `&batch=${encodeURIComponent(batch)}`
+    : "";
+  const batchLabel = batch
+    ? safeBatchLabel(batch)
+    : "";
 
   const handleExportPdf = async () => {
     setExporting("pdf");
     try {
-      const response = await fetch(`/api/tbos/export?format=pdf&programId=${encodeURIComponent(programId)}`);
+      const response = await fetch(`/api/tbos/export?format=pdf&programId=${encodeURIComponent(programId)}${batchParam}`);
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || "Gagal membuat PDF.");
       }
       const blob = await response.blob();
-      downloadBlob(blob, `TBOS_Report_${new Date().toISOString().split("T")[0]}.pdf`);
-      toast.success("Laporan PDF berhasil diunduh.");
+      downloadBlob(blob, `TBOS_Report_${batchLabel ? `${batchLabel}_` : ""}${new Date().toISOString().split("T")[0]}.pdf`);
+      toast.success(batch ? `Laporan PDF ${batch} berhasil diunduh.` : "Laporan PDF berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] PDF export failed:", err);
       toast.error(err instanceof Error ? err.message : "Gagal mengekspor PDF. Coba lagi.");
@@ -912,13 +999,16 @@ function ExportButtons({ programId }: { programId: string }) {
     try {
       const { fetchDashboardRawData } = await import("@/modules/tbos/api-client");
       const { observations } = await fetchDashboardRawData(programId);
+      const scopedObservations = batch
+        ? observations.filter((o) => o.batch === batch)
+        : observations;
 
       const headers = ["ID", "Tim", "Batch", "Misi", "Fasilitator", "Tanggal Observasi", "Status", "Catatan"];
       const csvCell = (value: string) => {
         const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
         return `"${safeValue.replace(/"/g, '""')}"`;
       };
-      const rows = observations.map((o) => [
+      const rows = scopedObservations.map((o) => [
         csvCell(o.id),
         csvCell(o.teamName),
         csvCell(o.batch),
@@ -931,8 +1021,8 @@ function ExportButtons({ programId }: { programId: string }) {
 
       const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      downloadBlob(blob, `TBOS_Observations_${new Date().toISOString().split("T")[0]}.csv`);
-      toast.success("CSV data berhasil diunduh.");
+      downloadBlob(blob, `TBOS_Observations${batchLabel ? `_${batchLabel}` : ""}_${new Date().toISOString().split("T")[0]}.csv`);
+      toast.success(batch ? `CSV ${batch} berhasil diunduh.` : "CSV data berhasil diunduh.");
     } catch (err) {
       console.error("[T-BOS] CSV export failed:", err);
       toast.error(err instanceof Error ? err.message : "Gagal mengekspor CSV. Coba lagi.");
@@ -953,7 +1043,7 @@ function ExportButtons({ programId }: { programId: string }) {
           ) : (
             <Download className="w-3.5 h-3.5" />
           )}
-          Laporan PDF Grup
+          {batch ? "Laporan PDF per Batch" : "Laporan PDF Grup"}
         </button>
         <button
           onClick={handleExportCsv}
@@ -981,6 +1071,10 @@ function formatDate(dateStr: string): string {
 function profileLabel(profileId: string): string {
   if (!profileId) return "-";
   return profileId.slice(0, 8);
+}
+
+function safeBatchLabel(batch: string): string {
+  return batch.normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "batch";
 }
 
 function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
@@ -1012,7 +1106,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
           <div className="flex items-center gap-2 mb-5">
             <TrendingUp className="w-4 h-4 text-emerald-600" />
             <div>
-              <h3 className="text-sm font-bold text-[#0B2C6B]">3 Kekuatan Utama</h3>
+              <h3 className="text-sm font-bold text-[#0B2C6B]">Kekuatan Utama</h3>
               <p className="text-[10px] text-[#4A4C54]/60">Dimensi perilaku terbaik</p>
             </div>
           </div>
@@ -1041,7 +1135,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
           <div className="flex items-center gap-2 mb-5">
             <Target className="w-4 h-4 text-amber-600" />
             <div>
-              <h3 className="text-sm font-bold text-[#0B2C6B]">3 Area Pengembangan</h3>
+              <h3 className="text-sm font-bold text-[#0B2C6B]">Area Pengembangan</h3>
               <p className="text-[10px] text-[#4A4C54]/60">Prioritas pengembangan</p>
             </div>
           </div>

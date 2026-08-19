@@ -39,7 +39,7 @@ export function TbosExecutiveSummary({ data }: Props) {
           <div className="flex items-center gap-2 mb-5">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <div>
-              <h3 className="text-sm font-bold text-[#0B2C6B]">3 Kekuatan Utama Organisasi</h3>
+              <h3 className="text-sm font-bold text-[#0B2C6B]">Kekuatan Utama Organisasi</h3>
               <p className="text-[10px] text-[#4A4C54]/60">Praktik unggulan yang sudah solid</p>
             </div>
           </div>
@@ -72,7 +72,7 @@ export function TbosExecutiveSummary({ data }: Props) {
           <div className="flex items-center gap-2 mb-5">
             <AlertCircle className="w-4 h-4 text-amber-600" />
             <div>
-              <h3 className="text-sm font-bold text-[#0B2C6B]">3 Area Pengembangan Utama</h3>
+              <h3 className="text-sm font-bold text-[#0B2C6B]">Area Pengembangan Utama</h3>
               <p className="text-[10px] text-[#4A4C54]/60">Prioritas intervensi & pendampingan</p>
             </div>
           </div>

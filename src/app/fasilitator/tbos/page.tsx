@@ -99,13 +99,19 @@ function TbosObservationContent() {
   const [lockingMission, setLockingMission] = useState(false);
   const [memberDeleteTarget, setMemberDeleteTarget] = useState<TeamMember | null>(null);
   const [deletingMember, setDeletingMember] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+const [refreshing, setRefreshing] = useState(false);
+  const [userName, setUserName] = useState("");
 
   const initData = useCallback(async () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData.session?.user.id || "";
       setUserId(currentUserId);
+      setUserName(
+        sessionData.session?.user?.user_metadata?.full_name ||
+        (sessionData.session?.user?.email || "").split("@")[0] ||
+        currentUserId,
+      );
       setQueuedCount(getQueuedObservations(currentUserId).length);
 
       if (!selectedProgramId) {
@@ -543,8 +549,8 @@ function TbosObservationContent() {
                   </div>
                   <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
                 </div>
-                <h1 className="mt-4 max-w-xl text-xl font-bold leading-tight tracking-[-0.03em] sm:text-2xl">Selesaikan satu observasi untuk setiap tim di pos Anda.</h1>
-                <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-white/70 sm:text-sm">Tim yang sudah selesai otomatis dikunci agar tidak dinilai dua kali.</p>
+<h1 className="mt-4 max-w-xl text-xl font-bold leading-tight tracking-[-0.03em] sm:text-2xl">Selamat Datang, {userName || "Fasilitator"}</h1>
+                <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-white/70 sm:text-sm">Pilih misi dan selesaikan satu observasi untuk setiap tim di pos Anda. Tim yang sudah selesai otomatis terkunci agar tidak dinilai dua kali.</p>
               </div>
             </div>
           </section>
@@ -629,16 +635,16 @@ function TbosObservationContent() {
         </main>
       )}
 
-      {step === "prepare" && selectedTeam && (
+{step === "prepare" && selectedTeam && (
         <WorkflowPage
-          eyebrow="Tahap 1 dari 3"
+          stepIndex={1}
           title="Siapkan tim"
           subtitle={`${selectedTeam.name} · ${selectedTeam.batch}`}
           backLabel="Kembali ke daftar tim"
           onBack={() => setStep("tasks")}
-          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
+          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} />}
         >
-           <section className="rounded-2xl bg-white p-5 shadow-[0_14px_38px_rgba(8,29,66,0.1)]" aria-labelledby="attendance-title">
+           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.06)]" aria-labelledby="attendance-title">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Anggota yang hadir</h2>
@@ -722,25 +728,25 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "observe" && selectedTeam && selectedMission && (
+{step === "observe" && selectedTeam && selectedMission && (
         <WorkflowPage
-          eyebrow="Tahap 2 dari 3"
+          stepIndex={2}
           title="Nilai perilaku tim"
           subtitle={`${selectedTeam.name} · ${selectedMission.name}`}
           backLabel="Kembali ke persiapan tim"
           onBack={() => setStep("prepare")}
-          status={<span className="text-xs font-bold text-accent-light">{scoredCount}/{selectedMission.dimensions.length}</span>}
+          status={<span className="text-xs font-bold text-[#0B2C6B]">{scoredCount}/{selectedMission.dimensions.length}</span>}
         >
-          <section className="rounded-md bg-[#0B2C6B] p-5 text-white shadow-[0_16px_40px_rgba(8,29,66,0.2)]" aria-label="Kemajuan observasi">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5" aria-label="Kemajuan observasi">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Kemajuan</p>
-                <p className="mt-2 text-lg font-bold">{scoredCount} dari {selectedMission.dimensions.length} dimensi</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A7B2F]">Kemajuan penilaian</p>
+                <p className="mt-2 text-lg font-bold text-[#0B2C6B]">{scoredCount} dari {selectedMission.dimensions.length} dimensi</p>
               </div>
-              <span className="text-2xl font-bold text-accent-light">{Math.round((scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100)}%</span>
+              <span className="rounded-full bg-[#FFF4D6] px-3 py-1 text-sm font-extrabold text-[#9A6A12]">{Math.round((scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100)}%</span>
             </div>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/15">
-              <div className="h-full rounded-full bg-accent transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100}%` }} />
+            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#0B2C6B] to-[#D9A441] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100}%` }} />
             </div>
           </section>
 
@@ -748,14 +754,19 @@ function TbosObservationContent() {
             {selectedMission.dimensions.map((dimension, index) => {
               const selectedLevel = scores[dimension.id];
               return (
-                <fieldset key={dimension.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_9px_26px_rgba(8,29,66,0.06)] sm:p-5">
+                <fieldset key={dimension.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
                   <legend className="sr-only">{dimension.name}</legend>
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-sm font-bold text-accent-light">{index + 1}</span>
-                    <div>
-                      <h2 className="font-bold text-primary-dark">{dimension.name}</h2>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-500">{dimension.question}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${selectedLevel ? "border-[#0B2C6B]/15 bg-[#0B2C6B]/[0.06] text-[#0B2C6B]" : "border-slate-200 bg-slate-50 text-slate-400"}`}>{index + 1}</span>
+                      <div>
+                        <h2 className="font-bold text-[#0B2C6B]">{dimension.name}</h2>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-500">{dimension.question}</p>
+                      </div>
                     </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${selectedLevel ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
+                      {selectedLevel ? "Dinilai" : "Belum dinilai"}
+                    </span>
                   </div>
 
                   <div className="mt-5 space-y-2" role="radiogroup" aria-label={`Skor ${dimension.name}`}>
@@ -769,9 +780,9 @@ function TbosObservationContent() {
                           aria-checked={selected}
                           aria-label={`${level.level_label}: ${level.description}`}
                           onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
-                          className={`flex min-h-[72px] w-full items-start gap-3 rounded-xl border p-3 text-left transition motion-reduce:transition-none sm:p-4 ${selected ? `${LEVEL_STYLES[level.level_value]} border-2 shadow-sm` : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white"} ${FOCUS}`}
+                          className={`flex min-h-[72px] w-full items-start gap-3 rounded-xl border p-3 text-left transition motion-reduce:transition-none sm:p-4 ${selected ? `${LEVEL_STYLES[level.level_value]} border-2 shadow-sm` : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"} ${FOCUS}`}
                         >
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${selected ? "bg-white/80" : "bg-white text-primary-dark ring-1 ring-slate-200"}`}>{level.level_value}</span>
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${selected ? "bg-white/80" : "bg-slate-100 text-[#0B2C6B] ring-1 ring-slate-200"}`}>{level.level_value}</span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-bold">{level.level_label}</span>
                             <span className={`mt-1 block text-xs leading-relaxed ${selected ? "opacity-90" : "text-slate-500"}`}>{level.description}</span>
@@ -800,21 +811,21 @@ function TbosObservationContent() {
         </WorkflowPage>
       )}
 
-      {step === "review" && selectedTeam && selectedMission && sessionCaptain && (
+{step === "review" && selectedTeam && selectedMission && sessionCaptain && (
         <WorkflowPage
-          eyebrow="Tahap 3 dari 3"
+          stepIndex={3}
           title="Tinjau dan simpan"
           subtitle="Pastikan daftar hadir, skor, dan catatan sudah tepat sebelum disimpan."
           backLabel="Kembali mengedit skor observasi"
           onBack={() => setStep("observe")}
-          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />}
+          status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} />}
         >
           {error && <Alert>{error}</Alert>}
-          <section className="overflow-hidden rounded-md bg-white shadow-[0_16px_42px_rgba(8,29,66,0.12)]" aria-labelledby="review-context-title">
-            <div className="bg-[#0B2C6B] p-5 text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">Ringkasan observasi</p>
-              <h2 id="review-context-title" className="mt-2 text-xl font-bold">{selectedTeam.name}</h2>
-              <p className="mt-1 text-sm text-white/65">{selectedTeam.batch} · {selectedMission.name}</p>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.06)]" aria-labelledby="review-context-title">
+            <div className="border-b border-accent/40 bg-[#FFF9EA] p-5">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A6A12]">Ringkasan observasi</p>
+              <h2 id="review-context-title" className="mt-2 text-xl font-bold text-[#0B2C6B]">{selectedTeam.name}</h2>
+              <p className="mt-1 text-sm text-slate-500">{selectedTeam.batch} · {selectedMission.name}</p>
             </div>
             <div className="grid grid-cols-2 gap-4 p-5">
               <div>
@@ -828,13 +839,13 @@ function TbosObservationContent() {
               <div className="col-span-2 border-t border-slate-100 pt-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daftar hadir</p>
                 <ul className="mt-2 flex flex-wrap gap-2" aria-label="Anggota yang hadir">
-                  {presentMembers.map((member) => <li key={member.id} className="rounded-full bg-[#F7F6F2] px-3 py-1.5 text-xs font-semibold text-slate-700">{member.member_name}{member.id === sessionCaptainId ? " · Kapten" : ""}</li>)}
+                  {presentMembers.map((member) => <li key={member.id} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700">{member.member_name}{member.id === sessionCaptainId ? " · Kapten" : ""}</li>)}
                 </ul>
               </div>
             </div>
           </section>
 
-          <section className="rounded-md bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.08)]" aria-labelledby="review-scores-title">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="review-scores-title">
             <h2 id="review-scores-title" className="text-lg font-bold text-primary-dark">Skor dimensi</h2>
             <dl className="mt-4 divide-y divide-slate-100">
               {selectedMission.dimensions.map((dimension) => {
@@ -853,14 +864,14 @@ function TbosObservationContent() {
             </dl>
           </section>
 
-          <section className="rounded-md border border-accent/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
+          <section className="rounded-2xl border border-accent/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
             <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
           </section>
-          <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-[#F7F6F2]/95 p-3 backdrop-blur">
+          <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur">
             <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
-              <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-white px-3 text-sm font-bold text-[#0B2C6B] ${FOCUS}`}>Edit</button>
-              <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 ${FOCUS}`}>Simpan observasi <Check className="h-4 w-4" aria-hidden="true" /></button>
+              <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-[#F7F6F2] px-3 text-sm font-bold text-[#0B2C6B] transition-colors hover:border-[#0B2C6B]/35 hover:bg-white ${FOCUS}`}>Edit</button>
+              <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 transition hover:brightness-110 ${FOCUS}`}>Simpan observasi <Check className="h-4 w-4" aria-hidden="true" /></button>
             </div>
           </div>
         </WorkflowPage>
@@ -909,8 +920,8 @@ function Shell({ children, isOnline, queuedCount }: { children: React.ReactNode;
   );
 }
 
-function WorkflowPage({ eyebrow, title, subtitle, backLabel, onBack, status, children }: {
-  eyebrow: string;
+function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, children }: {
+  stepIndex: 1 | 2 | 3;
   title: string;
   subtitle: string;
   backLabel: string;
@@ -920,21 +931,49 @@ function WorkflowPage({ eyebrow, title, subtitle, backLabel, onBack, status, chi
 }) {
   return (
     <div className="space-y-4">
-      <div className="relative overflow-hidden rounded-2xl bg-primary-dark p-5 text-white shadow-md">
-        <div className="absolute -right-12 -top-20 h-44 w-44 rounded-full bg-[#123A72]" />
-        <div className="relative mx-auto max-w-2xl">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.06)]">
+        <div className="h-1 bg-gradient-to-r from-[#0B2C6B] via-[#D9A441] to-[#0B2C6B]" aria-hidden="true" />
+        <div className="p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
-            <button type="button" onClick={onBack} aria-label={backLabel} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white ring-1 ring-white/15 hover:bg-white/20 transition-colors ${FOCUS}`}>
+            <button type="button" onClick={onBack} aria-label={backLabel} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-[#F7F6F2] text-slate-600 transition-colors hover:border-[#0B2C6B]/25 hover:bg-white hover:text-[#0B2C6B] ${FOCUS}`}>
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </button>
             {status}
           </div>
-          <p className="mt-3 text-xs font-bold uppercase tracking-[0.17em] text-accent-light">{eyebrow}</p>
-          <h1 className="mt-1 text-xl font-bold tracking-[-0.025em]">{title}</h1>
-          <p className="mt-0.5 text-xs text-white/70">{subtitle}</p>
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9A7B2F]">Tahap {stepIndex} dari 3 · {WORKFLOW_STEPS[stepIndex - 1]}</p>
+          <h1 className="mt-1 text-xl font-bold tracking-[-0.025em] text-[#0B2C6B] sm:text-2xl">{title}</h1>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500">{subtitle}</p>
+          <WorkflowProgress current={stepIndex} />
         </div>
       </div>
       <div className="mx-auto max-w-2xl space-y-4 pb-16">{children}</div>
+    </div>
+  );
+}
+
+const WORKFLOW_STEPS = ["Siapkan tim", "Nilai perilaku", "Tinjau & simpan"];
+
+function WorkflowProgress({ current }: { current: 1 | 2 | 3 }) {
+  return (
+    <div className="mt-4 flex items-center gap-2" aria-label="Kemajuan langkah">
+      {WORKFLOW_STEPS.map((label, index) => {
+        const step = (index + 1) as 1 | 2 | 3;
+        const isActive = step === current;
+        const isDone = step < current;
+        return (
+          <div key={label} className="flex flex-1 items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${isDone ? "bg-emerald-100 text-emerald-700" : isActive ? "bg-[#0B2C6B] text-white ring-2 ring-[#0B2C6B]/20" : "bg-slate-100 text-slate-400"}`} aria-hidden="true">
+                {isDone ? <Check className="h-3.5 w-3.5" /> : index + 1}
+              </span>
+              <span className={`hidden text-xs font-semibold sm:block ${isActive ? "text-[#0B2C6B]" : isDone ? "text-slate-600" : "text-slate-400"}`}>{label}</span>
+            </div>
+            {index < WORKFLOW_STEPS.length - 1 && (
+              <span className={`h-0.5 flex-1 rounded-full ${isDone ? "bg-emerald-200" : "bg-slate-200"}`} aria-hidden="true" />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -954,8 +993,8 @@ function Alert({ children }: { children: React.ReactNode }) {
 
 function BottomAction({ disabled, onClick, label }: { disabled: boolean; onClick: () => void; label: string }) {
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-[#F7F6F2]/95 p-3 backdrop-blur">
-      <button type="button" disabled={disabled} onClick={onClick} className={`mx-auto flex min-h-14 w-full max-w-2xl items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition motion-reduce:transition-none ${disabled ? "bg-slate-200 text-slate-400" : "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/20"} ${FOCUS}`}>
+    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur">
+      <button type="button" disabled={disabled} onClick={onClick} className={`mx-auto flex min-h-14 w-full max-w-2xl items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition motion-reduce:transition-none ${disabled ? "bg-slate-100 text-slate-400" : "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/20 hover:brightness-110"} ${FOCUS}`}>
         {label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>

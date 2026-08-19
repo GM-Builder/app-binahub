@@ -20,6 +20,7 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [adminName, setAdminName] = useState("");
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>("Overview");
   const [query, setQuery] = useState("");
   const [assessmentCategory, setAssessmentCategory] = useState("Semua");
@@ -69,6 +70,28 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     void Promise.resolve().then(() => fetchDashboard());
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
+        if (!session) return;
+        const email = session.user?.email || "";
+        const res = await fetch("/api/auth/role", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const payload = await res.json();
+        if (!active || !res.ok || !payload.success) return;
+        const name = payload.fullName || session.user?.user_metadata?.full_name || email.split("@")[0];
+        setAdminName(name);
+      } catch {
+        // Greeting is non-critical; dashboard still renders without it.
+      }
+    })();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -293,10 +316,10 @@ export default function AdminDashboardPage() {
                   {activeMeta.eyebrow}
                 </p>
                 <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">
-                  {activeMeta.title}
+                  Selamat datang{adminName ? `, ${adminName}` : " di BinaHub Admin"}
                 </h1>
                 <p className="mt-1 max-w-2xl text-xs text-slate-500 leading-relaxed">
-                  {activeMeta.description}
+                  {activeMeta.title} — {activeMeta.description}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

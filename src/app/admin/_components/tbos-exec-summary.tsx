@@ -31,7 +31,7 @@ export function TbosExecutiveSummary({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
             <Check className="w-4 h-4 text-green-600" />
           </div>
-          <h3 className="text-sm font-semibold text-[#0B2C6B]">3 Kekuatan Utama Organisasi</h3>
+          <h3 className="text-sm font-semibold text-[#0B2C6B]">Kekuatan Utama Organisasi</h3>
         </div>
         <div className="space-y-3">
           {narrative.strengthsNarrative.map((text, i) => {
@@ -63,7 +63,7 @@ export function TbosExecutiveSummary({ data }: Props) {
           <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
             <AlertCircle className="w-4 h-4 text-amber-600" />
           </div>
-          <h3 className="text-sm font-semibold text-[#0B2C6B]">3 Area Pengembangan</h3>
+          <h3 className="text-sm font-semibold text-[#0B2C6B]">Area Pengembangan</h3>
         </div>
         <div className="space-y-3">
           {narrative.developmentNarrative.map((text, i) => {
