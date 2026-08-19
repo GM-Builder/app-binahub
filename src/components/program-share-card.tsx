@@ -20,7 +20,7 @@ export function ProgramShareCard({
   const available = ["active", "in_progress", "review"].includes(status);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    void Promise.resolve().then(() => setOrigin(window.location.origin));
   }, []);
 
   const link = programAccessUrl(programId, origin);

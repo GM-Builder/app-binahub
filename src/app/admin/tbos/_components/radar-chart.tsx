@@ -192,9 +192,9 @@ export function TbosRadarChart({ teams }: Props) {
 
       {/* Radar Chart */}
       {selectedTeam && (
-        <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
           {/* Chart Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 px-6 py-4">
             {mode === "single" ? (
               <>
                 <div>
@@ -398,7 +398,7 @@ export function TbosRadarChart({ teams }: Props) {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-[#0B2C6B]/[0.03]">
+                    <tr className="bg-[#F7F6F2]">
                       <th className="text-left py-2.5 px-3 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Dimensi</th>
                       <th className="text-center py-2.5 px-3 text-xs font-semibold uppercase tracking-wide" style={{ color: TEAM_A_COLOR }}>
                         {teamA.teamName}
@@ -424,7 +424,7 @@ export function TbosRadarChart({ teams }: Props) {
                             : null
                           : null;
                       return (
-                        <tr key={dim.code} className={`border-b border-black/[0.03] ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
+                        <tr key={dim.code} className={`border-b border-slate-100 ${idx % 2 === 1 ? "bg-[#FAFAF8]" : ""}`}>
                           <td className="py-2.5 px-3 text-xs font-medium text-[#4A4C54]">{dim.name}</td>
                           <td className="py-2.5 px-3 text-center text-sm font-bold tabular-nums" style={{ color: scoreA !== null ? TEAM_A_COLOR : "#CBD5E1" }}>
                             {scoreA !== null ? scoreA.toFixed(1) : "—"}

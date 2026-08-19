@@ -15,7 +15,7 @@ export function TbosExecutiveSummary({ data }: Props) {
   return (
     <div className="space-y-5">
       {/* Overview */}
-      <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
         <div className="px-5 py-4 border-b border-black/[0.04]">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-[#0B2C6B]" />
@@ -35,7 +35,7 @@ export function TbosExecutiveSummary({ data }: Props) {
       {/* Strengths & Development Areas Grid */}
       <div className="grid md:grid-cols-2 gap-5">
         {/* Strengths */}
-        <div className="bg-white rounded-xl p-5 border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
           <div className="flex items-center gap-2 mb-5">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <div>
@@ -68,7 +68,7 @@ export function TbosExecutiveSummary({ data }: Props) {
         </div>
 
         {/* Development Areas */}
-        <div className="bg-white rounded-xl p-5 border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
           <div className="flex items-center gap-2 mb-5">
             <AlertCircle className="w-4 h-4 text-amber-600" />
             <div>
@@ -102,14 +102,14 @@ export function TbosExecutiveSummary({ data }: Props) {
       </div>
 
       {/* Strategic Recommendation */}
-      <div className="bg-gradient-to-br from-[#0B2C6B] via-[#071B3D] to-[#040E24] rounded-xl p-5 shadow-lg text-white">
+      <div className="rounded-2xl border border-[#D9A441]/40 bg-[#FFF9EA] p-5">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#D9A441]/20 border border-[#D9A441]/30">
-            <Lightbulb className="w-5 h-5 text-[#D9A441]" />
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D9A441]/20 border border-[#D9A441]/30">
+            <Lightbulb className="w-5 h-5 text-[#9A6A12]" />
           </span>
           <div>
-            <h3 className="text-sm font-bold text-[#D9A441] mb-1">Rekomendasi Strategis Organisasi</h3>
-            <p className="text-sm text-white/90 leading-relaxed font-normal">
+            <h3 className="text-sm font-bold text-[#9A6A12] mb-1">Rekomendasi Strategis Organisasi</h3>
+            <p className="text-sm text-[#715F35] leading-relaxed font-normal">
               {narrative.recommendation}
             </p>
           </div>

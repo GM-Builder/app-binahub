@@ -39,9 +39,9 @@ export function TbosHeatmap({ teams }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
+      <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-base font-bold text-[#0B2C6B]">
             Heatmap Perbandingan Tim
@@ -49,12 +49,12 @@ export function TbosHeatmap({ teams }: Props) {
           <p className="text-xs text-[#4A4C54]/70 mt-0.5">{filteredTeams.length} tim · {DIMENSION_LIST.length} dimensi</p>
         </div>
         {batches.length > 2 && (
-          <div className="flex gap-1 p-1 bg-[#0B2C6B]/[0.04] rounded-xl">
+          <div className="flex gap-1 rounded-xl bg-[#0B2C6B]/[0.04] p-1">
             {batches.map((batch) => (
               <button
                 key={batch}
                 onClick={() => setBatchFilter(batch)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                className={`min-h-9 rounded-lg px-3 text-xs font-semibold transition-all duration-200 ${
                   batchFilter === batch
                     ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]"
                     : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
@@ -113,7 +113,7 @@ export function TbosHeatmap({ teams }: Props) {
                     return (
                       <td key={dim.code} className="text-center py-1 px-1">
                         <div
-                          className={`w-full h-11 rounded-md flex items-center justify-center text-sm font-semibold transition-colors duration-150 cursor-default ${getScoreBg(score)}`}
+                          className={`w-full h-11 rounded-lg flex items-center justify-center text-sm font-semibold transition-colors duration-150 cursor-default ${getScoreBg(score)}`}
                           title={score !== null ? `${dim.name}: ${score.toFixed(1)}` : "Belum diobservasi"}
                         >
                           {score !== null ? score.toFixed(1) : "—"}
@@ -137,21 +137,21 @@ export function TbosHeatmap({ teams }: Props) {
       </div>
 
       {/* Legend — Gradient bar */}
-      <div className="px-6 pb-5 pt-2">
-        <div className="flex items-center gap-3 text-xs text-[#4A4C54]">
-          <span className="font-medium text-[#0B2C6B]">Skala:</span>
+      <div className="border-t border-slate-100 px-6 pb-5 pt-4">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-[#4A4C54]">
+          <span className="font-bold text-[#0B2C6B]">Skala:</span>
           <div className="flex items-center gap-0">
-            <span className="text-[10px] mr-1 font-medium">1.0</span>
-            <div className="flex h-3 rounded-full overflow-hidden">
+            <span className="text-[10px] mr-1.5 font-semibold">1.0</span>
+            <div className="flex h-3 rounded-full overflow-hidden ring-1 ring-black/[0.05]">
               <div className="w-10 bg-red-500" />
               <div className="w-10 bg-orange-500" />
               <div className="w-10 bg-amber-400" />
               <div className="w-10 bg-lime-500" />
               <div className="w-10 bg-emerald-500" />
             </div>
-            <span className="text-[10px] ml-1 font-medium">5.0</span>
+            <span className="text-[10px] ml-1.5 font-semibold">5.0</span>
           </div>
-          <div className="flex items-center gap-1 ml-2">
+          <div className="flex items-center gap-1.5">
             <span className="w-5 h-3 rounded bg-gray-100 border border-gray-200" />
             <span className="text-[10px] font-medium">N/A</span>
           </div>

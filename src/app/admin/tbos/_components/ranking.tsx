@@ -76,9 +76,9 @@ export function TbosRanking({ teams }: Props) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-[#D9A441]">
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#9A7B2F]">
             <Filter className="h-3.5 w-3.5" />
             Filter Ranking
           </span>
@@ -88,7 +88,7 @@ export function TbosRanking({ teams }: Props) {
             <select
               value={missionFilter}
               onChange={(event) => setMissionFilter(event.target.value as MissionFilter)}
-              className="rounded-lg border border-black/[0.08] bg-white px-2.5 py-1.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441]"
+              className="min-h-10 rounded-xl border border-slate-200 bg-[#F7F6F2] px-2.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441] focus:bg-white"
             >
               <option value="">Semua Misi (Keseluruhan)</option>
               {availableMissions.map((code) => (
@@ -104,7 +104,7 @@ export function TbosRanking({ teams }: Props) {
             <select
               value={dimensionFilter}
               onChange={(event) => setDimensionFilter(event.target.value as DimensionFilter)}
-              className="rounded-lg border border-black/[0.08] bg-white px-2.5 py-1.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441]"
+              className="min-h-10 rounded-xl border border-slate-200 bg-[#F7F6F2] px-2.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441] focus:bg-white"
             >
               <option value="">Semua Dimensi (Gabungan)</option>
               {availableDimensions.map((code) => (
@@ -122,15 +122,15 @@ export function TbosRanking({ teams }: Props) {
                 setMissionFilter("");
                 setDimensionFilter("");
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B]"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B]"
             >
               <RotateCcw className="h-3 w-3" />
               Reset
             </button>
           )}
 
-          <span className="ml-auto inline-flex items-center rounded-full bg-[#0B2C6B]/[0.06] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0B2C6B]/70">
-            Sorted by: {resolutionLabel}
+          <span className="ml-auto inline-flex items-center rounded-full bg-[#0B2C6B]/[0.05] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0B2C6B]/70">
+            Diurutkan: {resolutionLabel}
           </span>
         </div>
       </div>
@@ -159,8 +159,8 @@ export function TbosRanking({ teams }: Props) {
             return (
               <div
                 key={team.teamId}
-                className={`rounded-xl border bg-white p-5 transition-colors duration-200 ${
-                  isTop3 ? "border-[#D9A441]/30 shadow-[0_8px_28px_-18px_rgba(217,164,65,0.45)]" : "border-[#0B2C6B]/10 hover:border-[#0B2C6B]/25"
+                className={`rounded-2xl border bg-white p-5 transition-colors duration-200 ${
+                  isTop3 ? "border-[#D9A441]/40 shadow-[0_8px_28px_-18px_rgba(217,164,65,0.45)]" : "border-slate-200 shadow-[0_8px_24px_rgba(8,29,66,0.05)] hover:border-[#0B2C6B]/25"
                 }`}
               >
                 <div className="flex items-start gap-4">

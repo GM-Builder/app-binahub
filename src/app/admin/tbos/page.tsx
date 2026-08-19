@@ -1,15 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
 import Link from "next/link";
 import {
   Loader2,
-  Radar as RadarIcon,
-  Grid3x3,
-  Trophy,
-  BarChart3,
   Users,
-  FileText,
   Download,
   FileSpreadsheet,
   RefreshCw,
@@ -21,19 +16,18 @@ import {
   X,
   ClipboardList,
   TrendingUp,
-  Activity,
   Target,
-  Layers,
   Pencil,
   Trash2,
   ChevronDown,
   ChevronUp,
   Home,
   Building2,
+  MoreHorizontal,
+  Settings2,
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
-import { StatCard } from "@/components/ui";
 import { ConfirmDialog } from "@/components/ui";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
@@ -50,14 +44,14 @@ import { TbosTeamReports } from "./_components/team-reports";
 
 type Tab = "overview" | "summary" | "teams" | "radar" | "heatmap" | "ranking" | "batch";
 
-const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: "overview", label: "Ringkasan", icon: <BarChart3 size={16} /> },
-  { key: "summary", label: "Ringkasan Eksekutif", icon: <FileText size={16} /> },
-  { key: "teams", label: "Laporan per Tim", icon: <UsersRound size={16} /> },
-  { key: "radar", label: "Grafik Radar", icon: <RadarIcon size={16} /> },
-  { key: "heatmap", label: "Heatmap", icon: <Grid3x3 size={16} /> },
-  { key: "ranking", label: "Peringkat", icon: <Trophy size={16} /> },
-  { key: "batch", label: "Perbandingan Batch", icon: <Users size={16} /> },
+const TABS: { key: Tab; label: string }[] = [
+  { key: "overview", label: "Ringkasan" },
+  { key: "summary", label: "Ringkasan Eksekutif" },
+  { key: "teams", label: "Laporan per Tim" },
+  { key: "radar", label: "Grafik Radar" },
+  { key: "heatmap", label: "Heatmap" },
+  { key: "ranking", label: "Peringkat" },
+  { key: "batch", label: "Perbandingan Batch" },
 ];
 
 export default function TbosDashboardPage() {
@@ -111,6 +105,24 @@ function TbosDashboardContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // Batch filter persists in the URL (?batch=...) so the view can be shared/refreshed.
+  const selectBatch = useCallback((batch: string) => {
+    setSelectedBatch(batch);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (batch) url.searchParams.set("batch", batch);
+    else url.searchParams.delete("batch");
+    window.history.replaceState(null, "", url);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const urlBatch = new URLSearchParams(window.location.search).get("batch") || "";
+    if (urlBatch) {
+      void Promise.resolve().then(() => setSelectedBatch(urlBatch));
+    }
+  }, []);
+
   const fetchData = useCallback(async (mode: "initial" | "refresh" = "initial") => {
     if (!selectedProgramId) {
       setDashboardData(null);
@@ -151,7 +163,7 @@ function TbosDashboardContent() {
   }, [selectedProgramId]);
 
   const handleProgramSelect = (programId: string) => {
-    setSelectedBatch("");
+    selectBatch("");
     setSelectedProgramId(programId);
   };
 
@@ -359,52 +371,108 @@ function TbosDashboardContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
+      <div className="space-y-5">
+        <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+          <div className="space-y-2">
+            <div className="h-3 w-36 animate-pulse rounded bg-slate-200/80" />
+            <div className="h-6 w-52 animate-pulse rounded bg-slate-200/80" />
+          </div>
+          <div className="h-9 w-56 animate-pulse rounded-lg bg-slate-200/80" />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="h-9 w-72 animate-pulse rounded-lg bg-slate-200/80" />
+          <div className="h-9 w-64 animate-pulse rounded-lg bg-slate-200/80" />
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-[68px] animate-pulse rounded-lg bg-slate-200/80" />)}
+        </div>
+        <div className="border-t border-slate-200 pt-4">
+          <div className="flex gap-2">
+            {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-9 w-24 animate-pulse rounded-lg bg-slate-200/80" />)}
+          </div>
+          <div className="mt-5 h-64 animate-pulse rounded-2xl bg-slate-200/60" />
+        </div>
+        <span className="sr-only" role="status">Memuat data T-BOS…</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-        {error}
+      <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-5" role="alert">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+          <X className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div>
+          <p className="text-sm font-bold text-red-800">Gagal memuat dashboard T-BOS</p>
+          <p className="mt-1 text-sm leading-relaxed text-red-700">{error}</p>
+        </div>
       </div>
     );
   }
 
-  const programSelector = (
-    <div className="flex flex-col gap-2 rounded-xl border border-[#0B2C6B]/10 bg-white p-3 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Program Aktif</p>
-        <p className="mt-0.5 text-xs text-[#4A4C54]/70">Pilih program untuk melihat data T-BOS.</p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-      {activePrograms.length > 0 ? (
-        <select
-          value={selectedProgramId}
-          onChange={(event) => handleProgramSelect(event.target.value)}
-          className="h-11 w-full min-w-0 rounded-lg border border-[#0B2C6B]/15 bg-[#FAFAF8] px-3 text-sm font-semibold text-[#0B2C6B] outline-none focus:border-[#D9A441] sm:w-auto sm:min-w-64"
-          aria-label="Pilih program aktif"
-        >
-          {activePrograms.map((program) => (
-            <option key={program.id} value={program.id}>{program.title}</option>
-          ))}
-        </select>
-      ) : null}
-      <Link href="/admin/engagements/new" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-4 py-2 text-xs font-semibold text-white hover:bg-[#071B3D]"><Plus className="h-3.5 w-3.5" /> Buat Program</Link>
-      </div>
-    </div>
-  );
+  const programOptions = activePrograms.length > 0 ? (
+    <select
+      value={selectedProgramId}
+      onChange={(event) => handleProgramSelect(event.target.value)}
+      className="min-h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-[#F7F6F2] px-2.5 text-xs font-semibold text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441] focus:bg-white sm:w-auto sm:max-w-72"
+      aria-label="Pilih program aktif"
+    >
+      {activePrograms.map((program) => (
+        <option key={program.id} value={program.id}>{program.title}</option>
+      ))}
+    </select>
+  ) : null;
 
   if (!dashboardData || dashboardData.teams.length === 0) {
     return (
       <div>
-        {programSelector}
-        <div className="mx-auto mt-4 max-w-xl rounded-2xl border border-black/[0.04] bg-white p-8 text-center">
-        <Users className="w-12 h-12 text-[#0B2C6B]/40 mx-auto mb-4" />
-        <h3 className="text-base font-bold text-[#0B2C6B] mb-2">Belum Ada Data Tim T-BOS</h3>
-        <p className="text-sm text-[#4A4C54] mb-6">
+        {/* Band 1 — page header */}
+        <header className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Observasi perilaku tim</p>
+            <h1 className="mt-1 text-xl font-bold tracking-[-0.02em] text-[#0B2C6B]">Dashboard T-BOS</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {lastUpdated && <span className="hidden text-[11px] text-slate-400 sm:inline">Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>}
+            <button
+              type="button"
+              onClick={() => void fetchData("refresh")}
+              disabled={refreshing}
+              title="Perbarui data sekarang"
+              aria-label="Perbarui data"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#0B2C6B] transition-colors hover:border-[#0B2C6B]/30 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+            </button>
+            <Link href="/admin/engagements/new" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#071B3D]">
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Buat Program
+            </Link>
+          </div>
+        </header>
+
+        {/* Band 2 — filter & toolbar */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">{programOptions}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowAddTeamModal(true)}
+              disabled={!selectedProgramId}
+              title={selectedProgramId ? "Tambah tim ke program aktif" : "Pilih program aktif terlebih dahulu"}
+              className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] disabled:opacity-40"
+            >
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+              Tambah Tim
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0B2C6B]/[0.05]">
+          <Users className="w-7 h-7 text-[#0B2C6B]/40" aria-hidden="true" />
+        </span>
+        <h3 className="mt-4 text-base font-bold text-[#0B2C6B] mb-2">Belum Ada Data Tim T-BOS</h3>
+        <p className="text-sm text-[#4A4C54] mb-6 leading-relaxed">
           Mulai dengan menambahkan tim dan batch peserta untuk diobservasi oleh fasilitator.
         </p>
         <form onSubmit={handleCreateBatch} className="mx-auto mb-5 flex max-w-md gap-2 text-left">
@@ -415,9 +483,9 @@ function TbosDashboardContent() {
             onChange={(event) => setNewBatchName(event.target.value)}
             placeholder="Nama batch, mis. Gelombang Agustus"
             maxLength={50}
-            className="min-h-11 flex-1 rounded-xl border border-[#0B2C6B]/15 px-3 text-sm outline-none focus:border-[#D9A441]"
+            className="min-h-11 flex-1 rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm outline-none transition-colors focus:border-[#D9A441] focus:bg-white"
           />
-          <button type="submit" disabled={creatingBatch || !newBatchName.trim()} className="min-h-11 rounded-xl bg-[#D9A441] px-4 text-sm font-bold text-[#071B3D] disabled:opacity-50">
+          <button type="submit" disabled={creatingBatch || !newBatchName.trim()} className="min-h-11 rounded-xl bg-[#D9A441] px-4 text-sm font-bold text-[#071B3D] shadow-sm shadow-[#D9A441]/30 transition-colors hover:bg-[#C89432] disabled:opacity-50">
             {creatingBatch ? "Menyimpan…" : "+ Tambah Batch"}
           </button>
         </form>
@@ -425,9 +493,9 @@ function TbosDashboardContent() {
         {batches.length > 0 && (
           <div className="mx-auto mb-5 flex max-w-md flex-wrap justify-center gap-2">
             {batches.map((batch) => (
-              <span key={batch.id} className="inline-flex items-center gap-2 rounded-lg border border-[#0B2C6B]/10 bg-[#0B2C6B]/[0.03] px-3 py-2 text-sm font-semibold text-[#0B2C6B]">
+              <span key={batch.id} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#0B2C6B]">
                 {batch.name}
-                <button type="button" onClick={() => handleDeleteBatch(batch.id, batch.name)} title={`Hapus batch ${batch.name}`} className="text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => handleDeleteBatch(batch.id, batch.name)} title={`Hapus batch ${batch.name}`} aria-label={`Hapus batch ${batch.name}`} className="flex h-7 w-7 items-center justify-center rounded-lg text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
               </span>
             ))}
           </div>
@@ -436,7 +504,7 @@ function TbosDashboardContent() {
           onClick={() => setShowAddTeamModal(true)}
           disabled={batches.length === 0}
           title={batches.length === 0 ? "Buat minimal satu batch terlebih dahulu." : "Tambah tim pertama"}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors shadow-sm shadow-[#0B2C6B]/20 disabled:opacity-40"
         >
           <Plus className="w-4 h-4" />
           Tambah Tim Pertama
@@ -463,224 +531,181 @@ function TbosDashboardContent() {
   }
 
   return (
-    <div className="space-y-4">
-      {programSelector}
-
-      {/* Batch Filter (per-batch dashboard) */}
-      {batches.length > 0 && (
-        <section className="flex flex-col gap-3 rounded-xl border border-[#0B2C6B]/10 bg-white p-3 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:flex-row sm:items-center sm:justify-between" aria-label="Filter dashboard per batch">
-          <div className="shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B47B13]">Dashboard per Batch</p>
-            <p className="mt-0.5 text-xs text-[#4A4C54]/70">
-              {selectedBatch
-                ? `Menampilkan dashboard & laporan khusus ${selectedBatch} — tidak tercampur dengan batch lain.`
-                : "Menampilkan seluruh batch dalam satu program."}
-            </p>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setSelectedBatch("")}
-              aria-pressed={!selectedBatch}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors ${
-                !selectedBatch
-                  ? "bg-[#0B2C6B] text-white shadow-sm"
-                  : "border border-[#0B2C6B]/15 bg-white text-[#0B2C6B] hover:bg-[#0B2C6B]/[0.04]"
-              }`}
-            >
-              Semua Batch
-            </button>
-            {batches.map((batch) => {
-              const active = selectedBatch === batch.name;
-              const count = teamRoster.filter((team) => team.batch === batch.name).length;
-              return (
-                <button
-                  key={batch.id}
-                  type="button"
-                  onClick={() => setSelectedBatch(batch.name)}
-                  aria-pressed={active}
-                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors ${
-                    active
-                      ? "bg-[#0B2C6B] text-white shadow-sm"
-                      : "border border-[#0B2C6B]/15 bg-white text-[#0B2C6B] hover:bg-[#0B2C6B]/[0.04]"
-                  }`}
-                >
-                  {batch.name}
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-[#F3CE7A]" : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/70"}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Batch Management */}
-      {selectedProgramId && (
-        <section className="flex min-h-14 items-center gap-2 rounded-xl border border-[#0B2C6B]/10 bg-white p-2.5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]" aria-labelledby="batch-toolbar-title">
-          <div className="flex shrink-0 items-center gap-2 px-1">
-            <div>
-              <p id="batch-toolbar-title" className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B47B13]">Batch</p>
-              <p className="text-[10px] text-slate-500">{batches.length} tersedia</p>
-            </div>
-          </div>
-          <div className="min-w-0 flex-1 overflow-x-auto">
-            {batches.length > 0 ? (
-              <div className="flex w-max gap-1.5 pr-2">
-                {batches.map((b) => (
-                <div key={b.id} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/10 bg-[#0B2C6B]/[0.03] px-2.5 text-xs">
-                  <span className="font-semibold text-[#0B2C6B]">{b.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteBatch(b.id, b.name)}
-                    disabled={teamRoster.some((team) => team.batchId === b.id)}
-                    className="flex h-7 w-7 items-center justify-center rounded-md text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:text-slate-300"
-                    title={teamRoster.some((team) => team.batchId === b.id) ? "Batch tidak dapat dihapus karena masih memiliki tim." : `Hapus batch ${b.name}`}
-                    aria-label={`Hapus batch ${b.name}`}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                ))}
-              </div>
-            ) : <p className="px-2 text-xs text-slate-400">Belum ada batch.</p>}
-          </div>
-          <button type="button" onClick={() => setShowBatchModal(true)} aria-label="Tambah batch" className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white hover:bg-[#071B3D]">
-            <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Tambah</span>
-          </button>
-        </section>
-      )}
-      {/* Quick Action Navigation & manual refresh */}
-      <div className="flex flex-col gap-2 rounded-xl border border-[#0B2C6B]/10 bg-white p-3 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] md:flex-row md:items-center md:justify-between">
+    <div className="space-y-0">
+      {/* Band 1 — Page header */}
+      <header className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Observasi perilaku tim</p>
+          <h1 className="mt-1 text-xl font-bold tracking-[-0.02em] text-[#0B2C6B]">
+            Dashboard T-BOS{selectedBatch ? <span className="font-semibold text-[#4A4C54]"> · {selectedBatch}</span> : null}
+          </h1>
+        </div>
         <div className="flex items-center gap-2">
+          {lastUpdated && <span className="hidden text-[11px] text-slate-400 sm:inline">Diperbarui {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>}
           <button
             type="button"
             onClick={() => void fetchData("refresh")}
             disabled={refreshing}
             title="Perbarui data sekarang"
-            className="flex min-h-9 items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 text-xs font-semibold text-[#0B2C6B] transition-colors hover:border-[#0B2C6B]/30 disabled:opacity-50"
+            aria-label="Perbarui data"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#0B2C6B] transition-colors hover:border-[#0B2C6B]/30 disabled:opacity-50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Memperbarui..." : "Perbarui data"}
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
           </button>
-          {lastUpdated && <span className="text-[10px] text-slate-500">Terakhir {lastUpdated.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>}
+          <Link href="/admin/engagements/new" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#071B3D]">
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Buat Program
+          </Link>
+        </div>
+      </header>
+
+      {/* Band 2 — Filter & toolbar */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {programOptions}
+          {batches.length > 0 && (
+            <>
+              <div className="flex items-center gap-1 rounded-lg bg-[#0B2C6B]/[0.04] p-1" role="group" aria-label="Filter batch">
+                <button
+                  type="button"
+                  onClick={() => selectBatch("")}
+                  aria-pressed={!selectedBatch}
+                  className={`inline-flex h-7 items-center rounded-md px-2.5 text-xs font-semibold transition-colors ${
+                    !selectedBatch ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]" : "text-[#4A4C54] hover:bg-white/60 hover:text-[#0B2C6B]"
+                  }`}
+                >
+                  Semua Batch
+                </button>
+                {batches.map((batch) => {
+                  const active = selectedBatch === batch.name;
+                  const count = teamRoster.filter((team) => team.batch === batch.name).length;
+                  return (
+                    <button
+                      key={batch.id}
+                      type="button"
+                      onClick={() => selectBatch(batch.name)}
+                      aria-pressed={active}
+                      className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors ${
+                        active ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]" : "text-[#4A4C54] hover:bg-white/60 hover:text-[#0B2C6B]"
+                      }`}
+                    >
+                      {batch.name}
+                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-[#0B2C6B]/[0.08] text-[#0B2C6B]" : "bg-black/[0.04] text-[#4A4C54]/70"}`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBatchModal(true)}
+                title="Kelola batch"
+                aria-label="Kelola batch"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#0B2C6B]/[0.06] hover:text-[#0B2C6B]"
+              >
+                <Settings2 className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Quick Admin Actions */}
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
-          >
-            <Home className="w-3.5 h-3.5" />
-            Kembali ke Admin
-          </Link>
           <button
             onClick={() => setShowAddTeamModal(true)}
             disabled={!selectedProgramId}
             title={selectedProgramId ? "Tambah tim ke program aktif" : "Pilih program aktif terlebih dahulu"}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0B2C6B] text-white text-xs font-semibold hover:bg-[#071B3D] transition-colors shadow-sm disabled:opacity-40"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] disabled:opacity-40"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5" aria-hidden="true" />
             Tambah Tim
           </button>
           <button
             onClick={openAssignmentModal}
-            className="flex min-h-11 items-center gap-1.5 rounded-lg bg-[#D9A441] px-3 py-2 text-xs font-semibold text-[#071B3D] transition-colors hover:bg-[#C89432]"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-[#D9A441] px-3 text-xs font-bold text-[#071B3D] transition-colors hover:bg-[#C89432]"
           >
-            <UserPlus className="w-3.5 h-3.5" />
+            <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
             Tugaskan Fasilitator
           </button>
-          <Link
-            href="/fasilitator/tbos/observations"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#0B2C6B] bg-[#0B2C6B]/[0.04] text-xs font-semibold hover:bg-[#0B2C6B]/[0.08] transition-colors"
-          >
-            <Lock className="w-3.5 h-3.5 text-[#D9A441]" />
-            Kelola Observasi
-          </Link>
-          <Link
-            href="/fasilitator/tbos"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] text-[#4A4C54] text-xs font-medium hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] transition-colors"
-          >
-            <ClipboardList className="w-3.5 h-3.5" />
-            Buka Form Fasilitator
-          </Link>
+          <TbosOverflowMenu />
         </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Band 3 — Stats strip + Band 4 — Tabs & export */}
       {viewData && viewData.data.teams.length > 0 ? (
         <>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total Tim" value={viewData.data.teams.length} icon={<Users size={16} />} />
-        <StatCard label="Total Observasi" value={summary?.totalObservations || 0} icon={<Activity size={16} />} />
-        <StatCard
-          label="Dimensi Terobservasi"
-          value={viewData.data.batchComparisons.filter((b) => b.batchAverages.some((ba) => ba.avg !== null)).length}
-          detail={`dari ${viewData.data.batchComparisons.length} dimensi`}
-          icon={<Layers size={16} />}
-        />
-        <StatCard
-          label="Rata-rata Skor"
-          value={
-            summary?.topStrengths.length
-              ? (
-                  summary.topStrengths.reduce((a, b) => a + (b.score || 0), 0) /
-                  summary.topStrengths.length
-                ).toFixed(1)
-              : "-"
-          }
-          detail="rata-rata kekuatan utama"
-          icon={<Target size={16} />}
-        />
-        </div>
-
-      {/* Report navigation + exports */}
-      <section className="space-y-3" aria-labelledby="tbos-report-navigation-title">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#B47B13]">Laporan &amp; Analitik</p>
-            <h2 id="tbos-report-navigation-title" className="mt-1 text-base font-bold text-[#0B2C6B]">Pilih jenis laporan{selectedBatch ? ` • ${selectedBatch}` : ""}</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Laporan per tim memuat anggota, kapten, skor rata-rata, dan delapan dimensi perilaku{selectedBatch ? ` untuk ${selectedBatch} saja.` : "."}</p>
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 xl:grid-cols-4">
+            <MetricTile label="Total tim" value={String(viewData.data.teams.length)} />
+            <MetricTile label="Total observasi" value={String(summary?.totalObservations || 0)} />
+            <MetricTile
+              label="Dimensi terobservasi"
+              value={String(viewData.data.batchComparisons.filter((b) => b.batchAverages.some((ba) => ba.avg !== null)).length)}
+              suffix={`/ ${viewData.data.batchComparisons.length}`}
+            />
+            <MetricTile
+              label="Rata-rata skor"
+              value={
+                summary?.topStrengths.length
+                  ? (summary.topStrengths.reduce((a, b) => a + (b.score || 0), 0) / summary.topStrengths.length).toFixed(1)
+                  : "-"
+              }
+              accent
+            />
           </div>
-          <ExportButtons programId={selectedProgramId} batch={selectedBatch} />
-        </div>
 
-        <nav aria-label="Jenis laporan T-BOS" className="grid grid-cols-2 gap-1 rounded-xl bg-[#0B2C6B]/[0.04] p-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              aria-current={activeTab === tab.key ? "page" : undefined}
-              className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-center text-xs font-semibold transition-all duration-200 ${
-                activeTab === tab.key
-                  ? "bg-white text-[#0B2C6B] shadow-sm ring-1 ring-black/[0.04]"
-                  : "text-[#4A4C54] hover:text-[#0B2C6B] hover:bg-white/60"
-              }`}
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
+            <div
+              role="tablist"
+              aria-label="Jenis laporan T-BOS"
+              className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:overflow-visible lg:px-0 lg:pb-0"
+              onKeyDown={(event) => {
+                if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                event.preventDefault();
+                const currentIndex = TABS.findIndex((tab) => tab.key === activeTab);
+                const offset = event.key === "ArrowRight" ? 1 : -1;
+                const next = TABS[(currentIndex + offset + TABS.length) % TABS.length];
+                const nextButton = event.currentTarget.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`);
+                nextButton?.focus();
+                setActiveTab(next.key);
+              }}
             >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </nav>
-      </section>
+              {TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  data-tab={tab.key}
+                  role="tab"
+                  aria-selected={activeTab === tab.key}
+                  tabIndex={activeTab === tab.key ? 0 : -1}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex h-9 shrink-0 items-center whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-colors ${
+                    activeTab === tab.key
+                      ? "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]"
+                      : "text-[#4A4C54] hover:bg-[#0B2C6B]/[0.03] hover:text-[#0B2C6B]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <ExportButtons programId={selectedProgramId} batch={selectedBatch} />
+          </div>
 
-      {/* Tab Content */}
-      <div>
-        {activeTab === "overview" && <OverviewTab data={viewData.data} roster={viewData.roster} observations={viewData.observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
-        {activeTab === "summary" && <TbosExecutiveSummary data={viewData.data} />}
-        {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} />}
-        {activeTab === "radar" && <TbosRadarChart teams={viewData.data.teams} />}
-        {activeTab === "heatmap" && <TbosHeatmap teams={viewData.data.teams} />}
-        {activeTab === "ranking" && <TbosRanking teams={viewData.data.teams} />}
-        {activeTab === "batch" && <TbosBatchComparison comparisons={viewData.data.batchComparisons} />}
-      </div>
+          {/* Tab Content */}
+          <div className="mt-5">
+            {activeTab === "overview" && <OverviewTab data={viewData.data} roster={viewData.roster} observations={viewData.observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
+            {activeTab === "summary" && <TbosExecutiveSummary data={viewData.data} />}
+            {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} />}
+            {activeTab === "radar" && <TbosRadarChart teams={viewData.data.teams} />}
+            {activeTab === "heatmap" && <TbosHeatmap teams={viewData.data.teams} />}
+            {activeTab === "ranking" && <TbosRanking teams={viewData.data.teams} />}
+            {activeTab === "batch" && <TbosBatchComparison comparisons={viewData.data.batchComparisons} />}
+          </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-dashed border-black/[0.1] bg-white p-8 text-center">
-          <Users className="mx-auto mb-3 h-10 w-10 text-[#0B2C6B]/35" />
-          <h3 className="text-sm font-bold text-[#0B2C6B]">Belum ada tim pada batch ini</h3>
-          <p className="mt-1 text-xs text-[#4A4C54]">
+        <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B2C6B]/[0.05]">
+            <Users className="h-6 w-6 text-[#0B2C6B]/40" aria-hidden="true" />
+          </span>
+          <h3 className="mt-4 text-sm font-bold text-[#0B2C6B]">Belum ada tim pada batch ini</h3>
+          <p className="mt-1 text-xs leading-relaxed text-[#4A4C54]">
             {selectedBatch
               ? `Batch "${selectedBatch}" belum memiliki tim yang terobservasi. Pilih batch lain atau tambahkan tim.`
               : "Belum ada data tim untuk program ini."}
@@ -704,31 +729,32 @@ function TbosDashboardContent() {
         />
       )}
       {showBatchModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <h3 className="text-base font-bold text-[#0B2C6B]">Buat Batch Baru</h3>
-              <button onClick={() => { setShowBatchModal(false); setBatchError(""); setNewBatchName(""); }} className="p-1 rounded-lg hover:bg-black/[0.04] text-[#4A4C54]">
+              <button onClick={() => { setShowBatchModal(false); setBatchError(""); setNewBatchName(""); }} aria-label="Tutup" className="flex h-9 w-9 items-center justify-center rounded-xl text-[#4A4C54] transition-colors hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateBatch} className="p-6 space-y-4">
-              {batchError && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">{batchError}</div>}
+            <form onSubmit={handleCreateBatch} className="space-y-4 p-6">
+              {batchError && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700" role="alert">{batchError}</div>}
               <div>
-                <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">Nama Batch</label>
+                <label htmlFor="new-batch-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#0B2C6B]">Nama Batch</label>
                 <input
+                  id="new-batch-name"
                   type="text"
                   required
                   value={newBatchName}
                   onChange={(e) => setNewBatchName(e.target.value)}
                   placeholder="Contoh: Batch 1, Angkatan 2025-A"
                   maxLength={50}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3.5 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white focus:ring-2 focus:ring-[#0B2C6B]/15"
                 />
               </div>
               <div className="flex gap-2 pt-2">
-                <button type="button" onClick={() => { setShowBatchModal(false); setBatchError(""); setNewBatchName(""); }} className="flex-1 py-2.5 rounded-xl border border-black/10 text-sm font-semibold text-[#4A4C54]">Batal</button>
-                <button type="submit" disabled={creatingBatch || !newBatchName.trim()} className="flex-1 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] disabled:opacity-50 flex items-center justify-center gap-1.5">
+                <button type="button" onClick={() => { setShowBatchModal(false); setBatchError(""); setNewBatchName(""); }} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-[#4A4C54] transition-colors hover:bg-slate-50">Batal</button>
+                <button type="submit" disabled={creatingBatch || !newBatchName.trim()} className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50">
                   {creatingBatch && <Loader2 className="w-4 h-4 animate-spin" />}
                   Simpan
                 </button>
@@ -818,33 +844,35 @@ function AssignmentModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="assignment-title">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-4">
-          <div className="flex items-center gap-2">
-            <UsersRound className="h-5 w-5 text-[#0B2C6B]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="assignment-title">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0B2C6B]/[0.06] text-[#0B2C6B]">
+              <UsersRound className="h-4.5 w-4.5" />
+            </span>
             <h2 id="assignment-title" className="font-bold text-[#0B2C6B]">Tugaskan Fasilitator ke Program</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Tutup penugasan" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100">
+          <button type="button" onClick={onClose} aria-label="Tutup penugasan" className="flex h-9 w-9 items-center justify-center rounded-xl text-[#4A4C54] transition-colors hover:bg-slate-100">
             <X className="h-5 w-5" />
           </button>
         </div>
         <form onSubmit={onSubmit} className="space-y-4 p-5">
-          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-          {success && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Fasilitator berhasil ditugaskan ke program.</p>}
+          {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
+          {success && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Fasilitator berhasil ditugaskan ke program.</p>}
           {facilitators.length === 0 ? (
-            <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada akun dengan role fasilitator.</p>
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Belum ada akun dengan role fasilitator.</p>
           ) : (
             <div>
-              <label htmlFor="tbos-facilitator" className="mb-1.5 block text-xs font-semibold text-[#0B2C6B]">Fasilitator</label>
-              <select id="tbos-facilitator" value={facilitatorId} onChange={(event) => setFacilitatorId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm">
+              <label htmlFor="tbos-facilitator" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#0B2C6B]">Fasilitator</label>
+              <select id="tbos-facilitator" value={facilitatorId} onChange={(event) => setFacilitatorId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white">
                 {facilitators.map((facilitator) => <option key={facilitator.id} value={facilitator.id}>{facilitator.full_name || facilitator.email}</option>)}
               </select>
             </div>
           )}
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold">Batal</button>
-            <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">
+            <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-[#4A4C54] transition-colors hover:bg-slate-50">Batal</button>
+            <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50">
               {loading ? "Menyimpan..." : "Simpan Penugasan"}
             </button>
           </div>
@@ -878,57 +906,61 @@ function AddTeamModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06]">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-[#0B2C6B]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0B2C6B]/[0.06] text-[#0B2C6B]">
+              <Users className="w-4.5 h-4.5" />
+            </span>
             <h3 className="text-base font-bold text-[#0B2C6B]">Tambah Tim Baru</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-black/[0.04] text-[#4A4C54]">
+          <button onClick={onClose} aria-label="Tutup" className="flex h-9 w-9 items-center justify-center rounded-xl text-[#4A4C54] transition-colors hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="p-6 space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4 p-6">
           {error && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700" role="alert">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-xs text-green-700 flex items-center gap-2">
-              <Check className="w-4 h-4 text-green-600" />
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
+              <Check className="w-4 h-4 text-emerald-600" />
               Tim berhasil ditambahkan!
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+            <label htmlFor="new-team-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#0B2C6B]">
               Nama Tim
             </label>
             <input
+              id="new-team-name"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: Team Alpha, Bravo 1"
               maxLength={50}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
+              className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3.5 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white focus:ring-2 focus:ring-[#0B2C6B]/15"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
+            <label htmlFor="new-team-batch" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#0B2C6B]">
               Batch Program
             </label>
             {batches.length > 0 ? (
               <select
+                id="new-team-batch"
                 value={batchId}
                 onChange={(e) => setBatchId(e.target.value)}
                 required
-                className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20 bg-white"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3.5 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white"
               >
                 <option value="">Pilih batch...</option>
                 {batches.map((b) => (
@@ -936,24 +968,24 @@ function AddTeamModal({
                 ))}
               </select>
             ) : (
-              <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2.5">
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-600">
                 Belum ada batch. Buat batch terlebih dahulu di panel &quot;Kelola Batch&quot;.
               </p>
             )}
           </div>
 
-          <div className="pt-2 flex gap-2">
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-black/10 text-sm font-semibold text-[#4A4C54] hover:bg-black/[0.02] transition-colors"
+              className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-[#4A4C54] transition-colors hover:bg-slate-50"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={loading || success}
-              className="flex-1 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               Simpan Tim
@@ -1036,26 +1068,30 @@ function ExportButtons({ programId, batch }: { programId: string; batch?: string
         <button
           onClick={handleExportPdf}
           disabled={exporting !== null}
-          className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0B2C6B] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#071B3D] hover:shadow-md disabled:opacity-40"
+          title={batch ? `Laporan PDF per Batch (${batch})` : "Laporan PDF Grup"}
+          className="flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#071B3D] disabled:opacity-40 sm:flex-none"
         >
           {exporting === "pdf" ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
             <Download className="w-3.5 h-3.5" />
           )}
-          {batch ? "Laporan PDF per Batch" : "Laporan PDF Grup"}
+          <span className="hidden xl:inline">{batch ? "PDF per Batch" : "PDF Grup"}</span>
+          <span className="xl:hidden">PDF</span>
         </button>
         <button
           onClick={handleExportCsv}
           disabled={exporting !== null}
-          className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-black/[0.08] px-3.5 py-2 text-xs font-semibold text-[#4A4C54] transition-all duration-200 hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] hover:shadow-sm disabled:opacity-40"
+          title="Unduh data observasi (CSV)"
+          className="flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] disabled:opacity-40 sm:flex-none"
         >
           {exporting === "csv" ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
             <FileSpreadsheet className="w-3.5 h-3.5" />
           )}
-          Data CSV
+          <span className="hidden xl:inline">Data CSV</span>
+          <span className="xl:hidden">CSV</span>
         </button>
       </div>
   );
@@ -1075,6 +1111,105 @@ function profileLabel(profileId: string): string {
 
 function safeBatchLabel(batch: string): string {
   return batch.normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "batch";
+}
+
+function MetricTile({ label, value, suffix, accent = false }: { label: string; value: string; suffix?: string; accent?: boolean }) {
+  return (
+    <section className={`rounded-lg px-3.5 py-3 ${accent ? "bg-[#FFF9EA]" : "bg-[#F7F6F2]"}`}>
+      <p className={`text-xs font-medium ${accent ? "text-[#9A6A12]" : "text-[#4A4C54]"}`}>{label}</p>
+      <p className={`mt-1 text-[22px] font-medium leading-tight tracking-[-0.01em] ${accent ? "text-[#9A6A12]" : "text-[#0B2C6B]"}`}>
+        {value}
+        {suffix && <span className="ml-1 text-xs font-normal text-slate-400">{suffix}</span>}
+      </p>
+    </section>
+  );
+}
+
+function TbosOverflowMenu() {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef<Array<HTMLAnchorElement | HTMLButtonElement | null>>([]);
+
+  const OVERFLOW_ACTIONS = [
+    { key: "observations", href: "/fasilitator/tbos/observations", icon: <Lock className="h-3.5 w-3.5" aria-hidden="true" />, label: "Kelola Observasi" },
+    { key: "facilitator", href: "/fasilitator/tbos", icon: <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />, label: "Buka Form Fasilitator" },
+    { key: "admin", href: "/admin", icon: <Home className="h-3.5 w-3.5" aria-hidden="true" />, label: "Kembali ke Admin" },
+  ];
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    void Promise.resolve().then(() => itemsRef.current[0]?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      event.preventDefault();
+      const currentIndex = itemsRef.current.findIndex((node) => node === document.activeElement);
+      const total = OVERFLOW_ACTIONS.length;
+      const next = event.key === "ArrowDown"
+        ? (currentIndex + 1 + total) % total
+        : (currentIndex - 1 + total) % total;
+      itemsRef.current[next]?.focus();
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+      previousFocus?.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Aksi lainnya"
+        title="Aksi lainnya"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B]"
+      >
+        <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          aria-label="Aksi lainnya"
+          className="absolute right-0 z-40 mt-1.5 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg"
+        >
+          {OVERFLOW_ACTIONS.map((action, index) => (
+            <Link
+              key={action.key}
+              ref={(node) => { itemsRef.current[index] = node; }}
+              role="menuitem"
+              href={action.href}
+              onClick={() => setOpen(false)}
+              tabIndex={-1}
+              className="flex min-h-9 items-center gap-2.5 px-3 text-xs font-semibold text-[#4A4C54] outline-none transition-colors hover:bg-[#0B2C6B]/[0.04] hover:text-[#0B2C6B] focus-visible:bg-[#0B2C6B]/[0.04] focus-visible:text-[#0B2C6B]"
+            >
+              {action.icon}
+              {action.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ScoreBar({ score, max = 5 }: { score: number | null; max?: number }) {
@@ -1102,7 +1237,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
       {/* Executive Summary */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Top Strengths */}
-        <div className="bg-white rounded-xl p-5 border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
           <div className="flex items-center gap-2 mb-5">
             <TrendingUp className="w-4 h-4 text-emerald-600" />
             <div>
@@ -1131,7 +1266,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
         </div>
 
         {/* Development Areas */}
-        <div className="bg-white rounded-xl p-5 border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
           <div className="flex items-center gap-2 mb-5">
             <Target className="w-4 h-4 text-amber-600" />
             <div>
@@ -1161,23 +1296,24 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
       </div>
 
       {/* Quick Team Overview */}
-      <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
-        <div className="px-5 py-4 border-b border-black/[0.04]">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <h3 className="text-sm font-bold text-[#0B2C6B]">Ringkasan Tim</h3>
+          <span className="rounded-full bg-[#0B2C6B]/[0.05] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#0B2C6B]/70">{data.teams.length} tim</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#0B2C6B]/[0.03]">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Tim</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Batch</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Skor</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kekuatan</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Area Pengembangan</th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Observasi</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Fasilitator</th>
-                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Anggota</th>
-                 <th className="text-center py-3 px-4 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kelola</th>
+              <tr className="bg-[#F7F6F2]">
+                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Tim</th>
+                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Batch</th>
+                <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Skor</th>
+                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Kekuatan</th>
+                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Area Pengembangan</th>
+                <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Observasi</th>
+                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Fasilitator</th>
+                 <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Anggota</th>
+                 <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Kelola</th>
               </tr>
             </thead>
             <tbody>
@@ -1187,10 +1323,10 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                 const members = rosterTeam?.members || [];
                 return (
                   <Fragment key={team.teamId}>
-                    <tr className={`border-b border-black/[0.03] hover:bg-[#0B2C6B]/[0.02] transition-colors ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
+                    <tr className={`border-b border-slate-100 transition-colors hover:bg-[#0B2C6B]/[0.03] ${idx % 2 === 1 ? "bg-[#FAFAF8]" : ""}`}>
                       <td className="py-3 px-4 font-semibold text-[#0B2C6B]">{team.teamName}</td>
                       <td className="py-3 px-4">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/70">{team.batch}</span>
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#0B2C6B]/[0.06] text-[#0B2C6B]/80">{team.batch}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-flex items-center justify-center min-w-[2.5rem] px-2 py-0.5 rounded-lg text-sm font-bold ${
@@ -1269,83 +1405,83 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="bg-[#F8F9FC] border-b border-black/[0.03]">
+                      <tr className="bg-[#FAFAF8] border-b border-slate-100">
                          <td colSpan={9} className="py-4 px-4 sm:px-6">
-                          <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
-                            Anggota dan Kapten
-                          </p>
-                          {members.length === 0 ? (
-                            <p className="mt-2 text-sm text-slate-400 italic">Daftar anggota belum diisi.</p>
-                          ) : (
-                            <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Anggota ${team.teamName}`}>
-                              {members.map((member) => (
-                                <li key={member.id} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-black/[0.06] px-3 py-1.5 text-xs text-slate-700">
-                                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${member.is_captain ? "bg-[#D9A441]/15 text-[#D9A441]" : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]"}`}>
-                                    {member.is_captain ? "C" : member.member_name?.charAt(0)?.toUpperCase() || "?"}
-                                  </span>
-                                  {member.member_name}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+                           <p className="text-xs font-bold uppercase tracking-wider text-[#0B2C6B]">
+                             Anggota dan Kapten
+                           </p>
+                           {members.length === 0 ? (
+                             <p className="mt-2 text-sm text-slate-400 italic">Daftar anggota belum diisi.</p>
+                           ) : (
+                             <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Anggota ${team.teamName}`}>
+                               {members.map((member) => (
+                                 <li key={member.id} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-3 py-1.5 text-xs text-slate-700">
+                                   <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shrink-0 ${member.is_captain ? "bg-[#D9A441]/15 text-[#9A6A12]" : "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]"}`}>
+                                     {member.is_captain ? "C" : member.member_name?.charAt(0)?.toUpperCase() || "?"}
+                                   </span>
+                                   {member.member_name}
+                                 </li>
+                               ))}
+                             </ul>
+                           )}
 
-                          <div className="mt-4">
-                            <p className="text-xs font-bold uppercase tracking-wide text-[#0B2C6B]">
-                              Riwayat observasi per misi
-                            </p>
-                            {observationsByTeam(team.teamId).length === 0 ? (
-                              <p className="mt-2 text-sm text-slate-400 italic">Belum ada observasi untuk tim ini.</p>
-                            ) : (
-                              <div className="mt-2 overflow-x-auto rounded-lg border border-black/[0.05]">
-                                <table className="w-full text-xs bg-white">
-                                  <thead>
-                                    <tr className="bg-[#0B2C6B]/[0.03]">
-                                      <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Misi</th>
-                                      <th className="text-center py-2 px-3 font-semibold text-[#0B2C6B]">Skor</th>
-                                      <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Fasilitator</th>
-                                      <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Tanggal</th>
-                                      <th className="text-left py-2 px-3 font-semibold text-[#0B2C6B]">Status</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {observationsByTeam(team.teamId).map((obs) => {
-                                      const avg =
-                                        obs.scores && obs.scores.length > 0
-                                          ? Math.round((obs.scores.reduce((total, score) => total + score.levelValue, 0) / obs.scores.length) * 10) / 10
-                                          : null;
-                                      return (
-                                        <tr key={obs.id} className="border-t border-black/[0.03]">
-                                          <td className="py-2 px-3 font-medium text-[#0B2C6B]">{obs.missionName}</td>
-                                          <td className="py-2 px-3 text-center font-bold text-[#0B2C6B]">{avg !== null ? avg.toFixed(1) : "-"}</td>
-                                          <td className="py-2 px-3">
-                                            <span className="inline-flex items-center gap-1.5">
-                                              <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441]" />
-                                              {obs.facilitatorName || profileLabel(obs.profileId)}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 px-3 text-[#4A4C54]">{formatDate(obs.observedAt)}</td>
-                                          <td className="py-2 px-3">
-                                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                              obs.status === "locked"
-                                                ? "bg-slate-100 text-slate-600"
-                                                : obs.status === "submitted"
-                                                ? "bg-emerald-50 text-emerald-700"
-                                                : "bg-amber-50 text-amber-700"
-                                            }`}>
-                                              {obs.status === "locked" ? "Terkunci" : obs.status === "submitted" ? "Tersimpan" : "Draf"}
-                                            </span>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                           <div className="mt-4">
+                             <p className="text-xs font-bold uppercase tracking-wider text-[#0B2C6B]">
+                               Riwayat observasi per misi
+                             </p>
+                             {observationsByTeam(team.teamId).length === 0 ? (
+                               <p className="mt-2 text-sm text-slate-400 italic">Belum ada observasi untuk tim ini.</p>
+                             ) : (
+                               <div className="mt-2 overflow-x-auto rounded-xl border border-slate-200">
+                                 <table className="w-full text-xs bg-white">
+                                   <thead>
+                                     <tr className="bg-[#F7F6F2]">
+                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Misi</th>
+                                       <th className="text-center py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Skor</th>
+                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Fasilitator</th>
+                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Tanggal</th>
+                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Status</th>
+                                     </tr>
+                                   </thead>
+                                   <tbody>
+                                     {observationsByTeam(team.teamId).map((obs) => {
+                                       const avg =
+                                         obs.scores && obs.scores.length > 0
+                                           ? Math.round((obs.scores.reduce((total, score) => total + score.levelValue, 0) / obs.scores.length) * 10) / 10
+                                           : null;
+                                       return (
+                                         <tr key={obs.id} className="border-t border-slate-100">
+                                           <td className="py-2 px-3 font-medium text-[#0B2C6B]">{obs.missionName}</td>
+                                           <td className="py-2 px-3 text-center font-bold text-[#0B2C6B]">{avg !== null ? avg.toFixed(1) : "-"}</td>
+                                           <td className="py-2 px-3">
+                                             <span className="inline-flex items-center gap-1.5">
+                                               <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441]" />
+                                               {obs.facilitatorName || profileLabel(obs.profileId)}
+                                             </span>
+                                           </td>
+                                           <td className="py-2 px-3 text-[#4A4C54]">{formatDate(obs.observedAt)}</td>
+                                           <td className="py-2 px-3">
+                                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                               obs.status === "locked"
+                                                 ? "bg-slate-100 text-slate-600"
+                                                 : obs.status === "submitted"
+                                                 ? "bg-emerald-50 text-emerald-700"
+                                                 : "bg-amber-50 text-amber-700"
+                                             }`}>
+                                               {obs.status === "locked" ? "Terkunci" : obs.status === "submitted" ? "Tersimpan" : "Draf"}
+                                             </span>
+                                           </td>
+                                         </tr>
+                                       );
+                                     })}
+                                   </tbody>
+                                 </table>
+                               </div>
+                             )}
+                           </div>
+                         </td>
+                       </tr>
+                     )}
                   </Fragment>
                 );
               })}

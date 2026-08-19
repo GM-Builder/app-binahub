@@ -69,21 +69,21 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
 
   return (
     <div className="grid gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">
-      <aside className="rounded-2xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+      <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#B47B13]">Pilih tim</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9A7B2F]">Pilih tim</p>
           <h2 className="mt-1 text-lg font-bold text-[#0B2C6B]">Laporan per Tim</h2>
         </div>
         <label className="relative mt-4 block">
           <span className="sr-only">Cari tim atau batch</span>
           <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari tim atau batch" className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-[#0B2C6B]" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari tim atau batch" className="min-h-10 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] pl-9 pr-3 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white" />
         </label>
         <div className="mt-3 max-h-[32rem] space-y-1.5 overflow-y-auto pr-1">
           {filteredTeams.map((item) => {
             const selected = item.teamId === team.teamId;
             return (
-              <button key={item.teamId} type="button" onClick={() => setSelectedTeamId(item.teamId)} aria-pressed={selected} className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${selected ? "border-[#0B2C6B] bg-[#0B2C6B] text-white" : "border-transparent bg-slate-50 text-[#0B2C6B] hover:border-slate-200"}`}>
+              <button key={item.teamId} type="button" onClick={() => setSelectedTeamId(item.teamId)} aria-pressed={selected} className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${selected ? "border-[#0B2C6B] bg-[#0B2C6B] text-white shadow-sm shadow-[#0B2C6B]/20" : "border-slate-200 bg-white text-[#0B2C6B] hover:border-[#0B2C6B]/30 hover:bg-[#0B2C6B]/[0.03]"}`}>
                 <span className="block truncate text-sm font-bold">{item.teamName}</span>
                 <span className={`mt-0.5 block text-xs ${selected ? "text-white/65" : "text-slate-500"}`}>{item.batch} · {item.totalObservations} observasi</span>
               </button>
@@ -93,15 +93,15 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
         </div>
       </aside>
 
-      <section className="overflow-hidden rounded-2xl border border-[#0B2C6B]/10 bg-white shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]" aria-labelledby="team-report-title">
-        <div className="bg-[#071B3D] px-5 py-5 text-white sm:px-7 sm:py-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="team-report-title">
+        <div className="border-b border-[#D9A441]/40 bg-[#FFF9EA] px-5 py-5 sm:px-7 sm:py-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#F3CE7A]">Laporan T-BOS</p>
-              <h2 id="team-report-title" className="mt-2 text-2xl font-bold tracking-tight">{team.teamName}</h2>
-              <p className="mt-1 text-sm text-white/65">{team.batch} · {team.totalObservations} observasi selesai</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A6A12]">Laporan T-BOS</p>
+              <h2 id="team-report-title" className="mt-2 text-2xl font-bold tracking-tight text-[#0B2C6B]">{team.teamName}</h2>
+              <p className="mt-1 text-sm text-slate-500">{team.batch} · {team.totalObservations} observasi selesai</p>
             </div>
-            <button type="button" onClick={() => void downloadReport()} disabled={downloading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#D9A441] px-4 text-sm font-bold text-[#071B3D] disabled:opacity-50">
+            <button type="button" onClick={() => void downloadReport()} disabled={downloading} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-bold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50">
               {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               Unduh PDF Tim
             </button>

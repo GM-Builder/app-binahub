@@ -36,29 +36,31 @@ export default function ClientAccessPage() {
 
   useEffect(() => {
     let active = true;
-    const linkedProgramId = new URLSearchParams(window.location.search).get("program") || "";
-    setProgramId(linkedProgramId);
+    void Promise.resolve().then(() => {
+      const linkedProgramId = new URLSearchParams(window.location.search).get("program") || "";
+      setProgramId(linkedProgramId);
 
-    if (!linkedProgramId) {
-      setPreviewLoading(false);
-      return () => { active = false; };
-    }
-
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user.app_metadata?.program_id === linkedProgramId) {
-        router.replace("/client/program");
-        return null;
+      if (!linkedProgramId) {
+        setPreviewLoading(false);
+        return;
       }
-      return fetch(`/api/client/access?program=${encodeURIComponent(linkedProgramId)}`);
-    }).then(async (response) => {
-      if (!response) return;
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.success) throw new Error(result.error || "Tautan program tidak valid.");
-      if (active) setProgram(result.program);
-    }).catch((failure) => {
-      if (active) setError(failure instanceof Error ? failure.message : "Tautan program tidak valid.");
-    }).finally(() => {
-      if (active) setPreviewLoading(false);
+
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user.app_metadata?.program_id === linkedProgramId) {
+          router.replace("/client/program");
+          return null;
+        }
+        return fetch(`/api/client/access?program=${encodeURIComponent(linkedProgramId)}`);
+      }).then(async (response) => {
+        if (!response) return;
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.error || "Tautan program tidak valid.");
+        if (active) setProgram(result.program);
+      }).catch((failure) => {
+        if (active) setError(failure instanceof Error ? failure.message : "Tautan program tidak valid.");
+      }).finally(() => {
+        if (active) setPreviewLoading(false);
+      });
     });
 
     return () => { active = false; };

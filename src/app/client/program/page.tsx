@@ -37,7 +37,7 @@ export default function ClientProgramPage() {
   }, []);
 
   useEffect(() => {
-    void loadProgram();
+    void Promise.resolve().then(() => loadProgram());
   }, [loadProgram]);
 
   return (

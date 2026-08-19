@@ -15,7 +15,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
 
   if (!hasData) {
     return (
-      <div className="text-center py-12 bg-white rounded-xl border border-[#0B2C6B]/10 p-8">
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
         <p className="text-sm text-[#4A4C54]">Belum ada data observasi untuk perbandingan batch.</p>
       </div>
     );
@@ -42,9 +42,9 @@ export function TbosBatchComparison({ comparisons }: Props) {
   });
 
   return (
-    <div className="bg-white rounded-xl border border-[#0B2C6B]/10 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
       {/* Card Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.04] bg-gradient-to-r from-[#0B2C6B]/[0.02] to-transparent">
+      <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-base font-bold text-[#0B2C6B]">
             Perbandingan Batch
@@ -112,13 +112,13 @@ export function TbosBatchComparison({ comparisons }: Props) {
 
       {/* Table View */}
       <div className="border-t border-black/[0.04]">
-        <div className="px-6 py-3 bg-[#0B2C6B]/[0.02]">
+        <div className="border-t border-slate-100 px-6 py-3 bg-[#F7F6F2]">
           <h4 className="text-xs font-bold uppercase text-[#0B2C6B] tracking-wider">Tabel Rincian Skor per Batch</h4>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-[#0B2C6B]/[0.03]">
+              <tr className="bg-[#F7F6F2]">
                 <th className="text-left py-3 px-6 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Dimensi Perilaku</th>
                 {batchNames.map((name, i) => (
                   <th key={name} className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>{name}</th>
@@ -135,7 +135,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
                   ? batchAvgs[batchAvgs.length - 1].avg! - batchAvgs[0].avg!
                   : null;
                 return (
-                  <tr key={c.dimensionCode} className={`border-b border-black/[0.03] hover:bg-[#0B2C6B]/[0.02] transition-colors ${idx % 2 === 1 ? "bg-[#F8F9FC]" : ""}`}>
+                  <tr key={c.dimensionCode} className={`border-b border-slate-100 hover:bg-[#0B2C6B]/[0.03] transition-colors ${idx % 2 === 1 ? "bg-[#FAFAF8]" : ""}`}>
                     <td className="py-3 px-6 font-medium text-[#0B2C6B]">{c.dimensionName}</td>
                     {c.batchAverages.map((ba, i) => (
                       <td key={ba.batchName} className="py-3 px-4 text-center font-bold tabular-nums" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>
