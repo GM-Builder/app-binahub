@@ -804,8 +804,8 @@ function TbosObservationContent() {
                         <Check className="h-4 w-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-[#0B2C6B]">{dimension.name}</span>
-                        <span className="mt-0.5 block text-xs text-slate-500">{selectedLevelData?.level_label} — lihat detail</span>
+                        <span className="block truncate text-xs font-semibold uppercase tracking-wide text-slate-400">{dimension.name}</span>
+                        <span className="mt-0.5 block truncate text-sm font-bold text-[#0B2C6B]">{dimension.question}</span>
                       </span>
                       <span className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-extrabold ${levelColors(selectedLevel).badge}`}>
                         {selectedLevelData?.level_label} ({selectedLevel})
@@ -818,21 +818,21 @@ function TbosObservationContent() {
                       <div className="flex items-start gap-3">
                         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${selectedLevel ? "border-[#0B2C6B]/15 bg-[#0B2C6B]/[0.06] text-[#0B2C6B]" : "border-slate-200 bg-slate-50 text-slate-400"}`} aria-hidden="true">{index + 1}</span>
                         <div className="min-w-0">
-                          <h2 className="font-bold text-[#0B2C6B]">{dimension.name}</h2>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-500">{dimension.question}</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{dimension.name}</p>
+                          <h2 className="mt-0.5 font-bold text-[#0B2C6B]">{dimension.question}</h2>
                         </div>
                       </div>
 
                       <div
-                        className="mt-4"
+                        className="mt-4 space-y-2"
                         role="radiogroup"
                         aria-label={`Skor ${dimension.name}`}
                         onKeyDown={(event) => {
-                          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight" && event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
                           event.preventDefault();
                           const values = dimension.levels.map((level) => level.level_value);
                           const currentIndex = selectedLevel !== undefined ? values.indexOf(selectedLevel) : -1;
-                          const offset = event.key === "ArrowRight" ? 1 : -1;
+                          const offset = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
                           const nextIndex = currentIndex === -1
                             ? (offset === 1 ? 0 : values.length - 1)
                             : Math.min(Math.max(currentIndex + offset, 0), values.length - 1);
@@ -840,33 +840,31 @@ function TbosObservationContent() {
                           if (nextLevel) handleScoreSelect(dimension.id, nextLevel.level_value as LevelValue);
                         }}
                       >
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {dimension.levels.map((level) => {
-                            const selected = selectedLevel === level.level_value;
-                            const colors = levelColors(level.level_value);
-                            return (
-                              <button
-                                key={level.level_value}
-                                type="button"
-                                role="radio"
-                                aria-checked={selected}
-                                tabIndex={selected || (selectedLevel === undefined && level.level_value === 1) ? 0 : -1}
-                                aria-label={`${level.level_value} — ${level.level_label}`}
-                                title={`${level.level_label}: ${level.description}`}
-                                onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
-                                className={`flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border-2 py-2 transition-all duration-200 motion-reduce:transition-none ${selected ? colors.chipActive + " scale-[1.03] shadow-sm" : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
-                              >
-                                <span className="text-base font-extrabold leading-none">{level.level_value}</span>
-                                <span className="px-1 text-center text-[9px] font-semibold leading-tight">{level.level_label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {selectedLevelData && (
-                          <p className="mt-2.5 rounded-lg bg-[#F7F6F2] px-3 py-2 text-xs leading-relaxed text-slate-600" aria-live="polite">
-                            <span className="font-bold">{selectedLevelData.level_label}:</span> {selectedLevelData.description}
-                          </p>
-                        )}
+                        {dimension.levels.map((level) => {
+                          const selected = selectedLevel === level.level_value;
+                          const colors = levelColors(level.level_value);
+                          return (
+                            <button
+                              key={level.level_value}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              tabIndex={selected || (selectedLevel === undefined && level.level_value === 1) ? 0 : -1}
+                              aria-label={`${level.level_value} — ${level.level_label}: ${level.description}`}
+                              onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
+                              className={`flex min-h-[72px] w-full items-start gap-3 rounded-xl border-2 p-3 text-left transition-all duration-200 motion-reduce:transition-none ${selected ? colors.chipActive + " shadow-sm" : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
+                            >
+                              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${selected ? "bg-white/25" : "bg-slate-100 text-[#0B2C6B] ring-1 ring-slate-200"}`}>{level.level_value}</span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-bold">{level.level_label}</span>
+                                <span className={`mt-1 block text-xs leading-relaxed ${selected ? "text-white/85" : "text-slate-500"}`}>{level.description}</span>
+                              </span>
+                              <span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${selected ? "border-white bg-white/25" : "border-slate-300 bg-white"}`} aria-hidden="true">
+                                {selected && <Check className="h-3 w-3 text-white" />}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </fieldset>
                   )}
