@@ -1,17 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CircleCheck,
-  ChevronRight,
-  ClipboardCheck,
+  ChevronDown,
   Crown,
   Eye,
+  Info,
   Loader2,
-  MapPin,
   RefreshCw,
   Trash2,
   UserPlus,
@@ -46,13 +44,18 @@ import {
 type Step = "tasks" | "prepare" | "observe" | "review" | "submitting" | "done";
 type TeamMember = { id: string; member_name: string; is_captain: boolean; isPresent: boolean };
 
-const LEVEL_STYLES: Record<number, string> = {
-  1: "border-rose-300 bg-rose-50 text-rose-800",
-  2: "border-orange-300 bg-orange-50 text-orange-800",
-  3: "border-amber-300 bg-amber-50 text-amber-800",
-  4: "border-teal-300 bg-teal-50 text-teal-800",
-  5: "border-emerald-400 bg-emerald-50 text-emerald-900",
+// Satu token warna skala 1-5 (Reactive → Exemplary) dipakai konsisten di semua
+// layar: selector level, badge skor Tinjau & Simpan. Status non-skor (hadir,
+// selesai, dsb.) memakai warna netral — jangan mencampur dengan skala ini.
+const LEVEL_COLORS: Record<number, { chip: string; chipActive: string; badge: string }> = {
+  1: { chip: "border-rose-200 text-rose-700", chipActive: "border-rose-500 bg-rose-500 text-white", badge: "border-rose-200 bg-rose-50 text-rose-700" },
+  2: { chip: "border-orange-200 text-orange-700", chipActive: "border-orange-500 bg-orange-500 text-white", badge: "border-orange-200 bg-orange-50 text-orange-700" },
+  3: { chip: "border-amber-200 text-amber-700", chipActive: "border-amber-500 bg-amber-500 text-white", badge: "border-amber-200 bg-amber-50 text-amber-800" },
+  4: { chip: "border-lime-300 text-lime-700", chipActive: "border-lime-500 bg-lime-500 text-white", badge: "border-lime-200 bg-lime-50 text-lime-700" },
+  5: { chip: "border-green-300 text-green-700", chipActive: "border-green-600 bg-green-600 text-white", badge: "border-green-200 bg-green-50 text-green-700" },
 };
+
+const levelColors = (value: number | undefined) => LEVEL_COLORS[value || 0] || LEVEL_COLORS[3];
 
 const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
@@ -99,8 +102,11 @@ function TbosObservationContent() {
   const [lockingMission, setLockingMission] = useState(false);
   const [memberDeleteTarget, setMemberDeleteTarget] = useState<TeamMember | null>(null);
   const [deletingMember, setDeletingMember] = useState(false);
-const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [userName, setUserName] = useState("");
+  // Accordion state for the assess screen: dimension id -> collapsed or not.
+  const [collapsedDimensions, setCollapsedDimensions] = useState<Set<string>>(new Set());
+  const dimensionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const initData = useCallback(async () => {
     try {
@@ -309,6 +315,13 @@ const [refreshing, setRefreshing] = useState(false);
     const draft = loadDraft(selectedTeam.id, selectedMission.id);
     setScores(draft?.scores || {});
     setNotes(draft?.notes || "");
+    // Collapse dimensions already scored in the draft; the rest stay expanded.
+    const preScored = new Set(
+      selectedMission.dimensions
+        .filter((dimension) => draft?.scores?.[dimension.id] !== undefined)
+        .map((dimension) => dimension.id),
+    );
+    setCollapsedDimensions(preScored);
     setStep("observe");
   };
 
@@ -316,6 +329,20 @@ const [refreshing, setRefreshing] = useState(false);
     const updated = { ...scores, [dimensionId]: level };
     setScores(updated);
     if (selectedTeam && selectedMission) saveDraft(selectedTeam.id, selectedMission.id, updated, notes);
+
+    // Collapse the dimension that was just scored, then smooth-scroll to the
+    // next unscored one. Manual upward scrolling is never overridden: we only
+    // scroll when there is a next unscored dimension.
+    if (selectedMission) {
+      const remaining = selectedMission.dimensions.filter((dimension) => updated[dimension.id] === undefined);
+      const next = remaining[0];
+      setCollapsedDimensions((current) => new Set(current).add(dimensionId));
+      if (next) {
+        window.setTimeout(() => {
+          dimensionRefs.current[next.id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 180);
+      }
+    }
   };
 
   const handleNotesChange = (value: string) => {
@@ -532,42 +559,38 @@ const [refreshing, setRefreshing] = useState(false);
               {refreshing ? "Memperbarui..." : "Perbarui data"}
             </button>
           </div>
-          <section className="mx-auto mt-4 max-w-3xl px-4">
-            <div className="relative overflow-hidden rounded-2xl bg-primary-dark px-4 py-4 text-white shadow-[0_16px_38px_rgba(8,29,66,0.18)] sm:px-5 sm:py-5">
-              <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#17447F]" />
-              <div className="absolute -bottom-20 right-16 h-36 w-36 rounded-full border-[22px] border-accent/15" />
-              <div className="relative">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-                      <ClipboardCheck className="h-5 w-5 text-accent-light" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent-light">T-BOS Fasilitator</p>
-                      <p className="mt-0.5 text-sm text-white/70">Observasi perilaku tim di lapangan</p>
-                    </div>
-                  </div>
-                  <NetworkBadge isOnline={isOnline} queuedCount={queuedCount} dark />
+
+          {/* Header ringkas: sapaan + pos observasi + status online dalam satu blok */}
+          <section className="mx-auto mt-3 max-w-3xl px-4" aria-label="Konteks penugasan">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-bold tracking-[-0.02em] text-[#0B2C6B]">Halo, {userName || "Fasilitator"}</h1>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
+                    {selectedMission
+                      ? <>Pos: <span className="font-semibold text-[#0B2C6B]">{selectedMission.name}</span> · {selectedMission.dimensions.length} dimensi dinilai</>
+                      : "Pos observasi belum dipilih"}
+                  </p>
                 </div>
-<h1 className="mt-4 max-w-xl text-xl font-bold leading-tight tracking-[-0.03em] sm:text-2xl">Selamat Datang, {userName || "Fasilitator"}</h1>
-                <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-white/70 sm:text-sm">Pilih misi dan selesaikan satu observasi untuk setiap tim di pos Anda. Tim yang sudah selesai otomatis terkunci agar tidak dinilai dua kali.</p>
+                <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold" aria-label={isOnline ? "Perangkat online" : "Perangkat offline"}>
+                  <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-emerald-500" : "bg-amber-500"}`} aria-hidden="true" />
+                  <span className={isOnline ? "text-slate-600" : "text-amber-700"}>{isOnline ? "Online" : "Offline"}</span>
+                  {queuedCount > 0 && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{queuedCount} antrean</span>}
+                </div>
               </div>
+              {selectedMission && (
+                <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+                  Pos Anda untuk program ini. Pilih misi berbeda tidak tersedia sampai program selesai.
+                </p>
+              )}
             </div>
           </section>
 
-          <section className="mx-auto mt-4 max-w-3xl space-y-4 px-4" aria-labelledby="assigned-teams-title">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_32px_rgba(8,29,66,0.07)]">
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF4D6] text-[#9A6A12]"><MapPin className="h-5 w-5" aria-hidden="true" /></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#B47B13]">Pos observasi</p>
-                  <h2 className="mt-1 text-lg font-bold text-primary-dark">{selectedMission?.name || "Pilih satu misi"}</h2>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-500">{selectedMission ? `${selectedMission.dimensions.length} dimensi perilaku akan dinilai untuk setiap tim.` : "Pilihan misi akan terkunci sampai program selesai."}</p>
-                </div>
-                {selectedMission && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700"><CircleCheck className="h-3.5 w-3.5" /> Terkunci</span>}
-              </div>
-              {!selectedMission && (
-                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <section className="mx-auto mt-3 max-w-3xl space-y-3 px-4" aria-labelledby="assigned-teams-title">
+            {!selectedMission && missions.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9A7B2F]">Pilih pos observasi</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   {missions.map((mission) => (
                     <button key={mission.id} type="button" onClick={() => setMissionSelectionTarget(mission)} className={`group min-h-16 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-[#D9A441] hover:bg-[#FFF9EA] ${FOCUS}`}>
                       <span className="block text-sm font-bold text-primary-dark">{mission.name}</span>
@@ -575,9 +598,9 @@ const [refreshing, setRefreshing] = useState(false);
                     </button>
                   ))}
                 </div>
-              )}
-              {missions.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi T-BOS yang tersedia. Hubungi admin program.</p>}
-            </div>
+              </div>
+            )}
+            {missions.length === 0 && <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi T-BOS yang tersedia. Hubungi admin program.</p>}
 
             {selectedMission && (
               <div className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Kemajuan observasi tim">
@@ -587,14 +610,15 @@ const [refreshing, setRefreshing] = useState(false);
               </div>
             )}
 
-            <div className="flex items-end justify-between gap-3 pt-2">
+            <div className="flex items-end justify-between gap-3 pt-1">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#B47B13]">Daftar tim</p>
-                <h2 id="assigned-teams-title" className="mt-1 text-xl font-bold text-primary-dark">{selectedMission ? "Pilih tim berikutnya" : "Daftar tim belum dibuka"}</h2>
-                <p className="mt-1 text-sm text-slate-500">{selectedMission ? `Penilaian hanya untuk ${selectedMission.name}.` : "Kunci pos observasi terlebih dahulu."}</p>
+                <h2 id="assigned-teams-title" className="mt-1 text-lg font-bold text-primary-dark">{selectedMission ? "Pilih tim berikutnya" : "Daftar tim belum dibuka"}</h2>
               </div>
               {selectedMission && completedTeamCount > 0 && (
-                <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-primary-dark ${FOCUS}`}><Eye className="h-4 w-4" /> Hasil</button>
+                <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-primary-dark ${FOCUS}`}>
+                  <Eye className="h-3.5 w-3.5" aria-hidden="true" /> Lihat semua hasil
+                </button>
               )}
             </div>
 
@@ -609,30 +633,39 @@ const [refreshing, setRefreshing] = useState(false);
               const completed = Boolean(team.observation);
               const captain = team.members?.find((member) => member.is_captain);
               return (
-                <article key={team.id} className={`rounded-2xl border p-4 transition sm:p-5 ${completed ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 bg-white shadow-[0_10px_28px_rgba(8,29,66,0.07)]"}`}>
-                  <div className="flex items-start gap-3">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${completed ? "bg-emerald-100 text-emerald-700" : "bg-[#FFF4D6] text-[#9A6A12]"}`}>{completed ? <Check className="h-5 w-5" /> : String(index + 1).padStart(2, "0")}</div>
+                <article key={team.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold ${completed ? "bg-emerald-100 text-emerald-700" : "bg-[#FFF4D6] text-[#9A6A12]"}`} aria-hidden="true">
+                      {completed ? <Check className="h-5 w-5" /> : String(index + 1).padStart(2, "0")}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-bold text-primary-dark">{team.name}</h3>
+                        <h3 className="text-base font-bold text-primary-dark sm:text-lg">{team.name}</h3>
                         <span className="rounded-full bg-primary-dark/[0.06] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-dark">{team.batch}</span>
+                        {completed && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Selesai</span>}
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">{team.members?.length || 0} anggota · Kapten: {captain?.member_name || "belum ditentukan"}</p>
-                      {completed && team.observation && <p className="mt-2 text-xs font-semibold text-emerald-700">Selesai {new Date(team.observation.submittedAt).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</p>}
+                      <p className="mt-1 text-xs text-slate-500">
+                        {team.members?.length || 0} anggota · Kapten: {captain?.member_name || "belum ditentukan"}
+                        {completed && team.observation ? ` · Selesai ${new Date(team.observation.submittedAt).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
+                      </p>
                     </div>
                   </div>
-                  <div className="mt-4 border-t border-slate-200/70 pt-4">
+                  <div className="mt-3.5 border-t border-slate-100 pt-3.5">
                     {completed ? (
-                      <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white text-sm font-bold text-emerald-700 ${FOCUS}`}><Eye className="h-4 w-4" /> Lihat hasil observasi</button>
+                      <button type="button" onClick={() => router.push("/fasilitator/tbos/observations")} className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white text-sm font-bold text-emerald-700 ${FOCUS}`}>
+                        <Eye className="h-4 w-4" aria-hidden="true" /> Lihat hasil
+                      </button>
                     ) : (
-                      <button type="button" onClick={() => void prepareTeam(team)} className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-dark px-4 text-sm font-bold text-white shadow-md shadow-primary-dark/15 ${FOCUS}`}>Mulai observasi <ChevronRight className="h-4 w-4" aria-hidden="true" /></button>
+                      <button type="button" onClick={() => void prepareTeam(team)} className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-dark px-4 text-sm font-bold text-white shadow-md shadow-primary-dark/15 ${FOCUS}`}>
+                        Mulai observasi <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </button>
                     )}
                   </div>
                 </article>
               );
             })}
           </section>
-        </main>
+                </main>
       )}
 
 {step === "prepare" && selectedTeam && (
@@ -645,44 +678,61 @@ const [refreshing, setRefreshing] = useState(false);
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} />}
         >
            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.06)]" aria-labelledby="attendance-title">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Anggota yang hadir</h2>
-                <p className="mt-1 text-sm leading-relaxed text-slate-500">Daftar anggota dan kapten diisi oleh fasilitator pertama yang menerima tim. Setelah observasi pertama tersimpan, daftar ini tidak dapat diubah.</p>
-              </div>
-              <Users className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
-            </div>
+             <div className="flex items-start justify-between gap-3">
+               <div>
+                 <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Anggota yang hadir</h2>
+                 <div className="mt-1 flex items-center gap-1.5">
+                   <p className="text-sm text-slate-500">Diisi fasilitator pertama, tidak bisa diubah setelah observasi pertama tersimpan.</p>
+                   <span className="relative">
+                     <button type="button" aria-label="Informasi pengisian daftar anggota" title="Informasi" onClick={(event) => { const tip = event.currentTarget.nextElementSibling; if (tip) tip.toggleAttribute("hidden"); }} className={`flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 text-slate-400 hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] ${FOCUS}`}>
+                       <Info className="h-3.5 w-3.5" aria-hidden="true" />
+                     </button>
+                     <span hidden className="absolute left-0 top-7 z-20 block w-64 rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
+                       Daftar anggota dan kapten diisi oleh fasilitator pertama yang menerima tim. Setelah observasi pertama tersimpan, daftar ini tidak dapat diubah. Kapten tim wajib tercatat hadir dalam observasi.
+                     </span>
+                   </span>
+                 </div>
+               </div>
+               <Users className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
+             </div>
 
-            {memberError && <div className="mt-4"><Alert>{memberError}</Alert></div>}
-            {membersLoading ? (
-              <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-slate-500" role="status">
-                <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" /> Memuat anggota tim...
-              </div>
-            ) : (
-              <div className="mt-5 space-y-3">
-                {teamMembers.length === 0 && <p className="rounded-2xl bg-[#F7F6F2] p-4 text-sm text-slate-500">Daftar anggota masih kosong. Tambahkan seluruh anggota tim, lalu tentukan kapten.</p>}
-                {teamMembers.map((member) => {
-                  const isSessionCaptain = member.isPresent && sessionCaptainId === member.id;
-                  return (
-                     <article key={member.id} className={`rounded-xl border p-3 ${isSessionCaptain ? "border-accent bg-[#FFF9EA]" : "border-slate-200 bg-white"}`}>
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={member.isPresent}
-                          aria-label={`${member.member_name} ${member.isPresent ? "hadir" : "tidak hadir"}`}
-                          onClick={() => toggleAttendance(member.id)}
-                          className={`relative h-11 w-14 shrink-0 rounded-full transition-colors motion-reduce:transition-none ${member.isPresent ? "bg-[#0B2C6B]" : "bg-slate-300"} ${FOCUS}`}
-                        >
-                           <span
-                             className={`absolute left-1 top-1.5 h-8 w-8 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${member.isPresent ? "translate-x-4" : "translate-x-0"}`}
-                             aria-hidden="true"
-                           />
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <h3 className={`truncate text-sm font-bold ${member.isPresent ? "text-slate-800" : "text-slate-400"}`}>{member.member_name}</h3>
-                          <p className="mt-0.5 text-xs text-slate-500">{member.isPresent ? "Hadir" : "Tidak hadir"}{member.is_captain ? " · Kapten tim" : ""}</p>
-                        </div>
+             {memberError && <div className="mt-4"><Alert>{memberError}</Alert></div>}
+             {membersLoading ? (
+               <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-slate-500" role="status">
+                 <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" /> Memuat anggota tim...
+               </div>
+             ) : (
+               <div className="mt-5 space-y-2.5">
+                 {teamMembers.length === 0 && <p className="rounded-2xl bg-[#F7F6F2] p-4 text-sm text-slate-500">Daftar anggota masih kosong. Tambahkan seluruh anggota tim, lalu tentukan kapten.</p>}
+                 {teamMembers.map((member) => {
+                   const isSessionCaptain = member.isPresent && sessionCaptainId === member.id;
+                   return (
+                     <article key={member.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                       <div className="flex items-center gap-3">
+                         <button
+                           type="button"
+                           role="switch"
+                           aria-checked={member.isPresent}
+                           aria-label={`${member.member_name} ${member.isPresent ? "hadir" : "tidak hadir"}`}
+                           onClick={() => toggleAttendance(member.id)}
+                           className={`relative h-11 w-14 shrink-0 rounded-full transition-colors motion-reduce:transition-none ${member.isPresent ? "bg-[#0B2C6B]" : "bg-slate-300"} ${FOCUS}`}
+                         >
+                            <span
+                              className={`absolute left-1 top-1.5 h-8 w-8 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${member.isPresent ? "translate-x-4" : "translate-x-0"}`}
+                              aria-hidden="true"
+                            />
+                         </button>
+                         <div className="min-w-0 flex-1">
+                           <div className="flex items-center gap-1.5">
+                             <h3 className={`truncate text-sm font-bold ${member.isPresent ? "text-slate-800" : "text-slate-400"}`}>{member.member_name}</h3>
+                             {isSessionCaptain && (
+                               <span title="Kapten tim" className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#FFF4D6] px-1.5 py-0.5 text-[10px] font-bold text-[#9A6A12]">
+                                 <Crown className="h-3 w-3" aria-hidden="true" /> Kapten
+                               </span>
+                             )}
+                           </div>
+                           <p className="mt-0.5 text-xs text-slate-500">{member.isPresent ? "Hadir" : "Tidak hadir"}</p>
+                         </div>
                         <button
                           type="button"
                           disabled={!canEditRoster || !member.isPresent || member.is_captain}
@@ -716,13 +766,7 @@ const [refreshing, setRefreshing] = useState(false);
             </form> : (
               <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Daftar anggota sudah tersedia. Tandai kehadiran, lalu lanjutkan penilaian pada pos Anda.</p>
             )}
-          </section>
-
-           <div className="rounded-xl border border-accent/35 bg-[#FFF9EA] p-4" role="status">
-            <p className="text-sm font-bold text-[#6D511B]">Ringkasan sesi</p>
-            <p className="mt-1 text-sm text-[#7A642F]">{presentMembers.length} hadir · Kapten: {sessionCaptain?.member_name || "belum dipilih"}</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#8A7138]">Kapten tim wajib tercatat hadir dalam observasi ini.</p>
-          </div>
+           </section>
 
           <BottomAction disabled={!preparationValid || membersLoading} onClick={continueToObservation} label="Lanjut ke Penilaian" />
         </WorkflowPage>
@@ -736,70 +780,102 @@ const [refreshing, setRefreshing] = useState(false);
           backLabel="Kembali ke persiapan tim"
           onBack={() => setStep("prepare")}
           status={<span className="text-xs font-bold text-[#0B2C6B]">{scoredCount}/{selectedMission.dimensions.length}</span>}
+          progress={{ current: scoredCount, total: selectedMission.dimensions.length }}
         >
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5" aria-label="Kemajuan observasi">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9A7B2F]">Kemajuan penilaian</p>
-                <p className="mt-2 text-lg font-bold text-[#0B2C6B]">{scoredCount} dari {selectedMission.dimensions.length} dimensi</p>
-              </div>
-              <span className="rounded-full bg-[#FFF4D6] px-3 py-1 text-sm font-extrabold text-[#9A6A12]">{Math.round((scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100)}%</span>
-            </div>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#0B2C6B] to-[#D9A441] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(scoredCount / Math.max(selectedMission.dimensions.length, 1)) * 100}%` }} />
-            </div>
-          </section>
-
-          <div className="space-y-4">
+          <div className="space-y-3">
             {selectedMission.dimensions.map((dimension, index) => {
               const selectedLevel = scores[dimension.id];
+              const collapsed = collapsedDimensions.has(dimension.id) && selectedLevel !== undefined;
+              const selectedLevelData = dimension.levels.find((level) => level.level_value === selectedLevel);
               return (
-                <fieldset key={dimension.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
-                  <legend className="sr-only">{dimension.name}</legend>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${selectedLevel ? "border-[#0B2C6B]/15 bg-[#0B2C6B]/[0.06] text-[#0B2C6B]" : "border-slate-200 bg-slate-50 text-slate-400"}`}>{index + 1}</span>
-                      <div>
-                        <h2 className="font-bold text-[#0B2C6B]">{dimension.name}</h2>
-                        <p className="mt-1 text-sm leading-relaxed text-slate-500">{dimension.question}</p>
+                <div
+                  key={dimension.id}
+                  ref={(node) => { dimensionRefs.current[dimension.id] = node; }}
+                  className="scroll-mt-4"
+                >
+                  {collapsed ? (
+                    <button
+                      type="button"
+                      aria-expanded={false}
+                      onClick={() => setCollapsedDimensions((current) => { const next = new Set(current); next.delete(dimension.id); return next; })}
+                      className={`flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-[0_8px_24px_rgba(8,29,66,0.04)] transition hover:border-[#0B2C6B]/25 ${FOCUS}`}
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0B2C6B]/[0.06] text-xs font-bold text-[#0B2C6B]" aria-hidden="true">
+                        <Check className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-[#0B2C6B]">{dimension.name}</span>
+                        <span className="mt-0.5 block text-xs text-slate-500">{selectedLevelData?.level_label} — lihat detail</span>
+                      </span>
+                      <span className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-extrabold ${levelColors(selectedLevel).badge}`}>
+                        {selectedLevelData?.level_label} ({selectedLevel})
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <fieldset className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
+                      <legend className="sr-only">{dimension.name}</legend>
+                      <div className="flex items-start gap-3">
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${selectedLevel ? "border-[#0B2C6B]/15 bg-[#0B2C6B]/[0.06] text-[#0B2C6B]" : "border-slate-200 bg-slate-50 text-slate-400"}`} aria-hidden="true">{index + 1}</span>
+                        <div className="min-w-0">
+                          <h2 className="font-bold text-[#0B2C6B]">{dimension.name}</h2>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-500">{dimension.question}</p>
+                        </div>
                       </div>
-                    </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${selectedLevel ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
-                      {selectedLevel ? "Dinilai" : "Belum dinilai"}
-                    </span>
-                  </div>
 
-                  <div className="mt-5 space-y-2" role="radiogroup" aria-label={`Skor ${dimension.name}`}>
-                    {dimension.levels.map((level) => {
-                      const selected = selectedLevel === level.level_value;
-                      return (
-                        <button
-                          key={level.level_value}
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          aria-label={`${level.level_label}: ${level.description}`}
-                          onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
-                          className={`flex min-h-[72px] w-full items-start gap-3 rounded-xl border p-3 text-left transition motion-reduce:transition-none sm:p-4 ${selected ? `${LEVEL_STYLES[level.level_value]} border-2 shadow-sm` : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"} ${FOCUS}`}
-                        >
-                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${selected ? "bg-white/80" : "bg-slate-100 text-[#0B2C6B] ring-1 ring-slate-200"}`}>{level.level_value}</span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-bold">{level.level_label}</span>
-                            <span className={`mt-1 block text-xs leading-relaxed ${selected ? "opacity-90" : "text-slate-500"}`}>{level.description}</span>
-                          </span>
-                          <span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? "border-current bg-white/80" : "border-slate-300 bg-white"}`} aria-hidden="true">
-                            {selected && <Check className="h-3 w-3" />}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
+                      <div
+                        className="mt-4"
+                        role="radiogroup"
+                        aria-label={`Skor ${dimension.name}`}
+                        onKeyDown={(event) => {
+                          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                          event.preventDefault();
+                          const values = dimension.levels.map((level) => level.level_value);
+                          const currentIndex = selectedLevel !== undefined ? values.indexOf(selectedLevel) : -1;
+                          const offset = event.key === "ArrowRight" ? 1 : -1;
+                          const nextIndex = currentIndex === -1
+                            ? (offset === 1 ? 0 : values.length - 1)
+                            : Math.min(Math.max(currentIndex + offset, 0), values.length - 1);
+                          const nextLevel = dimension.levels[nextIndex];
+                          if (nextLevel) handleScoreSelect(dimension.id, nextLevel.level_value as LevelValue);
+                        }}
+                      >
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {dimension.levels.map((level) => {
+                            const selected = selectedLevel === level.level_value;
+                            const colors = levelColors(level.level_value);
+                            return (
+                              <button
+                                key={level.level_value}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                tabIndex={selected || (selectedLevel === undefined && level.level_value === 1) ? 0 : -1}
+                                aria-label={`${level.level_value} — ${level.level_label}`}
+                                title={`${level.level_label}: ${level.description}`}
+                                onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
+                                className={`flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border-2 py-2 transition-all duration-200 motion-reduce:transition-none ${selected ? colors.chipActive + " scale-[1.03] shadow-sm" : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
+                              >
+                                <span className="text-base font-extrabold leading-none">{level.level_value}</span>
+                                <span className="px-1 text-center text-[9px] font-semibold leading-tight">{level.level_label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {selectedLevelData && (
+                          <p className="mt-2.5 rounded-lg bg-[#F7F6F2] px-3 py-2 text-xs leading-relaxed text-slate-600" aria-live="polite">
+                            <span className="font-bold">{selectedLevelData.level_label}:</span> {selectedLevelData.description}
+                          </p>
+                        )}
+                      </div>
+                    </fieldset>
+                  )}
+                </div>
               );
             })}
           </div>
 
-           <section className="rounded-2xl bg-white p-5 shadow-[0_10px_30px_rgba(8,29,66,0.08)]" aria-labelledby="notes-title">
+           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="notes-title">
             <div className="flex items-center justify-between gap-3">
               <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan observasi <span className="font-normal text-slate-400">(opsional)</span></label>
               <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
@@ -853,7 +929,7 @@ const [refreshing, setRefreshing] = useState(false);
                 const level = dimension.levels.find((item) => item.level_value === value);
                 return (
                   <div key={dimension.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                    <dd className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-lg font-extrabold ${LEVEL_STYLES[value]}`}>{value}</dd>
+                    <dd className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-lg font-extrabold ${levelColors(value).badge}`}>{value}</dd>
                     <div className="min-w-0">
                       <dt className="text-sm font-bold text-slate-800">{dimension.name}</dt>
                       <dd className="mt-0.5 text-xs text-slate-500">{level?.level_label}</dd>
@@ -864,9 +940,12 @@ const [refreshing, setRefreshing] = useState(false);
             </dl>
           </section>
 
-          <section className="rounded-2xl border border-accent/30 bg-[#FFF9EA] p-5" aria-labelledby="review-notes-title">
-            <h2 id="review-notes-title" className="text-sm font-bold text-[#6D511B]">Catatan</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#715F35]">{notes || "Tidak ada catatan."}</p>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="review-notes-title">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="review-notes-title" className="text-lg font-bold text-primary-dark">Catatan <span className="text-sm font-normal text-slate-400">(opsional)</span></h2>
+              <span className="text-xs font-bold tabular-nums text-slate-400">{notes.length}/50</span>
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">{notes || "Tidak ada catatan."}</p>
           </section>
           <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur">
             <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
@@ -920,13 +999,14 @@ function Shell({ children, isOnline, queuedCount }: { children: React.ReactNode;
   );
 }
 
-function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, children }: {
+function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, progress, children }: {
   stepIndex: 1 | 2 | 3;
   title: string;
   subtitle: string;
   backLabel: string;
   onBack: () => void;
   status: React.ReactNode;
+  progress?: { current: number; total: number };
   children: React.ReactNode;
 }) {
   return (
@@ -943,6 +1023,14 @@ function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, c
           <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#9A7B2F]">Tahap {stepIndex} dari 3 · {WORKFLOW_STEPS[stepIndex - 1]}</p>
           <h1 className="mt-1 text-xl font-bold tracking-[-0.025em] text-[#0B2C6B] sm:text-2xl">{title}</h1>
           <p className="mt-1 text-sm leading-relaxed text-slate-500">{subtitle}</p>
+          {progress && (
+            <div className="mt-3" aria-label={`Kemajuan penilaian ${progress.current} dari ${progress.total} dimensi`}>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#0B2C6B] to-[#D9A441] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(progress.current / Math.max(progress.total, 1)) * 100}%` }} />
+              </div>
+              <p className="mt-1.5 text-xs font-semibold text-slate-500" aria-live="polite">{progress.current} dari {progress.total} dimensi dinilai</p>
+            </div>
+          )}
           <WorkflowProgress current={stepIndex} />
         </div>
       </div>
