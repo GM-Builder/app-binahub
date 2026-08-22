@@ -12,7 +12,16 @@ Frontend memakai `output: "export"`, sehingga hasil production berupa situs stat
 4. Jalankan `npm run build`.
 5. Publikasikan **seluruh isi** folder `out/` ke document root `app.binahub.id`. Jangan hanya mengunggah `admin/tbos.html`, karena nama chunk pada `out/_next/static/` berubah setiap build.
 6. Hapus file lama yang tidak lagi direferensikan dan bersihkan cache hosting/CDN.
-7. Buka `https://app.binahub.id/admin/tbos`, lakukan hard refresh, lalu pastikan blok **Laporan & Analitik** memuat tab **Laporan per Tim**.
+7. Jalankan smoke test akses peserta dan T-BOS di bawah.
+
+## Smoke test akses peserta
+
+- Deploy `binahub-api` lebih dahulu, lalu frontend. Endpoint akses baru harus tersedia sebelum tautan dibagikan.
+- Dari `/admin/programs`, klik **Bagikan** dan pastikan tautan berbentuk `/client/access?program=<uuid>`; kode akses tampil terpisah.
+- Buka tautan di jendela privat. Pastikan judul, perusahaan, lokasi (bila ada), dan hanya modul yang dipilih admin yang terlihat.
+- Masukkan kode dan nama peserta uji. Pastikan portal tidak menampilkan sidebar client lama.
+- Jika LEP aktif, buka LEP dan pastikan peserta tidak diminta memilih program lagi.
+- Ubah program menjadi Draf atau Selesai dan pastikan peserta baru tidak dapat masuk.
 
 ## Smoke test T-BOS
 

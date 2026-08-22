@@ -49,3 +49,13 @@ Dokumen implementasi utama:
 - `ROLES-PERMISSIONS.md`
 - `STATE-MACHINE.md`
 - `SCORING-LOGIC.md`
+
+## Alur Program Peserta
+
+1. Admin membuat program dari `/admin/engagements/new`, mengisi perusahaan, kode, detail program, dan memilih minimal satu modul.
+2. Admin membagikan tautan khusus program dan kode akses dari `/admin/programs` atau halaman kelola program. Kode tidak disisipkan ke URL.
+3. Peserta membuka tautan, memasukkan kode serta nama, lalu memperoleh sesi program tanpa signup atau kata sandi.
+4. `/client/program` hanya menampilkan modul yang diaktifkan admin. LEP dapat dibuka peserta; T-BOS tampil sebagai aktivitas terpandu tanpa formulir peserta.
+5. LEP otomatis terkunci ke program pada sesi tersebut dan hanya dapat dikirim satu kali.
+
+Nama peserta portal tidak disamakan otomatis dengan anggota tim T-BOS. Keduanya memiliki konteks berbeda dan pencocokan berbasis nama berisiko menggabungkan orang yang salah.

@@ -5,7 +5,7 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased] - 2026-08-15
 
-### Fixed — Audit revisi CEO dan production hardening
+### Fixed — Audit revisi dan production hardening
 
 - Menutup kebocoran scope lintas program pada T-BOS/LEP serta menerapkan RBAC admin, fasilitator, client, dan peserta di endpoint API.
 - Submit observasi sekarang atomik dan idempotent, termasuk pembuatan tim baru, roster, kapten, skor, snapshot anggota, dan audit trail.
