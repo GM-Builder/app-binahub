@@ -184,11 +184,11 @@ export function AppShell({
   }, [showMobileNav, showTips]);
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] text-[#4A4C54]">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:bg-[#0B2C6B] focus:text-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold">
         Langsung ke konten utama
       </a>
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-[#0B2C6B]/10 lg:bg-white" role="complementary" aria-label="Navigasi sisi">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white" role="complementary" aria-label="Navigasi sisi">
         <div className="flex h-full flex-col px-5 py-5">
           <Link href="/" className="mb-8 block">
             <Image
@@ -199,7 +199,7 @@ export function AppShell({
               className="h-10 w-auto object-contain object-left"
               priority
             />
-            <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#D9A441]">
+            <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-600">
               Operating Platform
             </p>
           </Link>
@@ -213,8 +213,8 @@ export function AppShell({
                      aria-current={isActive ? "page" : undefined}
                    className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
                     isActive
-                      ? "bg-[#0B2C6B] text-white"
-                      : "text-[#0B2C6B]/76 hover:bg-[#F5F7FA] hover:text-[#0B2C6B]"
+                      ? "bg-blue-900 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-blue-900"
                   }`}
                 >
                   {item.icon}
@@ -288,7 +288,7 @@ export function AppShell({
       </div>}
 
       <main id="main-content" className={mobileItems.length ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-72" : "lg:pl-72"} role="main">
-        <header className={`border-b border-[#0B2C6B]/10 bg-white px-4 sm:px-6 ${compactHeader ? "py-3" : "py-4 sm:py-6"}`}>
+        <header className={`border-b border-slate-200 bg-white px-4 sm:px-6 ${compactHeader ? "py-3" : "py-4 sm:py-6"}`}>
           <div className={`flex justify-between gap-3 ${compactHeader ? "items-center" : "items-start"}`}>
              <div className="min-w-0 flex-1">
                {showBackLink && (
@@ -297,8 +297,8 @@ export function AppShell({
                    Kembali ke beranda
                  </Link>
                )}
-              <p className={`font-bold uppercase text-[#D9A441] ${compactHeader ? "text-[9px] tracking-[0.2em]" : "text-[10px] tracking-[0.24em]"}`}>{eyebrow}</p>
-              <h1 className={`font-semibold tracking-[-0.03em] text-[#0B2C6B] ${compactHeader ? "mt-0.5 text-xl sm:text-2xl" : "mt-2 text-2xl sm:text-3xl"}`}>{title}</h1>
+              <p className={`font-bold uppercase text-amber-600 ${compactHeader ? "text-[9px] tracking-[0.2em]" : "text-[10px] tracking-[0.24em]"}`}>{eyebrow}</p>
+              <h1 className={`font-semibold tracking-[-0.03em] text-slate-900 ${compactHeader ? "mt-0.5 text-xl sm:text-2xl" : "mt-2 text-2xl sm:text-3xl"}`}>{title}</h1>
             </div>
             <div className="flex items-center gap-2">
               {navigation !== "tbos" && <button

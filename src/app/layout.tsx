@@ -9,7 +9,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#0B2C6B",
+  themeColor: "#1e3a8a",
 };
 
 export const metadata: Metadata = {
@@ -41,10 +41,10 @@ export default function RootLayout({
       className="h-full scroll-smooth antialiased"
       data-scroll-behavior="smooth"
     >
-      <body className="flex min-h-full flex-col selection:bg-[#0B2C6B] selection:text-white">
+      <body className="flex min-h-full flex-col selection:bg-blue-900 selection:text-white">
         <a
           href="#content"
-          className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-lg bg-[#0B2C6B] px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-[#C79A3C] focus:ring-offset-2"
+          className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
         >
           Lewati ke konten utama
         </a>

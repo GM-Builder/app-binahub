@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { CalendarDays, LogOut, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, CalendarDays, LogOut, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { programAccessPath } from "@/lib/program-access-link";
@@ -28,13 +29,18 @@ export function ClientProgramShell({
   program,
   participantName,
   children,
+  variant = "landing",
+  taskTitle = "Aktivitas program",
 }: {
   program: ClientProgramSummary;
   participantName: string;
   children: React.ReactNode;
+  variant?: "landing" | "task";
+  taskTitle?: string;
 }) {
   const router = useRouter();
   const schedule = dateRange(program);
+  const initials = participantName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "P";
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -43,24 +49,27 @@ export function ClientProgramShell({
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F6F9] text-[#0B2C6B]">
-      <header className="border-b border-[#0B2C6B]/8 bg-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Image src="/full-logo.png" alt="BinaHub" width={150} height={42} className="h-9 w-auto object-contain" priority />
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-[#4A4C54]/50">Peserta</p>
-              <p className="max-w-44 truncate text-xs font-bold text-[#0B2C6B]">{participantName}</p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-900 text-xs font-bold text-white">{initials}</span>
+              <div className="hidden min-w-0 sm:block">
+                <p className="max-w-44 truncate text-xs font-bold text-slate-900">{participantName}</p>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">Peserta</p>
+              </div>
             </div>
-            <button type="button" onClick={() => void logout()} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#0B2C6B]/10 px-3 text-xs font-bold text-[#0B2C6B] hover:bg-red-50 hover:text-red-700" aria-label="Keluar dari program">
-              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Keluar</span>
+            <button type="button" onClick={() => void logout()} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-red-50 hover:text-red-700" aria-label="Keluar dari program">
+              <LogOut className="h-4 w-4" /> <span>Keluar</span>
             </button>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        <section className="relative overflow-hidden rounded-2xl bg-[#0B2C6B] p-5 text-white shadow-[0_24px_70px_-44px_rgba(11,44,107,0.7)] sm:p-7">
+        {variant === "landing" ? <section className="relative overflow-hidden rounded-2xl bg-blue-900 p-5 text-white shadow-xl shadow-blue-950/10 sm:p-7">
           <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#17447F]" />
           <div className="relative">
             <div className="flex flex-wrap items-center gap-2">
@@ -76,7 +85,11 @@ export function ClientProgramShell({
               </div>
             )}
           </div>
-        </section>
+        </section> : <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <Link href="/client/program" className="inline-flex min-h-9 items-center gap-2 rounded-xl text-xs font-bold text-blue-900"><ArrowLeft className="h-4 w-4" /> Kembali ke program</Link>
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-600">{program.title}</p>
+          <h1 className="mt-1 text-xl font-bold text-slate-900 sm:text-2xl">{taskTitle}</h1>
+        </section>}
 
         <div className="mt-5 sm:mt-7">{children}</div>
       </main>

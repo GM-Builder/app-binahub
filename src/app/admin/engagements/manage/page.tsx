@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Eye, MessageSquare, Send, Trash2, Archive, Pencil } from "lucide-react";
+import { ArrowRight, CalendarPlus, Check, ExternalLink, Eye, MessageSquare, Send, StickyNote, Trash2, Archive, Pencil, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements, useEvidence } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
@@ -16,6 +16,9 @@ import { ProgramShareCard } from "@/components/program-share-card";
 import { programAccessPath } from "@/lib/program-access-link";
 
 const STATUS_ORDER = ["draft", "active", "in_progress", "review", "completed", "archived"] as const;
+const STATUS_LABELS: Record<typeof STATUS_ORDER[number], string> = {
+  draft: "Draft", active: "Aktif", in_progress: "In Progress", review: "Review", completed: "Completed", archived: "Archived",
+};
 const STATUS_FLOW: Record<string, string[]> = {
   draft: ["active"],
   active: ["in_progress"],
@@ -262,35 +265,36 @@ function ManageEngagementContent() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
         <div className="space-y-6">
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:p-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-[#D9A441]">{engagement.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
                 <h2 className="mt-1 text-xl font-semibold text-[#0B2C6B]">{engagement.title}</h2>
               </div>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => void handleEditProgram()} className="inline-flex items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 px-3 py-1.5 text-xs font-semibold text-[#0B2C6B]"><Pencil size={14} /> Kelola</button>
+                <button type="button" onClick={() => void handleEditProgram()} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700"><Pencil size={14} /> Kelola</button>
                 {engagement.status !== "archived" && (
-                  <button type="button" onClick={() => setConfirmArchive(true)} disabled={archiving} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50">
+                  <button type="button" onClick={() => setConfirmArchive(true)} disabled={archiving} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50">
                     <Archive size={14} /> Arsipkan
                   </button>
                 )}
-                <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700"><Trash2 size={14} /> Hapus</button>
+                <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-red-700 hover:bg-red-50"><Trash2 size={14} /> Hapus</button>
                 <StatusPill status={engagement.status} />
               </div>
             </div>
-            <dl className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-              <div><dt className="text-[#4A4C54]/50">Peserta masuk</dt><dd className="font-semibold text-[#0B2C6B]">{engagement.participants ?? 0}</dd></div>
-              <div><dt className="text-[#4A4C54]/50">Catatan</dt><dd className="font-semibold text-[#0B2C6B]">{evidence.length}</dd></div>
-              <div><dt className="text-[#4A4C54]/50">Dibuat</dt><dd className="font-semibold text-[#0B2C6B]">{new Date(engagement.created_at).toLocaleDateString("id-ID")}</dd></div>
+            <dl className="mt-5 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><UserRound className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Peserta masuk</dt><dd className="font-bold text-slate-900">{engagement.participants ?? 0}</dd></div></div>
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><StickyNote className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Catatan</dt><dd className="font-bold text-slate-900">{evidence.length}</dd></div></div>
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><CalendarPlus className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Dibuat</dt><dd className="font-bold text-slate-900">{new Date(engagement.created_at).toLocaleDateString("id-ID")}</dd></div></div>
             </dl>
             <fieldset className="mt-5 border-t border-slate-100 pt-5" disabled={savingModules}>
               <legend className="text-xs font-semibold uppercase tracking-[0.12em] text-[#D9A441]">Modul Program</legend>
               <div className="mt-3 flex flex-wrap gap-3">
                 {(["tbos", "lep"] as const).map((moduleKey) => (
-                  <label key={moduleKey} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#0B2C6B]/10 px-4 text-sm font-semibold text-[#0B2C6B]">
-                    <input type="checkbox" checked={enabledModules.includes(moduleKey)} onChange={() => { void handleModuleToggle(moduleKey); }} />
+                  <label key={moduleKey} className={`inline-flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 px-4 text-sm font-bold transition ${enabledModules.includes(moduleKey) ? "border-blue-900 bg-blue-50 text-blue-900" : "border-slate-200 bg-white text-slate-400"}`}>
+                    <input className="sr-only" type="checkbox" checked={enabledModules.includes(moduleKey)} onChange={() => { void handleModuleToggle(moduleKey); }} />
                     {moduleKey === "tbos" ? "T-BOS" : "LEP"}
+                    {enabledModules.includes(moduleKey) && <Check className="h-4 w-4" />}
                   </label>
                 ))}
               </div>
@@ -298,23 +302,17 @@ function ManageEngagementContent() {
 
             <div className="mt-5">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#D9A441]">Transisi Status</p>
-              <div className="flex items-center gap-2">
-                {STATUS_ORDER.map((s, i) => (
-                  <div key={s} className="flex items-center gap-2">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${
-                      i < currentIndex ? "bg-emerald-500 text-white" :
-                      i === currentIndex ? "bg-[#0B2C6B] text-white" :
-                      "bg-[#E6EAF0] text-[#4A4C54]/50"
-                    }`}>
-                      {i < currentIndex ? <CheckCircle2 size={14} /> : i + 1}
-                    </div>
-                    {i < STATUS_ORDER.length - 1 && <div className={`h-0.5 w-6 ${i < currentIndex ? "bg-emerald-500" : "bg-[#E6EAF0]"}`} />}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-1 flex justify-between text-[10px] font-semibold text-[#4A4C54]/50">
-                {STATUS_ORDER.map((s) => <span key={s}>{s.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}</span>)}
-              </div>
+              <ol className="mt-4 grid grid-cols-6" aria-label="Tahapan status program">
+                {STATUS_ORDER.map((status, index) => {
+                  const passed = index < currentIndex;
+                  const current = index === currentIndex;
+                  return <li key={status} className="relative flex min-w-0 flex-col items-center text-center">
+                    {index > 0 && <span className={`absolute right-1/2 top-4 h-0.5 w-full ${index <= currentIndex ? "bg-blue-900" : "bg-slate-200"}`} aria-hidden="true" />}
+                    <span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${passed ? "bg-blue-900 text-white" : current ? "bg-amber-500 text-slate-900 ring-4 ring-amber-100" : "border-2 border-slate-300 bg-white text-slate-400"}`} aria-current={current ? "step" : undefined}>{passed ? <Check className="h-4 w-4" /> : index + 1}</span>
+                    <span className={`mt-3 max-w-full break-words text-[9px] leading-3 sm:text-[10px] ${current ? "font-bold text-amber-600" : passed ? "font-semibold text-blue-900" : "font-medium text-slate-400"}`}>{STATUS_LABELS[status]}</span>
+                  </li>;
+                })}
+              </ol>
             </div>
 
             {nextStates.length > 0 && (
@@ -335,7 +333,7 @@ function ManageEngagementContent() {
 
         <div className="space-y-6">
           {engagement.code && <ProgramShareCard programId={engagement.id} code={engagement.code} title={engagement.title} status={engagement.status} />}
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:p-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Catatan</p>
             <h3 className="mt-1 text-lg font-semibold text-[#0B2C6B]">{evidence.length} items</h3>
             <div className="mt-4 space-y-2">
@@ -348,7 +346,7 @@ function ManageEngagementContent() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:p-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-4 flex items-center gap-2">
               <MessageSquare size={16} className="text-[#D9A441]" />
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Catatan Internal</p>
@@ -391,14 +389,14 @@ function ManageEngagementContent() {
             )}
           </section>
 
-          <div className="space-y-3">
-            <Link href={programAccessPath(id)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0A255A]">
+          <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <Link href={programAccessPath(id)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-blue-900 hover:bg-slate-50">
               <Eye size={16} /> Buka Halaman Masuk Peserta
             </Link>
-            <Link href="/fasilitator/tbos" className="flex items-center justify-center gap-2 rounded-xl border border-[#0B2C6B]/20 px-4 py-3 text-sm font-semibold text-[#0B2C6B] hover:bg-[#F5F7FA]">
-              <Eye size={16} /> Buka Form T-BOS
+            <Link href="/fasilitator/tbos" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-blue-900 hover:bg-slate-50">
+              <ExternalLink size={16} /> Buka Form T-BOS
             </Link>
-          </div>
+          </section>
         </div>
       </div>
 

@@ -25,13 +25,13 @@ export function AdminMobileNav() {
   if (pathname === "/admin/login") return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#0B2C6B]/10 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(11,44,107,0.08)] backdrop-blur lg:hidden" aria-label="Navigasi admin">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden" aria-label="Navigasi admin">
       <div className="mx-auto flex max-w-lg items-stretch">
         {items.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
-            <Link key={href} href={href} aria-current={active ? "page" : undefined} className={`flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-0.5 text-[10px] font-semibold ${active ? "text-[#0B2C6B]" : "text-[#4A4C54]/65"}`}>
-              <span className={`flex h-7 min-w-9 items-center justify-center rounded-full ${active ? "bg-[#0B2C6B]/10" : ""}`}>
+            <Link key={href} href={href} aria-current={active ? "page" : undefined} className={`flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-0.5 text-[10px] font-semibold ${active ? "text-blue-900" : "text-slate-500"}`}>
+              <span className={`flex h-7 min-w-9 items-center justify-center rounded-full ${active ? "bg-blue-900/10" : ""}`}>
                 <Icon size={20} aria-hidden="true" />
               </span>
               <span className="max-w-full truncate">{label}</span>

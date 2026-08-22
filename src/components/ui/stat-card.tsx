@@ -14,13 +14,11 @@ export function StatCard({
   className?: string;
 }) {
   return (
-    <section className={`rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] ${className}`}>
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D9A441]">{label}</p>
-        {icon && <span className="text-[#0B2C6B]/50">{icon}</span>}
-      </div>
-      <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#0B2C6B]">{value}</p>
-      {detail && <p className="mt-1 text-xs text-[#4A4C54]/60">{detail}</p>}
+    <section className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
+      {icon && <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-900">{icon}</span>}
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-bold tracking-[-0.04em] text-slate-900">{value}</p>
+      {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
     </section>
   );
 }

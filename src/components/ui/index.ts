@@ -10,3 +10,8 @@ export { Skeleton, CardSkeleton, ListSkeleton, StatCardSkeleton } from "./skelet
 export { ConfirmDialog } from "./confirm-dialog";
 export { SearchInput } from "./search-input";
 export { LoadingSpinner, PageLoadingSpinner } from "./loading-spinner";
+export { ModuleChip } from "./module-chip";
+export { ModuleStatusBadge } from "./module-status-badge";
+export { NoticeBanner } from "./notice-banner";
+export { TipsCard } from "./tips-card";
+export { LikertScaleRow } from "./likert-scale-row";

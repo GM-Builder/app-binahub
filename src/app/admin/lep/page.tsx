@@ -12,6 +12,7 @@ import {
   Mic,
   Pencil,
   Plus,
+  Quote,
   RefreshCw,
   Trash2,
   UsersRound,
@@ -22,7 +23,7 @@ import { AppShell } from "@/components/app-shell";
 import { StatCard, EmptyState, FilterTabs, ConfirmDialog } from "@/components/ui";
 import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { supabase } from "@/lib/supabase";
-import { BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Bar, Cell } from "@/components/lazy-charts";
+import { BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Bar, Cell, LabelList } from "@/components/lazy-charts";
 
 interface LepSpeaker {
   id: string;
@@ -292,7 +293,7 @@ function AdminLepContent() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-3 rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)] sm:flex-row sm:items-center sm:justify-between">
+      <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0B2C6B] text-[#F3CE7A]">
             <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
@@ -328,7 +329,7 @@ function AdminLepContent() {
       )}
 
       {!programId ? (
-        <section className="rounded-xl border border-[#0B2C6B]/10 bg-white">
+        <section className="rounded-2xl border border-slate-200 bg-white">
           <EmptyState
             icon={ClipboardCheck}
             title="Pilih program terlebih dahulu"
@@ -338,7 +339,7 @@ function AdminLepContent() {
       ) : (
         <>
           {/* Speakers management */}
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-[#0B2C6B]/10 px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0B2C6B]/[0.06] text-[#0B2C6B]">
@@ -365,7 +366,7 @@ function AdminLepContent() {
             </div>
             <div className="px-5 py-4">
               {speakers.length === 0 ? (
-                <p className="text-xs text-[#4A4C54]/60 italic">Belum ada pemateri untuk program ini.</p>
+                <EmptyState icon={UsersRound} title="Belum ada pemateri untuk program ini" description="Tambahkan pemateri agar peserta dapat memberikan penilaian per pembicara." action={<button type="button" onClick={() => { setEditingSpeaker(null); setNewSpeakerName(""); setMutationError(""); setShowSpeakerModal(true); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-blue-900 px-4 text-xs font-bold text-white"><Plus className="h-4 w-4" /> Tambah Pemateri</button>} />
               ) : (
                 <ul className="flex flex-wrap gap-2">
                   {speakers.map((speaker) => (
@@ -416,7 +417,7 @@ function AdminLepContent() {
           </section>
 
           {/* Question averages chart */}
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-[#0B2C6B]">Rata-rata Pertanyaan Umum</h2>
@@ -433,12 +434,13 @@ function AdminLepContent() {
             </div>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={questionChartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <BarChart data={questionChartData} margin={{ top: 24, right: 8, left: -16, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(11,44,107,0.08)" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#4A4C54" }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 4]} tick={{ fontSize: 11, fill: "#4A4C54" }} axisLine={false} tickLine={false} />
                   <Tooltip cursor={{ fill: "rgba(11,44,107,0.04)" }} />
                   <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+                    <LabelList dataKey="score" position="top" formatter={(value: unknown) => Number(value).toFixed(2)} fill="#0f172a" fontSize={11} fontWeight={700} />
                     {questionChartData.map((item, index) => (
                       <Cell key={index} fill={index === questionChartData.length - 1 ? "#D9A441" : "#0B2C6B"} />
                     ))}
@@ -449,11 +451,11 @@ function AdminLepContent() {
           </section>
 
           {/* Speaker averages */}
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-[#0B2C6B]">Rata-rata Skor per Pemateri</h2>
             <p className="mb-4 mt-0.5 text-xs text-[#4A4C54]/60">Perbandingan penilaian antar pemateri beserta saran yang masuk.</p>
             {speakerChartData.length === 0 ? (
-              <EmptyState icon={Mic} title="Belum ada pemateri untuk ditampilkan." />
+              <EmptyState icon={Mic} title="Belum ada skor pemateri" description="Tambahkan pemateri dan tunggu evaluasi peserta masuk untuk menampilkan perbandingan." />
             ) : (
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
                 <div className="h-64">
@@ -496,7 +498,7 @@ function AdminLepContent() {
           </section>
 
           {/* Open text answers */}
-          <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-[#0B2C6B]">Jawaban Terbuka</h2>
             <p className="mt-0.5 text-xs text-[#4A4C54]/60">
               Jawaban mentah peserta — kartu referensi berikutnya tidak menggunakan ringkasan otomatis.
@@ -506,13 +508,13 @@ function AdminLepContent() {
             </div>
             <div className="mt-4 space-y-3">
               {(results?.openText[openTextTab] || []).length === 0 ? (
-                <p className="rounded-xl bg-slate-50 p-4 text-center text-xs text-[#4A4C54]/50">
-                  Belum ada jawaban untuk kategori ini.
-                </p>
+                <EmptyState icon={MessageSquareText} title="Belum ada jawaban" description="Jawaban peserta untuk kategori ini akan tampil di sini." />
               ) : (
                 (results?.openText[openTextTab] || []).map((item) => (
-                  <blockquote key={item.id} className="rounded-xl border border-[#0B2C6B]/10 bg-[#F8F9FC] p-4">
-                    <p className="text-sm leading-6 text-[#4A4C54]">“{item.text}”</p>
+                  <blockquote key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <Quote className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                    <p className="mt-2 text-sm italic leading-6 text-slate-700">{item.text}</p>
+                    <footer className="mt-3 text-xs font-medium text-slate-500">{results?.openText[openTextTab].length || 0} dari {results?.responseRate.respondents || 0} peserta menjawab</footer>
                   </blockquote>
                 ))
               )}

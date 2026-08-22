@@ -7,6 +7,7 @@ import { ClientAuthGate } from "@/components/client-auth-gate";
 import { ClientProgramShell, type ClientProgramSummary } from "@/components/client-program-shell";
 import { PesertaLepContent } from "@/app/peserta/lep/page";
 import { supabase } from "@/lib/supabase";
+import { programAccessPath } from "@/lib/program-access-link";
 
 interface ProgramData {
   program: ClientProgramSummary;
@@ -41,9 +42,8 @@ export default function ClientLepPage() {
       {!data && !error && <main className="flex min-h-screen items-center justify-center gap-3 bg-[#F4F6F9] text-sm font-semibold text-[#0B2C6B]"><Loader2 className="h-5 w-5 animate-spin" /> Memuat evaluasi...</main>}
       {error && <main className="flex min-h-screen items-center justify-center bg-[#F4F6F9] p-5"><div className="max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center text-sm text-red-700">{error}<Link href="/client/program" className="mt-5 flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-xs font-bold text-white"><ArrowLeft className="h-4 w-4" /> Kembali ke program</Link></div></main>}
       {data && (
-        <ClientProgramShell program={data.program} participantName={data.participant.name}>
-          <Link href="/client/program" className="mb-4 inline-flex min-h-10 items-center gap-2 rounded-xl bg-white px-3 text-xs font-bold text-[#0B2C6B] shadow-sm"><ArrowLeft className="h-4 w-4" /> Kembali ke program</Link>
-          <PesertaLepContent accessPath="/client/access" lockedProgramId={data.program.id} />
+        <ClientProgramShell program={data.program} participantName={data.participant.name} variant="task" taskTitle="Evaluasi Program">
+          <PesertaLepContent accessPath={programAccessPath(data.program.id)} lockedProgramId={data.program.id} />
         </ClientProgramShell>
       )}
     </ClientAuthGate>

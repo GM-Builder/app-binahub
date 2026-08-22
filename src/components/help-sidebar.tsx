@@ -1,4 +1,5 @@
-import { HelpCircle, Lightbulb } from "lucide-react";
+import { HelpCircle } from "lucide-react";
+import { TipsCard } from "@/components/ui/tips-card";
 
 const HELP_TIPS: Record<string, string[]> = {
   "/client/dashboard": [
@@ -76,6 +77,21 @@ const HELP_TIPS: Record<string, string[]> = {
     "Buat program baru atau edit yang sudah ada.",
     "Arsipkan program yang sudah selesai.",
   ],
+  "/admin/programs": [
+    "Cari program menggunakan nama atau kode akses.",
+    "Gunakan filter status untuk memisahkan program aktif, selesai, dan arsip.",
+    "Bagikan tautan dan kode hanya kepada peserta program.",
+  ],
+  "/admin/engagements/manage": [
+    "Pastikan modul yang disepakati sudah aktif sebelum program dimulai.",
+    "Ubah status mengikuti urutan tahapan program.",
+    "Arsipkan program selesai untuk mempertahankan seluruh riwayat datanya.",
+  ],
+  "/admin/lep": [
+    "Tambahkan seluruh pemateri sebelum peserta mengisi evaluasi.",
+    "Skala grafik LEP selalu 1 sampai 4.",
+    "Gunakan export CSV untuk analisis lanjutan.",
+  ],
   "/admin/rbac": [
     "Matriks izin menunjukkan akses per role.",
     "Role ditentukan oleh Supabase Auth metadata.",
@@ -91,11 +107,7 @@ export function HelpSidebar({ currentPath }: { currentPath: string }) {
   ];
 
   return (
-    <aside className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
-      <div className="flex items-center gap-2">
-        <Lightbulb size={14} className="text-[#D9A441]" />
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D9A441]">Tips</p>
-      </div>
+    <TipsCard>
       <ul className="mt-3 space-y-2">
         {tips.map((tip, i) => (
           <li key={i} className="flex items-start gap-2 text-xs text-[#4A4C54]/70">
@@ -108,6 +120,6 @@ export function HelpSidebar({ currentPath }: { currentPath: string }) {
         className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-[#D9A441] hover:text-[#0B2C6B]">
         <HelpCircle size={10} /> Buka Help Center
       </a>
-    </aside>
+    </TipsCard>
   );
 }

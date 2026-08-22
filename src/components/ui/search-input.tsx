@@ -15,21 +15,21 @@ export function SearchInput({
 }) {
   return (
     <div className={`relative ${className}`} role="search">
-      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A4C54]/40" aria-hidden="true" />
+      <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-9 w-full rounded-lg border border-[#0B2C6B]/10 bg-white pl-9 pr-8 text-sm text-[#0B2C6B] outline-none placeholder:text-[#4A4C54]/40 focus:border-[#D9A441]"
+        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-9 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange("")}
           aria-label="Hapus pencarian"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-[#4A4C54]/40 hover:text-[#0B2C6B]"
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-blue-900"
         >
           <X size={14} />
         </button>

@@ -68,6 +68,11 @@ const Cell = dynamic(
   { ssr: false }
 );
 
+const LabelList = dynamic(
+  () => import("recharts").then((mod) => mod.LabelList),
+  { ssr: false }
+);
+
 export {
   RadarChart,
   BarChart,
@@ -82,4 +87,5 @@ export {
   CartesianGrid,
   Tooltip,
   Cell,
+  LabelList,
 };

@@ -7,12 +7,11 @@ import { toast } from "sonner";
 import { useEngagements } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AppShell } from "@/components/app-shell";
-import { Breadcrumb, ConfirmDialog, EmptyState, StatusPill } from "@/components/ui";
+import { Breadcrumb, ConfirmDialog, EmptyState, FilterTabs, ModuleChip, SearchInput, StatusPill } from "@/components/ui";
 import { ProgramShareCard } from "@/components/program-share-card";
 import type { Engagement } from "@/lib/transformation-types";
 
 type ModuleKey = "tbos" | "lep";
-const MODULE_LABELS: Record<ModuleKey, string> = { tbos: "T-BOS", lep: "LEP" };
 
 interface ProgramModuleRow {
   program_id: string;
@@ -26,6 +25,8 @@ function AdminProgramsPageContent() {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [shareTarget, setShareTarget] = useState<Engagement | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("active");
 
   useEffect(() => {
     void fetch("/api/program-modules")
@@ -42,16 +43,17 @@ function AdminProgramsPageContent() {
       .catch(() => {});
   }, []);
 
-  const groups = useMemo(() => {
-    const value: Record<string, typeof engagements> = { active: [], draft: [], completed: [], archived: [] };
-    for (const program of engagements) {
-      if (["active", "in_progress", "review"].includes(program.status)) value.active.push(program);
-      else if (program.status === "draft") value.draft.push(program);
-      else if (program.status === "completed") value.completed.push(program);
-      else value.archived.push(program);
-    }
-    return value;
-  }, [engagements]);
+  const filteredPrograms = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("id-ID");
+    return engagements.filter((program) => {
+      const matchesStatus = statusFilter === "active"
+        ? !["completed", "archived"].includes(program.status)
+        : program.status === statusFilter;
+      const matchesSearch = !query || [program.title, program.code, program.organization?.name]
+        .some((value) => value?.toLocaleLowerCase("id-ID").includes(query));
+      return matchesStatus && matchesSearch;
+    });
+  }, [engagements, search, statusFilter]);
 
   const deleteProgram = async () => {
     if (!deleteTarget) return;
@@ -83,28 +85,40 @@ function AdminProgramsPageContent() {
         </Link>
       </div>
 
-      {loading ? <div className="py-20 text-center text-sm text-[#4A4C54]/60">Memuat...</div> : error ? (
+      {!loading && !error && engagements.length > 0 && <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <SearchInput value={search} onChange={setSearch} placeholder="Cari nama atau kode program" className="w-full lg:max-w-md" />
+          <FilterTabs active={statusFilter} onChange={setStatusFilter} tabs={[
+            { key: "active", label: "Aktif", count: engagements.filter((program) => !["completed", "archived"].includes(program.status)).length },
+            { key: "completed", label: "Selesai", count: engagements.filter((program) => program.status === "completed").length },
+            { key: "archived", label: "Arsip", count: engagements.filter((program) => program.status === "archived").length },
+          ]} />
+        </div>
+        <p className="mt-4 text-xs font-semibold text-slate-500">Menampilkan {filteredPrograms.length} program {statusFilter === "active" ? "aktif" : statusFilter === "completed" ? "selesai" : "arsip"}</p>
+      </section>}
+
+      {loading ? <div className="py-20 text-center text-sm text-slate-500">Memuat...</div> : error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : engagements.length === 0 ? (
-        <EmptyState title="Belum ada program" description="Buat program pertama lalu pilih modul LEP dan/atau T-BOS." action={<Link href="/admin/engagements/new" className="mt-2 inline-flex items-center gap-2 rounded-xl bg-[#0B2C6B] px-5 py-2.5 text-sm font-semibold text-white"><Plus size={18} /> Buat Program</Link>} />
+        <div className="rounded-2xl border border-slate-200 bg-white"><EmptyState title="Belum ada program" description="Buat program pertama lalu pilih modul LEP dan/atau T-BOS." action={<Link href="/admin/engagements/new" className="mt-2 inline-flex items-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-sm font-semibold text-white"><Plus size={18} /> Buat Program</Link>} /></div>
+      ) : filteredPrograms.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white"><EmptyState title="Program tidak ditemukan" description="Ubah kata pencarian atau pilih status lain." /></div>
       ) : (
-        ["active", "draft", "completed", "archived"].map((group) => groups[group].length > 0 && (
-          <section key={group} className="mb-8">
-            <h2 className="mb-4 text-lg font-semibold text-[#0B2C6B]">{{ active: "Berjalan", draft: "Draf", completed: "Selesai", archived: "Diarsipkan" }[group]} ({groups[group].length})</h2>
+          <section className="mb-8">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {groups[group].map((program) => {
+              {filteredPrograms.map((program) => {
                 const modules = (modulesByProgram[program.id] || []).filter((module) => module.enabled);
                 return (
-                  <article key={program.id} className="rounded-xl border border-[#0B2C6B]/10 bg-white p-5 shadow-sm">
+                  <article key={program.id} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-900/25 hover:shadow-lg hover:shadow-slate-900/5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#D9A441]">{program.code || "Tanpa kode"}</p>
-                        <h3 className="mt-1 truncate font-semibold text-[#0B2C6B]">{program.title}</h3>
+                        <p className="inline-flex rounded-lg bg-amber-50 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-[0.08em] text-amber-700">{program.code || "Tanpa kode"}</p>
                       </div>
                       <StatusPill status={program.status} />
                     </div>
+                    <h3 className="mt-4 text-lg font-bold leading-snug text-slate-900">{program.title}</h3>
                     <div className="mt-4 flex flex-wrap gap-1.5">
-                      {modules.map((module) => <span key={module.module_key} className="rounded-full bg-[#0B2C6B]/[0.06] px-2.5 py-1 text-xs font-semibold text-[#0B2C6B]">{MODULE_LABELS[module.module_key]}</span>)}
+                      {modules.map((module) => <ModuleChip key={module.module_key} moduleKey={module.module_key} />)}
                       {modules.length === 0 && <span className="text-xs text-slate-500">Belum ada modul aktif</span>}
                     </div>
                     <dl className="mt-4 space-y-2 border-t border-[#0B2C6B]/[0.07] pt-4 text-xs text-[#4A4C54]/65">
@@ -112,17 +126,16 @@ function AdminProgramsPageContent() {
                       {program.location && <div className="flex items-center gap-2"><MapPin size={14} className="shrink-0 text-[#D9A441]" /><dt className="sr-only">Lokasi</dt><dd className="truncate">{program.location}</dd></div>}
                       {(program.start_date || program.end_date) && <div className="flex items-center gap-2"><CalendarDays size={14} className="shrink-0 text-[#D9A441]" /><dt className="sr-only">Periode</dt><dd>{program.start_date ? new Date(program.start_date).toLocaleDateString("id-ID") : "–"} – {program.end_date ? new Date(program.end_date).toLocaleDateString("id-ID") : "–"}</dd></div>}
                     </dl>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <Link href={`/admin/engagements/manage?id=${program.id}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 px-3 text-xs font-semibold text-[#0B2C6B]"><Settings size={13} /> Kelola</Link>
-                      <button type="button" onClick={() => setShareTarget(program)} disabled={!program.code} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"><Send size={13} /> Bagikan</button>
-                      <button type="button" onClick={() => setDeleteTarget({ id: program.id, title: program.title })} className="ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-700"><Trash2 size={13} /> Hapus</button>
+                    <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+                      <Link href={`/admin/engagements/manage?id=${program.id}`} className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-900 px-3 text-xs font-semibold text-white"><Settings size={13} /> Kelola</Link>
+                      <button type="button" onClick={() => setShareTarget(program)} disabled={!program.code} className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-blue-900 disabled:cursor-not-allowed disabled:opacity-45"><Send size={13} /> Bagikan</button>
+                      <button type="button" onClick={() => setDeleteTarget({ id: program.id, title: program.title })} aria-label={`Hapus ${program.title}`} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-red-600 hover:bg-red-50"><Trash2 size={16} /></button>
                     </div>
                   </article>
                 );
               })}
             </div>
           </section>
-        ))
       )}
 
       <ConfirmDialog open={Boolean(deleteTarget)} onClose={() => { if (!deleting) setDeleteTarget(null); }} onConfirm={deleteProgram} title="Hapus Program?" description={deleteTarget ? `Program "${deleteTarget.title}" beserta tim kosongnya akan dihapus permanen. Program yang memiliki histori observasi atau LEP harus diarsipkan.` : undefined} confirmLabel="Ya, Hapus" variant="danger" loading={deleting} />

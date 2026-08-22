@@ -14,10 +14,10 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={`py-20 text-center ${className}`} role="status">
-      {Icon && <Icon size={40} className="mx-auto text-[#0B2C6B]/20" aria-hidden="true" />}
-      <p className="mt-4 text-sm text-[#4A4C54]/60">{title}</p>
-      {description && <p className="mt-1 text-xs text-[#4A4C54]/40">{description}</p>}
+    <div className={`px-5 py-12 text-center ${className}`} role="status">
+      {Icon && <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500"><Icon size={22} aria-hidden="true" /></span>}
+      <p className="mt-4 text-sm font-bold text-slate-900">{title}</p>
+      {description && <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );

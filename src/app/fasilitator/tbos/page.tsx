@@ -90,6 +90,7 @@ function TbosObservationContent() {
   const [membersLoading, setMembersLoading] = useState(false);
   const [sessionCaptainId, setSessionCaptainId] = useState<string | null>(null);
   const [newMemberName, setNewMemberName] = useState("");
+  const [newCaptainName, setNewCaptainName] = useState("");
   const [addingMember, setAddingMember] = useState(false);
   const [memberError, setMemberError] = useState("");
   const [scores, setScores] = useState<Record<string, LevelValue>>({});
@@ -213,7 +214,13 @@ function TbosObservationContent() {
 
   const handleAddMember = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!newMemberName.trim()) return;
+    const memberNames = Array.from(new Set(
+      newMemberName
+        .split(/\r?\n|,/)
+        .map((name) => name.replace(/\s+/g, " ").trim())
+        .filter(Boolean),
+    ));
+    if (memberNames.length === 0) return;
     setAddingMember(true);
     setMemberError("");
 
@@ -225,18 +232,28 @@ function TbosObservationContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           teamId: selectedTeam.id,
-          memberName: newMemberName.trim(),
-          isCaptain: teamMembers.length === 0,
+          members: memberNames.map((memberName, index) => ({
+            memberName,
+            isCaptain: teamMembers.some((member) => member.is_captain)
+              ? false
+              : memberName === (newCaptainName || memberNames[0]) || (index === 0 && !newCaptainName),
+          })),
         }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.success || !result.member) {
-        throw new Error(result.error || "Gagal menambah anggota.");
+      if (!response.ok || !result.success || !Array.isArray(result.members)) {
+        throw new Error(result.error || "Gagal menyimpan anggota.");
       }
-      const member: TeamMember = { ...result.member, is_captain: Boolean(result.member.is_captain), isPresent: true };
-      setTeamMembers((current) => [...current, member]);
-      setSessionCaptainId((current) => current || member.id);
+      const addedMembers: TeamMember[] = result.members.map((member: TeamMember) => ({
+        ...member,
+        is_captain: Boolean(member.is_captain),
+        isPresent: true,
+      }));
+      setTeamMembers((current) => [...current, ...addedMembers]);
+      setSessionCaptainId((current) => current || addedMembers.find((member) => member.is_captain)?.id || null);
       setNewMemberName("");
+      setNewCaptainName("");
+      toast.success(`${addedMembers.length} anggota tersimpan sekaligus.`);
     } catch (err) {
       setMemberError(err instanceof Error ? err.message : "Gagal menambah anggota.");
     } finally {
@@ -756,13 +773,39 @@ function TbosObservationContent() {
             )}
 
             {canEditRoster ? <form onSubmit={handleAddMember} className="mt-5 border-t border-slate-100 pt-5">
-              <label htmlFor="new-member" className="text-sm font-bold text-[#0B2C6B]">Tambah anggota tim</label>
-              <div className="mt-2 flex gap-2">
-                <input id="new-member" type="text" value={newMemberName} onChange={(event) => setNewMemberName(event.target.value)} placeholder="Nama anggota" className={`min-h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
-                <button type="submit" disabled={!newMemberName.trim() || addingMember} aria-label="Tambah anggota tim" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-white disabled:opacity-40 ${FOCUS}`}>
-                  {addingMember ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <UserPlus className="h-4 w-4" />}
-                </button>
-              </div>
+              <label htmlFor="new-member" className="text-sm font-bold text-blue-900">Masukkan seluruh anggota sekaligus</label>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">Ketik atau tempel satu nama per baris. Semua nama disimpan dalam satu proses agar tidak perlu menunggu per orang.</p>
+              <textarea
+                id="new-member"
+                rows={Math.min(8, Math.max(4, newMemberName.split(/\r?\n/).length))}
+                value={newMemberName}
+                onChange={(event) => {
+                  setNewMemberName(event.target.value);
+                  const firstName = event.target.value.split(/\r?\n|,/).map((name) => name.trim()).find(Boolean) || "";
+                  if (!newCaptainName) setNewCaptainName(firstName);
+                }}
+                placeholder={"Contoh:\nAndi Pratama\nBunga Lestari\nCitra Dewi"}
+                className={`mt-3 min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 text-slate-800 placeholder:text-slate-400 focus:border-blue-900 focus:bg-white ${FOCUS}`}
+              />
+              {!teamMembers.some((member) => member.is_captain) && newMemberName.trim() && (
+                <div className="mt-3">
+                  <label htmlFor="new-captain" className="text-xs font-bold uppercase tracking-wide text-slate-500">Kapten tim</label>
+                  <select
+                    id="new-captain"
+                    value={newCaptainName}
+                    onChange={(event) => setNewCaptainName(event.target.value)}
+                    className={`mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 ${FOCUS}`}
+                  >
+                    {Array.from(new Set(newMemberName.split(/\r?\n|,/).map((name) => name.replace(/\s+/g, " ").trim()).filter(Boolean))).map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <button type="submit" disabled={!newMemberName.trim() || addingMember} className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 text-sm font-bold text-white shadow-sm disabled:opacity-40 ${FOCUS}`}>
+                {addingMember ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : <UserPlus className="h-4 w-4" />}
+                {addingMember ? "Menyimpan anggota..." : `Simpan ${Array.from(new Set(newMemberName.split(/\r?\n|,/).map((name) => name.trim()).filter(Boolean))).length || "semua"} anggota`}
+              </button>
             </form> : (
               <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Daftar anggota sudah tersedia. Tandai kehadiran, lalu lanjutkan penilaian pada pos Anda.</p>
             )}

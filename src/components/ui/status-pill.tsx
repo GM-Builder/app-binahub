@@ -1,12 +1,12 @@
 import React from "react";
 
-const STATUS_CONFIG: Record<string, { label: string; icon?: React.ReactNode; tone: string }> = {
-  draft: { label: "Draf", tone: "bg-slate-100 text-slate-600" },
-  active: { label: "Aktif", tone: "bg-emerald-50 text-emerald-700" },
-  in_progress: { label: "Sedang Berjalan", tone: "bg-blue-50 text-blue-700" },
-  review: { label: "Ditinjau", tone: "bg-amber-50 text-amber-700" },
-  completed: { label: "Selesai", tone: "bg-emerald-50 text-emerald-700" },
-  archived: { label: "Diarsipkan", tone: "bg-slate-100 text-slate-600" },
+const STATUS_CONFIG: Record<string, { label: string; icon?: React.ReactNode; tone: string; dot?: string }> = {
+  draft: { label: "Draf", tone: "bg-slate-100 text-slate-700", dot: "bg-slate-500" },
+  active: { label: "Aktif", tone: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-600" },
+  in_progress: { label: "Sedang Berjalan", tone: "bg-blue-50 text-blue-800", dot: "bg-blue-700" },
+  review: { label: "Ditinjau", tone: "bg-amber-50 text-amber-800", dot: "bg-amber-600" },
+  completed: { label: "Selesai", tone: "bg-emerald-50 text-emerald-700", dot: "bg-emerald-600" },
+  archived: { label: "Diarsipkan", tone: "bg-slate-100 text-slate-700", dot: "bg-slate-500" },
   todo: { label: "Akan Dilakukan", tone: "bg-slate-100 text-slate-700" },
   blocked: { label: "Terhambat", tone: "bg-red-50 text-red-700" },
   done: { label: "Selesai", tone: "bg-emerald-50 text-emerald-700" },
@@ -16,8 +16,10 @@ const STATUS_CONFIG: Record<string, { label: string; icon?: React.ReactNode; ton
   reviewed: { label: "Ditinjau", tone: "bg-emerald-50 text-emerald-700" },
   needs_attention: { label: "Perlu Perhatian", tone: "bg-red-50 text-red-700" },
   submitted: { label: "Terkirim", tone: "bg-blue-50 text-blue-700" },
-  locked: { label: "Terkunci", tone: "bg-red-50 text-red-700" },
+  locked: { label: "Terkunci", tone: "bg-red-50 text-red-700", dot: "bg-red-600" },
 };
+
+for (const config of Object.values(STATUS_CONFIG)) config.dot ||= "bg-current";
 
 export function StatusPill({
   status,
@@ -31,11 +33,12 @@ export function StatusPill({
   const config = STATUS_CONFIG[status] || {
     label: status.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
     tone: "bg-slate-100 text-slate-600",
+    dot: "bg-slate-500",
   };
 
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${config.tone} ${className}`} role="status" aria-label={`Status: ${config.label}`}>
-      {icon || config.icon}
+      {icon || config.icon || <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} aria-hidden="true" />}
       {config.label}
     </span>
   );

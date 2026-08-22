@@ -17,13 +17,7 @@ import { AppShell } from "@/components/app-shell";
 import { PesertaAuthGate } from "@/components/peserta-auth-gate";
 import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { supabase } from "@/lib/supabase";
-
-const SCALE_LABELS: Record<number, { end: string; text: string }> = {
-  1: { text: "Sangat Tidak Setuju", end: "Sangat" },
-  2: { text: "Tidak Setuju", end: "Sangat" },
-  3: { text: "Setuju", end: "Tidak" },
-  4: { text: "Sangat Setuju", end: "" },
-};
+import { EmptyState, LikertScaleRow, NoticeBanner } from "@/components/ui";
 
 const QUESTIONS = [
   {
@@ -160,6 +154,9 @@ export function PesertaLepContent({
     speakers.every((s) => speakerScores[s.id] !== null) &&
     halTerpenting.trim().length > 0 &&
     halMenarik.trim().length > 0;
+  const commonComplete = QUESTIONS.every((q) => questions[q.key] !== null);
+  const speakersComplete = speakers.every((s) => speakerScores[s.id] !== null);
+  const currentSection = !commonComplete ? 1 : !speakersComplete ? 2 : 3;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -218,9 +215,9 @@ export function PesertaLepContent({
   return (
     <div className="space-y-5 sm:space-y-6">
       {lockedProgramId ? (
-        <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 text-xs leading-5 text-[#4A4C54]/65 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+        <NoticeBanner>
           Evaluasi ini otomatis terhubung ke program Anda dan hanya dapat dikirim satu kali.
-        </section>
+        </NoticeBanner>
       ) : (
         <section className="rounded-xl border border-[#0B2C6B]/10 bg-white p-4 shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
           <TbosProgramSelector value={programId} onChange={setProgramId} moduleKey="lep" />
@@ -276,7 +273,7 @@ export function PesertaLepContent({
 
       {/* Evaluation form */}
       {!loading && !error && programId && !alreadySubmitted && (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 pb-28">
           {submitError && (
             <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -284,8 +281,13 @@ export function PesertaLepContent({
             </div>
           )}
 
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Progres evaluasi">
+            <div className="flex items-center justify-between gap-3 text-xs"><span className="font-bold text-slate-900">Bagian {currentSection} dari 3</span><span className="text-slate-500">{["Penilaian Umum", "Penilaian Pemateri", "Tanggapan Terbuka"][currentSection - 1]}</span></div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${(currentSection / 3) * 100}%` }} /></div>
+          </section>
+
           {/* Common questions */}
-          <section className="overflow-hidden rounded-xl border border-[#0B2C6B]/10 bg-white shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center gap-3 border-b border-[#0B2C6B]/10 bg-[#F8F9FC] px-5 py-4">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0B2C6B] text-[#F3CE7A]">
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -307,7 +309,8 @@ export function PesertaLepContent({
                         {question.label}
                         <span className="ml-1 text-red-500">*</span>
                       </p>
-                      <ScaleSelector
+                      <LikertScaleRow
+                        name={question.label}
                         value={questions[question.key]}
                         onChange={(value) => handleQuestionChange(question.key, value)}
                       />
@@ -319,7 +322,7 @@ export function PesertaLepContent({
           </section>
 
           {/* Speaker ratings */}
-          <section className="overflow-hidden rounded-xl border border-[#0B2C6B]/10 bg-white shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center gap-3 border-b border-[#0B2C6B]/10 bg-[#F8F9FC] px-5 py-4">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0B2C6B] text-[#F3CE7A]">
                 <Mic className="h-4 w-4" aria-hidden="true" />
@@ -330,9 +333,7 @@ export function PesertaLepContent({
               </div>
             </div>
             {speakers.length === 0 ? (
-              <div className="px-5 py-6">
-                <p className="text-sm text-[#4A4C54]/70">Belum ada daftar pemateri untuk program ini. Anda tetap dapat mengirim evaluasi umum.</p>
-              </div>
+              <EmptyState icon={Mic} title="Belum ada pemateri untuk program ini" description="Anda tetap dapat mengirim evaluasi umum." />
             ) : (
               <div className="divide-y divide-[#0B2C6B]/[0.06]">
                 {speakers.map((speaker) => (
@@ -346,7 +347,8 @@ export function PesertaLepContent({
                           {speaker.name}
                           <span className="ml-1 text-red-500">*</span>
                         </p>
-                        <ScaleSelector
+                        <LikertScaleRow
+                          name={`Penilaian ${speaker.name}`}
                           value={speakerScores[speaker.id] ?? null}
                           onChange={(value) => handleSpeakerScore(speaker.id, value)}
                         />
@@ -363,7 +365,7 @@ export function PesertaLepContent({
                             rows={2}
                             maxLength={500}
                             placeholder="Tuliskan saran atau masukan..."
-                            className="w-full rounded-xl border border-[#0B2C6B]/15 px-3.5 py-2.5 text-sm outline-none focus:border-[#D9A441] focus:ring-1 focus:ring-[#D9A441]/30"
+                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10"
                           />
                         </div>
                       </div>
@@ -375,7 +377,7 @@ export function PesertaLepContent({
           </section>
 
           {/* Open text */}
-          <section className="overflow-hidden rounded-xl border border-[#0B2C6B]/10 bg-white shadow-[0_18px_52px_-42px_rgba(11,44,107,0.38)]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center gap-3 border-b border-[#0B2C6B]/10 bg-[#F8F9FC] px-5 py-4">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0B2C6B] text-[#F3CE7A]">
                 <MessageSquareText className="h-4 w-4" aria-hidden="true" />
@@ -413,62 +415,24 @@ export function PesertaLepContent({
           </section>
 
           {/* Legend */}
-          <div className="flex flex-col gap-3 rounded-xl bg-[#071B3D] p-4 text-white sm:flex-row sm:items-start sm:justify-between">
+          <div className={`fixed inset-x-0 bottom-0 z-30 flex flex-col gap-3 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_32px_rgba(15,23,42,0.10)] backdrop-blur sm:flex-row sm:items-center sm:justify-between ${lockedProgramId ? "lg:left-0" : "lg:left-72"}`}>
             <div className="flex items-start gap-3">
               <UsersRound className="mt-0.5 h-4 w-4 shrink-0 text-[#F3CE7A]" aria-hidden="true" />
-              <p className="text-xs leading-5 text-blue-100/80">
+              <p className="text-xs leading-5 text-slate-600">
                 Evaluasi bersifat anonim dari sisi pengolahan agregat dan hanya dikirim satu kali.
                 Anda tidak dapat mengubah jawaban setelah dikirim.
               </p>
             </div>
             <button
               type="submit"
-              disabled={submitting}
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#D9A441] px-5 text-sm font-bold text-[#071B3D] transition hover:bg-[#F3CE7A] disabled:opacity-50"
+              disabled={submitting || !isFormComplete}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 text-sm font-bold text-slate-900 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
               {submitting ? "Mengirim..." : "Kirim Evaluasi"}
             </button>
           </div>
         </form>
-      )}
-    </div>
-  );
-}
-
-function ScaleSelector({ value, onChange }: { value: number | null; onChange: (value: number) => void }) {
-  return (
-    <div className="mt-3">
-      <div className="flex items-center gap-2">
-        <span className="hidden w-16 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#4A4C54]/50 sm:block">
-          Sangat Tidak Setuju
-        </span>
-        <div className="flex flex-1 items-center justify-between gap-1">
-          {[1, 2, 3, 4].map((score) => (
-            <button
-              key={score}
-              type="button"
-              onClick={() => onChange(score)}
-              aria-pressed={value === score}
-              aria-label={`Skor ${score} dari 4`}
-              className={`flex h-10 flex-1 items-center justify-center rounded-lg border text-sm font-bold transition ${
-                value === score
-                  ? "border-[#0B2C6B] bg-[#0B2C6B] text-white shadow-sm"
-                  : "border-[#0B2C6B]/15 bg-white text-[#0B2C6B]/70 hover:border-[#0B2C6B]/40 hover:bg-[#0B2C6B]/[0.04]"
-              }`}
-            >
-              {score}
-            </button>
-          ))}
-        </div>
-        <span className="hidden w-16 shrink-0 text-right text-[10px] font-semibold uppercase tracking-wide text-[#4A4C54]/50 sm:block">
-          Sangat Setuju
-        </span>
-      </div>
-      {value !== null && (
-        <p className="mt-2 text-[11px] font-medium text-[#0B2C6B]">
-          Anda memilih: {SCALE_LABELS[value]?.text}
-        </p>
       )}
     </div>
   );
@@ -503,7 +467,7 @@ function OpenTextField({
         rows={3}
         maxLength={1000}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-[#0B2C6B]/15 px-3.5 py-2.5 text-sm outline-none focus:border-[#D9A441] focus:ring-1 focus:ring-[#D9A441]/30"
+        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10"
       />
     </div>
   );

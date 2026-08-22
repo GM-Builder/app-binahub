@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { AlertCircle, ArrowLeft, ArrowRight, Building2, CalendarDays, CheckCircle2, ClipboardCheck, Gamepad2, KeyRound, Loader2, MapPin, ShieldCheck, UserRound } from "lucide-react";
+import { AlertCircle, ArrowRight, Building2, CalendarDays, CheckCircle2, ClipboardCheck, Gamepad2, KeyRound, Loader2, MapPin, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -117,30 +116,29 @@ export default function ClientAccessPage() {
     : program?.startDate ? `Mulai ${formatDate(program.startDate)}` : program?.endDate ? `Sampai ${formatDate(program.endDate)}` : null;
 
   return (
-    <main className="min-h-screen bg-[#F3F5F8] px-4 py-5 text-[#0B2C6B] sm:px-6 sm:py-10">
+    <main className="min-h-screen bg-slate-100 px-4 py-5 text-slate-900 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
           <Image src="/full-logo.png" alt="BinaHub" width={150} height={42} className="h-9 w-auto object-contain" priority />
-          <Link href="/" className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-bold text-[#0B2C6B]/65 hover:bg-white hover:text-[#0B2C6B]"><ArrowLeft className="h-4 w-4" /> Beranda</Link>
         </div>
 
         {previewLoading ? (
           <div className="flex min-h-[70vh] items-center justify-center gap-3 text-sm font-semibold"><Loader2 className="h-5 w-5 animate-spin" /> Memuat program...</div>
         ) : (
-          <div className="mt-6 grid overflow-hidden rounded-3xl border border-[#0B2C6B]/8 bg-white shadow-[0_30px_100px_-65px_rgba(11,44,107,0.65)] lg:grid-cols-[1.05fr_0.95fr]">
-            <section className="relative overflow-hidden bg-[#0B2C6B] p-6 text-white sm:p-8 lg:p-10">
-              <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#17447F]" />
-              <div className="absolute -bottom-24 -left-16 h-52 w-52 rounded-full border-[30px] border-[#D9A441]/10" />
+          <div className="mt-6 grid overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:grid-cols-[1.05fr_0.95fr]">
+            <section className="relative overflow-hidden bg-slate-900 p-6 text-white sm:p-8 lg:p-10">
+              <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-900/60 blur-sm" />
+              <div className="absolute -bottom-24 -left-16 h-52 w-52 rounded-full border-[30px] border-amber-500/10" />
               <div className="relative">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#F3CE7A]">Akses Program BinaHub</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">Akses Program BinaHub</p>
                 <h1 className="mt-3 text-2xl font-bold leading-tight tracking-[-0.04em] sm:text-3xl">{program?.title || "Masuk ke program Anda"}</h1>
                 <p className="mt-3 max-w-lg text-sm leading-6 text-white/68">{program ? "Gunakan kode yang diberikan penyelenggara dan isi nama Anda untuk membuka modul program." : "Masukkan kode program yang diberikan oleh tim BinaHub atau penyelenggara program."}</p>
 
                 {program && (
-                  <div className="mt-6 space-y-3 rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
-                    <p className="flex items-center gap-2 text-sm font-bold"><Building2 className="h-4 w-4 text-[#F3CE7A]" /> {program.companyName}</p>
-                    {program.location && <p className="flex items-center gap-2 text-xs text-white/70"><MapPin className="h-4 w-4 text-[#F3CE7A]" /> {program.location}</p>}
-                    {schedule && <p className="flex items-center gap-2 text-xs text-white/70"><CalendarDays className="h-4 w-4 text-[#F3CE7A]" /> {schedule}</p>}
+                  <div className="mt-6 space-y-3 rounded-2xl border border-white/15 bg-blue-900/60 p-4 backdrop-blur-sm">
+                    <p className="flex items-center gap-3 text-sm font-bold"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-amber-400"><Building2 className="h-4 w-4" /></span> {program.companyName}</p>
+                    {program.location && <p className="flex items-center gap-3 text-xs text-white/80"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-amber-400"><MapPin className="h-4 w-4" /></span> {program.location}</p>}
+                    {schedule && <p className="flex items-center gap-3 text-xs text-white/80"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-amber-400"><CalendarDays className="h-4 w-4" /></span> {schedule}</p>}
                   </div>
                 )}
 
@@ -148,8 +146,8 @@ export default function ClientAccessPage() {
                   <div className="mt-6">
                     <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Modul program</p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {program.modules.includes("lep") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-[#F3CE7A]" /> LEP</span>}
-                      {program.modules.includes("tbos") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><Gamepad2 className="h-3.5 w-3.5 text-[#F3CE7A]" /> T-BOS</span>}
+                      {program.modules.includes("lep") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-amber-400" /> LEP · Evaluasi Program</span>}
+                      {program.modules.includes("tbos") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><Gamepad2 className="h-3.5 w-3.5 text-amber-400" /> T-BOS · Observasi Perilaku</span>}
                     </div>
                   </div>
                 )}
@@ -157,7 +155,7 @@ export default function ClientAccessPage() {
             </section>
 
             <section className="p-6 sm:p-8 lg:p-10">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#FFF4D8] text-[#9A6817]"><KeyRound className="h-5 w-5" /></div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><KeyRound className="h-5 w-5" /></div>
               <h2 className="mt-5 text-xl font-bold tracking-[-0.02em]">{program ? "Verifikasi akses peserta" : "Masukkan kode program"}</h2>
               <p className="mt-2 text-sm leading-6 text-[#4A4C54]/65">{program ? "Kode tidak tersimpan di tautan. Masukkan secara manual untuk memastikan Anda berada di program yang benar." : "Setelah kode diverifikasi, Anda akan diminta mengisi nama."}</p>
 
@@ -166,21 +164,21 @@ export default function ClientAccessPage() {
 
               <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 <label className="block">
-                  <span className="mb-1.5 flex items-center gap-2 text-xs font-bold text-[#0B2C6B]/70"><KeyRound className="h-3.5 w-3.5" /> Kode akses</span>
-                  <input value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setError(""); }} className="h-12 w-full rounded-xl border border-[#0B2C6B]/14 bg-[#FAFAF8] px-4 font-mono text-sm font-bold uppercase tracking-[0.14em] outline-none transition focus:border-[#D9A441] focus:ring-4 focus:ring-[#D9A441]/10" placeholder="CONTOH-2026" maxLength={128} autoComplete="one-time-code" required />
+                  <span className="mb-1.5 text-xs font-bold text-slate-700">Kode akses</span>
+                  <span className="relative block"><KeyRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setError(""); }} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-mono text-sm font-bold uppercase tracking-[0.14em] outline-none transition focus:border-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-900/10" placeholder="CONTOH-2026" maxLength={128} autoComplete="one-time-code" required /></span>
                 </label>
                 {program && (
                   <label className="block">
-                    <span className="mb-1.5 flex items-center gap-2 text-xs font-bold text-[#0B2C6B]/70"><UserRound className="h-3.5 w-3.5" /> Nama lengkap</span>
-                    <input value={displayName} onChange={(event) => { setDisplayName(event.target.value); setError(""); }} className="h-12 w-full rounded-xl border border-[#0B2C6B]/14 bg-[#FAFAF8] px-4 text-sm font-semibold outline-none transition focus:border-[#D9A441] focus:ring-4 focus:ring-[#D9A441]/10" placeholder="Tulis nama Anda" minLength={2} maxLength={120} autoComplete="name" required />
+                    <span className="mb-1.5 text-xs font-bold text-slate-700">Nama lengkap</span>
+                    <span className="relative block"><UserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={displayName} onChange={(event) => { setDisplayName(event.target.value); setError(""); }} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-900/10" placeholder="Tulis nama Anda" minLength={2} maxLength={120} autoComplete="name" required /></span>
                   </label>
                 )}
-                <button type="submit" disabled={loading || Boolean(program && !program.available)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-bold text-white transition hover:bg-[#071B3D] disabled:cursor-not-allowed disabled:opacity-45">
+                <button type="submit" disabled={loading || Boolean(program && !program.available)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 text-sm font-bold text-white transition hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-45">
                   {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</> : <>{program ? "Masuk ke program" : "Verifikasi kode"} <ArrowRight className="h-4 w-4" /></>}
                 </button>
               </form>
 
-              <div className="mt-5 flex items-start gap-2 rounded-xl bg-[#F5F7FA] p-3 text-[11px] leading-5 text-[#4A4C54]/65"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Akses terikat pada satu program dan sesi perangkat ini. Jangan membagikan kode di luar peserta program.</div>
+              <p className="mt-5 flex items-start gap-2 text-[11px] leading-5 text-slate-500"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Akses terikat pada satu program dan identitas peserta. Jangan membagikan kode di luar peserta program.</p>
               {program && <button type="button" onClick={() => { setProgram(null); setProgramId(""); setCode(""); setDisplayName(""); setError(""); window.history.replaceState(null, "", "/client/access"); }} className="mt-4 w-full text-xs font-bold text-[#0B2C6B]/55 hover:text-[#0B2C6B]">Gunakan kode program lain</button>}
             </section>
           </div>
