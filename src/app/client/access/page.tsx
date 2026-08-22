@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { AlertCircle, ArrowRight, Building2, CalendarDays, CheckCircle2, ClipboardCheck, Gamepad2, KeyRound, Loader2, MapPin, ShieldCheck, UserRound } from "lucide-react";
+import { AlertCircle, ArrowRight, Building2, CalendarDays, CheckCircle2, ClipboardCheck, Copy, Download, Gamepad2, KeyRound, Loader2, MapPin, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,12 @@ interface ProgramPreview {
   available: boolean;
 }
 
+interface AccessResult {
+  client?: { displayName?: string };
+  session: { access_token: string; refresh_token: string };
+  participantCode?: string;
+}
+
 function formatDate(value: string) {
   return new Date(`${value}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -29,9 +35,13 @@ export default function ClientAccessPage() {
   const [program, setProgram] = useState<ProgramPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
   const [code, setCode] = useState("");
+  const [accessMode, setAccessMode] = useState<"register" | "participant">("register");
+  const [participantCode, setParticipantCode] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pendingRegistration, setPendingRegistration] = useState<AccessResult | null>(null);
+  const [participantCodeSaved, setParticipantCodeSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -65,6 +75,20 @@ export default function ClientAccessPage() {
     return () => { active = false; };
   }, [router]);
 
+  const finishAccess = async (result: AccessResult) => {
+    if (!result.session?.access_token || !result.session?.refresh_token) {
+      throw new Error("Sesi program tidak berhasil dibuat.");
+    }
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
+    });
+    if (sessionError) throw new Error("Gagal menyimpan sesi program.");
+    toast.success(`Selamat datang, ${result.client?.displayName || "Peserta"}.`);
+    const requestedPath = new URLSearchParams(window.location.search).get("next") || "";
+    router.replace(requestedPath.startsWith("/client/") ? requestedPath : "/client/program");
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (program && !program.available) return;
@@ -75,10 +99,15 @@ export default function ClientAccessPage() {
       const response = await fetch("/api/client/access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(accessMode === "participant" ? {
+          mode: "participant",
+          participantCode: participantCode.trim().toUpperCase(),
+          programId: program?.id || programId || undefined,
+        } : {
+          mode: "register",
           code: code.trim().toUpperCase(),
           programId: program?.id || programId || undefined,
-          displayName: program ? displayName.trim() : undefined,
+          displayName: displayName.trim(),
         }),
       });
       const json = await response.json().catch(() => ({}));
@@ -90,18 +119,12 @@ export default function ClientAccessPage() {
         return;
       }
 
-      if (!json.session?.access_token || !json.session?.refresh_token) {
-        throw new Error("Sesi program tidak berhasil dibuat.");
+      if (json.isNewParticipant && json.participantCode) {
+        setPendingRegistration(json as AccessResult);
+        setParticipantCodeSaved(false);
+      } else {
+        await finishAccess(json as AccessResult);
       }
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: json.session.access_token,
-        refresh_token: json.session.refresh_token,
-      });
-      if (sessionError) throw new Error("Gagal menyimpan sesi program.");
-
-      toast.success(`Selamat datang, ${json.client?.displayName || "Peserta"}.`);
-      const requestedPath = new URLSearchParams(window.location.search).get("next") || "";
-      router.replace(requestedPath.startsWith("/client/") ? requestedPath : "/client/program");
     } catch (failure) {
       const message = failure instanceof Error ? failure.message : "Gagal menghubungi server.";
       setError(message);
@@ -114,6 +137,31 @@ export default function ClientAccessPage() {
   const schedule = program?.startDate && program?.endDate
     ? `${formatDate(program.startDate)} – ${formatDate(program.endDate)}`
     : program?.startDate ? `Mulai ${formatDate(program.startDate)}` : program?.endDate ? `Sampai ${formatDate(program.endDate)}` : null;
+
+  const saveParticipantCodeFile = () => {
+    if (!pendingRegistration?.participantCode) return;
+    const blob = new Blob([
+      `Kode Peserta BinaHub\n\n${pendingRegistration.participantCode}\n\nSimpan kode ini seperti kata sandi. Gunakan menu Sudah Terdaftar untuk masuk kembali.`,
+    ], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "kode-peserta-binahub.txt";
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setParticipantCodeSaved(true);
+  };
+
+  const copyParticipantCode = async () => {
+    if (!pendingRegistration?.participantCode) return;
+    try {
+      await navigator.clipboard.writeText(pendingRegistration.participantCode);
+      setParticipantCodeSaved(true);
+      toast.success("Kode peserta disalin.");
+    } catch {
+      toast.error("Kode tidak dapat disalin otomatis. Gunakan tombol Unduh kode.");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5 text-slate-900 sm:px-6 sm:py-10">
@@ -156,36 +204,60 @@ export default function ClientAccessPage() {
 
             <section className="p-6 sm:p-8 lg:p-10">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><KeyRound className="h-5 w-5" /></div>
-              <h2 className="mt-5 text-xl font-bold tracking-[-0.02em]">{program ? "Verifikasi akses peserta" : "Masukkan kode program"}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#4A4C54]/65">{program ? "Kode tidak tersimpan di tautan. Masukkan secara manual untuk memastikan Anda berada di program yang benar." : "Setelah kode diverifikasi, Anda akan diminta mengisi nama."}</p>
+              <h2 className="mt-5 text-xl font-bold tracking-[-0.02em]">{accessMode === "register" ? "Akses pertama peserta" : "Masuk kembali"}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{accessMode === "register" ? "Daftarkan nama Anda satu kali menggunakan kode program." : "Gunakan kode peserta pribadi yang Anda simpan saat pendaftaran."}</p>
+
+              <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Pilihan akses peserta">
+                <button type="button" role="tab" aria-selected={accessMode === "register"} onClick={() => { setAccessMode("register"); setError(""); }} className={`min-h-10 rounded-lg px-3 text-xs font-bold transition ${accessMode === "register" ? "bg-blue-900 text-white shadow-sm" : "text-slate-600 hover:bg-white"}`}>Peserta Baru</button>
+                <button type="button" role="tab" aria-selected={accessMode === "participant"} onClick={() => { setAccessMode("participant"); setError(""); }} className={`min-h-10 rounded-lg px-3 text-xs font-bold transition ${accessMode === "participant" ? "bg-blue-900 text-white shadow-sm" : "text-slate-600 hover:bg-white"}`}>Sudah Terdaftar</button>
+              </div>
 
               {error && <div className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"><AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0" /> <span>{error}</span></div>}
               {program && !program.available && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Program ini belum aktif atau sudah selesai. Hubungi penyelenggara untuk memastikan jadwal akses.</div>}
 
               <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                <label className="block">
+                {accessMode === "register" ? <><label className="block">
                   <span className="mb-1.5 text-xs font-bold text-slate-700">Kode akses</span>
                   <span className="relative block"><KeyRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={code} onChange={(event) => { setCode(event.target.value.toUpperCase()); setError(""); }} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-mono text-sm font-bold uppercase tracking-[0.14em] outline-none transition focus:border-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-900/10" placeholder="CONTOH-2026" maxLength={128} autoComplete="one-time-code" required /></span>
                 </label>
-                {program && (
-                  <label className="block">
+                <label className="block">
                     <span className="mb-1.5 text-xs font-bold text-slate-700">Nama lengkap</span>
                     <span className="relative block"><UserRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={displayName} onChange={(event) => { setDisplayName(event.target.value); setError(""); }} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-900/10" placeholder="Tulis nama Anda" minLength={2} maxLength={120} autoComplete="name" required /></span>
-                  </label>
-                )}
+                </label></> : <label className="block">
+                  <span className="mb-1.5 text-xs font-bold text-slate-700">Kode peserta</span>
+                  <span className="relative block"><KeyRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={participantCode} onChange={(event) => { setParticipantCode(event.target.value.toUpperCase()); setError(""); }} className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 font-mono text-sm font-bold uppercase tracking-[0.12em] outline-none transition focus:border-blue-900 focus:bg-white focus:ring-4 focus:ring-blue-900/10" placeholder="BH-XXXX-XXXX" minLength={8} maxLength={32} autoComplete="one-time-code" required /></span>
+                </label>}
                 <button type="submit" disabled={loading || Boolean(program && !program.available)} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 text-sm font-bold text-white transition hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-45">
-                  {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</> : <>{program ? "Masuk ke program" : "Verifikasi kode"} <ArrowRight className="h-4 w-4" /></>}
+                  {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</> : <>{accessMode === "register" ? "Daftar dan Masuk" : "Masuk Kembali"} <ArrowRight className="h-4 w-4" /></>}
                 </button>
               </form>
 
               <p className="mt-5 flex items-start gap-2 text-[11px] leading-5 text-slate-500"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Akses terikat pada satu program dan identitas peserta. Jangan membagikan kode di luar peserta program.</p>
-              {program && <button type="button" onClick={() => { setProgram(null); setProgramId(""); setCode(""); setDisplayName(""); setError(""); window.history.replaceState(null, "", "/client/access"); }} className="mt-4 w-full text-xs font-bold text-[#0B2C6B]/55 hover:text-[#0B2C6B]">Gunakan kode program lain</button>}
+              {program && <button type="button" onClick={() => { setProgram(null); setProgramId(""); setCode(""); setDisplayName(""); setError(""); window.history.replaceState(null, "", "/client/access"); }} className="mt-4 w-full text-xs font-bold text-blue-900/60 hover:text-blue-900">Gunakan kode program lain</button>}
             </section>
           </div>
         )}
 
         <p className="mt-5 flex items-center justify-center gap-2 text-center text-[11px] text-[#4A4C54]/50"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Tidak perlu membuat akun atau kata sandi.</p>
       </div>
+
+      {pendingRegistration?.participantCode && <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="participant-code-title">
+        <section className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-6 w-6" /></span>
+          <h2 id="participant-code-title" className="mt-4 text-center text-xl font-bold text-slate-900">Pendaftaran berhasil</h2>
+          <p className="mt-2 text-center text-sm leading-6 text-slate-600">Simpan kode peserta ini. Kode hanya ditampilkan sekarang dan digunakan untuk masuk kembali.</p>
+          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700">Kode Peserta</p>
+            <p className="mt-2 font-mono text-2xl font-black tracking-[0.12em] text-slate-900">{pendingRegistration.participantCode}</p>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => { void copyParticipantCode(); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 text-xs font-bold text-blue-900"><Copy className="h-4 w-4" /> Salin kode</button>
+            <button type="button" onClick={saveParticipantCodeFile} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 text-xs font-bold text-blue-900"><Download className="h-4 w-4" /> Unduh kode</button>
+          </div>
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-700"><input type="checkbox" checked={participantCodeSaved} onChange={(event) => setParticipantCodeSaved(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-900" /> Saya sudah menyimpan kode peserta ini.</label>
+          <button type="button" disabled={!participantCodeSaved || loading} onClick={() => { setLoading(true); void finishAccess(pendingRegistration).catch((failure) => { const message = failure instanceof Error ? failure.message : "Gagal membuka program."; setError(message); toast.error(message); }).finally(() => setLoading(false)); }} className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Masuk ke program <ArrowRight className="h-4 w-4" /></button>
+        </section>
+      </div>}
     </main>
   );
 }

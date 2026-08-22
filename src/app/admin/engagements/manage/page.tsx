@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, CalendarPlus, Check, ExternalLink, Eye, MessageSquare, Send, StickyNote, Trash2, Archive, Pencil, UserRound } from "lucide-react";
+import { ArrowRight, CalendarPlus, Check, ExternalLink, Eye, KeyRound, MessageSquare, Send, StickyNote, Trash2, Archive, Pencil, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useEngagements, useEvidence } from "@/hooks/use-transformation-data";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
@@ -283,7 +283,7 @@ function ManageEngagementContent() {
               </div>
             </div>
             <dl className="mt-5 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
-              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><UserRound className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Peserta masuk</dt><dd className="font-bold text-slate-900">{engagement.participants ?? 0}</dd></div></div>
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><UserRound className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Peserta masuk</dt><dd className="font-bold text-slate-900">{engagement.participants ?? 0} / {engagement.participant_limit || 100}</dd></div></div>
               <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><StickyNote className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Catatan</dt><dd className="font-bold text-slate-900">{evidence.length}</dd></div></div>
               <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><CalendarPlus className="h-4 w-4 text-blue-900" /><div><dt className="text-xs text-slate-500">Dibuat</dt><dd className="font-bold text-slate-900">{new Date(engagement.created_at).toLocaleDateString("id-ID")}</dd></div></div>
             </dl>
@@ -390,6 +390,9 @@ function ManageEngagementContent() {
           </section>
 
           <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <Link href={`/admin/engagements/access-codes?engagement_id=${id}&title=${encodeURIComponent(engagement.title)}`} className="flex items-center justify-center gap-2 rounded-xl bg-blue-900 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-950">
+              <KeyRound size={16} /> Kelola Kode Peserta
+            </Link>
             <Link href={programAccessPath(id)} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-blue-900 hover:bg-slate-50">
               <Eye size={16} /> Buka Halaman Masuk Peserta
             </Link>

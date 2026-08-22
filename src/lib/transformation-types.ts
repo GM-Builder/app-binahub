@@ -13,6 +13,7 @@ export interface Engagement {
   status: EngagementStatus;
   code: string | null;
   location?: string | null;
+  participant_limit?: number;
   start_date: string | null;
   end_date: string | null;
   created_at: string;

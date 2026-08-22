@@ -28,6 +28,7 @@ function CreateEngagementContent() {
   const [status, setStatus] = useState<string>("active");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [participantLimit, setParticipantLimit] = useState(100);
   const [enabledModules, setEnabledModules] = useState<ModuleKey[]>(["tbos"]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -59,6 +60,7 @@ function CreateEngagementContent() {
           status,
           startDate: startDate || undefined,
           endDate: endDate || undefined,
+          participantLimit,
           modules: MODULE_OPTIONS.map((module) => ({
             moduleKey: module.key,
             enabled: enabledModules.includes(module.key),
@@ -85,7 +87,7 @@ function CreateEngagementContent() {
           </div>
           <h2 className="mt-6 text-2xl font-semibold text-[#0B2C6B]">Program Dibuat</h2>
           <p className="mt-3 text-sm text-[#4A4C54]/70">
-            {title} untuk {organizationName} telah dibuat. Pengguna dapat memasukkan kode program dan mengisi namanya sendiri tanpa login.
+            {title} untuk {organizationName} telah dibuat. Peserta baru mendaftar dengan kode program dan nama, lalu menerima kode peserta pribadi untuk akses berikutnya.
           </p>
           {createdProgramId && <div className="mt-6"><ProgramShareCard programId={createdProgramId} code={code.trim().toUpperCase()} title={title} status={status} /></div>}
           <p className="mt-5 text-xs leading-5 text-[#4A4C54]/60">
@@ -173,8 +175,14 @@ function CreateEngagementContent() {
             </label>
           </div>
 
+          <label className="mt-5 block">
+            <span className="text-xs font-semibold text-slate-700">Kapasitas Maksimal Peserta *</span>
+            <input type="number" value={participantLimit} onChange={(event) => setParticipantLimit(Number(event.target.value))} min={1} max={5000} className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10" required />
+            <span className="mt-1 block text-xs text-slate-500">Pendaftaran peserta baru otomatis ditutup ketika kapasitas ini tercapai.</span>
+          </label>
+
           <div className="mt-5 rounded-lg border border-[#0B2C6B]/8 bg-[#F7F8FA] p-3 text-xs leading-5 text-[#4A4C54]/70">
-            Peserta tidak perlu didaftarkan saat program dibuat. Mereka mengisi nama sendiri melalui kode program; anggota tim dan kapten T-BOS ditetapkan saat kunjungan pos pertama.
+            Peserta baru mendaftar memakai kode program dan nama, lalu menerima kode peserta pribadi untuk login berikutnya. Anggota tim dan kapten T-BOS tetap ditetapkan saat kunjungan pos pertama.
           </div>
 
           {error && <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"><AlertCircle size={16} /> {error}</div>}

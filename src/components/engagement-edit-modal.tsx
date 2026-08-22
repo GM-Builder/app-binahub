@@ -40,6 +40,7 @@ export function EngagementEditModal({
   const [startDate, setStartDate] = useState(engagement.start_date ? engagement.start_date.slice(0, 10) : "");
   const [endDate, setEndDate] = useState(engagement.end_date ? engagement.end_date.slice(0, 10) : "");
   const [location, setLocation] = useState(engagement.location || "");
+  const [participantLimit, setParticipantLimit] = useState(engagement.participant_limit || 100);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -75,6 +76,7 @@ export function EngagementEditModal({
           startDate: startDate || null,
           endDate: endDate || null,
           location: location.trim() || null,
+          participantLimit,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -172,6 +174,12 @@ export function EngagementEditModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase text-blue-900">Kapasitas Peserta</label>
+            <input type="number" value={participantLimit} onChange={(event) => setParticipantLimit(Number(event.target.value))} min={1} max={5000} className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-blue-900 focus:outline-none focus:ring-4 focus:ring-blue-900/10" required />
+            <p className="mt-1 text-[10px] text-slate-500">Tidak dapat diisi lebih rendah daripada jumlah peserta yang sudah terdaftar.</p>
           </div>
 
           <div>
