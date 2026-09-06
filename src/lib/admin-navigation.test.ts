@@ -22,4 +22,10 @@ describe("admin navigation", () => {
   it("memetakan detail peserta ke area Klien", () => {
     expect(findAdminNavigation("/admin/clients/detail").item.href).toBe("/admin/clients");
   });
+
+  it("menampilkan control plane pilot sebagai halaman tata kelola", () => {
+    const pilot = ADMIN_NAV_ITEMS.find((item) => item.href === "/admin/governance");
+    expect(pilot?.label).toBe("Kesiapan & Pilot");
+    expect(findAdminNavigation("/admin/governance").item.href).toBe("/admin/governance");
+  });
 });

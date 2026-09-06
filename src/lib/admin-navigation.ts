@@ -12,6 +12,7 @@ import {
   Inbox,
   PackageSearch,
   Settings2,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trophy,
@@ -90,6 +91,7 @@ export const ADMIN_NAVIGATION: AdminNavigationGroup[] = [
       { href: "/admin/users", label: "Pengguna & Peran", shortLabel: "Pengguna", description: "Akun, role, dan status akses.", icon: UsersRound },
       { href: "/admin/rbac", label: "Izin Akses", shortLabel: "Izin", description: "Matriks kewenangan per peran.", icon: ShieldCheck },
       { href: "/admin/settings", label: "Pengaturan Bisnis", shortLabel: "Pengaturan", description: "Kebijakan, owner, approval, dan SLA.", icon: Settings2 },
+      { href: "/admin/governance", label: "Kesiapan & Pilot", shortLabel: "Pilot", description: "UAT, assurance, release, runtime control, dan kill switch.", icon: ShieldAlert },
     ],
   },
 ];

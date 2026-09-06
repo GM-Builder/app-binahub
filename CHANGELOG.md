@@ -5,6 +5,14 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-09-06
+
+### Added — Admin Governance Control Plane
+
+- Mengembalikan Launch Readiness, Human UAT, Operational Assurance, Pilot Certification, serta Pilot Operations ke satu halaman administrator bernama `Kesiapan & Pilot`.
+- Menambahkan navigasi bertahap yang hanya memuat panel aktif, panduan kontekstual, route kanonis `/admin/governance`, dan akses melalui kelompok Tata Kelola pada desktop maupun mobile.
+- Mempertahankan seluruh activation guard backend; menampilkan control plane tidak membuka environment, menjalankan n8n, atau mengaktifkan workflow.
+
 ### Changed — Apollo Manual Baseline
 
 - Menjadikan impor Apollo Free CSV/JSON sebagai aksi utama pada panel Lead Discovery.

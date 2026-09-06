@@ -13,7 +13,7 @@ Selesai pada aplikasi:
 - Mengganti navigasi mobile menjadi drawer aksesibel dengan focus trap, Escape, body scroll lock, dan focus return.
 - Menambahkan breadcrumb, state loading, error, dan not-found yang konsisten.
 - Merombak editor Pre-test/Post-test menjadi builder terstruktur dengan preview peserta, pengurutan, duplikasi, validasi, analitik, dan ekspor respons.
-- Menghapus Launch Control, UAT/Pilot Gate, Pilot Operations, Operational Assurance, dan Pilot Certification dari kontrak navigasi produk. Artefaknya tetap tersedia untuk kebutuhan developer/backend.
+- Pada perombakan awal, Launch Control, UAT/Pilot Gate, Pilot Operations, Operational Assurance, dan Pilot Certification dilepas dari kontrak navigasi produk. Keputusan ini dikoreksi pada `v0.21.1`: seluruhnya kembali tersedia bagi administrator melalui halaman kanonis `/admin/governance` karena release, runtime control, dan kill switch merupakan kebutuhan operasional production.
 - Menjadikan `/home` resolver role tanpa menampilkan hub tambahan; admin, klien, fasilitator, dan peserta langsung menuju beranda role.
 - Mengarahkan rute klien dan fasilitator lama ke URL kanonis serta menyatukan shell T-BOS tanpa mengubah desain internal modulnya.
 - Menguji desktop dan mobile tanpa horizontal overflow serta menguji keyboard, focus indicator, drawer, Escape, dan focus return.

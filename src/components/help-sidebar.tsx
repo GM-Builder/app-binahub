@@ -161,6 +161,11 @@ const HELP_TIPS: Record<string, string[]> = {
     "Simpan hanya bagian yang telah disetujui. Owner dan backup harus berbeda agar eskalasi tetap berfungsi.",
     "Switch pilot/live dan aturan yang belum disetujui harus tetap nonaktif.",
   ],
+  "/admin/governance": [
+    "Mulai dari Kesiapan untuk membaca blocker, lalu selesaikan UAT, Assurance, dan Rehearsal secara berurutan sebelum membuat jadwal release.",
+    "Release & Runtime adalah satu-satunya area untuk menetapkan change window, batas per run, mode workflow, serta kill switch; requested mode belum tentu menjadi effective mode.",
+    "Jangan membuka environment guard atau menjalankan worker sebelum release scheduled, window aktif, seluruh blocker kosong, dan rollback sudah siap.",
+  ],
   "/admin/tbos": [
     "Pilih program dan batch sebelum membaca ringkasan observasi tim.",
     "Tab mengubah sudut analisis, sedangkan PDF Grup dan Data CSV mengunduh hasil pada konteks yang sedang dipilih.",
