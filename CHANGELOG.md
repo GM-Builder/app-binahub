@@ -5,6 +5,29 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+### Changed — Apollo Manual Baseline
+
+- Menjadikan impor Apollo Free CSV/JSON sebagai aksi utama pada panel Lead Discovery.
+- Menambahkan preset source dan campaign Apollo agar admin tidak perlu mengisi konfigurasi dasar dari nol.
+- Menandai Apollo API sebagai siap saat upgrade Pro dan Hunter sebagai provider alternatif yang ditunda.
+
+## [0.21.0] - 2026-09-06
+
+### Changed — Multi-provider Lead Discovery
+
+- Memperjelas tiga jalur perolehan prospek pada Kontrol Akuisisi: Hunter Free, Apollo API setelah upgrade, dan Batch Prospek manual.
+- Menampilkan provider aktif, batas pengayaan Hunter, status tinjauan perusahaan, serta pintasan langsung ke impor manual.
+- Menambahkan Hunter sebagai pilihan sumber data tanpa mengubah human approval, deduplikasi, suppression, atau outbound gate.
+- Menambahkan impor file CSV/JSON dan template CSV pada Batch Prospek agar jalur manual tidak lagi mengharuskan admin menyusun JSON sendiri.
+
+## [0.20.0] - 2026-09-06
+
+### Added — Phase 18 AI Lead Discovery Workspace
+
+- Menambahkan panel AI Lead Discovery pada Kontrol Akuisisi dengan status kesiapan, sumber, mode, batas pencarian, histori run, dan kandidat terbaru.
+- Menambahkan aksi pratinjau eksplisit dengan feedback proses dan blocker yang mudah dipahami.
+- Menjelaskan bahwa kandidat tetap melalui batch human review dan tidak dihubungi atau dipromosikan otomatis.
+
 ## [0.19.0] - 2026-09-05
 
 ### Added — Gate D/E Participant and Assessment Finishing

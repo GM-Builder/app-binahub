@@ -1,5 +1,7 @@
 # Fase 13 — CEO Decision Pack dan Panduan Pembahasan
 
+> Dokumen ini dipertahankan sebagai referensi lengkap. Untuk review CEO yang lebih ringkas dan sudah berisi rekomendasi awal, gunakan `PHASE-17-CEO-REVIEW-DRAFT.md` beserta lampiran `PHASE-17-EMAIL-TEMPLATE-REVIEW.md`.
+
 Tanggal disiapkan: 1 September 2026  
 Status: **menunggu keputusan bisnis; automation tetap dry-run dan inactive**
 

@@ -43,23 +43,22 @@ Peta rute dan aturan pengembangan selanjutnya dicatat di `ADMIN-INFORMATION-ARCH
 - [x] Pastikan navigasi operasional tidak menampilkan instruksi developer, status fase, atau prosedur pengujian internal.
 - [x] Tutup masalah hierarchy global, overflow, focus, keyboard navigation, loading, error, not-found, dan responsive shell.
 - [x] Kurasi editor Pre-test/Post-test dan gunakan renderer yang sama untuk preview admin serta halaman peserta.
-- [ ] Deploy migration `0040`, API `v0.19.0`, dan app `v0.19.0`, lalu ulangi acceptance Gate D akses/QR dan seluruh Gate E.
-- [ ] Verifikasi dua format unduhan kode peserta, QR autofill, batch-save soal, completion satu-kali, nama/benar-salah respons, ekspor CSV/PDF, dan BinaInsight program terpisah.
+- [x] Deploy migration `0040`, API `v0.19.0`, dan app `v0.19.0`; production readiness serta smoke test dinyatakan lulus pada 5 September 2026.
+- [x] Verifikasi dua format unduhan kode peserta, QR autofill, batch-save soal, completion satu-kali, nama/benar-salah respons, ekspor CSV/PDF, BinaInsight program terpisah, serta regresi LEP/T-BOS.
 - [ ] Jalankan acceptance isi, empty state, confirmation, dan destructive action dengan data production pada setiap modul bisnis.
 - Selesaikan penyempurnaan visual assessment publik, laporan PDF, katalog publik, dan halaman program berdasarkan hasil penggunaan nyata.
 
 Catatan: redesign visual internal T-BOS tetap berada di luar cakupan; yang disatukan adalah routing, sidebar, header, dan perilaku responsif global.
 
-## Keputusan manusia yang belum boleh diasumsikan
+## Keputusan governance setelah Fase 17
 
-- Review dan approval 18 template follow-up.
-- Review wording finance/legal untuk proposal dan invoice.
-- Nilai final minimum transaksi, owner/backup, approver/delegasi, dan SLA risiko pada control plane.
-- Business owner, cohort pilot, success criteria, rollback trigger, serta change window.
+Pada 5 September 2026, `admin@binahub.id` ditetapkan sebagai decision actor interim end-to-end dan CEO menjadi post-implementation reviewer. Default transaksi, seluruh owner, seluruh approver, empat SLA, 18 template follow-up, serta dua wording proposal/invoice telah diterapkan dan lulus smoke production. Backup dan delegasi sengaja tetap kosong agar tidak membuat identitas fiktif.
+
+Yang masih harus ditentukan untuk eksekusi pilot adalah cohort konkret dan tanggal/jam change window. Business owner, technical owner, serta monitoring owner pilot menggunakan `admin@binahub.id`; success criteria, rollback trigger, dan ceiling awal mengikuti rekomendasi controlled pilot.
 
 ## Pilot finishing
 
-- Buat release non-mock setelah owner bisnis menyetujui scope dan cohort.
+- Buat release non-mock untuk cohort internal/UAT dengan `admin@binahub.id` sebagai business, technical, dan monitoring owner.
 - Jalankan rehearsal production dry-run delapan langkah dengan evidence.
 - Ikat snapshot monitoring real dan selesaikan incident blocker.
 - Catat acceptance manusia dan keputusan go/no-go.

@@ -2,7 +2,7 @@
 
 Tanggal mulai: 3 September 2026
 
-Status saat ini: Gate A-C lulus. Remediasi Gate D-E tersedia pada `app-binahub v0.19.0`, `binahub-api v0.19.0`, dan migration `0040_program_assessment_finishing.sql`, tetapi belum dianggap lulus sebelum deployment dan verifikasi production. Automation tetap terkunci dalam mode dry-run.
+Status saat ini: **PASS**. Gate A-F, migration `0040_program_assessment_finishing.sql`, production readiness, dan smoke test `v0.19.0` telah dikonfirmasi lulus oleh operator pada 5 September 2026. Automation tetap terkunci dalam mode dry-run sampai governance pilot diselesaikan dan keputusan go/no-go manusia dicatat.
 
 ## Tujuan
 
@@ -315,6 +315,8 @@ Berpindahlah berurutan dari Beranda Program → Pre-test → Beranda → LEP →
 6. Jangan mengubah desain internal T-BOS pada acceptance ini; hanya catat regresi fungsional atau layout.
 
 ## Gate G — Penutupan acceptance
+
+Hasil operator 5 September 2026: **PASS**. Gate D QR/kode peserta, Gate E form program dan respons, serta Gate F regresi LEP/T-BOS telah dikonfirmasi lulus. Tidak ada blocker tambahan yang dilaporkan. Dengan hasil Gate A-C sebelumnya, production acceptance produk Fase 16B dinyatakan selesai.
 
 Gate fitur lulus jika:
 

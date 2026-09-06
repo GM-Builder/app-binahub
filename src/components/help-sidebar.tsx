@@ -98,9 +98,9 @@ const HELP_TIPS: Record<string, string[]> = {
     "Angka pada dashboard adalah ringkasan, bukan tombol perubahan data.",
   ],
   "/admin/acquisition": [
-    "Source menentukan asal prospek, campaign mengatur aktivitas akuisisi, dan batch mengelompokkan data yang akan ditinjau.",
-    "Preview tidak mengubah lead. Promote membuat lead hanya setelah data lolos review dan approval.",
-    "Pause dipakai untuk menghentikan sumber atau campaign tanpa menghapus riwayat.",
+    "AI Lead Discovery mencari kandidat sesuai ICP; Jalankan pratinjau menampilkan hasil tanpa mengubah kandidat menjadi lead atau mengirim pesan.",
+    "Source membuktikan asal dan izin pemrosesan, campaign memberi konteks aktivitas, sedangkan batch adalah antrean kandidat untuk ditinjau manusia.",
+    "Kandidat baru menjadi lead setelah batch di-stage, diperiksa, disetujui, lalu diproses melalui gate acquisition terpisah.",
   ],
   "/admin/pipeline": [
     "Setiap kartu adalah satu peluang. Owner adalah penanggung jawab dan Next action adalah langkah konkret berikutnya.",
