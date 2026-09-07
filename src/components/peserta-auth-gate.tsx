@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthenticatedRole } from "@/lib/authenticated-role";
+import { fetchCurrentAuthenticatedRole } from "@/lib/authenticated-role";
 
 export function PesertaAuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,20 +13,16 @@ export function PesertaAuthGate({ children }: { children: React.ReactNode }) {
     let alive = true;
 
     async function checkAccess() {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
-
-      if (!session) {
-        if (alive) router.replace("/login");
-        return;
-      }
-
       try {
-        const result = await fetchAuthenticatedRole(session.access_token);
+        const result = await fetchCurrentAuthenticatedRole(supabase.auth);
         const role = result.ok ? result.role : null;
 
         if (role !== "peserta" && role !== "admin") {
-          if (alive) router.replace("/home");
+          if (alive) router.replace(
+            result.status === 401 || result.status === 403
+              ? "/?mode=signin&reason=session_expired"
+              : "/home",
+          );
           return;
         }
 

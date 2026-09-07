@@ -5,6 +5,23 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.21.4] - 2026-09-07
+
+### Changed — Global Admin Feedback
+
+- Memindahkan feedback sukses dan gagal pada lima tahap Kesiapan & Pilot dari bagian atas konten ke toast global yang tetap terlihat pada posisi scroll mana pun.
+- Menggunakan visual frosted-glass yang ringkas, hierarki pesan yang jelas, tombol tutup, batas tiga notifikasi, dan gestur swipe pada perangkat sentuh.
+- Mempertahankan banner status, risiko, dan activation guard di dalam halaman karena informasi tersebut bersifat persisten dan perlu terus dapat ditinjau.
+
+## [0.21.3] - 2026-09-07
+
+### Fixed — Session Recovery
+
+- Mencoba memperbarui access token satu kali ketika API menolak token lama setelah hard refresh.
+- Membersihkan sesi browser yang tetap invalid dan mengarahkan pengguna kembali ke login dengan pesan yang dapat dipahami.
+- Menyamakan pemulihan sesi pada resolver workspace serta gate admin, fasilitator, klien, dan peserta tanpa melonggarkan pemeriksaan role backend.
+- Mengirim kunci unik pada setiap scan Assurance manual agar bukti terbaru tidak tertahan oleh snapshot lain dalam jam yang sama.
+
 ## [0.21.2] - 2026-09-07
 
 ### Fixed — Business Rules Alignment

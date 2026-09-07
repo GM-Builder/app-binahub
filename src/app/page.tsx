@@ -22,7 +22,9 @@ function AuthContent() {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => searchParams.get('reason') === 'session_expired'
+    ? 'Sesi Anda telah berakhir atau tidak valid. Silakan masuk kembali.'
+    : '');
   const [success, setSuccess] = useState(() => searchParams.get('registered')
     ? 'Akun berhasil dibuat. Silakan masuk.'
     : searchParams.get('confirmed') ? 'Email terverifikasi. Silakan masuk.' : '');

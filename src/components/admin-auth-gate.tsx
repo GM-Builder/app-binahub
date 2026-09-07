@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthenticatedRole } from "@/lib/authenticated-role";
+import { fetchCurrentAuthenticatedRole } from "@/lib/authenticated-role";
 
 export type AppRole = "admin" | "facilitator" | "client" | "peserta";
 
@@ -19,20 +19,16 @@ export function AdminAuthGate({ children }: { children: React.ReactNode }) {
     let alive = true;
 
     async function checkAccess() {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
-
-      if (!session) {
-        if (alive) router.replace("/login");
-        return;
-      }
-
       try {
-        const result = await fetchAuthenticatedRole(session.access_token);
+        const result = await fetchCurrentAuthenticatedRole(supabase.auth);
         const role = result.ok ? result.role : null;
 
         if (role !== "admin") {
-          if (alive) router.replace(result.status === 401 ? "/login" : "/access-denied");
+          if (alive) router.replace(
+            result.status === 401 || result.status === 403
+              ? "/?mode=signin&reason=session_expired"
+              : "/access-denied",
+          );
           return;
         }
 
@@ -72,15 +68,8 @@ export function PermissionGate({ children, allowedRoles, fallback }: PermissionG
     let alive = true;
 
     async function checkPermission() {
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-      if (!session) {
-        if (alive) setGranted(false);
-        return;
-      }
-
       try {
-        const result = await fetchAuthenticatedRole(session.access_token);
+        const result = await fetchCurrentAuthenticatedRole(supabase.auth);
         const userRole = (result.ok ? result.role : "peserta") as AppRole;
         if (alive) setGranted(allowedRoles.includes(userRole));
       } catch {

@@ -1,5 +1,21 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchAuthenticatedRole } from "./authenticated-role";
+import { fetchAuthenticatedRole, fetchCurrentAuthenticatedRole } from "./authenticated-role";
+
+type AuthClient = Parameters<typeof fetchCurrentAuthenticatedRole>[0];
+
+function roleResponse(status: number, payload: Record<string, unknown>) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function session(accessToken: string, userId = "user-1") {
+  return {
+    access_token: accessToken,
+    user: { id: userId },
+  };
+}
 
 describe("fetchAuthenticatedRole", () => {
   afterEach(() => {
@@ -54,5 +70,68 @@ describe("fetchAuthenticatedRole", () => {
       status: 200,
       role: null,
     });
+  });
+
+  it("memakai sesi saat ini tanpa refresh ketika token masih valid", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(roleResponse(200, {
+      success: true,
+      role: "admin",
+    }));
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ data: { session: session("current-token") }, error: null }),
+      refreshSession: vi.fn(),
+      signOut: vi.fn(),
+    } as unknown as AuthClient;
+
+    await expect(fetchCurrentAuthenticatedRole(auth)).resolves.toMatchObject({
+      ok: true,
+      role: "admin",
+      userId: "user-1",
+    });
+    expect(auth.refreshSession).not.toHaveBeenCalled();
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it("refresh satu kali lalu mengulangi pemeriksaan role ketika token lama ditolak", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(roleResponse(403, { success: false, error: "Token tidak valid" }))
+      .mockResolvedValueOnce(roleResponse(200, { success: true, role: "admin" }));
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ data: { session: session("stale-token") }, error: null }),
+      refreshSession: vi.fn().mockResolvedValue({ data: { session: session("fresh-token") }, error: null }),
+      signOut: vi.fn(),
+    } as unknown as AuthClient;
+
+    await expect(fetchCurrentAuthenticatedRole(auth)).resolves.toMatchObject({
+      ok: true,
+      role: "admin",
+      userId: "user-1",
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/auth/role", {
+      headers: { Authorization: "Bearer fresh-token" },
+      cache: "no-store",
+    });
+    expect(auth.refreshSession).toHaveBeenCalledTimes(1);
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it("membersihkan sesi lokal jika token hasil refresh tetap ditolak", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(roleResponse(403, { success: false, error: "Token tidak valid" }))
+      .mockResolvedValueOnce(roleResponse(403, { success: false, error: "Token tidak valid" }));
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ data: { session: session("stale-token") }, error: null }),
+      refreshSession: vi.fn().mockResolvedValue({ data: { session: session("still-invalid") }, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+    } as unknown as AuthClient;
+
+    await expect(fetchCurrentAuthenticatedRole(auth)).resolves.toMatchObject({
+      ok: false,
+      status: 401,
+      role: null,
+      userId: "",
+      error: "Sesi tidak valid. Silakan masuk kembali.",
+    });
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 });

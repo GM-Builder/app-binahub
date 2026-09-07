@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { fetchAuthenticatedRole } from "@/lib/authenticated-role";
+import { fetchCurrentAuthenticatedRole } from "@/lib/authenticated-role";
 import { isRole, roleHome } from "@/lib/roles";
 
 let verifiedClient: { userId: string; expiresAt: number } | null = null;
@@ -28,15 +28,19 @@ export function ClientAuthGate({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const result = await fetchAuthenticatedRole(session.access_token);
+        const result = await fetchCurrentAuthenticatedRole(supabase.auth);
         const role = result.ok ? result.role : null;
 
         if (role !== "client") {
-          if (alive) router.replace(isRole(role) ? roleHome[role] : "/client/access");
+          if (alive) router.replace(
+            result.status === 401 || result.status === 403
+              ? "/?mode=signin&reason=session_expired"
+              : isRole(role) ? roleHome[role] : "/client/access",
+          );
           return;
         }
 
-        verifiedClient = { userId: session.user.id, expiresAt: Date.now() + 5 * 60_000 };
+        verifiedClient = { userId: result.userId, expiresAt: Date.now() + 5 * 60_000 };
         if (alive) setAllowed(true);
       } catch {
         if (alive) router.replace("/");

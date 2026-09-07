@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { fetchCurrentAuthenticatedRole } from "@/lib/authenticated-role";
 import { isRole, roleHome } from "@/lib/roles";
 
 export default function WorkspaceResolverPage() {
@@ -14,16 +15,14 @@ export default function WorkspaceResolverPage() {
   const resolveWorkspace = useCallback(async () => {
     setError("");
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session;
-      if (!session) {
-        router.replace("/?mode=signin");
+      const result = await fetchCurrentAuthenticatedRole(supabase.auth);
+      if (!result.ok && (result.status === 401 || result.status === 403)) {
+        router.replace("/?mode=signin&reason=session_expired");
         return;
       }
-      const response = await fetch("/api/auth/role", { headers: { Authorization: `Bearer ${session.access_token}` } });
-      const result = await response.json().catch(() => ({}));
-      const resolvedRole = typeof result.role === "string" ? result.role : null;
-      if (!response.ok || !result.success || !isRole(resolvedRole)) throw new Error(result.error || "Role akun belum dapat ditentukan.");
+
+      const resolvedRole = result.role;
+      if (!result.ok || !isRole(resolvedRole)) throw new Error(result.error || "Role akun belum dapat ditentukan.");
       router.replace(roleHome[resolvedRole]);
       router.refresh();
     } catch (failure) {

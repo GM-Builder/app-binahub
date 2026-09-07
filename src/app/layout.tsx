@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { AppToaster } from "@/components/app-toaster";
 import { ApiFetchBridge } from "@/components/api-fetch-bridge";
 import { GlobalErrorHandler } from "@/components/global-error-handler";
 import { ServiceWorkerCleanup } from "@/components/service-worker-cleanup";
-import { Toaster } from "sonner";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -51,7 +51,7 @@ export default function RootLayout({
         <GlobalErrorHandler>
           <ServiceWorkerCleanup />
           <ApiFetchBridge />
-          <Toaster position="top-right" richColors closeButton />
+          <AppToaster />
           <div id="content" tabIndex={-1} className="contents">
             {children}
           </div>

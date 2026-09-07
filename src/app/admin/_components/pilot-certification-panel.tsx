@@ -9,6 +9,7 @@ import {
   Save,
   ShieldCheck,
 } from "lucide-react";
+import { AdminToastFeedback } from "@/components/admin-toast-feedback";
 import { AdminInput, AdminSelect, AdminTextarea, Badge, Panel, StatCard } from "./shared";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
@@ -293,6 +294,7 @@ export function PilotCertificationPanel({ onAction }: { onAction: AdminAction })
 
   return (
     <div className="space-y-6">
+      <AdminToastFeedback error={error} notice={notice} scope="pilot-certification" />
       <section className="rounded-2xl border border-[#0B2C6B]/10 bg-[linear-gradient(135deg,#071B3D,#0B2C6B)] p-6 text-white shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
@@ -310,9 +312,6 @@ export function PilotCertificationPanel({ onAction }: { onAction: AdminAction })
           <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold">Outbound tidak dijalankan</span>
         </div>
       </section>
-
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
-      {notice && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">{notice}</div>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="UAT evidence" value={`${payload?.summary.passedUatCount || 0}/${payload?.summary.requiredUatCount || 0}`} icon={ClipboardCheck} tone={payload?.summary.passedUatCount === payload?.summary.requiredUatCount ? "success" : "gold"} />

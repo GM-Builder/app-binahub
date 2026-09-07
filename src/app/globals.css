@@ -59,6 +59,107 @@ textarea {
   }
 }
 
+/* Global feedback: compact, calm, and legible over every scroll position. */
+[data-sonner-toaster] {
+  --width: min(420px, calc(100vw - 24px));
+  z-index: 200 !important;
+}
+
+[data-sonner-toast].app-toast {
+  min-height: 68px;
+  padding: 14px 44px 14px 15px;
+  border: 1px solid rgb(255 255 255 / 78%);
+  border-radius: 19px;
+  background: rgb(255 255 255 / 88%);
+  color: #0f172a;
+  box-shadow:
+    0 1px 1px rgb(15 23 42 / 5%),
+    0 12px 30px rgb(15 23 42 / 14%),
+    0 28px 64px rgb(15 23 42 / 10%);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+}
+
+[data-sonner-toast].app-toast--success {
+  border-color: rgb(167 243 208 / 78%);
+}
+
+[data-sonner-toast].app-toast--error {
+  border-color: rgb(254 202 202 / 82%);
+}
+
+[data-sonner-toast].app-toast--warning {
+  border-color: rgb(253 230 138 / 84%);
+}
+
+[data-sonner-toast].app-toast--info {
+  border-color: rgb(191 219 254 / 82%);
+}
+
+[data-sonner-toast] .app-toast__content {
+  gap: 3px;
+}
+
+[data-sonner-toast] .app-toast__title {
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.25rem;
+  letter-spacing: -0.012em;
+}
+
+[data-sonner-toast] .app-toast__description {
+  color: #475569;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+[data-sonner-toast] .app-toast__icon {
+  align-self: flex-start;
+  margin-top: 1px;
+}
+
+[data-sonner-toast] .app-toast__close {
+  top: 12px;
+  right: 12px;
+  left: auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  background: rgb(241 245 249 / 92%);
+  color: #475569;
+  transform: none;
+}
+
+[data-sonner-toast] .app-toast__close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-sonner-toast] .app-toast__action,
+[data-sonner-toast] .app-toast__cancel {
+  border-radius: 999px;
+  font-weight: 650;
+}
+
+[data-sonner-toast] .app-toast__action {
+  background: #0b2c6b;
+  color: #fff;
+}
+
+[data-sonner-toast] .app-toast__cancel {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+@media (max-width: 639px) {
+  [data-sonner-toast].app-toast {
+    min-height: 64px;
+    padding: 13px 42px 13px 14px;
+    border-radius: 17px;
+  }
+}
+
 /* Admin v2 is intentionally scoped so the T-BOS workspace keeps its established UI. */
 .admin-route-layout:has(.admin-ui-v2) {
   padding-bottom: 0;

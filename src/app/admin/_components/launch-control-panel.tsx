@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock3, GitMerge, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
+import { AdminToastFeedback } from "@/components/admin-toast-feedback";
 import { Panel, StatCard } from "./shared";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
@@ -162,8 +163,7 @@ export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
 
   return (
     <div className="space-y-6">
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
-      {notice && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{notice}</div>}
+      <AdminToastFeedback error={error} notice={notice} scope="launch-control" />
 
       <div className={`rounded-2xl border p-5 ${payload?.overall.liveWorkflowCount ? "border-red-300 bg-red-50 text-red-900" : "border-blue-200 bg-blue-50 text-blue-900"}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">

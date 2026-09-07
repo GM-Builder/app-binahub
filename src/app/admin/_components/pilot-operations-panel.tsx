@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Gauge, LockKeyhole, Power, RefreshCw, Save, ShieldAlert } from "lucide-react";
+import { AdminToastFeedback } from "@/components/admin-toast-feedback";
 import { AdminInput, AdminSelect, AdminTextarea, Panel, StatCard } from "./shared";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
@@ -317,8 +318,7 @@ export function PilotOperationsPanel({ onAction }: { onAction: AdminAction }) {
   const gates = payload?.gates;
   return (
     <div className="space-y-6">
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
-      {notice && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">{notice}</div>}
+      <AdminToastFeedback error={error} notice={notice} scope="pilot-operations" />
 
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
         <div className="flex flex-wrap items-start justify-between gap-4">
