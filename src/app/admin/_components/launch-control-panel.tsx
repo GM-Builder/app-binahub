@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock3, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, GitMerge, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-react";
 import { Panel, StatCard } from "./shared";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
@@ -74,6 +74,12 @@ const BUSINESS_BLOCKER_LABELS: Record<string, string> = {
   legal_reputation_review_sla: "SLA review risiko legal dan reputasi",
   follow_up_template_owner_and_final_approval: "Owner dan persetujuan final template follow-up",
   finance_legal_tax_wording: "Wording pajak dari Finance/Legal",
+  commercial_policy_not_aligned: "Kebijakan komersial belum sesuai keputusan default",
+  governance_owner_assignments_incomplete: "Tujuh fungsi governance belum seluruhnya memiliki owner aktif",
+  approval_assignments_incomplete: "Enam human gate belum seluruhnya memiliki approver aktif",
+  risk_sla_policies_incomplete: "Empat SLA risiko belum seluruhnya aktif dan memiliki owner",
+  finance_legal_wording_incomplete: "Wording proposal dan invoice belum seluruhnya disetujui",
+  outreach_templates_incomplete: "Delapan belas template follow-up belum seluruhnya approved dan memiliki owner",
 };
 
 const TECHNICAL_STATUS: Record<WorkflowReadiness["technicalStatus"], { label: string; className: string }> = {
@@ -94,7 +100,9 @@ function displayDate(value: string | null | undefined) {
 export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
   const [payload, setPayload] = useState<LaunchResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reconciling, setReconciling] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +119,35 @@ export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
 
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
+  const reconcileBusinessRules = async () => {
+    const confirmed = window.confirm(
+      "Selaraskan snapshot Business Rules lama dengan konfigurasi Phase 17 yang saat ini tersimpan? Aksi ini tidak mengubah runtime, environment, release, n8n, atau master switch pilot/live.",
+    );
+    if (!confirmed) return;
+    setReconciling(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await onAction("/api/admin/business-rules/reconcile", {
+        method: "POST",
+        body: JSON.stringify({
+          action: "reconcile_phase17_defaults",
+          confirmation: "ALIGN_PHASE17_DEFAULTS",
+        }),
+      }) as { aligned?: boolean; message?: string; blockers?: Array<{ label: string }> };
+      if (!result.aligned) {
+        const blockerText = (result.blockers || []).map((item) => item.label).join(" ");
+        throw new Error(`${result.message || "Business Rules belum dapat diselaraskan."}${blockerText ? ` ${blockerText}` : ""}`);
+      }
+      setNotice(result.message || "Keputusan Phase 17 berhasil diselaraskan.");
+      await load();
+    } catch (reconcileError) {
+      setError(reconcileError instanceof Error ? reconcileError.message : "Gagal menyelaraskan Business Rules.");
+    } finally {
+      setReconciling(false);
+    }
+  };
+
   const humanReviewCandidates = useMemo(
     () => payload?.workflows.filter((workflow) => workflow.activationStatus === "eligible_for_human_review").length || 0,
     [payload],
@@ -126,6 +163,7 @@ export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
   return (
     <div className="space-y-6">
       {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+      {notice && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{notice}</div>}
 
       <div className={`rounded-2xl border p-5 ${payload?.overall.liveWorkflowCount ? "border-red-300 bg-red-50 text-red-900" : "border-blue-200 bg-blue-50 text-blue-900"}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -153,6 +191,35 @@ export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel title="Keputusan Bisnis yang Masih Terbuka" action={payload?.businessRules.version || "Belum ada versi"}>
+          {payload?.businessRules.version !== "v1.1-default-governance" || payload.businessRules.activationBlockers.length > 0 ? (
+            <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="font-bold">Snapshot lama perlu diselaraskan</p>
+                  <p className="mt-1 max-w-2xl text-xs leading-relaxed text-blue-900/75">
+                    Sistem akan memvalidasi kebijakan transaksi, tujuh owner, enam approver, empat SLA, dua wording finance/legal, dan 18 template yang tersimpan. Katalog tetap dikelola admin dan kesiapan setiap modul diperiksa saat modul digunakan.
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-blue-900">Penyelarasan tidak mengaktifkan workflow, n8n, release, atau master switch.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={reconcileBusinessRules}
+                  disabled={reconciling}
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                >
+                  <GitMerge size={14} className={reconciling ? "animate-pulse" : ""} />
+                  {reconciling ? "Menyelaraskan…" : "Selaraskan keputusan"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 size={17} className="mt-0.5 shrink-0" />
+                <div><p className="font-bold">Keputusan Phase 17 sudah menjadi aturan aktif</p><p className="mt-1 text-xs leading-relaxed text-emerald-800/80">Izin policy tercatat, tetapi eksekusi tetap tunduk pada release, change window, runtime control, environment dry-run, dan master switch.</p></div>
+              </div>
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             {(payload?.businessRules.activationBlockers || []).map((blocker) => (
               <div key={blocker} className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">

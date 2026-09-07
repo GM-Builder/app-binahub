@@ -13,6 +13,8 @@ Seluruh rekomendasi default governance diterima sebagai konfigurasi interim. Dec
 
 Keputusan ini tidak mengaktifkan workflow, outbound, release, atau pilot. Aktivasi tetap mengikuti rehearsal, monitoring, kill switch, dan go/no-go terpisah.
 
+Pada 7 September 2026, snapshot lama `v1.0-approved-partial` digantikan secara terkendali oleh `v1.1-default-governance`. Flag izin policy outbound pada rule set baru bukan perintah pengiriman: runtime control, environment dry-run, release, change window, serta master switch tetap menjadi pengaman terpisah.
+
 ## Konfigurasi yang diterapkan
 
 | Area | Keputusan interim |

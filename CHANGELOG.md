@@ -5,6 +5,14 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.21.2] - 2026-09-07
+
+### Fixed — Business Rules Alignment
+
+- Menambahkan aksi `Selaraskan keputusan` pada tahap Kesiapan untuk mengganti snapshot keputusan lama dengan konfigurasi Phase 17 yang tersimpan.
+- Menjelaskan data yang divalidasi, status hasil penyelarasan, dan pemisahan antara izin policy dengan aktivasi runtime.
+- Mempertahankan release, environment, n8n, dan master switch pilot/live tanpa perubahan setelah penyelarasan.
+
 ## [0.21.1] - 2026-09-06
 
 ### Added — Admin Governance Control Plane

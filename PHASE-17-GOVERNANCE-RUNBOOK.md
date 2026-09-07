@@ -1,6 +1,6 @@
 # Phase 17 Governance Runbook
 
-Status production: **PASS — 5 September 2026**. Runner default governance dan `test:phase17` lulus seluruh pemeriksaan. Hasil `production_readiness.sql` juga mengonfirmasi RLS aktif, akses anonim tertutup, dan write langsung role authenticated tertutup pada seluruh tabel yang dilaporkan. Runtime tetap dry-run/disabled dan master switch pilot/live tetap tertutup.
+Status governance dasar: **PASS — 5 September 2026**. Penyelarasan snapshot Business Rules `v1.1-default-governance`: **siap deploy — 7 September 2026**. Runtime tetap dry-run/disabled dan master switch pilot/live tetap tertutup.
 
 ## Outcome
 
@@ -14,13 +14,13 @@ Runner ini menerapkan keputusan single-owner interim ke production melalui API a
 - delapan belas template outreach `v1.0-review` disetujui;
 - wording proposal dan invoice disetujui secara interim.
 
-Runner tidak mengaktifkan workflow, outbound, release, atau pilot.
+Runner mencatat izin policy pada Business Rules setelah seluruh konfigurasi di atas tervalidasi. Runner tidak mengubah runtime, environment dry-run, release, n8n, atau master switch pilot/live; karena itu tidak ada workflow maupun outbound yang berjalan hanya karena penyelarasan ini.
 
 ## 1. Deploy API
 
-Deploy `binahub-api` versi `0.20.0` menggunakan environment production yang sama dengan versi sebelumnya.
+Deploy `binahub-api` versi `0.22.1` menggunakan environment production yang sama dengan versi sebelumnya, lalu jalankan migration `0043_reconcile_phase17_business_rules.sql`.
 
-Tidak ada SQL migration baru pada langkah ini. Perubahan governance dilakukan melalui endpoint admin agar validasi, versioning, dan audit actor tetap digunakan.
+Migration hanya memasang fungsi penyelarasan yang fail-closed. Perubahan rule set baru terjadi setelah administrator menekan `Selaraskan keputusan` atau menjalankan runner pada langkah berikutnya.
 
 ## 2. Terapkan default governance
 
@@ -56,6 +56,7 @@ Gate dinyatakan lulus ketika seluruh pemeriksaan berstatus `[PASS]`, termasuk:
 - 4 SLA aktif;
 - 18 template outreach approved;
 - 2 wording finance/legal approved interim;
+- Business Rules aktif menggunakan versi `v1.1-default-governance` tanpa blocker;
 - 4 runtime tetap `dry_run` atau `disabled`;
 - master switch pilot dan live tetap tertutup.
 
