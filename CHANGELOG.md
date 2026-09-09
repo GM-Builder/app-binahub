@@ -5,6 +5,13 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.21.6] - 2026-09-09
+
+### Fixed — Deployment Cache Safety
+
+- Menandai halaman login dan seluruh workspace berbasis sesi sebagai `private, no-store` agar CDN tidak mempertahankan HTML lama yang merujuk chunk deployment sebelumnya.
+- Mencegah halaman admin lama melewati Next Proxy akibat cache CDN setelah deployment baru.
+
 ## [0.21.5] - 2026-09-09
 
 ### Security

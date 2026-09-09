@@ -22,6 +22,24 @@ const securityHeaders = [
   },
 ];
 
+const noStoreHeaders = [
+  { key: "Cache-Control", value: "private, no-store, no-cache, must-revalidate, max-age=0" },
+];
+
+const sessionSensitiveRoutes = [
+  "/",
+  "/admin/:path*",
+  "/auth/:path*",
+  "/client/:path*",
+  "/facilitator/:path*",
+  "/fasilitator/:path*",
+  "/forgot-password",
+  "/home",
+  "/login",
+  "/peserta/:path*",
+  "/register",
+];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async rewrites() {
@@ -38,6 +56,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      ...sessionSensitiveRoutes.map((source) => ({ source, headers: noStoreHeaders })),
     ];
   },
   turbopack: {

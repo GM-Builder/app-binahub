@@ -24,6 +24,7 @@ Keep all automation in `dry_run` or `disabled` until the production completion c
 - T-BOS requests use one explicit authenticated `apiFetch` client with request IDs and correct `FormData` handling.
 - Image optimization is active and `sharp` is installed.
 - Duplicate Vercel/Next security-header configuration was removed.
+- Session-sensitive routes now emit `private, no-store` cache policy so a CDN cannot retain stale HTML that references deleted deployment chunks or bypasses a newer server guard.
 
 ### `binahub-api`
 
