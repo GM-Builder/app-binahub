@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.21.4",
+  "version": "0.21.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -23,7 +23,7 @@
     "framer-motion": "^12.40.0",
     "jimp": "^1.6.1",
     "lucide-react": "^1.18.0",
-    "next": "^16.3.1",
+    "next": "^16.3.4",
     "openai": "^6.42.0",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
@@ -31,6 +31,7 @@
     "react-hook-form": "^7.79.0",
     "recharts": "^3.8.1",
     "resend": "^6.12.4",
+    "sharp": "^0.35.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "uuid": "^14.0.0",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
@@ -48,11 +50,11 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^6.0.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.3.1",
+    "eslint-config-next": "^16.3.4",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "minimatch": "^10.2.5",

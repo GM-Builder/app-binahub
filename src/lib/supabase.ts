@@ -1,6 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@/lib/supabase/client";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+/**
+ * One browser client for the lifetime of the tab. The SSR-aware client stores
+ * the session in cookies so Next.js Proxy can refresh and verify it before a
+ * protected route renders.
+ */
+export const supabase = createClient();

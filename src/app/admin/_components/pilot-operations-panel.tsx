@@ -16,6 +16,8 @@ type PilotRelease = {
   status: ReleaseStatus;
   cohortDescription: string;
   maximumParticipants: number;
+  recipientEmails: string[];
+  recipientCount: number;
   startsAt: string | null;
   endsAt: string | null;
   businessOwner: string | null;
@@ -70,6 +72,7 @@ type ReleaseForm = {
   title: string;
   cohortDescription: string;
   maximumParticipants: string;
+  recipientEmails: string;
   startsAt: string;
   endsAt: string;
   businessOwner: string;
@@ -124,6 +127,7 @@ function emptyReleaseForm(): ReleaseForm {
     title: "Pilot BinaHub Terkontrol",
     cohortDescription: "Cohort terbatas yang akan ditetapkan setelah seluruh gate lulus.",
     maximumParticipants: "5",
+    recipientEmails: "",
     startsAt: "",
     endsAt: "",
     businessOwner: "",
@@ -154,6 +158,7 @@ function releaseForm(item: PilotRelease): ReleaseForm {
     title: item.title,
     cohortDescription: item.cohortDescription,
     maximumParticipants: String(item.maximumParticipants),
+    recipientEmails: item.recipientEmails.join("\n"),
     startsAt: localDateTime(item.startsAt),
     endsAt: localDateTime(item.endsAt),
     businessOwner: item.businessOwner || "",
@@ -241,6 +246,7 @@ export function PilotOperationsPanel({ onAction }: { onAction: AdminAction }) {
           title: plan.title.trim(),
           cohortDescription: plan.cohortDescription.trim(),
           maximumParticipants: Number(plan.maximumParticipants),
+          recipientEmails: Array.from(new Set(lines(plan.recipientEmails).map((email) => email.toLowerCase()))),
           startsAt: isoOrNull(plan.startsAt),
           endsAt: isoOrNull(plan.endsAt),
           businessOwner: plan.businessOwner.trim() || null,
@@ -349,7 +355,7 @@ export function PilotOperationsPanel({ onAction }: { onAction: AdminAction }) {
             {(payload?.releases || []).map((item) => (
               <button key={item.id} type="button" onClick={() => { selectedIdRef.current = item.id; setSelectedId(item.id); setPlan(releaseForm(item)); setDecisionNote(""); }} className={`w-full rounded-xl border p-4 text-left ${selectedId === item.id ? "border-[#D9A441] bg-[#FFF8EA]" : "border-slate-200 bg-white"}`}>
                 <div className="flex items-start justify-between gap-3"><p className="text-sm font-bold text-[#0B2C6B]">{item.title}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-600">{RELEASE_STATUS_LABELS[item.status]}</span></div>
-                <p className="mt-2 text-xs text-slate-500">{item.releaseKey} · maksimum {item.maximumParticipants}</p>
+                <p className="mt-2 text-xs text-slate-500">{item.releaseKey} · {item.recipientCount}/{item.maximumParticipants} penerima</p>
                 <p className="mt-1 text-[11px] text-slate-400">{item.isMock ? "Data mock" : "Data real"} · {displayDate(item.updatedAt)}</p>
               </button>
             ))}
@@ -361,6 +367,8 @@ export function PilotOperationsPanel({ onAction }: { onAction: AdminAction }) {
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2"><AdminInput label="Release key" value={plan.releaseKey} onChange={(releaseKey) => setPlan({ ...plan, releaseKey })} placeholder="pilot-september-2026" /><AdminInput label="Judul" value={plan.title} onChange={(title) => setPlan({ ...plan, title })} /></div>
             <AdminTextarea label="Deskripsi cohort" value={plan.cohortDescription} onChange={(cohortDescription) => setPlan({ ...plan, cohortDescription })} />
+            <AdminTextarea label="Email penerima pilot — satu per baris" value={plan.recipientEmails} onChange={(recipientEmails) => setPlan({ ...plan, recipientEmails })} placeholder="nama@example.com" />
+            <p className="-mt-2 text-xs leading-relaxed text-slate-500">Daftar ini adalah allowlist yang benar-benar ditegakkan worker. Alamat di luar daftar tidak dapat menerima outbound saat mode pilot.</p>
             <div className="grid gap-4 sm:grid-cols-3"><AdminInput label="Maksimum peserta" type="number" value={plan.maximumParticipants} onChange={(maximumParticipants) => setPlan({ ...plan, maximumParticipants })} /><AdminInput label="Mulai" type="datetime-local" value={plan.startsAt} onChange={(startsAt) => setPlan({ ...plan, startsAt })} /><AdminInput label="Selesai" type="datetime-local" value={plan.endsAt} onChange={(endsAt) => setPlan({ ...plan, endsAt })} /></div>
             <div className="grid gap-4 sm:grid-cols-3"><AdminInput label="Business owner" type="email" value={plan.businessOwner} onChange={(businessOwner) => setPlan({ ...plan, businessOwner })} /><AdminInput label="Technical owner" type="email" value={plan.technicalOwner} onChange={(technicalOwner) => setPlan({ ...plan, technicalOwner })} /><AdminInput label="Monitoring owner" type="email" value={plan.monitoringOwner} onChange={(monitoringOwner) => setPlan({ ...plan, monitoringOwner })} /></div>
             <div className="grid gap-4 sm:grid-cols-2"><AdminTextarea label="Kriteria sukses — satu per baris" value={plan.successCriteria} onChange={(successCriteria) => setPlan({ ...plan, successCriteria })} /><AdminTextarea label="Trigger rollback — satu per baris" value={plan.rollbackTriggers} onChange={(rollbackTriggers) => setPlan({ ...plan, rollbackTriggers })} /></div>

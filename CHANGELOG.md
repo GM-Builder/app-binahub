@@ -5,6 +5,22 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.21.5] - 2026-09-09
+
+### Security
+
+- Menambahkan guard server-side Next.js Proxy pada seluruh route `/admin/*`; role tetap diverifikasi oleh API sebagai sumber otoritatif sebelum workspace dirender.
+- Mengganti akses T-BOS yang bergantung pada monkey-patch global dengan `apiFetch` eksplisit yang menyertakan bearer token, cookie, dan request ID.
+- Mengonsolidasikan browser Supabase client ke implementasi SSR-aware agar session cookie dapat diperbarui pada boundary server.
+- Memperbarui Next.js dan dependency pengujian ke versi yang menutup advisory dependency; `npm audit` kembali bersih.
+
+### Performance & Testing
+
+- Mengaktifkan optimasi Next Image dengan runtime `sharp` sambil mempertahankan pengecualian eksplisit untuk QR data URL.
+- Menambahkan E2E boundary admin anonim, probe role 401, navigasi admin authenticated opsional, serta viewport mobile 390×844.
+- Memungkinkan Playwright menguji deployment HTTPS tanpa menyalakan development server lokal yang tidak digunakan.
+- Menghapus duplikasi security header `vercel.json`; `next.config.ts` menjadi sumber konfigurasi tunggal dan mengikuti API origin environment.
+
 ## [0.21.4] - 2026-09-07
 
 ### Changed — Global Admin Feedback

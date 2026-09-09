@@ -1,6 +1,7 @@
-// T-BOS API Client — HTTP Fetch to binahub-api Backend via /api/tbos/*
-// Sources: ARCHITECTURE.md, ADR-006, ApiFetchBridge
+// T-BOS API Client — authenticated HTTP requests to binahub-api.
+// Sources: ARCHITECTURE.md, ADR-006
 
+import { apiFetch } from "@/lib/api-fetch";
 import type { MissionCode, DimensionCode, LevelValue } from "./config";
 import type { TbosObservation } from "./types";
 
@@ -139,7 +140,7 @@ export interface QueuedObservation {
  */
 export async function fetchMissions(programId?: string): Promise<TbosDbMission[]> {
   const query = programId ? `?programId=${encodeURIComponent(programId)}` : "";
-  const res = await fetch(`/api/tbos/missions${query}`);
+  const res = await apiFetch(`/api/tbos/missions${query}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success || !Array.isArray(data.missions)) {
     throw new Error(data.error || "Gagal memuat daftar misi.");
@@ -151,7 +152,7 @@ export async function fetchMissions(programId?: string): Promise<TbosDbMission[]
  * Fetch active teams from backend API.
  */
 export async function fetchTeams(programId: string): Promise<TbosDbTeam[]> {
-  const res = await fetch(`/api/tbos/teams?programId=${encodeURIComponent(programId)}`);
+  const res = await apiFetch(`/api/tbos/teams?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success || !Array.isArray(data.teams)) {
     throw new Error(data.error || "Gagal memuat daftar tim.");
@@ -169,7 +170,7 @@ export async function createTeam(input: {
   programId: string;
 }): Promise<{ success: boolean; team?: { id: string; name: string; batch: string; batch_id: string | null }; error?: string }> {
   try {
-    const res = await fetch("/api/tbos/teams", {
+    const res = await apiFetch("/api/tbos/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -208,7 +209,7 @@ export async function submitObservation(input: {
       throw new Error("Snapshot anggota tim wajib tersedia sebelum observasi disimpan.");
     }
 
-    const res = await fetch("/api/tbos/observations", {
+    const res = await apiFetch("/api/tbos/observations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -243,7 +244,7 @@ export async function fetchObservations(
 ): Promise<TbosDbObservation[]> {
   try {
     if (!programId) throw new Error("Pilih program terlebih dahulu.");
-    const res = await fetch(`/api/tbos/observations?programId=${encodeURIComponent(programId)}`);
+    const res = await apiFetch(`/api/tbos/observations?programId=${encodeURIComponent(programId)}`);
     const data = await res.json().catch(() => ({}));
     if (data.success && Array.isArray(data.observations)) {
       return data.observations;
@@ -264,7 +265,7 @@ export interface FacilitatorMissionSelection {
 }
 
 export async function fetchFacilitatorMissionSelection(programId: string): Promise<FacilitatorMissionSelection> {
-  const res = await fetch(`/api/tbos/facilitator-mission-selection?programId=${encodeURIComponent(programId)}`);
+  const res = await apiFetch(`/api/tbos/facilitator-mission-selection?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success || !data.assignment) {
     throw new Error(data.error || "Gagal memuat pilihan pos fasilitator.");
@@ -277,7 +278,7 @@ export async function selectFacilitatorMission(input: {
   missionId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch("/api/tbos/facilitator-mission-selection", {
+    const res = await apiFetch("/api/tbos/facilitator-mission-selection", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -299,13 +300,7 @@ export interface TbosProgram {
 }
 
 export async function fetchTbosPrograms(moduleKey: "tbos" | "lep" = "tbos"): Promise<TbosProgram[]> {
-  const { supabase } = await import("@/lib/supabase");
-  const { data: sessionData } = await supabase.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
-  if (!accessToken) throw new Error("Sesi tidak tersedia. Silakan login ulang.");
-  const res = await fetch(`/api/programs/available?moduleKey=${encodeURIComponent(moduleKey)}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const res = await apiFetch(`/api/programs/available?moduleKey=${encodeURIComponent(moduleKey)}`);
   const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.success) throw new Error(body.error || "Gagal memuat program.");
   return body.programs || [];
@@ -320,7 +315,7 @@ export interface TbosBatch {
 }
 
 export async function fetchBatches(programId: string): Promise<TbosBatch[]> {
-  const res = await fetch(`/api/tbos/batches?programId=${encodeURIComponent(programId)}`);
+  const res = await apiFetch(`/api/tbos/batches?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat daftar batch.");
   return data.batches || [];
@@ -331,7 +326,7 @@ export async function createBatch(input: {
   name: string;
 }): Promise<{ success: boolean; batch?: TbosBatch; error?: string }> {
   try {
-    const res = await fetch("/api/tbos/batches", {
+    const res = await apiFetch("/api/tbos/batches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -350,7 +345,7 @@ export async function deleteBatch(
   batchId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`/api/tbos/batches/${batchId}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/tbos/batches/${batchId}`, { method: "DELETE" });
     const data = await res.json();
     if (data.success) {
       return { success: true };
@@ -382,7 +377,7 @@ export async function fetchFacilitatorMissions(
 ): Promise<TbosFacilitatorMission[]> {
   const params = new URLSearchParams({ programId });
   if (facilitatorId) params.set("facilitatorId", facilitatorId);
-  const res = await fetch(`/api/tbos/facilitator-missions?${params}`);
+  const res = await apiFetch(`/api/tbos/facilitator-missions?${params}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat penugasan fasilitator.");
   return data.assignments || [];
@@ -393,7 +388,7 @@ export async function assignFacilitatorToProgram(input: {
   programId: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch("/api/tbos/facilitator-missions", {
+    const res = await apiFetch("/api/tbos/facilitator-missions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -415,7 +410,7 @@ export async function removeFacilitatorFromProgram(input: {
       facilitatorId: input.facilitatorId,
       programId: input.programId,
     });
-    const res = await fetch(`/api/tbos/facilitator-missions?${params}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/tbos/facilitator-missions?${params}`, { method: "DELETE" });
     const data = await res.json();
     if (data.success) return { success: true };
     return { success: false, error: data.error || "Gagal menghapus penugasan." };
@@ -431,7 +426,7 @@ export async function fetchObservationDetail(
   observationId: string,
 ): Promise<TbosDbObservationDetail | null> {
   try {
-    const res = await fetch(`/api/tbos/observations/${observationId}`);
+    const res = await apiFetch(`/api/tbos/observations/${observationId}`);
     const data = await res.json();
     if (data.success && data.observation) {
       return data.observation;
@@ -455,7 +450,7 @@ export async function updateObservation(
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`/api/tbos/observations/${observationId}`, {
+    const res = await apiFetch(`/api/tbos/observations/${observationId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -483,7 +478,7 @@ export async function toggleLockObservation(
   action: "lock" | "unlock",
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`/api/tbos/observations/${observationId}`, {
+    const res = await apiFetch(`/api/tbos/observations/${observationId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
@@ -519,7 +514,7 @@ export async function fetchDashboardRawData(programId: string): Promise<{
   viewerStats: TbosViewerStats | null;
 }> {
   if (!programId) throw new Error("Pilih program terlebih dahulu.");
-  const res = await fetch(`/api/tbos/dashboard?programId=${encodeURIComponent(programId)}`);
+  const res = await apiFetch(`/api/tbos/dashboard?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     const detail = data.detail || data.hint || data.code;
@@ -544,7 +539,7 @@ export async function fetchParticipantTeamInfo(programId: string): Promise<{
   weakestDimension: string | null;
   rank: number | null;
 } | null> {
-  const res = await fetch(`/api/tbos/participant/team-info?programId=${encodeURIComponent(programId)}`);
+  const res = await apiFetch(`/api/tbos/participant/team-info?programId=${encodeURIComponent(programId)}`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.success) {
     throw new Error(data.error || "Gagal memuat data tim peserta.");

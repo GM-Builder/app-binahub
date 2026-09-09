@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const apiOrigin = (process.env.NEXT_PUBLIC_BINAHUB_API_URL || "https://api.binahub.id").replace(/\/+$/, "");
+const apiConnectOrigin = (() => {
+  try {
+    return new URL(apiOrigin).origin;
+  } catch {
+    return "https://api.binahub.id";
+  }
+})();
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -11,7 +18,7 @@ const securityHeaders = [
   {
     key: "Content-Security-Policy",
     value:
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.binahub.id https://*.supabase.co wss://*.supabase.co; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+      `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${apiConnectOrigin} https://*.supabase.co wss://*.supabase.co; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests`,
   },
 ];
 
@@ -35,9 +42,6 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: __dirname,
-  },
-  images: {
-    unoptimized: true,
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts", "framer-motion"],

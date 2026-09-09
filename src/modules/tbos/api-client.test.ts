@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/api-fetch", () => ({
+  apiFetch: (input: string | URL, init?: RequestInit) => fetch(input, init),
+}));
+
 import { flushQueuedObservations, getQueuedObservations, queueObservation } from "./api-client";
 
 describe("T-BOS offline queue", () => {

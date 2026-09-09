@@ -129,9 +129,14 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
       router.replace("/login");
       throw new Error("Sesi admin tidak ditemukan.");
     }
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    if (init?.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
     const response = await fetch(url, {
       ...init,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(init?.headers || {}) },
+      headers,
     });
     const json = await response.json().catch(() => null);
     if (!response.ok || !json?.success) throw new Error(json?.error || "Aksi admin gagal.");

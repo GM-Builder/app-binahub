@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
+const port = Number(process.env.PLAYWRIGHT_PORT || 3100);
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${port}`;
+const externalBaseUrl = !/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::|\/|$)/i.test(baseURL);
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -8,20 +12,29 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+  webServer: externalBaseUrl ? undefined : {
+    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    url: baseURL,
+    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === "true",
     timeout: 120000,
   },
   projects: [
     {
       name: "chromium",
       use: { browserName: "chromium" },
+    },
+    {
+      name: "mobile-chromium",
+      use: {
+        browserName: "chromium",
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
   ],
 });
