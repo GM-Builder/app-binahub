@@ -4,7 +4,7 @@
 
 **Local code gate: PASS. Database hardening: APPLIED. Production activation: HOLD.**
 
-Both repositories build and pass their available automated checks. Migration 0044 is applied and verified in production. The hold is not caused by a known failing code test. It remains because deployment, authenticated production E2E, provider smoke, secret rotation, a fresh monitoring decision, and an external observability sink still require production access or credentials.
+Both repositories build and pass their available automated checks. Migration 0044 is applied and verified in production, and the API/dashboard releases have been deployed from GitHub. The hold is not caused by a known failing code test. It remains because authenticated production E2E, provider smoke, secret rotation, a fresh monitoring decision, and an external observability sink still require production access or credentials.
 
 Keep all automation in `dry_run` or `disabled` until the production completion checklist below is closed.
 
@@ -18,6 +18,7 @@ Keep all automation in `dry_run` or `disabled` until the production completion c
 - Production build: passed, 81 routes.
 - Playwright development gate: 38 passed on desktop/mobile Chromium; 4 authenticated-admin cases skipped because `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` were not present.
 - Playwright production-artifact gate (`next start`): 38 anonymous/security checks passed on desktop/mobile Chromium.
+- Playwright deployed-production gate: 40 anonymous/security, navigation, accessibility, and stylesheet checks passed on desktop/mobile Chromium; 4 credentialed-admin checks were skipped because credentials were intentionally not stored.
 - `npm audit`: 0 known vulnerabilities.
 - Next.js and `eslint-config-next`: 16.3.4.
 - Server-side admin boundary now uses the Next.js 16 `proxy.ts` convention and fails closed before rendering the workspace.
@@ -103,11 +104,11 @@ The following remain deterministic and do not delegate authority to AI: prices, 
 
 1. Rotate every credential that was exposed outside the secret store: CodeCraft, OpenRouter, Supabase service role/database password, Resend, and any copied automation secret.
 2. **Done:** apply and verify `binahub-api/supabase/migrations/0044_pilot_audience_and_run_integrity.sql` in Supabase production.
-3. Deploy `binahub-api`, then deploy `app-binahub`.
+3. **Done:** deploy `binahub-api` and `app-binahub` from their GitHub `main` branches.
 4. Put the replacement `CODECRAFT_API_KEY` in the API deployment secret store and run `npm run test:ai` without printing the key.
 5. Run credentialed Playwright with `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD` set only in the local process.
 6. Re-run production readiness plus Phase 17/18 smoke gates.
-7. Verify production fail-closed behavior: anonymous admin rejection, exact pilot audience, duplicate idempotency response, and zero outbound in dry-run.
+7. **Partly done:** anonymous admin rejection and secret-free worker rejection are verified; exact pilot audience, duplicate idempotency response, and zero outbound in dry-run still require the credentialed Phase 19 gate.
 8. Record a fresh production monitoring snapshot and a new human go/no-go decision; do not reuse the two stale decisions.
 9. Configure a production error sink and alert destination, then verify a synthetic non-sensitive test event.
 10. Resolve the three pilot incidents only after deployment evidence is attached.

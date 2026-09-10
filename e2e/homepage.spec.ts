@@ -106,8 +106,21 @@ test.describe("Accessibility", () => {
 
   test("should have proper heading structure", async ({ page }) => {
     await page.goto("/");
-    const h1 = page.locator("h1");
+    const h1 = page.locator("h1").first();
+    await expect(h1).toBeVisible();
     const h1Count = await h1.count();
     expect(h1Count).toBeGreaterThanOrEqual(1);
+  });
+
+  test("should load every stylesheet without an HTTP error", async ({ page }) => {
+    const failedStylesheets: string[] = [];
+    page.on("response", (response) => {
+      if (response.request().resourceType() === "stylesheet" && response.status() >= 400) {
+        failedStylesheets.push(`${response.status()} ${response.url()}`);
+      }
+    });
+
+    await page.goto("/", { waitUntil: "networkidle" });
+    expect(failedStylesheets).toEqual([]);
   });
 });

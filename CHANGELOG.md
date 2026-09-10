@@ -11,6 +11,7 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 - Menandai halaman login dan seluruh workspace berbasis sesi sebagai `private, no-store` agar CDN tidak mempertahankan HTML lama yang merujuk chunk deployment sebelumnya.
 - Mencegah halaman admin lama melewati Next Proxy akibat cache CDN setelah deployment baru.
+- Menambahkan pemeriksaan E2E stylesheet 4xx dan menunggu hydration sebelum memvalidasi heading agar kerusakan cache deployment terdeteksi secara deterministik.
 
 ## [0.21.5] - 2026-09-09
 
