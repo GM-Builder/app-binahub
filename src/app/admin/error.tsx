@@ -2,8 +2,11 @@
 
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
+import { captureError } from "@/lib/error-tracking";
 
-export default function AdminError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => { captureError(error); }, [error]);
   return (
     <main className="flex min-h-[70vh] items-center justify-center bg-slate-50 px-4 py-12">
       <section role="alert" aria-labelledby="admin-error-title" className="w-full max-w-lg border border-red-200 bg-white p-7 shadow-sm sm:p-9">

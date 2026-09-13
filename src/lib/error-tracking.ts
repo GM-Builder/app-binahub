@@ -1,3 +1,5 @@
+import { reportFrontendError } from "./frontend-observability";
+
 type ErrorSeverity = "error" | "warning" | "info";
 
 type ErrorReport = {
@@ -22,6 +24,12 @@ class ErrorTracker {
 
   captureError(error: Error, severity: ErrorSeverity = "error", metadata?: Record<string, string | number | boolean>) {
     if (!this.enabled) return;
+
+    if (severity === "error") void reportFrontendError({
+      message: error.message, stack: error.stack,
+      route: typeof window !== "undefined" ? window.location.pathname : "/unknown",
+      code: "BROWSER_ERROR",
+    });
 
     const report: ErrorReport = {
       id: this.generateId(),

@@ -13,6 +13,7 @@ import { ContactsPanel } from "./contacts-panel";
 import { InquiriesPanel } from "./inquiries-panel";
 import { MeetingsPanel } from "./meetings-panel";
 import { OperationsControlPanel } from "./operations-control-panel";
+import { ObservabilityPanel } from "./observability-panel";
 import { Overview } from "./overview";
 import { PipelinePanel } from "./pipeline-panel";
 import { SmartCenterPanel } from "./smart-center-panel";
@@ -156,6 +157,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
       {error && <div role="alert" aria-live="assertive" className="mb-6 border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800"><p className="font-semibold">Data belum dapat dimuat</p><p className="mt-1 text-xs leading-5 text-red-700">{error}</p></div>}
       {loading || !data ? <DashboardSkeleton /> : (
         <div className="admin-workspace-content">
+          <ObservabilityPanel onAction={adminRequest} compact={section !== "Operations Control"} />
           {section === "Overview" && <Overview data={data} />}
           {section === "Acquisition Control" && <AcquisitionControlPanel onAction={adminRequest} />}
           {section === "Sales Pipeline" && <PipelinePanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}

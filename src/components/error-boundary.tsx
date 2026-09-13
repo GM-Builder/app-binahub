@@ -2,6 +2,7 @@
 
 import { Component, type ReactNode } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { captureError } from "@/lib/error-tracking";
 
 interface Props {
   children: ReactNode;
@@ -23,8 +24,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
+  componentDidCatch(error: Error) {
+    captureError(error);
   }
 
   handleRetry = () => {
