@@ -1,8 +1,8 @@
 # Audit Production T-BOS — 14 September 2026
 
-## Kesimpulan sementara
+## Kesimpulan
 
-Kode aplikasi dan API sudah diperkeras, tetapi status production T-BOS belum boleh dinyatakan lulus sampai migration `0048_tbos_flexible_batch_constraints.sql` diterapkan dan mutation smoke test production berhasil. Read-only production E2E sudah lulus pada desktop dan mobile.
+T-BOS **lulus untuk penggunaan production terkontrol**. Migration `0048_tbos_flexible_batch_constraints.sql` sudah diterapkan dan dibuktikan melalui mutation smoke pada API production. Production E2E dashboard admin juga lulus pada desktop dan mobile.
 
 ## Temuan dan perbaikan
 
@@ -67,16 +67,27 @@ Kode aplikasi dan API sudah diperkeras, tetapi status production T-BOS belum bol
 - Production E2E T-BOS: desktop Chromium lulus.
 - Production E2E T-BOS: mobile Chromium lulus.
 
-## Gate terakhir setelah deployment
+### Mutation smoke production setelah migration 0048
 
-1. Terapkan migration API `0048_tbos_flexible_batch_constraints.sql` di Supabase.
-2. Jalankan `supabase/production_readiness.sql`; semua kolom `*_ready` wajib `true` dan semua `*_issues` wajib `0`.
-3. Pastikan commit API dan app sudah terdeploy.
-4. Jalankan `npm run test:tbos` dengan `TBOS_MUTATION_TEST=true`. Test membuat batch bernama fleksibel, membuat/mengubah/membaca tim, lalu membersihkan data UAT.
-5. Jalankan production E2E T-BOS desktop dan mobile.
-6. Nyatakan production-ready hanya bila lima langkah di atas lulus tanpa blocker high/critical.
+- Sepuluh endpoint baca menolak akses anonim: lulus 10/10.
+- Admin memperoleh sesi dan membaca program T-BOS aktif: lulus.
+- Batch dengan nama fleksibel dapat dibuat: lulus.
+- Tim dapat dibuat pada batch tersebut: lulus.
+- Nama tim dapat diubah: lulus.
+- Hubungan program–batch–tim dapat dibaca kembali: lulus.
+- Dua anggota disimpan atomik dengan tepat satu captain: lulus.
+- Tim dan batch UAT dibersihkan kembali: lulus.
+
+## Gate deployment dan hasilnya
+
+1. Migration API `0048_tbos_flexible_batch_constraints.sql`: **lulus**.
+2. API commit `5f1e90a` terdeploy dan dilaporkan health endpoint production: **lulus**.
+3. Mutation smoke dengan `TBOS_MUTATION_TEST=true`: **lulus**.
+4. Production E2E T-BOS desktop dan mobile: **lulus 2/2**.
+5. Build, typecheck, lint, unit, dan component test: **lulus**.
+
+`supabase/production_readiness.sql` tetap menjadi checklist audit menyeluruh untuk seluruh platform. Pengguna memutuskan menerima/skip gate platform lain; keputusan tersebut tidak mengubah hasil teknis T-BOS yang diuji di dokumen ini.
 
 ## Keputusan readiness
 
-**Saat dokumen dibuat: CONDITIONAL — kode siap, aktivasi menunggu migration database dan mutation smoke production.**
-
+**READY untuk production terkontrol.** Tidak ada blocker T-BOS high/critical yang masih terbuka dari cakupan audit ini. Monitoring dan audit log tetap harus dipantau pada penggunaan nyata pertama.
