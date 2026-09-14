@@ -31,6 +31,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { ConfirmDialog } from "@/components/ui";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
+import { apiFetch } from "@/lib/api-fetch";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
@@ -213,7 +214,7 @@ function TbosDashboardContent() {
     setAssignmentError("");
     setAssignmentSuccess(false);
     try {
-      const usersRes = await fetch("/api/users");
+      const usersRes = await apiFetch("/api/users");
       const usersResult = await usersRes.json();
 
       if (!usersRes.ok || !usersResult.success) throw new Error(usersResult.error || "Gagal memuat fasilitator.");
@@ -325,7 +326,7 @@ function TbosDashboardContent() {
         const result = await deleteBatch(deleteTarget.id);
         if (!result.success) throw new Error(result.error || "Batch tidak dapat dihapus.");
       } else {
-        const response = await fetch(`/api/tbos/teams/${deleteTarget.id}`, { method: "DELETE" });
+        const response = await apiFetch(`/api/tbos/teams/${deleteTarget.id}`, { method: "DELETE" });
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) throw new Error(result.error || "Tim tidak dapat dihapus.");
       }
@@ -348,7 +349,7 @@ function TbosDashboardContent() {
     if (!editingTeam || !editTeamName.trim()) return;
     setSavingTeam(true);
     try {
-      const response = await fetch(`/api/tbos/teams/${editingTeam.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: editTeamName.trim() }) });
+      const response = await apiFetch(`/api/tbos/teams/${editingTeam.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: editTeamName.trim() }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) throw new Error(result.error || "Gagal mengubah tim.");
       toast.success("Nama tim diperbarui.");
@@ -1014,7 +1015,7 @@ function ExportButtons({ programId, batch }: { programId: string; batch?: string
   const handleExportPdf = async () => {
     setExporting("pdf");
     try {
-      const response = await fetch(`/api/tbos/export?format=pdf&programId=${encodeURIComponent(programId)}${batchParam}`);
+      const response = await apiFetch(`/api/tbos/export?format=pdf&programId=${encodeURIComponent(programId)}${batchParam}`);
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || "Gagal membuat PDF.");

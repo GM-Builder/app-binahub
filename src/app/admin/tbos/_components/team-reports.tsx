@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { BarChart3, Crown, Download, Loader2, Search, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
+import { apiFetch } from "@/lib/api-fetch";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
 
@@ -41,7 +42,7 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
     if (!team) return;
     setDownloading(true);
     try {
-      const response = await fetch(`/api/tbos/export?format=pdf&teamId=${encodeURIComponent(team.teamId)}`);
+      const response = await apiFetch(`/api/tbos/export?format=pdf&teamId=${encodeURIComponent(team.teamId)}`);
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || "Gagal membuat laporan tim.");

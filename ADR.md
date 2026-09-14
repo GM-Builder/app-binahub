@@ -50,15 +50,15 @@ Format ringkas: Konteks → Keputusan → Status.
 - **Risiko**: ✅ Resolved — PRD v0.4 sudah menggantikan v0.3. Arsitektur generik dipertahankan sebagai visi jangka panjang.
 - **Status**: ✅ Final — PRD v0.4 sudah di-commit, landing page dan dashboard sudah dirombak.
 
-## ADR-003: Sumber Mission Performance Score (komponen 60% skor akhir)
-- **Konteks**: Final Mission Score = 60% Performance + 40% Behavioral (T-BOS). Performance Score-nya dari mana belum jelas.
-- **Keputusan**: ⚠️ **Belum diputuskan** — perlu dikonfirmasi apakah dari sistem terpisah, input manual admin, atau modul lain yang belum dibangun.
-- **Status**: 🔴 Open — **blocking** untuk fitur perhitungan skor akhir, meski form observasi & T-BOS Score sendiri bisa jalan tanpa ini.
+## ADR-003: Skor akhir mission
+- **Konteks**: Rancangan awal memakai 60% Mission Performance + 40% T-BOS, tetapi sumber Mission Performance tidak tersedia dan formula itu tidak lagi dipakai oleh produk.
+- **Keputusan**: **T-BOS Score langsung menjadi skor akhir mission** pada skala 1–5. Formula 60/40 dihapus.
+- **Status**: ✅ Final — sesuai `SCORING-LOGIC.md` dan implementasi aktif.
 
 ## ADR-004: Penanganan Observasi Duplikat (Multi-Fasilitator)
 - **Konteks**: Mungkin ada 2 fasilitator mengobservasi tim+mission yang sama.
-- **Keputusan**: Diizinkan, dirata-rata di level Dimension Score (bukan overwrite). Lihat STATE-MACHINE.md §3.
-- **Status**: 🟡 Diusulkan, perlu konfirmasi ke stakeholder.
+- **Keputusan**: Hanya ada **satu observasi kanonik per program + tim + mission**. Simpan ulang dengan idempotency key yang sama mengembalikan hasil yang sama; pengiriman duplikat tidak membuat observasi kedua. Perubahan yang sah dilakukan melalui alur edit dan tetap tercatat di audit trail.
+- **Status**: ✅ Final — ditegakkan oleh API, RPC, dan constraint database.
 
 ## ADR-005: Overall Team Score — Rata-rata vs Akumulasi
 - **Konteks**: PRD asli bilang "akumulasi" seluruh mission, ambigu antara sum vs average.

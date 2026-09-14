@@ -4,7 +4,7 @@ Frontend memakai Next.js server output agar reverse proxy `/api/*` dan security 
 
 ## Urutan deployment
 
-1. Ikuti runbook `../binahub-api/supabase/DEPLOYMENT.md` dan terapkan migration API sampai `0037_phase12_pilot_rehearsal_certification.sql`, lalu jalankan `supabase/production_readiness.sql`. Semua flag `*_ready`, termasuk `pilot_certification_phase12_ready`, harus `true`; seluruh counter integritas `*_issues` harus nol.
+1. Ikuti runbook `../binahub-api/supabase/DEPLOYMENT.md` dan terapkan seluruh migration API secara berurutan sampai migration terbaru (saat dokumen ini diperbarui: `0048_tbos_flexible_batch_constraints.sql`), lalu jalankan `supabase/production_readiness.sql`. Semua flag `*_ready` harus `true` dan seluruh counter integritas `*_issues` harus nol.
 2. Pastikan environment production menggunakan:
    - `NEXT_PUBLIC_APP_URL=https://app.binahub.id`
    - `NEXT_PUBLIC_BINAHUB_API_URL=https://api.binahub.id`

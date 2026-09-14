@@ -23,11 +23,11 @@ Dimension Score (per team, per dimension)
 T-BOS Score (per mission, per team)
   = average of Dimension Scores for dimensions relevant to that mission
 
-Overall Team Score
-  = average of T-BOS Scores across all missions participated
+Final Mission Score
+  = T-BOS Score for that mission (scale 1-5)
 
-Final Mission Score (deferred — ADR-003 open)
-  = (Mission Performance Score × 60%) + (T-BOS Score × 40%)
+Overall Team Score
+  = average of Final Mission Scores across all missions participated
 ```
 
 ## Mission → Dimension Mapping
@@ -40,8 +40,9 @@ Final Mission Score (deferred — ADR-003 open)
 | Lean Bridge Challenge | Goal Alignment, Data-Based Decision Making, Execution Discipline |
 | X-Case | Communication, Data-Based Decision Making, Accountability, Organizational Ownership |
 
-## Open ADRs
+## Keputusan Aktif
 
-- ADR-003: Mission Performance Score source — OPEN (Final Mission Score deferred)
-- ADR-005: Overall Team Score uses average (recommended, not sum)
-- ADR-006: Offline-first — deferred to Phase 4
+- ADR-003: T-BOS Score langsung menjadi skor akhir mission; formula 60/40 tidak digunakan.
+- ADR-004: Satu observasi kanonik per program + tim + mission; retry dilindungi idempotency.
+- ADR-005: Overall Team Score memakai rata-rata, bukan penjumlahan.
+- Offline-first sudah tersedia melalui draft lokal dan antrean sinkronisasi.

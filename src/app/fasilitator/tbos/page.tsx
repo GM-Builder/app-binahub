@@ -24,6 +24,7 @@ import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { ConfirmDialog } from "@/components/ui";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api-fetch";
 import type { LevelValue } from "@/modules/tbos";
 import {
   fetchMissions,
@@ -182,7 +183,7 @@ function TbosObservationContent() {
     setStep("prepare");
 
     try {
-      const response = await fetch(`/api/tbos/teams/members?teamId=${encodeURIComponent(team.id)}`);
+      const response = await apiFetch(`/api/tbos/teams/members?teamId=${encodeURIComponent(team.id)}`);
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success || !Array.isArray(result.members)) {
         throw new Error(result.error || "Gagal memuat anggota tim.");
@@ -227,7 +228,7 @@ function TbosObservationContent() {
     if (!selectedTeam) { setAddingMember(false); return; }
 
     try {
-      const response = await fetch("/api/tbos/teams/members", {
+      const response = await apiFetch("/api/tbos/teams/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -277,7 +278,7 @@ function TbosObservationContent() {
     }
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `/api/tbos/teams/members?teamId=${encodeURIComponent(selectedTeam.id)}&memberId=${encodeURIComponent(member.id)}`,
         { method: "DELETE" },
       );
@@ -308,7 +309,7 @@ function TbosObservationContent() {
   const handleSetCaptain = async (member: TeamMember) => {
     if (!selectedTeam || !canEditRoster || member.is_captain) return;
     setMemberError("");
-    const response = await fetch("/api/tbos/teams/members", {
+    const response = await apiFetch("/api/tbos/teams/members", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teamId: selectedTeam.id, memberId: member.id, isCaptain: true }),

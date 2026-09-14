@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DIMENSION_LIST } from "@/modules/tbos/config";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
 import { TbosTeamReports } from "./team-reports";
+
+vi.mock("@/lib/api-fetch", () => ({ apiFetch: vi.fn() }));
 
 const teams: TeamScoreSummary[] = [
   {
