@@ -140,13 +140,7 @@ export function AssessmentPanel({
   const [proposalNotes, setProposalNotes] = useState("");
   const [proposalContext, setProposalContext] = useState<ProposalContext>(emptyProposalContext);
   const [approvalNotes, setApprovalNotes] = useState<Record<string, string>>({});
-  const [distributionGroup, setDistributionGroup] = useState(0);
   const [selectedDistributionQuestion, setSelectedDistributionQuestion] = useState<number | null>(null);
-  const distributionGroups = Array.from(
-    { length: Math.ceil(data.answerDistribution.length / 7) },
-    (_, index) => data.answerDistribution.slice(index * 7, index * 7 + 7),
-  );
-  const visibleDistribution = distributionGroups[distributionGroup] || distributionGroups[0] || [];
 
   const requestAssessmentDocument = async (record: AssessmentRecord, type: AssessmentDocumentType) => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -471,48 +465,21 @@ export function AssessmentPanel({
           <EmptyState title="Belum ada distribusi jawaban" description="Grafik akan muncul setelah assessment pertama berhasil disubmit." />
         ) : (
           <>
-            <div className="md:hidden">
-              <label className="block text-xs font-semibold text-slate-700">
-                Rentang pertanyaan
-                <select value={distributionGroup} onChange={(event) => setDistributionGroup(Number(event.target.value))} className="mt-2 min-h-11 w-full border border-slate-300 bg-white px-3 text-sm">
-                  {distributionGroups.map((group, index) => {
-                    const first = answerSummary(group[0]).label;
-                    const last = answerSummary(group[group.length - 1]).label;
-                    return <option key={first} value={index}>{first}–{last}</option>;
-                  })}
-                </select>
-              </label>
-              <div className="mt-4 divide-y divide-slate-100 border-y border-slate-200">
-                {visibleDistribution.map((item) => {
-                  const summary = answerSummary(item);
-                  return (
-                    <button type="button" key={String(item.question)} onClick={() => setSelectedDistributionQuestion(Number(String(item.question).replace(/\D/g, "")))} className="grid w-full grid-cols-[2.5rem_minmax(0,1fr)_3.25rem] items-center gap-3 py-3 text-left hover:bg-blue-50/60" aria-label={`Lihat isi ${summary.label}`}>
-                      <span className="text-xs font-bold text-blue-950">{summary.label}</span>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100" role="img" aria-label={`${summary.label}: ${summary.percent}% menjawab 4 atau 5`}>
-                        <div className="h-full rounded-full bg-blue-900" style={{ width: `${summary.percent}%` }} />
-                      </div>
-                      <span className="text-right text-xs font-bold tabular-nums text-blue-950">{summary.percent}%</span>
-                      <span className="col-start-2 col-end-4 -mt-2 text-[10px] text-slate-500">{summary.total} respons</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-3 text-xs leading-5 text-slate-500">Pilih rentang lain untuk melihat seluruh Q1–Q49.</p>
-            </div>
-
-            <div className="hidden grid-cols-7 gap-2 md:grid xl:grid-cols-14">
+            <div className="overflow-x-auto pb-2" aria-label="Distribusi jawaban per pertanyaan">
+              <div className="flex min-w-max items-end gap-2 px-1 pt-2">
               {data.answerDistribution.map((item) => {
                 const summary = answerSummary(item);
                 return (
-                  <button type="button" key={String(item.question)} onClick={() => setSelectedDistributionQuestion(Number(String(item.question).replace(/\D/g, "")))} className="border border-slate-200 bg-slate-50 px-2 py-3 text-center transition hover:border-blue-300 hover:bg-blue-50" aria-label={`Lihat isi ${summary.label}`}>
-                    <div className="flex h-16 items-end rounded-md bg-slate-100 p-1" role="img" aria-label={`${summary.label}: ${summary.percent}% menjawab 4 atau 5`}>
-                      <div className="w-full rounded-sm bg-blue-900" style={{ height: `${Math.max(summary.percent, 3)}%` }} />
+                  <button type="button" key={String(item.question)} onClick={() => setSelectedDistributionQuestion(Number(String(item.question).replace(/\D/g, "")))} className="group flex w-5 shrink-0 flex-col items-center text-center" aria-label={`Lihat isi ${summary.label}: ${summary.percent}% menjawab 4 atau 5 dari ${summary.total} respons`}>
+                    <div className="flex h-20 w-5 items-end rounded-sm bg-slate-100 px-0.5 transition group-hover:bg-blue-100 group-focus-visible:ring-2 group-focus-visible:ring-blue-700 group-focus-visible:ring-offset-2" role="img" aria-label={`${summary.label}: ${summary.percent}% menjawab 4 atau 5`}>
+                      <div className="w-full rounded-[2px] bg-blue-900 transition-colors group-hover:bg-blue-700" style={{ height: `${Math.max(summary.percent, 3)}%` }} />
                     </div>
-                    <p className="mt-2 text-[10px] font-bold text-slate-500">{summary.label}</p>
-                    <p className="mt-0.5 text-xs font-bold tabular-nums text-blue-950">{summary.percent}%</p>
+                    <span className="mt-1 text-[8px] font-bold leading-none text-slate-500">{summary.label}</span>
+                    <span className="mt-1 text-[9px] font-bold leading-none tabular-nums text-blue-950">{summary.percent}%</span>
                   </button>
                 );
               })}
+              </div>
             </div>
             {selectedDistributionQuestion && <div className="mt-4 flex items-start gap-3 border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950" role="status"><span className="shrink-0 bg-blue-900 px-2 py-1 text-[10px] font-bold text-white">Q{selectedDistributionQuestion}</span><p className="min-w-0 flex-1 leading-6">{QUESTIONS.find((question) => question.id === selectedDistributionQuestion)?.text || "Pertanyaan tidak ditemukan."}</p><button type="button" onClick={() => setSelectedDistributionQuestion(null)} aria-label="Tutup pertanyaan" className="grid h-8 w-8 shrink-0 place-items-center text-blue-900 hover:bg-blue-100"><X className="h-4 w-4" /></button></div>}
           </>
