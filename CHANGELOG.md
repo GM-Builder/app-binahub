@@ -5,6 +5,18 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-09-15
+
+### Added — T-BOS Live Score
+
+- Menambahkan layar proyektor Live Score T-BOS dengan peringkat agregat tim, countdown tersinkron server, progres misi, dimensi terkuat, rotasi halaman, dan mode layar penuh.
+- Menambahkan panel kontrol khusus admin untuk memilih batch, mengatur durasi dan pesan penyemangat, memulai/menjeda/reset timer, serta menyembunyikan nilai saat diperlukan.
+- Menampilkan status provisional saat cakupan misi antartim belum setara agar kompetisi tidak disalahartikan sebagai perbandingan final.
+
+### Privacy — T-BOS Live Score
+
+- Layar hanya menampilkan data tim; nama peserta, profil, email, dan catatan fasilitator tidak pernah dimuat ke respons Live Score.
+
 ### Added — Phase 20 Unified Acquisition Funnel
 
 - Menambahkan panel Funnel & Attribution Inbound pada Kontrol Akuisisi untuk melihat sumber awal/terakhir, journey, konversi form, dan minat katalog tanpa menampilkan email.

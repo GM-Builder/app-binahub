@@ -24,6 +24,7 @@ import {
   Home,
   Building2,
   MoreHorizontal,
+  MonitorUp,
   Settings2,
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
@@ -116,6 +117,14 @@ function TbosDashboardContent() {
   const [savingTeam, setSavingTeam] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const selectedBatchId = batches.find((batch) => batch.name === selectedBatch)?.id || "";
+  const liveScoreHref = selectedProgramId
+    ? `/admin/tbos/live-score?${new URLSearchParams({
+        programId: selectedProgramId,
+        ...(selectedBatchId ? { batchId: selectedBatchId } : {}),
+      }).toString()}`
+    : "#";
 
   // Batch filter persists in the URL (?batch=...) so the view can be shared/refreshed.
   const selectBatch = useCallback((batch: string) => {
@@ -626,6 +635,26 @@ function TbosDashboardContent() {
             <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
             Tugaskan Fasilitator
           </button>
+          <Link
+            href={liveScoreHref}
+            target="_blank"
+            aria-disabled={!selectedProgramId || teamRoster.length === 0}
+            tabIndex={!selectedProgramId || teamRoster.length === 0 ? -1 : undefined}
+            onClick={(event) => {
+              if (!selectedProgramId || teamRoster.length === 0) event.preventDefault();
+            }}
+            title={
+              !selectedProgramId
+                ? "Pilih program aktif terlebih dahulu"
+                : teamRoster.length === 0
+                  ? "Tambahkan tim sebelum membuka live score"
+                  : "Buka layar Live Score untuk proyektor"
+            }
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 bg-[#0B2C6B] px-3 text-xs font-bold text-white transition-colors hover:bg-[#123E84] aria-disabled:pointer-events-none aria-disabled:opacity-40"
+          >
+            <MonitorUp className="h-3.5 w-3.5" aria-hidden="true" />
+            Buka Live Score
+          </Link>
           <TbosOverflowMenu />
         </div>
       </div>
