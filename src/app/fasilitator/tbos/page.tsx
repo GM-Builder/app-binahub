@@ -19,11 +19,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { useFacilitatorSession } from "@/components/facilitator-auth-gate";
 import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { ConfirmDialog } from "@/components/ui";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 import { apiFetch } from "@/lib/api-fetch";
 import type { LevelValue } from "@/modules/tbos";
 import {
@@ -62,22 +61,21 @@ const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:rin
 
 export default function TbosObservationPage() {
   return (
-    <FacilitatorAuthGate>
-      <AppShell
-        role="facilitator"
-        navigation="tbos"
-        compactHeader
-        title="Observasi T-BOS"
-        eyebrow="Area Fasilitator"
-      >
-        <TbosObservationContent />
-      </AppShell>
-    </FacilitatorAuthGate>
+    <AppShell
+      role="facilitator"
+      navigation="tbos"
+      compactHeader
+      title="Observasi T-BOS"
+      eyebrow="Area Fasilitator"
+    >
+      <TbosObservationContent />
+    </AppShell>
   );
 }
 
 function TbosObservationContent() {
   const router = useRouter();
+  const facilitatorSession = useFacilitatorSession();
   const [step, setStep] = useState<Step>("tasks");
   const [missions, setMissions] = useState<TbosDbMission[]>([]);
   const [teams, setTeams] = useState<TbosDbTeam[]>([]);
@@ -112,14 +110,9 @@ function TbosObservationContent() {
 
   const initData = useCallback(async () => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUserId = sessionData.session?.user.id || "";
+      const currentUserId = facilitatorSession.userId;
       setUserId(currentUserId);
-      setUserName(
-        sessionData.session?.user?.user_metadata?.full_name ||
-        (sessionData.session?.user?.email || "").split("@")[0] ||
-        currentUserId,
-      );
+      setUserName(facilitatorSession.fullName || currentUserId);
       setQueuedCount(getQueuedObservations(currentUserId).length);
 
       if (!selectedProgramId) {
@@ -145,7 +138,7 @@ function TbosObservationContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedProgramId]);
+  }, [facilitatorSession.fullName, facilitatorSession.userId, selectedProgramId]);
 
   useEffect(() => {
     void Promise.resolve().then(initData);
@@ -154,10 +147,9 @@ function TbosObservationContent() {
   useEffect(() => {
     const handleOnline = async () => {
       setIsOnline(true);
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user.id) {
-        await flushQueuedObservations(data.session.user.id);
-        setQueuedCount(getQueuedObservations(data.session.user.id).length);
+      if (facilitatorSession.userId) {
+        await flushQueuedObservations(facilitatorSession.userId);
+        setQueuedCount(getQueuedObservations(facilitatorSession.userId).length);
       }
     };
     const handleOffline = () => setIsOnline(false);
@@ -168,7 +160,14 @@ function TbosObservationContent() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, []);
+  }, [facilitatorSession.userId]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [step, selectedTeam?.id]);
 
   const prepareTeam = async (team: TbosDbTeam) => {
     if (team.observation) {
@@ -519,12 +518,15 @@ function TbosObservationContent() {
   if (loading) {
     return (
       <Shell isOnline={isOnline} queuedCount={queuedCount}>
-        <div className="mx-auto max-w-2xl px-4 pt-4">
+        <div className="mx-auto max-w-6xl px-4 pt-2 sm:pt-4">
           <TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} />
         </div>
-        <div className="flex min-h-[65vh] flex-col items-center justify-center gap-3" role="status">
-          <Loader2 className="h-9 w-9 animate-spin text-[#0B2C6B] motion-reduce:animate-none" aria-hidden="true" />
-          <p className="text-sm font-semibold text-slate-600">Memuat penugasan lapangan...</p>
+        <div className="mx-auto mt-4 max-w-6xl space-y-3 px-4" role="status" aria-live="polite">
+          <div className="h-20 animate-pulse rounded-2xl bg-white" />
+          <div className="grid gap-3 lg:grid-cols-2" aria-hidden="true">
+            {[0, 1, 2, 3].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl border border-slate-100 bg-white" />)}
+          </div>
+          <p className="sr-only">Memuat penugasan lapangan...</p>
         </div>
       </Shell>
     );
@@ -570,7 +572,7 @@ function TbosObservationContent() {
     <Shell isOnline={isOnline} queuedCount={queuedCount}>
       {step === "tasks" && (
         <main className="pb-[calc(7rem+env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 sm:flex-row sm:items-end sm:justify-between">
             <TbosProgramSelector value={selectedProgramId} onChange={handleProgramChange} />
             <button type="button" onClick={() => void refreshDashboard()} disabled={!selectedProgramId || refreshing} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-primary-dark disabled:opacity-50 ${FOCUS}`}>
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
@@ -579,7 +581,7 @@ function TbosObservationContent() {
           </div>
 
           {/* Header ringkas: sapaan + pos observasi + status online dalam satu blok */}
-          <section className="mx-auto mt-3 max-w-3xl px-4" aria-label="Konteks penugasan">
+          <section className="mx-auto mt-3 max-w-6xl px-4" aria-label="Konteks penugasan">
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -604,7 +606,7 @@ function TbosObservationContent() {
             </div>
           </section>
 
-          <section className="mx-auto mt-3 max-w-3xl space-y-3 px-4" aria-labelledby="assigned-teams-title">
+          <section className="mx-auto mt-3 max-w-6xl space-y-3 px-4" aria-labelledby="assigned-teams-title">
             {!selectedMission && missions.length > 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9A7B2F]">Pilih pos observasi</p>
@@ -647,6 +649,7 @@ function TbosObservationContent() {
                 <p className="mt-1 text-sm text-slate-500">Hubungi admin program untuk menambahkan tim.</p>
               </div>
             )}
+            <div className="grid gap-3 lg:grid-cols-2">
             {selectedMission && [...teams].sort((a, b) => Number(Boolean(a.observation)) - Number(Boolean(b.observation))).map((team, index) => {
               const completed = Boolean(team.observation);
               const captain = team.members?.find((member) => member.is_captain);
@@ -682,6 +685,7 @@ function TbosObservationContent() {
                 </article>
               );
             })}
+            </div>
           </section>
                 </main>
       )}
@@ -695,7 +699,7 @@ function TbosObservationContent() {
           onBack={() => setStep("tasks")}
           status={<NetworkBadge isOnline={isOnline} queuedCount={queuedCount} />}
         >
-           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.06)]" aria-labelledby="attendance-title">
+           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.06)] sm:p-5" aria-labelledby="attendance-title">
              <div className="flex items-start justify-between gap-3">
                <div>
                  <h2 id="attendance-title" className="text-lg font-bold text-primary-dark">Anggota yang hadir</h2>
@@ -826,6 +830,10 @@ function TbosObservationContent() {
           status={<span className="text-xs font-bold text-[#0B2C6B]">{scoredCount}/{selectedMission.dimensions.length}</span>}
           progress={{ current: scoredCount, total: selectedMission.dimensions.length }}
         >
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-900">
+            <strong className="block">Cara cepat menilai</strong>
+            Pilih satu nilai yang paling cocok. Pilihan tersimpan otomatis, kartu akan diringkas, lalu layar bergerak ke dimensi berikutnya.
+          </div>
           <div className="space-y-3">
             {selectedMission.dimensions.map((dimension, index) => {
               const selectedLevel = scores[dimension.id];
@@ -857,7 +865,7 @@ function TbosObservationContent() {
                       <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
                     </button>
                   ) : (
-                    <fieldset className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
+                    <fieldset className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
                       <legend className="sr-only">{dimension.name}</legend>
                       <div className="flex items-start gap-3">
                         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${selectedLevel ? "border-[#0B2C6B]/15 bg-[#0B2C6B]/[0.06] text-[#0B2C6B]" : "border-slate-200 bg-slate-50 text-slate-400"}`} aria-hidden="true">{index + 1}</span>
@@ -868,7 +876,7 @@ function TbosObservationContent() {
                       </div>
 
                       <div
-                        className="mt-4 space-y-2"
+                        className="mt-3 space-y-2 sm:mt-4"
                         role="radiogroup"
                         aria-label={`Skor ${dimension.name}`}
                         onKeyDown={(event) => {
@@ -896,12 +904,12 @@ function TbosObservationContent() {
                               tabIndex={selected || (selectedLevel === undefined && level.level_value === 1) ? 0 : -1}
                               aria-label={`${level.level_value} — ${level.level_label}: ${level.description}`}
                               onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
-                              className={`flex min-h-[72px] w-full items-start gap-3 rounded-xl border-2 p-3 text-left transition-all duration-200 motion-reduce:transition-none ${selected ? colors.chipActive + " shadow-sm" : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
+                              className={`flex min-h-[58px] w-full items-start gap-2.5 rounded-xl border-2 p-2.5 text-left transition-all duration-200 motion-reduce:transition-none sm:min-h-[68px] sm:gap-3 sm:p-3 ${selected ? colors.chipActive + " shadow-sm" : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
                             >
-                              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-extrabold ${selected ? "bg-white/25" : "bg-slate-100 text-[#0B2C6B] ring-1 ring-slate-200"}`}>{level.level_value}</span>
+                              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold sm:h-9 sm:w-9 ${selected ? "bg-white/25" : "bg-slate-100 text-[#0B2C6B] ring-1 ring-slate-200"}`}>{level.level_value}</span>
                               <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-bold">{level.level_label}</span>
-                                <span className={`mt-1 block text-xs leading-relaxed ${selected ? "text-white/85" : "text-slate-500"}`}>{level.description}</span>
+                                <span className={`mt-0.5 block text-[11px] leading-4 sm:mt-1 sm:text-xs sm:leading-relaxed ${selected ? "text-white/85" : "text-slate-500"}`}>{level.description}</span>
                               </span>
                               <span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${selected ? "border-white bg-white/25" : "border-slate-300 bg-white"}`} aria-hidden="true">
                                 {selected && <Check className="h-3 w-3 text-white" />}
@@ -1052,7 +1060,7 @@ function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, p
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-5xl space-y-3 px-4 sm:space-y-4">
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(8,29,66,0.06)]">
         <div className="h-1 bg-gradient-to-r from-[#0B2C6B] via-[#D9A441] to-[#0B2C6B]" aria-hidden="true" />
         <div className="p-4 sm:p-5">
@@ -1076,7 +1084,7 @@ function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, p
           <WorkflowProgress current={stepIndex} />
         </div>
       </div>
-      <div className="mx-auto max-w-2xl space-y-4 pb-16">{children}</div>
+      <div className="mx-auto max-w-3xl space-y-3 pb-16 sm:space-y-4">{children}</div>
     </div>
   );
 }
@@ -1123,8 +1131,8 @@ function Alert({ children }: { children: React.ReactNode }) {
 
 function BottomAction({ disabled, onClick, label }: { disabled: boolean; onClick: () => void; label: string }) {
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur">
-      <button type="button" disabled={disabled} onClick={onClick} className={`mx-auto flex min-h-14 w-full max-w-2xl items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition motion-reduce:transition-none ${disabled ? "bg-slate-100 text-slate-400" : "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/20 hover:brightness-110"} ${FOCUS}`}>
+    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-2.5 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur sm:p-3">
+      <button type="button" disabled={disabled} onClick={onClick} className={`mx-auto flex min-h-12 w-full max-w-3xl items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition motion-reduce:transition-none sm:min-h-14 sm:rounded-2xl ${disabled ? "bg-slate-100 text-slate-400" : "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/20 hover:brightness-110"} ${FOCUS}`}>
         {label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>

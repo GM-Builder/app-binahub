@@ -299,11 +299,35 @@ export interface TbosProgram {
   status: string;
 }
 
+const TBOS_PROGRAM_CACHE_TTL_MS = 5 * 60 * 1000;
+const tbosProgramCache = new Map<"tbos" | "lep", { expiresAt: number; data?: TbosProgram[]; pending?: Promise<TbosProgram[]> }>();
+
 export async function fetchTbosPrograms(moduleKey: "tbos" | "lep" = "tbos"): Promise<TbosProgram[]> {
-  const res = await apiFetch(`/api/programs/available?moduleKey=${encodeURIComponent(moduleKey)}`);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || !body.success) throw new Error(body.error || "Gagal memuat program.");
-  return body.programs || [];
+  const now = Date.now();
+  const cached = tbosProgramCache.get(moduleKey);
+  if (cached?.data && cached.expiresAt > now) return cached.data;
+  if (cached?.pending) return cached.pending;
+
+  const pending = (async () => {
+    const res = await apiFetch(`/api/programs/available?moduleKey=${encodeURIComponent(moduleKey)}`);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.success) throw new Error(body.error || "Gagal memuat program.");
+    const programs = Array.isArray(body.programs) ? body.programs as TbosProgram[] : [];
+    tbosProgramCache.set(moduleKey, { data: programs, expiresAt: Date.now() + TBOS_PROGRAM_CACHE_TTL_MS });
+    return programs;
+  })();
+
+  tbosProgramCache.set(moduleKey, { pending, expiresAt: now + TBOS_PROGRAM_CACHE_TTL_MS });
+  try {
+    return await pending;
+  } catch (error) {
+    tbosProgramCache.delete(moduleKey);
+    throw error;
+  }
+}
+
+export function clearTbosProgramCache() {
+  tbosProgramCache.clear();
 }
 
 export interface TbosBatch {

@@ -1,13 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchCurrentAuthenticatedRole } from "@/lib/authenticated-role";
 
+type FacilitatorSession = {
+  userId: string;
+  role: "facilitator" | "admin";
+  fullName: string;
+};
+
+const FacilitatorSessionContext = createContext<FacilitatorSession | null>(null);
+
+export function useFacilitatorSession() {
+  const session = useContext(FacilitatorSessionContext);
+  if (!session) throw new Error("useFacilitatorSession harus digunakan di dalam FacilitatorAuthGate.");
+  return session;
+}
+
 export function FacilitatorAuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [allowed, setAllowed] = useState(false);
+  const [session, setSession] = useState<FacilitatorSession | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -26,7 +40,13 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
           return;
         }
 
-        if (alive) setAllowed(true);
+        if (alive) {
+          setSession({
+            userId: result.userId,
+            role,
+            fullName: result.fullName,
+          });
+        }
       } catch {
         if (alive) router.replace("/");
       }
@@ -38,13 +58,17 @@ export function FacilitatorAuthGate({ children }: { children: React.ReactNode })
     };
   }, [router]);
 
-  if (!allowed) {
+  if (!session) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA] text-sm font-semibold text-[#0B2C6B]">
-        Memeriksa akses fasilitator...
+      <main className="grid min-h-screen place-items-center bg-[#F5F7FA] px-5 text-[#0B2C6B]">
+        <div className="w-full max-w-sm space-y-4" role="status" aria-live="polite">
+          <div className="h-10 w-36 animate-pulse rounded-xl bg-[#0B2C6B]/10" />
+          <div className="h-24 animate-pulse rounded-2xl bg-white shadow-sm" />
+          <p className="text-center text-xs font-semibold text-slate-500">Menyiapkan ruang fasilitator…</p>
+        </div>
       </main>
     );
   }
 
-  return <>{children}</>;
+  return <FacilitatorSessionContext.Provider value={session}>{children}</FacilitatorSessionContext.Provider>;
 }

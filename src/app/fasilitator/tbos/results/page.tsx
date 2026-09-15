@@ -16,7 +16,6 @@ import {
   UsersRound,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
 import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { StatCard } from "@/components/ui";
 import { fetchDashboardRawData } from "@/modules/tbos/api-client";
@@ -25,17 +24,15 @@ import type { DimensionScore, TbosDashboardData, TeamScoreSummary } from "@/modu
 
 export default function TbosResultsPage() {
   return (
-    <FacilitatorAuthGate>
-      <AppShell
-        role="facilitator"
-        navigation="tbos"
-        compactHeader
-        title="Ringkasan Hasil T-BOS"
-        eyebrow="Area Fasilitator"
-      >
-        <TbosResultsContent />
-      </AppShell>
-    </FacilitatorAuthGate>
+    <AppShell
+      role="facilitator"
+      navigation="tbos"
+      compactHeader
+      title="Ringkasan Hasil T-BOS"
+      eyebrow="Area Fasilitator"
+    >
+      <TbosResultsContent />
+    </AppShell>
   );
 }
 
@@ -72,7 +69,7 @@ function TbosResultsContent() {
   }, [loadResults]);
 
   if (loading) return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-[96rem] space-y-5 px-4">
       <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
       <ResultsLoading />
     </div>
@@ -80,7 +77,7 @@ function TbosResultsContent() {
 
   if (error) {
     return (
-      <section className="mx-auto max-w-xl rounded-md border border-red-200 bg-white p-6 text-center shadow-[0_20px_50px_-32px_rgba(127,29,29,0.45)]" aria-labelledby="results-error-title">
+      <section className="mx-4 rounded-md border border-red-200 bg-white p-6 text-center shadow-[0_20px_50px_-32px_rgba(127,29,29,0.45)] sm:mx-auto sm:max-w-xl" aria-labelledby="results-error-title">
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
           <AlertCircle aria-hidden="true" />
         </span>
@@ -96,7 +93,7 @@ function TbosResultsContent() {
 
   if (!data || data.teams.length === 0) {
     return (
-      <div className="space-y-5">
+      <div className="mx-auto max-w-[96rem] space-y-5 px-4">
         <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
         <section className="relative overflow-hidden rounded-md border border-[#0B2C6B]/10 bg-white p-7 text-center shadow-[0_24px_70px_-42px_rgba(11,44,107,0.5)] sm:p-10" aria-labelledby="empty-results-title">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#0B2C6B] via-[#D9A441] to-[#0B2C6B]" />
@@ -115,7 +112,7 @@ function TbosResultsContent() {
     : null;
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="mx-auto max-w-[96rem] space-y-5 px-4 sm:space-y-6">
       <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
       <section className="relative isolate overflow-hidden rounded-[1.75rem] bg-[#071B3D] px-5 py-6 text-white shadow-[0_28px_70px_-35px_rgba(7,27,61,0.9)] sm:px-8 sm:py-8" aria-labelledby="results-overview-title">
         <div className="absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full bg-[#D9A441]/15 blur-3xl" />

@@ -5,9 +5,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Lock, Unlock, Edit3, Save, X, History, Clock, Check, UsersRound, Crown } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { FacilitatorAuthGate } from "@/components/facilitator-auth-gate";
+import { useFacilitatorSession } from "@/components/facilitator-auth-gate";
 import { TbosProgramSelector } from "@/components/tbos-program-selector";
-import { supabase } from "@/lib/supabase";
 import { StatusPill } from "@/components/ui";
 import type { LevelValue } from "@/modules/tbos";
 import { LEVEL_LABELS } from "@/modules/tbos";
@@ -22,21 +21,20 @@ import {
 
 export default function TbosObservationsListPage() {
   return (
-    <FacilitatorAuthGate>
-      <AppShell
-        role="facilitator"
-        navigation="tbos"
-        compactHeader
-        title="Hasil Observasi T-BOS"
-        eyebrow="Area Fasilitator"
-      >
-        <TbosObservationsContent />
-      </AppShell>
-    </FacilitatorAuthGate>
+    <AppShell
+      role="facilitator"
+      navigation="tbos"
+      compactHeader
+      title="Hasil Observasi T-BOS"
+      eyebrow="Area Fasilitator"
+    >
+      <TbosObservationsContent />
+    </AppShell>
   );
 }
 
 function TbosObservationsContent() {
+  const facilitatorSession = useFacilitatorSession();
   const [observations, setObservations] = useState<TbosDbObservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,27 +51,16 @@ function TbosObservationsContent() {
     }
     setLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id || "";
-      setCurrentUserId(userId);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-
-      const adminRole = profile?.role === "admin";
-      setIsAdmin(adminRole);
-
       const obsList = await fetchObservations(selectedProgramId);
+      setCurrentUserId(facilitatorSession.userId);
+      setIsAdmin(facilitatorSession.role === "admin");
       setObservations(obsList);
     } catch {
       setError("Gagal memuat observasi.");
     } finally {
       setLoading(false);
     }
-  }, [selectedProgramId]);
+  }, [facilitatorSession.role, facilitatorSession.userId, selectedProgramId]);
 
   useEffect(() => {
     void Promise.resolve().then(loadObservations);
@@ -81,10 +68,11 @@ function TbosObservationsContent() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="mx-auto max-w-5xl space-y-4 px-4">
         <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
-        <div className="flex min-h-[50vh] items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-[#0B2C6B]" />
+        <div className="grid gap-3 lg:grid-cols-2" role="status" aria-live="polite">
+          {[0, 1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-2xl border border-slate-100 bg-white" aria-hidden="true" />)}
+          <span className="sr-only">Memuat hasil observasi...</span>
         </div>
       </div>
     );
@@ -92,7 +80,7 @@ function TbosObservationsContent() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="mx-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-auto sm:max-w-5xl">
         {error}
       </div>
     );
@@ -100,7 +88,7 @@ function TbosObservationsContent() {
 
   if (observations.length === 0) {
     return (
-      <div className="space-y-4">
+      <div className="mx-auto max-w-5xl space-y-4 px-4">
         <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
         <div className="py-16 text-center">
           <p className="text-sm text-[#4A4C54]">Belum ada hasil observasi pada pos Anda.</p>
@@ -111,7 +99,7 @@ function TbosObservationsContent() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4 px-4">
       <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
       <div className="flex items-end justify-between gap-3">
         <div>
@@ -121,12 +109,12 @@ function TbosObservationsContent() {
         <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{observations.length} selesai</span>
       </div>
 
-      <div className="space-y-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         {observations.map((obs) => (
           <button
             key={obs.id}
             onClick={() => setSelectedId(obs.id)}
-            className="w-full text-left bg-white rounded-xl p-4 border border-black/[0.04] hover:border-[#0B2C6B]/20 transition-colors"
+            className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_8px_24px_rgba(8,29,66,0.04)] transition-colors hover:border-[#0B2C6B]/25"
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0">

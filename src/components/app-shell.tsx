@@ -138,8 +138,9 @@ export function AppShell({
   const tipsPanelRef = useRef<HTMLDivElement>(null);
   const rawNavigationItems: { href: string; label: string; icon: React.ReactNode }[] = role === "facilitator" && navigation === "default" ? facilitatorWorkspaceNavigation : navByRole[role];
   const rawMobileItems: { href: string; label: string; icon: React.ReactNode }[] = role === "admin" ? [] : role === "facilitator" && navigation === "default" ? facilitatorWorkspaceMobileNavigation : mobileNavByRole[role] || [];
-  const navigationItems = role === "admin" ? rawNavigationItems : filterModuleNavigation(rawNavigationItems, moduleAvailability);
-  const mobileItems = filterModuleNavigation(rawMobileItems, moduleAvailability);
+  const tbosNavigationIsAuthorized = role === "facilitator" && navigation === "tbos";
+  const navigationItems = role === "admin" || tbosNavigationIsAuthorized ? rawNavigationItems : filterModuleNavigation(rawNavigationItems, moduleAvailability);
+  const mobileItems = tbosNavigationIsAuthorized ? rawMobileItems : filterModuleNavigation(rawMobileItems, moduleAvailability);
   const roleHomeHref = role === "facilitator" ? "/fasilitator/tbos" : role === "admin" ? "/admin/dashboard" : role === "client" ? "/client/program" : `/${role}/dashboard`;
   const showBackLink = pathname !== roleHomeHref && pathname !== "/facilitator/dashboard";
 
@@ -152,7 +153,7 @@ export function AppShell({
 
   useEffect(() => {
     let active = true;
-    if (role === "admin") {
+    if (role === "admin" || (role === "facilitator" && navigation === "tbos")) {
       return () => { active = false; };
     }
 
@@ -167,7 +168,14 @@ export function AppShell({
     });
 
     return () => { active = false; };
-  }, [role]);
+  }, [navigation, role]);
+
+  useEffect(() => {
+    if (!tbosNavigationIsAuthorized) return;
+    router.prefetch("/fasilitator/tbos");
+    router.prefetch("/fasilitator/tbos/observations");
+    router.prefetch("/fasilitator/tbos/results");
+  }, [router, tbosNavigationIsAuthorized]);
 
   useEffect(() => {
     const openPanel = showMobileNav ? drawerRef.current : showTips ? tipsPanelRef.current : null;
@@ -313,7 +321,7 @@ export function AppShell({
       </div>}
 
       <main id="main-content" className={mobileItems.length ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-72" : "lg:pl-72"} role="main">
-        <header className={`border-b border-slate-200 bg-white px-4 sm:px-6 ${compactHeader ? "py-3" : "py-4 sm:py-6"}`}>
+        <header className={`border-b border-slate-200 bg-white px-4 sm:px-6 ${compactHeader ? "py-2.5 sm:py-3" : "py-4 sm:py-6"}`}>
           <div className={`flex justify-between gap-3 ${compactHeader ? "items-center" : "items-start"}`}>
              <div className="min-w-0 flex-1">
                {showBackLink && (
@@ -322,8 +330,8 @@ export function AppShell({
                    Kembali ke beranda
                  </Link>
                )}
-              <p className={`font-bold uppercase text-amber-600 ${compactHeader ? "text-[9px] tracking-[0.2em]" : "text-[10px] tracking-[0.24em]"}`}>{eyebrow}</p>
-              <h1 className={`font-semibold tracking-[-0.03em] text-slate-900 ${compactHeader ? "mt-0.5 text-xl sm:text-2xl" : "mt-2 text-2xl sm:text-3xl"}`}>{title}</h1>
+              <p className={`font-bold uppercase text-amber-600 ${compactHeader ? "hidden text-[9px] tracking-[0.2em] sm:block" : "text-[10px] tracking-[0.24em]"}`}>{eyebrow}</p>
+              <h1 className={`font-semibold tracking-[-0.03em] text-slate-900 ${compactHeader ? "text-lg sm:mt-0.5 sm:text-2xl" : "mt-2 text-2xl sm:text-3xl"}`}>{title}</h1>
             </div>
             <div className="flex items-center gap-2">
               {navigation !== "tbos" && <button
@@ -354,7 +362,7 @@ export function AppShell({
 
 
         </header>
-        <div className={`px-4 sm:px-6 lg:px-6 ${compactHeader ? "py-4" : "py-6"}`}>
+        <div className={navigation === "tbos" ? "px-0 py-3 sm:px-4 sm:py-4 lg:px-6" : `px-4 sm:px-6 lg:px-6 ${compactHeader ? "py-4" : "py-6"}`}>
           {children}
         </div>
       </main>

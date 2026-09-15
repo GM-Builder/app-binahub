@@ -13,6 +13,7 @@ vi.mock("@/modules/tbos/api-client", () => ({
 describe("TbosProgramSelector", () => {
   beforeEach(() => {
     mocks.fetchPrograms.mockReset();
+    window.sessionStorage.clear();
   });
 
   it("loads the program list once and does not refetch after selection", async () => {
@@ -46,5 +47,18 @@ describe("TbosProgramSelector", () => {
 
     await waitFor(() => expect(mocks.fetchPrograms).toHaveBeenCalledWith("lep"));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith("lep-1"));
+  });
+
+  it("restores the last selected program during facilitator navigation", async () => {
+    window.sessionStorage.setItem("binahub:tbos:selected-program", "program-2");
+    mocks.fetchPrograms.mockResolvedValue([
+      { id: "program-1", code: "TBOS-1", title: "Program Pertama" },
+      { id: "program-2", code: "TBOS-2", title: "Program Tersimpan" },
+    ]);
+    const onChange = vi.fn();
+
+    render(<TbosProgramSelector value="" onChange={onChange} />);
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith("program-2"));
   });
 });

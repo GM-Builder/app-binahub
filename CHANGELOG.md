@@ -5,6 +5,22 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-09-16
+
+### Improved — T-BOS Facilitator Experience
+
+- Menjadikan pemeriksaan sesi fasilitator persisten pada layout T-BOS, menyimpan pilihan program selama sesi, dan menghapus pemeriksaan modul berulang agar perpindahan Form, Hasil Observasi, dan Statistik tidak lagi tertahan oleh waterfall permintaan yang sama.
+- Merapikan workspace desktop menjadi layout yang lebih lebar dan mudah dipindai, termasuk grid daftar tim dan hasil observasi dua kolom pada layar besar.
+- Memadatkan kartu penilaian, navigasi langkah, tombol aksi, dan jarak antarkomponen pada mobile agar tampilan tidak terasa diperbesar.
+- Mengembalikan posisi layar ke bagian atas setiap kali tahap observasi berubah, termasuk setelah tim dipilih dan saat masuk ke penilaian.
+- Mengunci pinch zoom hanya pada workspace fasilitator T-BOS sesuai kebutuhan penggunaan lapangan tanpa memengaruhi halaman publik atau workspace lain.
+
+### Improved — T-BOS Live Score
+
+- Menyusun ulang layar proyektor menjadi leaderboard lima tim yang lebih kompetitif dengan sorotan pemimpin, avatar tim, progres misi bersegmen, pergerakan peringkat, dan skor yang lebih mudah dibaca dari jauh.
+- Menambahkan panel countdown dengan indikator radial, pesan penyemangat, aktivitas terbaru, status live, visual perjalanan menuju puncak, serta kepadatan 16:9 yang mengikuti benchmark tanpa menyalin identitas visualnya.
+- Mempertahankan privasi Live Score: layar hanya memakai agregat tim dan tidak menampilkan nama peserta, email, atau catatan fasilitator.
+
 ## [0.23.0] - 2026-09-15
 
 ### Added — T-BOS Live Score
