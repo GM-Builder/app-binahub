@@ -5,6 +5,15 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+### Added — Phase 20 Unified Acquisition Funnel
+
+- Menambahkan panel Funnel & Attribution Inbound pada Kontrol Akuisisi untuk melihat sumber awal/terakhir, journey, konversi form, dan minat katalog tanpa menampilkan email.
+- Menambahkan panel Apollo Manual & Konversi Kampanye untuk membuat satu tautan UAT opaque dari source/campaign/prospect yang lolos gate serta melihat audit kliknya.
+
+### Safety
+
+- Panel Phase 20 tidak mengirim email, tidak memanggil Apollo API, dan tidak mengaktifkan outbound. Tautan UAT hanya dapat dibuat setelah source Apollo outbound, campaign, prospect validation, consent/suppression, dan secret signing tersedia.
+
 ## [0.21.6] - 2026-09-09
 
 ### Fixed — Deployment Cache Safety

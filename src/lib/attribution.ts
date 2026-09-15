@@ -11,6 +11,9 @@ export type AssessmentAttribution = {
   referrer?: string;
 };
 
+const JOURNEY_STORAGE_KEY = "binahub.inboundJourney.v1";
+const JOURNEY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function clean(value: string | null, maxLength: number) {
   const trimmed = value?.trim();
   return trimmed ? trimmed.slice(0, maxLength) : undefined;
@@ -42,4 +45,25 @@ export function readAssessmentAttribution(search: string, currentUrl: string, do
   };
 
   return Object.fromEntries(Object.entries(attribution).filter(([, value]) => Boolean(value))) as AssessmentAttribution;
+}
+
+/** Carries only an opaque UUID across the public site and app. No name, email,
+ * campaign detail, or assessment answer is ever placed in this browser key. */
+export function readAssessmentJourneyId(search: string) {
+  const incoming = new URLSearchParams(search).get("bh_journey")?.trim();
+  if (incoming && JOURNEY_ID_PATTERN.test(incoming)) {
+    storeAssessmentJourneyId(incoming);
+    return incoming;
+  }
+  try {
+    const stored = window.localStorage.getItem(JOURNEY_STORAGE_KEY)?.trim();
+    return stored && JOURNEY_ID_PATTERN.test(stored) ? stored : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function storeAssessmentJourneyId(journeyId: string) {
+  if (!JOURNEY_ID_PATTERN.test(journeyId)) return;
+  try { window.localStorage.setItem(JOURNEY_STORAGE_KEY, journeyId); } catch { /* optional storage */ }
 }

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DatabaseZap, FileCheck2, Megaphone, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { AdminInput, AdminModal, AdminSelect, AdminTextarea, FieldLabel, Panel, StatCard } from "./shared";
 import { LeadAgentPanel } from "./lead-agent-panel";
+import { InboundAttributionPanel } from "./inbound-attribution-panel";
+import { ControlledOutboundPanel } from "./controlled-outbound-panel";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
 type Source = { id: string; source_key: string; name: string; provider_type: string; channel: string; acquisition_method: string; lawful_basis: string | null; privacy_notice_url: string | null; retention_days: number | null; data_owner: string | null; legal_owner: string | null; status: string; active: boolean; config: Record<string, unknown>; approval_note: string | null };
@@ -172,6 +174,8 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
     {error && <div role="alert" aria-live="assertive" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">Data baru selalu masuk ke area peninjauan. Sumber, kampanye, dan batch harus disetujui terlebih dahulu; alamat yang diblokir dan data ganda diperiksa sebelum prospek dijadikan lead.</div>
     <LeadAgentPanel onAction={onAction} />
+    <InboundAttributionPanel onAction={onAction} />
+    <ControlledOutboundPanel onAction={onAction} />
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <StatCard label="Sumber data aktif" value={activeSources.length} icon={ShieldCheck} />
       <StatCard label="Kampanye aktif" value={campaigns.filter((item) => item.status === "active").length} icon={Megaphone} />

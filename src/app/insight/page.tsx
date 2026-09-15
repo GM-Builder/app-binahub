@@ -17,7 +17,7 @@ import { SuccessStep } from "./_steps/success-step";
 
 import { useLocale } from "@/i18n/use-locale";
 import { useRouter } from "next/navigation";
-import { readAssessmentAttribution } from "@/lib/attribution";
+import { readAssessmentAttribution, readAssessmentJourneyId, storeAssessmentJourneyId } from "@/lib/attribution";
 
 const TOTAL_STEPS = 11;
 const SPEED_LINES = [
@@ -61,6 +61,33 @@ export default function InsightPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const submissionKeyRef = useRef<string>(crypto.randomUUID());
+  const journeyStartRecordedRef = useRef(false);
+
+  // Starts an anonymous journey once the public assessment is opened. This is
+  // evidence only: no lead is created and no message is sent at this stage.
+  useEffect(() => {
+    if (journeyStartRecordedRef.current) return;
+    journeyStartRecordedRef.current = true;
+    if (new URLSearchParams(window.location.search).get("source") === "program") return;
+    const controller = new AbortController();
+    void fetch("/api/acquisition/journey", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        journeyId: readAssessmentJourneyId(window.location.search),
+        eventType: "assessment_started",
+        routePath: "/insight",
+        attribution: readAssessmentAttribution(window.location.search, window.location.href, document.referrer),
+      }),
+    })
+      .then(async (response) => ({ response, body: await response.json().catch(() => null) }))
+      .then(({ response, body }) => {
+        if (response.ok && typeof body?.journeyId === "string") storeAssessmentJourneyId(body.journeyId);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
 
   // ── Safety Measures ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -152,6 +179,7 @@ export default function InsightPage() {
         body: JSON.stringify({
           ...formData,
           answers: answers,
+          journeyId: readAssessmentJourneyId(window.location.search),
           attribution: readAssessmentAttribution(window.location.search, window.location.href, document.referrer),
           locale,
         }),
