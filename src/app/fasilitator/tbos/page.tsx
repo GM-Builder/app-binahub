@@ -997,7 +997,7 @@ function TbosObservationContent() {
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{notes || "Tidak ada catatan."}</p>
           </section>
-          <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur">
+          <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur lg:bottom-0 lg:left-72">
             <div className="mx-auto grid max-w-2xl grid-cols-[0.8fr_1.2fr] gap-2">
               <button type="button" onClick={() => setStep("observe")} className={`min-h-14 rounded-2xl border border-[#0B2C6B]/20 bg-[#F7F6F2] px-3 text-sm font-bold text-[#0B2C6B] transition-colors hover:border-[#0B2C6B]/35 hover:bg-white ${FOCUS}`}>Edit</button>
               <button type="button" onClick={() => void handleSubmit()} className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#0B2C6B] px-3 text-sm font-bold text-white shadow-lg shadow-[#0B2C6B]/20 transition hover:brightness-110 ${FOCUS}`}>Simpan observasi <Check className="h-4 w-4" aria-hidden="true" /></button>
@@ -1131,7 +1131,7 @@ function Alert({ children }: { children: React.ReactNode }) {
 
 function BottomAction({ disabled, onClick, label }: { disabled: boolean; onClick: () => void; label: string }) {
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-2.5 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur sm:p-3">
+    <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 border-t border-slate-200 bg-white/95 p-2.5 shadow-[0_-6px_24px_rgba(8,29,66,0.06)] backdrop-blur sm:p-3 lg:bottom-0 lg:left-72">
       <button type="button" disabled={disabled} onClick={onClick} className={`mx-auto flex min-h-12 w-full max-w-3xl items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition motion-reduce:transition-none sm:min-h-14 sm:rounded-2xl ${disabled ? "bg-slate-100 text-slate-400" : "bg-[#0B2C6B] text-white shadow-lg shadow-[#0B2C6B]/20 hover:brightness-110"} ${FOCUS}`}>
         {label} <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </button>

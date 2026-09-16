@@ -204,7 +204,7 @@ export function AdminShell({
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[18rem] flex-col border-r border-white/[0.07] bg-[#071B3D] text-white lg:flex" aria-label="Sidebar admin">
         <div className="shrink-0 px-6 pb-5 pt-6">
           <Link href="/admin/dashboard" className="inline-flex items-center" aria-label="BinaHub Admin — Dashboard">
-            <Image src="/binahub_logo.webp" alt="BinaHub" width={1574} height={448} priority sizes="138px" className="h-auto w-[138px] object-contain brightness-0 invert" />
+            <span className="inline-flex rounded-lg bg-white px-3 py-2"><Image src="/full-logo.png" alt="BinaHub" width={150} height={42} preload sizes="138px" className="h-auto w-[138px] object-contain" /></span>
           </Link>
           <div className="mt-4 flex items-center gap-2">
             <span className="h-px w-5 bg-amber-400" />
@@ -235,7 +235,7 @@ export function AdminShell({
           <button type="button" onClick={() => setMobileOpen(false)} className="absolute inset-0 bg-[#071B3D]/65 backdrop-blur-sm" aria-label="Tutup menu admin" />
           <div ref={drawerRef} className="absolute inset-y-0 left-0 flex w-[min(22rem,calc(100%-2rem))] flex-col bg-[#071B3D] text-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-5">
-              <Image src="/binahub_logo.webp" alt="BinaHub" width={1574} height={448} sizes="125px" className="h-auto w-[125px] object-contain brightness-0 invert" />
+              <span className="inline-flex rounded-lg bg-white px-3 py-2"><Image src="/full-logo.png" alt="BinaHub" width={150} height={42} sizes="125px" className="h-auto w-[125px] object-contain" /></span>
               <button type="button" onClick={() => setMobileOpen(false)} aria-label="Tutup navigasi" className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/[0.08]">
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>

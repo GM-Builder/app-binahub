@@ -5,6 +5,12 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+### Changed — T-BOS projection and brand consistency
+
+- Live Score menggunakan daftar klasemen tanpa grid kartu, dengan hierarki nama tim, skor, dan countdown; menghapus dekorasi gunung, glow, avatar dekoratif, dan navigasi semu.
+- Logo Live Score dan shell admin desktop/mobile menggunakan aset full-logo.png yang sama dengan fasilitator, tanpa filter warna.
+- Footer aksi observasi desktop mengikuti lebar konten di kanan sidebar dan menempel pada dasar layar; offset navigasi bawah hanya berlaku di mobile.
+
 ## [0.23.1] - 2026-09-16
 
 ### Improved — T-BOS Facilitator Experience
