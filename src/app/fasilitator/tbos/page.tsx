@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -102,7 +103,21 @@ function TbosObservationContent() {
   const [userName, setUserName] = useState("");
   // Accordion state for the assess screen: dimension id -> collapsed or not.
   const [collapsedDimensions, setCollapsedDimensions] = useState<Set<string>>(new Set());
+  const [recentlyScoredDimensionId, setRecentlyScoredDimensionId] = useState<string | null>(null);
+  const [scoreAnnouncement, setScoreAnnouncement] = useState("");
   const dimensionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const collapseTimerRef = useRef<number | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
+  const reduceMotion = useReducedMotion();
+
+  const clearScoreFeedbackTimers = useCallback(() => {
+    if (collapseTimerRef.current !== null) window.clearTimeout(collapseTimerRef.current);
+    if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
+    collapseTimerRef.current = null;
+    feedbackTimerRef.current = null;
+  }, []);
+
+  useEffect(() => clearScoreFeedbackTimers, [clearScoreFeedbackTimers]);
 
   const initData = useCallback(async () => {
     try {
@@ -322,6 +337,9 @@ function TbosObservationContent() {
 
   const continueToObservation = () => {
     if (!selectedTeam || !selectedMission) return;
+    clearScoreFeedbackTimers();
+    setRecentlyScoredDimensionId(null);
+    setScoreAnnouncement("");
     const draft = loadDraft(selectedTeam.id, selectedMission.id);
     setScores(draft?.scores || {});
     setNotes(draft?.notes || "");
@@ -340,18 +358,38 @@ function TbosObservationContent() {
     setScores(updated);
     if (selectedTeam && selectedMission) saveDraft(selectedTeam.id, selectedMission.id, updated, notes);
 
-    // Collapse the dimension that was just scored, then smooth-scroll to the
-    // next unscored one. Manual upward scrolling is never overridden: we only
-    // scroll when there is a next unscored dimension.
+    // Keep the selected state visible briefly so facilitators can confirm what
+    // they chose before the card collapses and advances to the next competency.
     if (selectedMission) {
       const remaining = selectedMission.dimensions.filter((dimension) => updated[dimension.id] === undefined);
       const next = remaining[0];
-      setCollapsedDimensions((current) => new Set(current).add(dimensionId));
-      if (next) {
-        window.setTimeout(() => {
-          dimensionRefs.current[next.id]?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 180);
-      }
+      const dimension = selectedMission.dimensions.find((item) => item.id === dimensionId);
+      const selectedLevelData = dimension?.levels.find((item) => item.level_value === level);
+
+      clearScoreFeedbackTimers();
+      setCollapsedDimensions((current) => {
+        const expanded = new Set(current);
+        expanded.delete(dimensionId);
+        return expanded;
+      });
+      setRecentlyScoredDimensionId(dimensionId);
+      setScoreAnnouncement(`${dimension?.name || "Kompetensi"} dinilai ${selectedLevelData?.level_label || level}. Draf tersimpan otomatis.`);
+
+      const collapseDelay = reduceMotion ? 250 : 900;
+      collapseTimerRef.current = window.setTimeout(() => {
+        setCollapsedDimensions((current) => new Set(current).add(dimensionId));
+        if (next) {
+          window.requestAnimationFrame(() => {
+            dimensionRefs.current[next.id]?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+          });
+        }
+        collapseTimerRef.current = null;
+      }, collapseDelay);
+
+      feedbackTimerRef.current = window.setTimeout(() => {
+        setRecentlyScoredDimensionId((current) => current === dimensionId ? null : current);
+        feedbackTimerRef.current = null;
+      }, collapseDelay + (reduceMotion ? 500 : 1400));
     }
   };
 
@@ -780,38 +818,61 @@ function TbosObservationContent() {
             <strong className="block">Cara cepat menilai</strong>
             Pilih satu nilai yang paling cocok. Pilihan tersimpan otomatis, kartu akan diringkas, lalu layar bergerak ke kompetensi berikutnya.
           </div>
+          <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">{scoreAnnouncement}</span>
           <div className="space-y-3">
             {selectedMission.dimensions.map((dimension, index) => {
               const selectedLevel = scores[dimension.id];
               const collapsed = collapsedDimensions.has(dimension.id) && selectedLevel !== undefined;
+              const recentlyScored = recentlyScoredDimensionId === dimension.id;
               const selectedLevelData = dimension.levels.find((level) => level.level_value === selectedLevel);
               return (
-                <div
+                <motion.div
+                  layout={!reduceMotion}
                   key={dimension.id}
                   ref={(node) => { dimensionRefs.current[dimension.id] = node; }}
                   className="scroll-mt-4"
+                  transition={{ layout: { duration: reduceMotion ? 0 : 0.24, ease: "easeOut" } }}
                 >
+                  <AnimatePresence initial={false} mode="wait">
                   {collapsed ? (
-                    <button
+                    <motion.button
+                      key="collapsed"
+                      initial={reduceMotion ? false : { opacity: 0, y: -6, scale: 0.99 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={reduceMotion ? undefined : { opacity: 0, y: -4, scale: 0.99 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.2 }}
                       type="button"
                       aria-expanded={false}
                       onClick={() => setCollapsedDimensions((current) => { const next = new Set(current); next.delete(dimension.id); return next; })}
-                      className={`flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-[0_8px_24px_rgba(8,29,66,0.04)] transition hover:border-[#0B2C6B]/25 ${FOCUS}`}
+                      className={`flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left shadow-[0_8px_24px_rgba(8,29,66,0.04)] transition-colors hover:border-[#0B2C6B]/25 ${recentlyScored ? "border-emerald-300 bg-emerald-50/70" : "border-slate-200 bg-white"} ${FOCUS}`}
                     >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0B2C6B]/[0.06] text-xs font-bold text-[#0B2C6B]" aria-hidden="true">
+                      <motion.span
+                        initial={reduceMotion || !recentlyScored ? false : { scale: 0.65, rotate: -12 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${recentlyScored ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20" : "bg-emerald-100 text-emerald-700"}`}
+                        aria-hidden="true"
+                      >
                         <Check className="h-4 w-4" />
-                      </span>
+                      </motion.span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-semibold uppercase tracking-wide text-slate-400">{dimension.name}</span>
-                        <span className="mt-0.5 block truncate text-sm font-bold text-[#0B2C6B]">{dimension.question}</span>
+                        <span className={`block truncate text-[10px] font-bold uppercase tracking-[0.12em] ${recentlyScored ? "text-emerald-700" : "text-slate-400"}`}>{recentlyScored ? "Dinilai · draf tersimpan" : "Sudah dinilai"}</span>
+                        <span className="mt-0.5 block truncate text-sm font-bold text-[#0B2C6B]">{dimension.name}</span>
                       </span>
                       <span className={`shrink-0 rounded-lg border px-2.5 py-1 text-xs font-extrabold ${levelColors(selectedLevel).badge}`}>
                         {selectedLevelData?.level_label} ({selectedLevel})
                       </span>
                       <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-                    </button>
+                    </motion.button>
                   ) : (
-                    <fieldset className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_8px_24px_rgba(8,29,66,0.05)] sm:p-5">
+                    <motion.fieldset
+                      key="expanded"
+                      initial={reduceMotion ? false : { opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+                      className={`rounded-2xl border bg-white p-3.5 shadow-[0_8px_24px_rgba(8,29,66,0.05)] transition-[border-color,box-shadow] duration-300 motion-reduce:transition-none sm:p-5 ${recentlyScored ? "border-emerald-300 shadow-[0_12px_32px_rgba(5,150,105,0.12)] ring-4 ring-emerald-100/80" : "border-slate-200"}`}
+                    >
                       <legend className="sr-only">{dimension.name}</legend>
                       <div className="flex items-start gap-3">
                         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold ${selectedLevel ? "border-[#0B2C6B]/15 bg-[#0B2C6B]/[0.06] text-[#0B2C6B]" : "border-slate-200 bg-slate-50 text-slate-400"}`} aria-hidden="true">{index + 1}</span>
@@ -850,7 +911,7 @@ function TbosObservationContent() {
                               tabIndex={selected || (selectedLevel === undefined && level.level_value === 1) ? 0 : -1}
                               aria-label={`${level.level_value} — ${level.level_label}: ${level.description}`}
                               onClick={() => handleScoreSelect(dimension.id, level.level_value as LevelValue)}
-                              className={`flex min-h-[58px] w-full items-start gap-2.5 rounded-xl border-2 p-2.5 text-left transition-all duration-200 motion-reduce:transition-none sm:min-h-[68px] sm:gap-3 sm:p-3 ${selected ? colors.chipActive + " shadow-sm" : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
+                              className={`flex min-h-[58px] w-full items-start gap-2.5 rounded-xl border-2 p-2.5 text-left transition-all duration-200 motion-reduce:transition-none sm:min-h-[68px] sm:gap-3 sm:p-3 ${selected ? colors.chipActive + (recentlyScored ? " scale-[1.01] shadow-lg" : " shadow-sm") : colors.chip + " bg-white hover:bg-slate-50"} ${FOCUS}`}
                             >
                               <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold sm:h-9 sm:w-9 ${selected ? "bg-white/25" : "bg-slate-100 text-[#0B2C6B] ring-1 ring-slate-200"}`}>{level.level_value}</span>
                               <span className="min-w-0 flex-1">
@@ -864,9 +925,35 @@ function TbosObservationContent() {
                           );
                         })}
                       </div>
-                    </fieldset>
+                      <AnimatePresence>
+                        {recentlyScored && selectedLevelData && (
+                          <motion.div
+                            initial={reduceMotion ? false : { opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
+                            transition={{ duration: reduceMotion ? 0 : 0.22 }}
+                            className="mt-3 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-emerald-900"
+                          >
+                            <motion.span
+                              initial={reduceMotion ? false : { scale: 0, rotate: -18 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 24 }}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"
+                              aria-hidden="true"
+                            >
+                              <Check className="h-4 w-4" />
+                            </motion.span>
+                            <span className="min-w-0">
+                              <strong className="block text-xs">Kompetensi sudah dinilai</strong>
+                              <span className="block truncate text-[11px] text-emerald-700">{selectedLevelData.level_label} ({selectedLevel}) · draf tersimpan otomatis</span>
+                            </span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.fieldset>
                   )}
-                </div>
+                  </AnimatePresence>
+                </motion.div>
               );
             })}
           </div>
