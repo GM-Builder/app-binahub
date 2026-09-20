@@ -49,7 +49,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
           <h3 className="text-base font-bold text-[#0B2C6B]">
             Perbandingan Batch
           </h3>
-          <p className="text-xs text-[#4A4C54]/70 mt-0.5">Analisis rata-rata skor per dimensi perilaku antar angkatan</p>
+          <p className="text-xs text-[#4A4C54]/70 mt-0.5">Analisis rata-rata skor per kompetensi perilaku antar angkatan</p>
         </div>
 
         <div className="flex items-center gap-3 bg-white/80 px-3 py-1.5 rounded-xl border border-[#0B2C6B]/10">
@@ -119,7 +119,7 @@ export function TbosBatchComparison({ comparisons }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#F7F6F2]">
-                <th className="text-left py-3 px-6 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Dimensi Perilaku</th>
+                <th className="text-left py-3 px-6 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kompetensi Perilaku</th>
                 {batchNames.map((name, i) => (
                   <th key={name} className="text-center py-3 px-4 text-xs font-semibold uppercase tracking-wide" style={{ color: BATCH_COLORS[i % BATCH_COLORS.length] }}>{name}</th>
                 ))}

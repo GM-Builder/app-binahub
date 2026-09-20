@@ -91,7 +91,7 @@ function TbosObservationsContent() {
       <div className="mx-auto max-w-5xl space-y-4 px-4">
         <TbosProgramSelector value={selectedProgramId} onChange={setSelectedProgramId} />
         <div className="py-16 text-center">
-          <p className="text-sm text-[#4A4C54]">Belum ada hasil observasi pada pos Anda.</p>
+          <p className="text-sm text-[#4A4C54]">Belum ada hasil observasi pada program ini.</p>
           <Link href="/fasilitator/tbos" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Kembali ke daftar tim</Link>
         </div>
       </div>
@@ -104,7 +104,7 @@ function TbosObservationsContent() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-[#0B2C6B]">Tim yang sudah dinilai</h2>
-          <p className="mt-0.5 text-xs text-[#4A4C54]">Hasil hanya menampilkan misi yang menjadi tanggung jawab Anda.</p>
+          <p className="mt-0.5 text-xs text-[#4A4C54]">Hasil hanya menampilkan tim yang sudah Anda nilai.</p>
         </div>
         <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{observations.length} selesai</span>
       </div>
@@ -135,7 +135,7 @@ function TbosObservationsContent() {
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs text-[#4A4C54]">{obs.scores.length} dimensi</p>
+                <p className="text-xs text-[#4A4C54]">{obs.scores.length} kompetensi</p>
                 {obs.canEdit && (
                   <span className="text-[10px] text-green-600 font-medium">Dapat dikoreksi</span>
                 )}

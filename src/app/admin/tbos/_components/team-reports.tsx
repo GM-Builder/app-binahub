@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, Crown, Download, Loader2, Search, UsersRound } from "lucide-react";
+import { BarChart3, Crown, Download, Loader2, Plus, Search, UsersRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
 import { apiFetch } from "@/lib/api-fetch";
@@ -19,10 +19,15 @@ const DIMENSION_COLORS: Record<string, { bar: string; dot: string }> = {
   org_ownership: { bar: "bg-indigo-500", dot: "bg-indigo-500" },
 };
 
-export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; roster: TbosDbTeam[] }) {
+export function TbosTeamReports({ teams, roster, onRosterUpdated }: { teams: TeamScoreSummary[]; roster: TbosDbTeam[]; onRosterUpdated?: () => void }) {
   const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.teamId || "");
   const [query, setQuery] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [rosterEditorOpen, setRosterEditorOpen] = useState(false);
+  const [memberNames, setMemberNames] = useState("");
+  const [newCaptainName, setNewCaptainName] = useState("");
+  const [savingMembers, setSavingMembers] = useState(false);
+  const [rosterError, setRosterError] = useState("");
 
   const filteredTeams = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase("id-ID");
@@ -37,6 +42,38 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
   const rosterTeam = roster.find((item) => item.id === team?.teamId);
   const members = rosterTeam?.members || [];
   const captain = members.find((member) => member.is_captain);
+  const parsedNames = Array.from(new Set(memberNames.split(/\r?\n|,/).map((name) => name.replace(/\s+/g, " ").trim()).filter(Boolean)));
+
+  const saveMembers = async () => {
+    if (!rosterTeam || parsedNames.length === 0) return;
+    if (!captain && !newCaptainName) {
+      setRosterError("Pilih satu kapten dari anggota baru.");
+      return;
+    }
+    setSavingMembers(true);
+    setRosterError("");
+    try {
+      const response = await apiFetch("/api/tbos/teams/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId: rosterTeam.id,
+          members: parsedNames.map((memberName) => ({ memberName, isCaptain: !captain && memberName === newCaptainName })),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Anggota tim tidak dapat disimpan.");
+      toast.success(`${parsedNames.length} anggota ditambahkan ke ${team.teamName}.`);
+      setMemberNames("");
+      setNewCaptainName("");
+      setRosterEditorOpen(false);
+      onRosterUpdated?.();
+    } catch (error) {
+      setRosterError(error instanceof Error ? error.message : "Anggota tim tidak dapat disimpan.");
+    } finally {
+      setSavingMembers(false);
+    }
+  };
 
   const downloadReport = async () => {
     if (!team) return;
@@ -84,7 +121,7 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
           {filteredTeams.map((item) => {
             const selected = item.teamId === team.teamId;
             return (
-              <button key={item.teamId} type="button" onClick={() => setSelectedTeamId(item.teamId)} aria-pressed={selected} className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${selected ? "border-[#0B2C6B] bg-[#0B2C6B] text-white shadow-sm shadow-[#0B2C6B]/20" : "border-slate-200 bg-white text-[#0B2C6B] hover:border-[#0B2C6B]/30 hover:bg-[#0B2C6B]/[0.03]"}`}>
+              <button key={item.teamId} type="button" onClick={() => { setSelectedTeamId(item.teamId); setRosterEditorOpen(false); setMemberNames(""); setNewCaptainName(""); setRosterError(""); }} aria-pressed={selected} className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${selected ? "border-[#0B2C6B] bg-[#0B2C6B] text-white shadow-sm shadow-[#0B2C6B]/20" : "border-slate-200 bg-white text-[#0B2C6B] hover:border-[#0B2C6B]/30 hover:bg-[#0B2C6B]/[0.03]"}`}>
                 <span className="block truncate text-sm font-bold">{item.teamName}</span>
                 <span className={`mt-0.5 block text-xs ${selected ? "text-white/65" : "text-slate-500"}`}>{item.batch} · {item.totalObservations} observasi</span>
               </button>
@@ -124,8 +161,26 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
                   <h3 id="team-members-title" className="text-sm font-bold text-[#0B2C6B]">Anggota tim</h3>
                   <p className="mt-0.5 text-xs text-slate-500">Kapten ditandai dengan ikon mahkota.</p>
                 </div>
-                <UsersRound className="h-5 w-5 text-[#D9A441]" />
+                <button type="button" onClick={() => { setRosterEditorOpen((open) => !open); setRosterError(""); }} className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-[#0B2C6B]">
+                  {rosterEditorOpen ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />} {rosterEditorOpen ? "Tutup" : "Tambah anggota"}
+                </button>
               </div>
+              {rosterEditorOpen && (
+                <div className="mt-4 rounded-xl border border-[#0B2C6B]/15 bg-white p-3">
+                  <label className="block text-xs font-bold text-[#0B2C6B]">Nama anggota baru
+                    <textarea value={memberNames} onChange={(event) => { setMemberNames(event.target.value); setNewCaptainName(""); }} rows={5} placeholder={"Satu nama per baris\nContoh: Ayu Lestari\nBima Pratama"} className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-normal outline-none focus:border-[#D9A441]" />
+                  </label>
+                  {!captain && parsedNames.length > 0 && (
+                    <label className="mt-3 block text-xs font-bold text-[#0B2C6B]">Kapten tim
+                      <select value={newCaptainName} onChange={(event) => setNewCaptainName(event.target.value)} className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-normal outline-none focus:border-[#D9A441]"><option value="">Pilih kapten</option>{parsedNames.map((name) => <option key={name} value={name}>{name}</option>)}</select>
+                    </label>
+                  )}
+                  {rosterError && <p className="mt-3 text-xs text-red-700" role="alert">{rosterError}</p>}
+                  <button type="button" onClick={() => void saveMembers()} disabled={savingMembers || parsedNames.length === 0 || (!captain && !newCaptainName)} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-xs font-bold text-white disabled:opacity-40">
+                    {savingMembers ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Simpan {parsedNames.length || ""} anggota
+                  </button>
+                </div>
+              )}
               {members.length === 0 ? (
                 <p className="mt-4 rounded-xl bg-white p-3 text-sm text-slate-500">Daftar anggota belum diisi.</p>
               ) : (
@@ -149,8 +204,8 @@ export function TbosTeamReports({ teams, roster }: { teams: TeamScoreSummary[]; 
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-[#D9A441]" />
                 <div>
-                  <h3 id="dimension-bars-title" className="text-sm font-bold text-[#0B2C6B]">Delapan dimensi perilaku</h3>
-                  <p className="mt-0.5 text-xs text-slate-500">Skor rata-rata setiap dimensi pada skala 1-5.</p>
+                  <h3 id="dimension-bars-title" className="text-sm font-bold text-[#0B2C6B]">Kompetensi perilaku</h3>
+                  <p className="mt-0.5 text-xs text-slate-500">Skor rata-rata setiap kompetensi terpilih pada skala 1-5.</p>
                 </div>
               </div>
               <div className="mt-5 space-y-4">

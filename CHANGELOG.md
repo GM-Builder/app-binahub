@@ -5,6 +5,20 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-09-20
+
+### Added — T-BOS program competencies and field readiness
+
+- Menambahkan pengaturan 1–8 kompetensi pada level program yang otomatis terkunci setelah observasi pertama.
+- Menambahkan pengisian roster tim secara massal oleh admin agar fasilitator dapat langsung melakukan observasi.
+- Menambahkan pilihan fokus Live Score antara klasemen utama dan countdown utama dengan klasemen ringkas.
+
+### Changed — Default T-BOS observation flow
+
+- Menyederhanakan perjalanan fasilitator menjadi pilih program, pilih tim, lalu nilai kompetensi tanpa memilih misi.
+- Mengganti istilah pengguna “Dimensi” menjadi “Kompetensi” dan membatasi dashboard, hasil, serta laporan pada kompetensi program yang dipilih.
+- Mempertahankan konteks misi hanya sebagai identitas teknis internal untuk kompatibilitas data historis.
+
 ### Changed — T-BOS projection and brand consistency
 
 - Live Score menggunakan daftar klasemen tanpa grid kartu, dengan hierarki nama tim, skor, dan countdown; menghapus dekorasi gunung, glow, avatar dekoratif, dan navigasi semu.

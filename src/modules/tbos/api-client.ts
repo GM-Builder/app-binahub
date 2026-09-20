@@ -299,6 +299,46 @@ export interface TbosProgram {
   status: string;
 }
 
+export interface TbosProgramCompetency {
+  id: string;
+  code: string;
+  name: string;
+  question: string;
+  order_index: number;
+}
+
+export interface TbosProgramCompetencyConfig {
+  dimensions: TbosProgramCompetency[];
+  selectedDimensionIds: string[];
+  locked: boolean;
+  lockedAt: string | null;
+  observationCount: number;
+}
+
+export async function fetchProgramCompetencies(programId: string): Promise<TbosProgramCompetencyConfig> {
+  const res = await apiFetch(`/api/tbos/program-competencies?programId=${encodeURIComponent(programId)}`, { cache: "no-store" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.error || "Gagal memuat kompetensi program.");
+  return {
+    dimensions: data.dimensions || [],
+    selectedDimensionIds: data.selectedDimensionIds || [],
+    locked: Boolean(data.locked),
+    lockedAt: data.lockedAt || null,
+    observationCount: Number(data.observationCount || 0),
+  };
+}
+
+export async function updateProgramCompetencies(programId: string, dimensionIds: string[]) {
+  const res = await apiFetch("/api/tbos/program-competencies", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ programId, dimensionIds }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.error || "Gagal menyimpan kompetensi program.");
+  return { success: true as const };
+}
+
 const TBOS_PROGRAM_CACHE_TTL_MS = 5 * 60 * 1000;
 const tbosProgramCache = new Map<"tbos" | "lep", { expiresAt: number; data?: TbosProgram[]; pending?: Promise<TbosProgram[]> }>();
 
@@ -536,6 +576,7 @@ export async function fetchDashboardRawData(programId: string): Promise<{
   teams: { id: string; name: string; batch: string; batchId: string | null; batchName: string }[];
   observations: TbosObservation[];
   viewerStats: TbosViewerStats | null;
+  selectedDimensionCodes: DimensionCode[];
 }> {
   if (!programId) throw new Error("Pilih program terlebih dahulu.");
   const res = await apiFetch(`/api/tbos/dashboard?programId=${encodeURIComponent(programId)}`);
@@ -548,6 +589,7 @@ export async function fetchDashboardRawData(programId: string): Promise<{
     teams: data.teams || [],
     observations: data.observations || [],
     viewerStats: data.viewerStats || null,
+    selectedDimensionCodes: data.selectedDimensionCodes || [],
   };
 }
 
@@ -557,6 +599,8 @@ export async function fetchDashboardRawData(programId: string): Promise<{
 export async function fetchParticipantTeamInfo(programId: string): Promise<{
   teamName: string;
   batch: string;
+  observationsCompleted: number;
+  /** @deprecated Compatibility alias from the previous mission-based flow. */
   missionsCompleted: number;
   overallScore: number | null;
   strongestDimension: string | null;

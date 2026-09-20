@@ -18,6 +18,7 @@ export default function PesertaDashboardPage() {
   const [teamInfo, setTeamInfo] = useState<{
     teamName: string;
     batch: string;
+    observationsCompleted: number;
     missionsCompleted: number;
     overallScore: number | null;
     strongestDimension: string | null;
@@ -102,7 +103,7 @@ export default function PesertaDashboardPage() {
           <h2 className="text-xl font-bold mb-2">Halo, {userName}!</h2>
           <p className="text-sm text-white/70">
             Selamat datang di dashboard peserta BinaHub. Di sini Anda dapat melihat hasil observasi
-            perilaku tim Anda selama menjalankan mission.
+            perilaku tim Anda selama menjalankan aktivitas program.
           </p>
         </div>
 
@@ -123,8 +124,8 @@ export default function PesertaDashboardPage() {
             />
             <StatCard
               icon={<Eye className="w-4 h-4 text-[#0B2C6B]" />}
-              label="Mission Selesai"
-              value={String(teamInfo.missionsCompleted)}
+              label="Observasi Selesai"
+              value={String(teamInfo.observationsCompleted ?? teamInfo.missionsCompleted)}
             />
             <StatCard
               icon={<Users className="w-4 h-4 text-[#0B2C6B]" />}
@@ -152,8 +153,8 @@ export default function PesertaDashboardPage() {
             </div>
             <p className="text-xs text-[#4A4C54] leading-relaxed">
               Team Behavioral Observation System (T-BOS) adalah sistem penilaian perilaku tim
-              yang digunakan fasilitator untuk mengobservasi tim selama mission simulasi.
-              Skor diukur dari 8 dimensi perilaku dengan skala 1-5.
+              yang digunakan fasilitator untuk mengobservasi tim selama aktivitas program.
+              Skor diukur dari kompetensi yang ditetapkan admin dengan skala 1-5.
             </p>
           </div>
 
@@ -162,17 +163,12 @@ export default function PesertaDashboardPage() {
               <div className="w-8 h-8 rounded-lg bg-[#D9A441]/[0.1] flex items-center justify-center">
                 <Trophy className="w-4 h-4 text-[#D9A441]" />
               </div>
-              <h3 className="text-sm font-semibold text-[#0B2C6B]">8 Dimensi Perilaku</h3>
+              <h3 className="text-sm font-semibold text-[#0B2C6B]">Kompetensi Program</h3>
             </div>
-            <div className="grid grid-cols-2 gap-1.5 text-xs text-[#4A4C54]">
-              <p>• Goal Alignment</p>
-              <p>• Communication</p>
-              <p>• Data-Based Decision</p>
-              <p>• Execution Discipline</p>
-              <p>• Accountability</p>
-              <p>• Adaptability</p>
-              <p>• Collaboration</p>
-              <p>• Org. Ownership</p>
+            <div className="space-y-2 text-xs text-[#4A4C54]">
+              <p>Program dapat mengukur 1–8 kompetensi sesuai kebutuhan perusahaan.</p>
+              <p><span className="font-semibold text-[#0B2C6B]">Kekuatan:</span> {teamInfo?.strongestDimension || "Belum cukup data"}</p>
+              <p><span className="font-semibold text-[#0B2C6B]">Area pengembangan:</span> {teamInfo?.weakestDimension || "Belum cukup data"}</p>
             </div>
           </div>
         </div>

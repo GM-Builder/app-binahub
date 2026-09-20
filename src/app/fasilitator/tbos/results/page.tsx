@@ -56,7 +56,7 @@ function TbosResultsContent() {
       const result = await fetchDashboardRawData(selectedProgramId);
       setOwnObservationCount(result.viewerStats?.ownObservationCount ?? 0);
       setAssignedMissionCount(result.viewerStats?.assignedMissionCount ?? null);
-      setData(generateDashboardData(result.teams, result.observations));
+      setData(generateDashboardData(result.teams, result.observations, result.selectedDimensionCodes));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Gagal memuat hasil T-BOS.");
     } finally {
@@ -120,10 +120,10 @@ function TbosResultsContent() {
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#F3CE7A]">
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Hasil pada pos Anda{assignedMissionCount !== null ? ` • ${assignedMissionCount} misi` : ""}
+              Hasil observasi Anda{assignedMissionCount !== null ? " • kompetensi program" : ""}
             </div>
             <h2 id="results-overview-title" className="mt-4 text-2xl font-bold tracking-[-0.03em] sm:text-3xl">Potret perilaku tim Anda</h2>
-            <p className="mt-2 max-w-lg text-sm leading-6 text-blue-100/75">Ringkasan ini dihitung dari observasi pada misi yang menjadi tanggung jawab Anda. Semua tim yang telah melewati pos tersebut ditampilkan dan data di halaman ini hanya dapat dilihat.</p>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-blue-100/75">Ringkasan ini dihitung dari observasi kompetensi yang menjadi tanggung jawab Anda. Semua tim yang sudah dinilai ditampilkan dan data di halaman ini hanya dapat dilihat.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.07] px-4 py-3 backdrop-blur-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-100/60">Rata-rata tim</p>
@@ -135,7 +135,7 @@ function TbosResultsContent() {
       <section aria-labelledby="key-metrics-title">
         <h2 id="key-metrics-title" className="sr-only">Metrik utama</h2>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Observasi tersimpan" value={ownObservationCount} detail="Pada pos Anda" icon={<ClipboardCheck />} />
+          <StatCard label="Observasi tersimpan" value={ownObservationCount} detail="Penilaian Anda" icon={<ClipboardCheck />} />
           <StatCard label="Total tim" value={data.teams.length} detail="Tim dalam cakupan" icon={<UsersRound />} />
           <StatCard label="Tim berskor" value={scoredTeams.length} detail={`Dari ${data.teams.length} tim`} icon={<BarChart3 />} />
           <StatCard label="Skor rata-rata" value={formatScore(averageScore)} detail="Skala maksimal 5" icon={<Target />} />
@@ -145,8 +145,8 @@ function TbosResultsContent() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
         <TeamRanking teams={rankedTeams} />
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
-          <DimensionPanel title="Kekuatan utama" description="Dimensi dengan skor agregat tertinggi." dimensions={data.executiveSummary.topStrengths} icon={<TrendingUp />} tone="strength" />
-          <DimensionPanel title="Area pengembangan" description="Dimensi yang perlu menjadi fokus berikutnya." dimensions={data.executiveSummary.developmentAreas} icon={<Target />} tone="development" />
+          <DimensionPanel title="Kekuatan utama" description="Kompetensi dengan skor agregat tertinggi." dimensions={data.executiveSummary.topStrengths} icon={<TrendingUp />} tone="strength" />
+          <DimensionPanel title="Area pengembangan" description="Kompetensi yang perlu menjadi fokus berikutnya." dimensions={data.executiveSummary.developmentAreas} icon={<Target />} tone="development" />
         </div>
       </div>
 

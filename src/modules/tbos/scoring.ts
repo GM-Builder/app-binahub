@@ -54,7 +54,8 @@ export function calculateDimensionScore(
  */
 export function calculateTbosScore(
   observations: TbosObservation[],
-  missionCode: MissionCode
+  missionCode: MissionCode,
+  selectedDimensions?: ReadonlySet<DimensionCode>,
 ): { score: number | null; dimensionScores: DimensionScore[] } {
   const mission = MISSIONS[missionCode];
   if (!mission) return { score: null, dimensionScores: [] };
@@ -64,6 +65,7 @@ export function calculateTbosScore(
   const validScores: number[] = [];
 
   for (const dimCode of mission.dimensions) {
+    if (selectedDimensions && !selectedDimensions.has(dimCode)) continue;
     const { score, count } = calculateDimensionScore(missionObservations, dimCode);
     const dim = DIMENSIONS[dimCode];
     dimensionScores.push({
@@ -110,12 +112,14 @@ export function calculateTeamScoreSummary(
   teamId: string,
   teamName: string,
   batch: string,
-  observations: TbosObservation[]
+  observations: TbosObservation[],
+  selectedDimensions: DimensionCode[] = Object.keys(DIMENSIONS) as DimensionCode[]
 ): TeamScoreSummary {
   const teamObservations = observations.filter((o) => o.teamId === teamId);
 
   const missionScores: MissionScore[] = [];
   const missionsObserved = new Set<MissionCode>();
+  const selectedDimensionSet = new Set(selectedDimensions);
 
   for (const obs of teamObservations) {
     missionsObserved.add(obs.missionCode);
@@ -124,7 +128,7 @@ export function calculateTeamScoreSummary(
   for (const missionCode of missionsObserved) {
     const mission = MISSIONS[missionCode];
     if (!mission) continue; // skip unknown mission codes from DB
-    const { score, dimensionScores } = calculateTbosScore(teamObservations, missionCode);
+    const { score, dimensionScores } = calculateTbosScore(teamObservations, missionCode, selectedDimensionSet);
     missionScores.push({
       missionCode,
       missionName: mission.name,
@@ -136,8 +140,7 @@ export function calculateTeamScoreSummary(
   const overallTeamScore = calculateOverallTeamScore(missionScores);
 
   // Calculate dimension averages across all observations for this team
-  const allDimensions = Object.keys(DIMENSIONS) as DimensionCode[];
-  const dimensionAverages: DimensionScore[] = allDimensions.map((dimCode) => {
+  const dimensionAverages: DimensionScore[] = selectedDimensions.map((dimCode) => {
     const { score, count } = calculateDimensionScore(teamObservations, dimCode);
     return {
       dimensionCode: dimCode,
@@ -172,10 +175,9 @@ export function calculateTeamScoreSummary(
  * Supports N batches dynamically.
  */
 export function calculateBatchComparisons(
-  observations: TbosObservation[]
+  observations: TbosObservation[],
+  selectedDimensions: DimensionCode[] = Object.keys(DIMENSIONS) as DimensionCode[]
 ): BatchComparison[] {
-  const allDimensions = Object.keys(DIMENSIONS) as DimensionCode[];
-
   const batchNames = new Set<string>();
   for (const obs of observations) {
     if (obs.status !== "draft" && obs.batch) {
@@ -184,7 +186,7 @@ export function calculateBatchComparisons(
   }
   const sortedBatchNames = [...batchNames].sort();
 
-  return allDimensions.map((dimCode) => {
+  return selectedDimensions.map((dimCode) => {
     const dim = DIMENSIONS[dimCode];
 
     const batchAverages = sortedBatchNames.map((batchName) => {
@@ -270,13 +272,14 @@ export function calculateExecutiveSummary(
  */
 export function generateDashboardData(
   teams: { id: string; name: string; batch: string }[],
-  observations: TbosObservation[]
+  observations: TbosObservation[],
+  selectedDimensions: DimensionCode[] = Object.keys(DIMENSIONS) as DimensionCode[]
 ): TbosDashboardData {
   const teamSummaries = teams.map((team) =>
-    calculateTeamScoreSummary(team.id, team.name, team.batch, observations)
+    calculateTeamScoreSummary(team.id, team.name, team.batch, observations, selectedDimensions)
   );
 
-  const batchComparisons = calculateBatchComparisons(observations);
+  const batchComparisons = calculateBatchComparisons(observations, selectedDimensions);
   const executiveSummary = calculateExecutiveSummary(teamSummaries);
 
   return {
@@ -322,26 +325,26 @@ export function generateExecutiveNarrative(
     topStrengths.length > 0
       ? (topStrengths.reduce((a, b) => a + (b.score || 0), 0) / topStrengths.length).toFixed(1)
       : "0";
-  const overview = `Berdasarkan ${totalObservations} observasi perilaku dari ${totalTeams} tim, rata-rata skor dimensi perilaku organisasi berada pada level ${avgScore} dari skala 5.0. ${topStrengths.length > 0 ? `Dimensi perilaku yang paling menonjol adalah ${topStrengths[0].dimensionName} dengan skor rata-rata ${topStrengths[0].score?.toFixed(1)}.` : ""} ${developmentAreas.length > 0 ? `Sementara itu, area yang paling membutuhkan perhatian adalah ${developmentAreas[0].dimensionName} dengan skor ${developmentAreas[0].score?.toFixed(1)}.` : ""}`;
+  const overview = `Berdasarkan ${totalObservations} observasi perilaku dari ${totalTeams} tim, rata-rata skor kompetensi perilaku organisasi berada pada level ${avgScore} dari skala 5.0. ${topStrengths.length > 0 ? `Kompetensi yang paling menonjol adalah ${topStrengths[0].dimensionName} dengan skor rata-rata ${topStrengths[0].score?.toFixed(1)}.` : ""} ${developmentAreas.length > 0 ? `Sementara itu, kompetensi yang paling membutuhkan perhatian adalah ${developmentAreas[0].dimensionName} dengan skor ${developmentAreas[0].score?.toFixed(1)}.` : ""}`;
 
   // Strengths narratives
   const strengthsNarrative = topStrengths.map((dim, i) => {
     const level = getScoreLevelLabel(dim.score);
-    return `${i + 1}. ${dim.dimensionName} — Skor ${dim.score?.toFixed(1)}/5 (${level}). Dimensi ini menunjukkan ${level === "Sangat Baik" ? "kapabilitas tim yang sudah solid dan menjadi pondasi kekuatan organisasi" : level === "Baik" ? "praktik yang sudah berjalan baik dengan ruang pengembangan minimal" : "praktik yang sudah berfungsi namun dapat ditingkatkan lebih lanjut"}. Terobservasi pada ${dim.observationCount} observasi.`;
+    return `${i + 1}. ${dim.dimensionName} — Skor ${dim.score?.toFixed(1)}/5 (${level}). Kompetensi ini menunjukkan ${level === "Sangat Baik" ? "kapabilitas tim yang sudah solid dan menjadi pondasi kekuatan organisasi" : level === "Baik" ? "praktik yang sudah berjalan baik dengan ruang pengembangan minimal" : "praktik yang sudah berfungsi namun dapat ditingkatkan lebih lanjut"}. Terobservasi pada ${dim.observationCount} observasi.`;
   });
 
   // Development narratives
   const developmentNarrative = developmentAreas.map((dim, i) => {
     const level = getScoreLevelLabel(dim.score);
     const batchInfo = getBatchInsight(dim.dimensionCode, batchComparisons);
-    return `${i + 1}. ${dim.dimensionName} — Skor ${dim.score?.toFixed(1)}/5 (${level}). ${level === "Perlu Perhatian" ? "Dimensi ini menunjukkan kesenjangan signifikan dalam perilaku tim dan perlu menjadi prioritas pengembangan." : level === "Cukup" ? "Dimensi ini berada pada level fungsional namun belum konsisten di seluruh tim." : "Dimensi ini sudah berjalan tetapi masih ada ruang untuk peningkatan."} ${batchInfo} Terobservasi pada ${dim.observationCount} observasi.`;
+    return `${i + 1}. ${dim.dimensionName} — Skor ${dim.score?.toFixed(1)}/5 (${level}). ${level === "Perlu Perhatian" ? "Kompetensi ini menunjukkan kesenjangan signifikan dalam perilaku tim dan perlu menjadi prioritas pengembangan." : level === "Cukup" ? "Kompetensi ini berada pada level fungsional namun belum konsisten di seluruh tim." : "Kompetensi ini sudah berjalan tetapi masih ada ruang untuk peningkatan."} ${batchInfo} Terobservasi pada ${dim.observationCount} observasi.`;
   });
 
   // Recommendation
   const topDev = developmentAreas[0];
   const topStr = topStrengths[0];
   const recommendation = topDev
-    ? `Rekomendasi prioritas: Fokus program pengembangan pada ${topDev.dimensionName} sebagai area dengan skor terendah (${topDev.score?.toFixed(1)}), dengan memanfaatkan kekuatan existing di ${topStr?.dimensionName || "dimensi unggulan"} sebagai model praktik terbaik untuk di-replikasi.`
+    ? `Rekomendasi prioritas: Fokus program pengembangan pada ${topDev.dimensionName} sebagai area dengan skor terendah (${topDev.score?.toFixed(1)}), dengan memanfaatkan kekuatan existing di ${topStr?.dimensionName || "kompetensi unggulan"} sebagai model praktik terbaik untuk di-replikasi.`
     : "Belum cukup data untuk memberikan rekomendasi spesifik. Lanjutkan observasi untuk mendapatkan insight yang lebih komprehensif.";
 
   return { overview, strengthsNarrative, developmentNarrative, recommendation };

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
-import { MISSIONS, DIMENSIONS } from "@/modules/tbos/config";
+import { DIMENSIONS } from "@/modules/tbos/config";
 import { formatScore } from "@/modules/tbos/scoring";
 import { getScoreColor } from "@/modules/tbos/score-color";
 import { Trophy, TrendingUp, TrendingDown, Filter, RotateCcw } from "lucide-react";
@@ -11,22 +11,10 @@ interface Props {
   teams: TeamScoreSummary[];
 }
 
-type MissionFilter = keyof typeof MISSIONS | "";
 type DimensionFilter = keyof typeof DIMENSIONS | "";
 
 export function TbosRanking({ teams }: Props) {
-  const [missionFilter, setMissionFilter] = useState<MissionFilter>("");
   const [dimensionFilter, setDimensionFilter] = useState<DimensionFilter>("");
-
-  const availableMissions = useMemo(() => {
-    const seen = new Set<string>();
-    for (const team of teams) {
-      for (const mission of team.missionScores) {
-        if (mission.tbosScore !== null) seen.add(mission.missionCode);
-      }
-    }
-    return [...seen];
-  }, [teams]);
 
   const availableDimensions = useMemo(() => {
     const seen = new Set<string>();
@@ -39,24 +27,12 @@ export function TbosRanking({ teams }: Props) {
   }, [teams]);
 
   const resolutionLabel = useMemo(() => {
-    if (missionFilter && dimensionFilter) {
-      return `${MISSIONS[missionFilter]?.name || missionFilter} • ${DIMENSIONS[dimensionFilter]?.name || dimensionFilter}`;
-    }
-    if (missionFilter) return `Skor Misi ${MISSIONS[missionFilter]?.name || missionFilter}`;
-    if (dimensionFilter) return `Skor Dimensi ${DIMENSIONS[dimensionFilter]?.name || dimensionFilter}`;
+    if (dimensionFilter) return `Skor Kompetensi ${DIMENSIONS[dimensionFilter]?.name || dimensionFilter}`;
     return "Skor Keseluruhan Tim";
-  }, [missionFilter, dimensionFilter]);
+  }, [dimensionFilter]);
 
   const sorted = useMemo(() => {
     const resolve = (team: TeamScoreSummary): number | null => {
-      if (missionFilter && dimensionFilter) {
-        const mission = team.missionScores.find((m) => m.missionCode === missionFilter);
-        const dim = mission?.dimensionScores.find((d) => d.dimensionCode === dimensionFilter);
-        return dim?.score ?? null;
-      }
-      if (missionFilter) {
-        return team.missionScores.find((m) => m.missionCode === missionFilter)?.tbosScore ?? null;
-      }
       if (dimensionFilter) {
         return team.dimensionAverages.find((d) => d.dimensionCode === dimensionFilter)?.score ?? null;
       }
@@ -69,7 +45,7 @@ export function TbosRanking({ teams }: Props) {
         const bScore = b.score ?? -1;
         return bScore - aScore;
       });
-  }, [teams, missionFilter, dimensionFilter]);
+  }, [teams, dimensionFilter]);
 
   const hasAnyScore = sorted.some((entry) => entry.score !== null);
 
@@ -84,29 +60,13 @@ export function TbosRanking({ teams }: Props) {
           </span>
 
           <label className="flex items-center gap-2 text-xs text-[#4A4C54]">
-            <span className="font-semibold">Misi</span>
-            <select
-              value={missionFilter}
-              onChange={(event) => setMissionFilter(event.target.value as MissionFilter)}
-              className="min-h-10 rounded-xl border border-slate-200 bg-[#F7F6F2] px-2.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441] focus:bg-white"
-            >
-              <option value="">Semua Misi (Keseluruhan)</option>
-              {availableMissions.map((code) => (
-                <option key={code} value={code}>
-                  {MISSIONS[code as keyof typeof MISSIONS]?.name || code}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex items-center gap-2 text-xs text-[#4A4C54]">
-            <span className="font-semibold">Dimensi</span>
+            <span className="font-semibold">Kompetensi</span>
             <select
               value={dimensionFilter}
               onChange={(event) => setDimensionFilter(event.target.value as DimensionFilter)}
               className="min-h-10 rounded-xl border border-slate-200 bg-[#F7F6F2] px-2.5 text-xs font-medium text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441] focus:bg-white"
             >
-              <option value="">Semua Dimensi (Gabungan)</option>
+              <option value="">Semua Kompetensi (Gabungan)</option>
               {availableDimensions.map((code) => (
                 <option key={code} value={code}>
                   {DIMENSIONS[code as keyof typeof DIMENSIONS]?.name || code}
@@ -115,11 +75,10 @@ export function TbosRanking({ teams }: Props) {
             </select>
           </label>
 
-          {(missionFilter !== "" || dimensionFilter !== "") && (
+          {dimensionFilter !== "" && (
             <button
               type="button"
               onClick={() => {
-                setMissionFilter("");
                 setDimensionFilter("");
               }}
               className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B]"

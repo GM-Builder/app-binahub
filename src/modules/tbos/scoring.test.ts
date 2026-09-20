@@ -85,4 +85,25 @@ describe("T-BOS scoring", () => {
     expect(result.missionScores.find((mission) => mission.missionCode === "goldsmith_precision")?.tbosScore).toBe(1);
     expect(result.overallTeamScore).toBe(3);
   });
+
+  it("returns only competencies selected for the program", () => {
+    const result = calculateTeamScoreSummary(
+      "team-1",
+      "Tim Satu",
+      "Batch 1",
+      [observation({ scores: [
+        { dimensionCode: "goal_alignment", dimensionName: "Goal Alignment", levelValue: 1, levelLabel: "Reactive" },
+        { dimensionCode: "communication", dimensionName: "Communication", levelValue: 3, levelLabel: "Functional" },
+        { dimensionCode: "adaptability", dimensionName: "Adaptability", levelValue: 5, levelLabel: "Exemplary" },
+      ] })],
+      ["communication", "adaptability"],
+    );
+
+    expect(result.dimensionAverages.map((item) => item.dimensionCode)).toEqual([
+      "communication",
+      "adaptability",
+    ]);
+    expect(result.strongestDimension?.dimensionCode).toBe("adaptability");
+    expect(result.overallTeamScore).toBe(4);
+  });
 });

@@ -27,14 +27,12 @@ import { apiFetch } from "@/lib/api-fetch";
 import type { LevelValue } from "@/modules/tbos";
 import {
   fetchMissions,
-  fetchFacilitatorMissionSelection,
   fetchTeams,
   flushQueuedObservations,
   getQueuedObservations,
   loadDraft,
   queueObservation,
   saveDraft,
-  selectFacilitatorMission,
   submitObservation,
   type TbosDbMission,
   type TbosDbTeam,
@@ -98,8 +96,6 @@ function TbosObservationContent() {
   const [queuedCount, setQueuedCount] = useState(0);
   const [savedLocally, setSavedLocally] = useState(false);
   const [canEditRoster, setCanEditRoster] = useState(false);
-  const [missionSelectionTarget, setMissionSelectionTarget] = useState<TbosDbMission | null>(null);
-  const [lockingMission, setLockingMission] = useState(false);
   const [memberDeleteTarget, setMemberDeleteTarget] = useState<TeamMember | null>(null);
   const [deletingMember, setDeletingMember] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,16 +118,13 @@ function TbosObservationContent() {
         return;
       }
 
-      const [selection, missionList, teamList] = await Promise.all([
-        fetchFacilitatorMissionSelection(selectedProgramId),
+      const [missionList, teamList] = await Promise.all([
         fetchMissions(selectedProgramId),
         fetchTeams(selectedProgramId),
       ]);
       setMissions(missionList);
       setTeams(teamList);
-      setSelectedMission(selection.selectedMissionId
-        ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
-        : null);
+      setSelectedMission(missionList[0] || null);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat penugasan.");
@@ -171,7 +164,7 @@ function TbosObservationContent() {
 
   const prepareTeam = async (team: TbosDbTeam) => {
     if (team.observation) {
-      toast.info(`${team.name} sudah selesai dinilai pada pos ini.`);
+      toast.info(`${team.name} sudah selesai dinilai pada program ini.`);
       return;
     }
     setSelectedTeam(team);
@@ -426,30 +419,6 @@ function TbosObservationContent() {
     }
   };
 
-  const confirmMissionSelection = async () => {
-    if (!missionSelectionTarget || !selectedProgramId) return;
-    setLockingMission(true);
-    setError("");
-    const result = await selectFacilitatorMission({
-      programId: selectedProgramId,
-      missionId: missionSelectionTarget.id,
-    });
-    if (!result.success) {
-      setError(result.error || "Gagal mengunci pilihan pos.");
-      setLockingMission(false);
-      setMissionSelectionTarget(null);
-      return;
-    }
-    const lockedMission = missionSelectionTarget;
-    setSelectedMission(lockedMission);
-    setMissions([lockedMission]);
-    setMissionSelectionTarget(null);
-    setLockingMission(false);
-    toast.success(`Pos ${lockedMission.name} berhasil dikunci sampai program selesai.`);
-    const teamList = await fetchTeams(selectedProgramId).catch(() => null);
-    if (teamList) setTeams(teamList);
-  };
-
   const handleProgramChange = useCallback((programId: string) => {
     setSelectedProgramId(programId);
     setSelectedMission(null);
@@ -466,16 +435,13 @@ function TbosObservationContent() {
     setRefreshing(true);
     setError("");
     try {
-      const [selection, missionList, teamList] = await Promise.all([
-        fetchFacilitatorMissionSelection(selectedProgramId),
+      const [missionList, teamList] = await Promise.all([
         fetchMissions(selectedProgramId),
         fetchTeams(selectedProgramId),
       ]);
       setMissions(missionList);
       setTeams(teamList);
-      setSelectedMission(selection.selectedMissionId
-        ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
-        : null);
+      setSelectedMission(missionList[0] || null);
       toast.success("Data penugasan berhasil diperbarui.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memperbarui penugasan.");
@@ -488,16 +454,13 @@ function TbosObservationContent() {
     setLoading(true);
     setError("");
     try {
-      const [selection, missionList, teamList] = await Promise.all([
-        fetchFacilitatorMissionSelection(selectedProgramId),
+      const [missionList, teamList] = await Promise.all([
         fetchMissions(selectedProgramId),
         fetchTeams(selectedProgramId),
       ]);
       setMissions(missionList);
       setTeams(teamList);
-      setSelectedMission(selection.selectedMissionId
-        ? missionList.find((mission) => mission.id === selection.selectedMissionId) || null
-        : null);
+      setSelectedMission(missionList[0] || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memperbarui penugasan.");
     } finally {
@@ -547,7 +510,7 @@ function TbosObservationContent() {
                 {savedLocally ? "Tersimpan sementara" : "Observasi selesai"}
               </h1>
               <p className="relative mt-2 text-sm text-white/70">
-                {savedLocally ? "Data akan dikirim otomatis saat perangkat kembali online." : "Penilaian tim pada pos Anda telah tersimpan."}
+                {savedLocally ? "Data akan dikirim otomatis saat perangkat kembali online." : "Penilaian kompetensi tim telah tersimpan."}
               </p>
             </div>
             <div className="space-y-5 p-6">
@@ -588,8 +551,8 @@ function TbosObservationContent() {
                   <h1 className="truncate text-lg font-bold tracking-[-0.02em] text-[#0B2C6B]">Halo, {userName || "Fasilitator"}</h1>
                   <p className="mt-0.5 truncate text-xs text-slate-500">
                     {selectedMission
-                      ? <>Pos: <span className="font-semibold text-[#0B2C6B]">{selectedMission.name}</span> · {selectedMission.dimensions.length} dimensi dinilai</>
-                      : "Pos observasi belum dipilih"}
+                      ? <>{selectedMission.dimensions.length} kompetensi program siap dinilai</>
+                      : "Konfigurasi kompetensi belum tersedia"}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold" aria-label={isOnline ? "Perangkat online" : "Perangkat offline"}>
@@ -598,29 +561,12 @@ function TbosObservationContent() {
                   {queuedCount > 0 && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{queuedCount} antrean</span>}
                 </div>
               </div>
-              {selectedMission && (
-                <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
-                  Pos Anda untuk program ini. Pilih misi berbeda tidak tersedia sampai program selesai.
-                </p>
-              )}
+              {selectedMission && <p className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">Pilih tim, periksa kehadiran, lalu nilai kompetensi yang telah ditetapkan admin.</p>}
             </div>
           </section>
 
           <section className="mx-auto mt-3 max-w-6xl space-y-3 px-4" aria-labelledby="assigned-teams-title">
-            {!selectedMission && missions.length > 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#9A7B2F]">Pilih pos observasi</p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {missions.map((mission) => (
-                    <button key={mission.id} type="button" onClick={() => setMissionSelectionTarget(mission)} className={`group min-h-16 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-[#D9A441] hover:bg-[#FFF9EA] ${FOCUS}`}>
-                      <span className="block text-sm font-bold text-primary-dark">{mission.name}</span>
-                      <span className="mt-1 block text-xs text-slate-500">{mission.dimensions.length} dimensi penilaian</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {missions.length === 0 && <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada misi T-BOS yang tersedia. Hubungi admin program.</p>}
+            {missions.length === 0 && <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-800">Kompetensi T-BOS untuk program ini belum diatur. Hubungi admin program.</p>}
 
             {selectedMission && (
               <div className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Kemajuan observasi tim">
@@ -812,7 +758,7 @@ function TbosObservationContent() {
                 {addingMember ? "Menyimpan anggota..." : `Simpan ${Array.from(new Set(newMemberName.split(/\r?\n|,/).map((name) => name.trim()).filter(Boolean))).length || "semua"} anggota`}
               </button>
             </form> : (
-              <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Daftar anggota sudah tersedia. Tandai kehadiran, lalu lanjutkan penilaian pada pos Anda.</p>
+              <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">Daftar anggota sudah tersedia. Tandai kehadiran, lalu lanjutkan penilaian kompetensi.</p>
             )}
            </section>
 
@@ -832,7 +778,7 @@ function TbosObservationContent() {
         >
           <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-900">
             <strong className="block">Cara cepat menilai</strong>
-            Pilih satu nilai yang paling cocok. Pilihan tersimpan otomatis, kartu akan diringkas, lalu layar bergerak ke dimensi berikutnya.
+            Pilih satu nilai yang paling cocok. Pilihan tersimpan otomatis, kartu akan diringkas, lalu layar bergerak ke kompetensi berikutnya.
           </div>
           <div className="space-y-3">
             {selectedMission.dimensions.map((dimension, index) => {
@@ -933,7 +879,7 @@ function TbosObservationContent() {
             <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Contoh: Tim mengubah strategi setelah twist." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
           </section>
 
-          <BottomAction disabled={!allDimensionsScored} onClick={() => setStep("review")} label={allDimensionsScored ? "Tinjau Observasi" : `${scoredCount}/${selectedMission.dimensions.length} Dimensi Dinilai`} />
+          <BottomAction disabled={!allDimensionsScored} onClick={() => setStep("review")} label={allDimensionsScored ? "Tinjau Observasi" : `${scoredCount}/${selectedMission.dimensions.length} Kompetensi Dinilai`} />
         </WorkflowPage>
       )}
 
@@ -972,7 +918,7 @@ function TbosObservationContent() {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="review-scores-title">
-            <h2 id="review-scores-title" className="text-lg font-bold text-primary-dark">Skor dimensi</h2>
+            <h2 id="review-scores-title" className="text-lg font-bold text-primary-dark">Skor kompetensi</h2>
             <dl className="mt-4 divide-y divide-slate-100">
               {selectedMission.dimensions.map((dimension) => {
                 const value = scores[dimension.id];
@@ -1025,17 +971,6 @@ function TbosObservationContent() {
         variant="danger"
         loading={deletingMember}
       />
-      <ConfirmDialog
-        open={!!missionSelectionTarget}
-        onClose={() => { if (!lockingMission) setMissionSelectionTarget(null); }}
-        onConfirm={confirmMissionSelection}
-        title="Kunci Pos T-BOS?"
-        description={missionSelectionTarget
-          ? `Anda akan bertugas di ${missionSelectionTarget.name} dan menilai seluruh tim pada pos ini. Pilihan tidak dapat diubah sampai program selesai.`
-          : undefined}
-        confirmLabel="Ya, Kunci Pos"
-        loading={lockingMission}
-      />
     </Shell>
   );
 }
@@ -1074,11 +1009,11 @@ function WorkflowPage({ stepIndex, title, subtitle, backLabel, onBack, status, p
           <h1 className="mt-1 text-xl font-bold tracking-[-0.025em] text-[#0B2C6B] sm:text-2xl">{title}</h1>
           <p className="mt-1 text-sm leading-relaxed text-slate-500">{subtitle}</p>
           {progress && (
-            <div className="mt-3" aria-label={`Kemajuan penilaian ${progress.current} dari ${progress.total} dimensi`}>
+            <div className="mt-3" aria-label={`Kemajuan penilaian ${progress.current} dari ${progress.total} kompetensi`}>
               <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                 <div className="h-full rounded-full bg-gradient-to-r from-[#0B2C6B] to-[#D9A441] transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${(progress.current / Math.max(progress.total, 1)) * 100}%` }} />
               </div>
-              <p className="mt-1.5 text-xs font-semibold text-slate-500" aria-live="polite">{progress.current} dari {progress.total} dimensi dinilai</p>
+              <p className="mt-1.5 text-xs font-semibold text-slate-500" aria-live="polite">{progress.current} dari {progress.total} kompetensi dinilai</p>
             </div>
           )}
           <WorkflowProgress current={stepIndex} />

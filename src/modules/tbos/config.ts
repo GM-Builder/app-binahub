@@ -2,6 +2,7 @@
 // Source: T-BOS_PRD_v1.md §4.2 — Mapping Mission vs Behavioral Dimensions
 
 export type MissionCode =
+  | "program_observation"
   | "lost_detonator"
   | "goldsmith_precision"
   | "ore_extraction"
@@ -43,6 +44,21 @@ export interface DimensionLevelConfig {
 }
 
 export const MISSIONS: Record<MissionCode, MissionConfig> = {
+  program_observation: {
+    code: "program_observation",
+    name: "Observasi Kompetensi Program",
+    description: "Konteks teknis observasi untuk kompetensi yang dipilih pada program.",
+    dimensions: [
+      "goal_alignment",
+      "communication",
+      "data_based_decision",
+      "execution_discipline",
+      "accountability",
+      "adaptability",
+      "collaboration",
+      "org_ownership",
+    ],
+  },
   lost_detonator: {
     code: "lost_detonator",
     name: "Lost Detonator Mission",
@@ -81,13 +97,13 @@ export const DIMENSIONS: Record<DimensionCode, DimensionConfig> = {
   goal_alignment: {
     code: "goal_alignment",
     name: "Goal Alignment",
-    question: "Bagaimana tim memulai mission?",
+    question: "Bagaimana tim memulai aktivitas?",
     orderIndex: 1,
   },
   communication: {
     code: "communication",
     name: "Communication",
-    question: "Bagaimana komunikasi berlangsung selama mission?",
+    question: "Bagaimana komunikasi berlangsung selama aktivitas?",
     orderIndex: 2,
   },
   data_based_decision: {

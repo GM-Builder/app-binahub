@@ -55,6 +55,7 @@ type LiveScoreResponse = {
     remainingSeconds: number;
     endsAt: string | null;
     scoresVisible: boolean;
+    displayFocus: "leaderboard" | "countdown";
     updatedAt: string | null;
   };
   summary: {
@@ -75,15 +76,17 @@ type SetupForm = {
   durationMinutes: number;
   batchId: string;
   scoresVisible: boolean;
+  displayFocus: "leaderboard" | "countdown";
 };
 
 const PAGE_SIZE = 5;
 const emptySetup: SetupForm = {
   title: "T-BOS Live Score",
-  encouragementMessage: "Tetap kompak. Setiap misi adalah kesempatan untuk naik bersama.",
+  encouragementMessage: "Tetap kompak. Setiap kompetensi adalah kesempatan untuk tumbuh bersama.",
   durationMinutes: 20,
   batchId: "",
   scoresVisible: true,
+  displayFocus: "leaderboard",
 };
 
 function statusLabel(status: LiveScoreResponse["session"]["status"]) {
@@ -138,6 +141,7 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
           durationMinutes: Math.max(1, Math.round(next.session.durationSeconds / 60)),
           batchId: next.activeBatchId || initialBatchId,
           scoresVisible: next.session.scoresVisible,
+          displayFocus: next.session.displayFocus,
         });
         setControlsOpen(!next.session.configured);
         setSetupInitialized(true);
@@ -193,6 +197,9 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
       if (payload.action === "set_scores_visible" && typeof payload.scoresVisible === "boolean") {
         setSetup((current) => ({ ...current, scoresVisible: payload.scoresVisible as boolean }));
       }
+      if (payload.action === "set_display_focus" && (payload.displayFocus === "leaderboard" || payload.displayFocus === "countdown")) {
+        setSetup((current) => ({ ...current, displayFocus: payload.displayFocus as SetupForm["displayFocus"] }));
+      }
       await load(true);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "Kontrol live score gagal disimpan.");
@@ -207,6 +214,7 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
       encouragementMessage: setup.encouragementMessage,
       durationMinutes: Number(setup.durationMinutes),
       scoresVisible: setup.scoresVisible,
+      displayFocus: setup.displayFocus,
     });
   };
 
@@ -238,22 +246,44 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
         </div>
       </header>
 
-      <section className={styles.heading} aria-labelledby="live-score-heading">
-        <div className={styles.title}>
-          <p>KLASEMEN TIM</p>
-          <h1 id="live-score-heading">{data.session.title}</h1>
-          <span>{data.session.scoresVisible ? "Setiap misi, satu langkah maju bersama." : "Skor disembunyikan oleh fasilitator."}</span>
-        </div>
-        <div className={styles.timer} data-urgent={urgent || finished}>
-          <span>{finished ? "Waktu habis" : "Sisa waktu sesi"}</span>
-          <strong>{formatCountdown(remainingSeconds)}</strong>
-          <span>{finished ? "Terima kasih atas kerja sama tim." : statusLabel(data.session.status)}</span>
-        </div>
-      </section>
+      {data.session.displayFocus === "countdown" ? (
+        <section className={styles.countdownStage} aria-labelledby="live-score-heading">
+          <div className={styles.countdownHero} data-urgent={urgent || finished}>
+            <p>{finished ? "WAKTU HABIS" : "SISA WAKTU SESI"}</p>
+            <h1 id="live-score-heading">{formatCountdown(remainingSeconds)}</h1>
+            <strong>{data.session.title}</strong>
+            <span>{finished ? "Terima kasih atas kerja sama tim." : data.session.encouragementMessage}</span>
+          </div>
+          <aside className={styles.miniLeaderboard} aria-label="Klasemen ringkas">
+            <div><span>KLASEMEN</span><strong>TOP {Math.min(3, displayedTeams.length)}</strong></div>
+            <ol>
+              {displayedTeams.slice(0, 3).map((team) => (
+                <li key={team.teamId}>
+                  <b>{data.session.scoresVisible ? team.rank || "—" : "•"}</b>
+                  <span>{team.teamName}</span>
+                  <strong>{data.session.scoresVisible && team.score !== null ? team.score.toFixed(1) : "—"}</strong>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        </section>
+      ) : <>
+        <section className={styles.heading} aria-labelledby="live-score-heading">
+          <div className={styles.title}>
+            <p>KLASEMEN TIM</p>
+            <h1 id="live-score-heading">{data.session.title}</h1>
+            <span>{data.session.scoresVisible ? "Setiap kompetensi, satu langkah tumbuh bersama." : "Skor disembunyikan oleh fasilitator."}</span>
+          </div>
+          <div className={styles.timer} data-urgent={urgent || finished}>
+            <span>{finished ? "Waktu habis" : "Sisa waktu sesi"}</span>
+            <strong>{formatCountdown(remainingSeconds)}</strong>
+            <span>{finished ? "Terima kasih atas kerja sama tim." : statusLabel(data.session.status)}</span>
+          </div>
+        </section>
 
-      <section className={styles.leaderboard} aria-label="Peringkat tim">
+        <section className={styles.leaderboard} aria-label="Peringkat tim">
         <div className={styles.columns} aria-hidden="true">
-          <span className={styles.rank}>#</span><span className={styles.team}>Tim</span><span className={styles.progress}>Misi dinilai</span><span className={styles.score}>Skor / 5</span>
+          <span className={styles.rank}>#</span><span className={styles.team}>Tim</span><span className={styles.progress}>Observasi</span><span className={styles.score}>Skor / 5</span>
         </div>
         <ol className={styles.rows}>
           {pageTeams.map((team) => {
@@ -268,7 +298,7 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
                 </div>
                 <div className={styles.progress}>
                   <span><strong>{team.completedMissions}</strong> / {missionsPerTeam}</span>
-                  <div className={styles.track} role="img" aria-label={`${team.completedMissions} dari ${missionsPerTeam} misi dinilai`}><i style={{ width: `${Math.min(100, team.completedMissions / missionsPerTeam * 100)}%` }} /></div>
+                  <div className={styles.track} role="img" aria-label={`${team.completedMissions} dari ${missionsPerTeam} observasi selesai`}><i style={{ width: `${Math.min(100, team.completedMissions / missionsPerTeam * 100)}%` }} /></div>
                 </div>
                 <div className={styles.score}>
                   <strong>{data.session.scoresVisible && team.score !== null ? team.score.toFixed(1) : "—"}</strong>
@@ -279,10 +309,11 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
           })}
         </ol>
         {!pageTeams.length && <div className={styles.empty}><UsersRound size={32} /><h2>Belum ada tim</h2><p>Pilih batch melalui kontrol layar.</p></div>}
-      </section>
+        </section>
+      </>}
 
       <footer className={styles.footer}>
-        <div><strong>{data.summary.scoredTeamCount}/{data.summary.teamCount} tim berskor</strong><span>{data.summary.coverageAligned ? "Cakupan penilaian seimbang" : "Peringkat sementara · cakupan misi belum setara"}</span></div>
+        <div><strong>{data.summary.scoredTeamCount}/{data.summary.teamCount} tim berskor</strong><span>{data.summary.coverageAligned ? "Cakupan penilaian seimbang" : "Peringkat sementara · cakupan observasi belum setara"}</span></div>
         <p>{data.session.encouragementMessage}</p>
         {pageCount > 1 && <div className={styles.pagination}><button onClick={() => setPageIndex((visiblePageIndex - 1 + pageCount) % pageCount)} aria-label="Halaman tim sebelumnya"><ChevronLeft size={18} /></button><span>{visiblePageIndex + 1} / {pageCount}</span><button onClick={() => setPageIndex((visiblePageIndex + 1) % pageCount)} aria-label="Halaman tim berikutnya"><ChevronRight size={18} /></button></div>}
       </footer>
@@ -300,6 +331,7 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
               <label className="block text-xs font-bold text-slate-600">Durasi (menit)<input type="number" min={1} max={240} value={setup.durationMinutes} onChange={(event) => setSetup((current) => ({ ...current, durationMinutes: Number(event.target.value) }))} className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-amber-500" /></label>
               <label className="block text-xs font-bold text-slate-600">Pesan penyemangat<textarea value={setup.encouragementMessage} maxLength={180} rows={3} onChange={(event) => setSetup((current) => ({ ...current, encouragementMessage: event.target.value }))} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm leading-5 outline-none focus:border-amber-500" /></label>
               <label className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-[#0B2C6B]"><span>Tampilkan skor saat dimulai</span><input type="checkbox" checked={setup.scoresVisible} onChange={(event) => setSetup((current) => ({ ...current, scoresVisible: event.target.checked }))} className="h-5 w-5 accent-[#0B2C6B]" /></label>
+              <fieldset><legend className="text-xs font-bold text-slate-600">Fokus utama layar</legend><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={() => setSetup((current) => ({ ...current, displayFocus: "leaderboard" }))} className={`min-h-11 rounded-xl border text-sm font-bold ${setup.displayFocus === "leaderboard" ? "border-[#0B2C6B] bg-[#0B2C6B] text-white" : "border-slate-200 bg-white text-[#0B2C6B]"}`}>Klasemen</button><button type="button" onClick={() => setSetup((current) => ({ ...current, displayFocus: "countdown" }))} className={`min-h-11 rounded-xl border text-sm font-bold ${setup.displayFocus === "countdown" ? "border-[#0B2C6B] bg-[#0B2C6B] text-white" : "border-slate-200 bg-white text-[#0B2C6B]"}`}>Countdown</button></div></fieldset>
               <button type="button" disabled={saving || data.session.status === "running" || setup.title.trim().length < 3 || setup.encouragementMessage.trim().length < 3 || setup.durationMinutes < 1 || setup.durationMinutes > 240} onClick={() => void saveSetup()} className="min-h-11 w-full rounded-xl bg-[#0B2C6B] px-4 text-sm font-bold text-white disabled:opacity-40">Simpan konfigurasi</button>
             </div>
 
@@ -314,6 +346,7 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
             </div>
 
             <div className="mt-4 grid gap-2">
+              <div className="grid grid-cols-2 gap-2"><button type="button" disabled={saving || !data.session.configured || data.session.displayFocus === "leaderboard"} onClick={() => void sendAction({ action: "set_display_focus", displayFocus: "leaderboard" })} className="min-h-11 rounded-xl border border-slate-200 bg-white text-sm font-bold text-[#0B2C6B] disabled:bg-[#0B2C6B] disabled:text-white disabled:opacity-100">Fokus klasemen</button><button type="button" disabled={saving || !data.session.configured || data.session.displayFocus === "countdown"} onClick={() => void sendAction({ action: "set_display_focus", displayFocus: "countdown" })} className="min-h-11 rounded-xl border border-slate-200 bg-white text-sm font-bold text-[#0B2C6B] disabled:bg-[#0B2C6B] disabled:text-white disabled:opacity-100">Fokus countdown</button></div>
               <button type="button" disabled={saving || !data.session.configured} onClick={() => void sendAction({ action: "set_scores_visible", scoresVisible: !data.session.scoresVisible })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-[#0B2C6B] disabled:opacity-40">{data.session.scoresVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}{data.session.scoresVisible ? "Sembunyikan skor" : "Tampilkan skor"}</button>
               <button type="button" onClick={() => void enterFullscreen()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-bold text-[#0B2C6B]"><Expand className="h-4 w-4" /> Masuk layar penuh</button>
               <a href="/admin/tbos" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-bold text-slate-500"><ArrowLeft className="h-4 w-4" /> Kembali ke Dashboard T-BOS</a>

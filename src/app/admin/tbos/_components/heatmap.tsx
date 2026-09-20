@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
-import { DIMENSION_LIST } from "@/modules/tbos";
 
 interface Props {
   teams: TeamScoreSummary[];
@@ -29,6 +28,10 @@ export function TbosHeatmap({ teams }: Props) {
     if (batchFilter === "all") return teams;
     return teams.filter((t) => t.batch === batchFilter);
   }, [teams, batchFilter]);
+  const competencies = useMemo(() => teams[0]?.dimensionAverages.map((item) => ({
+    code: item.dimensionCode,
+    name: item.dimensionName,
+  })) || [], [teams]);
 
   if (teams.length === 0) {
     return (
@@ -46,7 +49,7 @@ export function TbosHeatmap({ teams }: Props) {
           <h3 className="text-base font-bold text-[#0B2C6B]">
             Heatmap Perbandingan Tim
           </h3>
-          <p className="text-xs text-[#4A4C54]/70 mt-0.5">{filteredTeams.length} tim · {DIMENSION_LIST.length} dimensi</p>
+          <p className="text-xs text-[#4A4C54]/70 mt-0.5">{filteredTeams.length} tim · {competencies.length} kompetensi</p>
         </div>
         {batches.length > 2 && (
           <div className="flex gap-1 rounded-xl bg-[#0B2C6B]/[0.04] p-1">
@@ -75,7 +78,7 @@ export function TbosHeatmap({ teams }: Props) {
               <th className="sticky left-0 z-10 bg-white text-left py-3 px-3 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide whitespace-nowrap rounded-lg">
                 Tim
               </th>
-              {DIMENSION_LIST.map((dim) => (
+              {competencies.map((dim) => (
                 <th
                   key={dim.code}
                   className="text-center py-2.5 px-1.5 text-xs font-semibold text-[#0B2C6B]/70 uppercase"
@@ -107,7 +110,7 @@ export function TbosHeatmap({ teams }: Props) {
                       <p className="text-[10px] text-[#4A4C54]/60 font-medium">{team.batch}</p>
                     </div>
                   </td>
-                  {DIMENSION_LIST.map((dim) => {
+                  {competencies.map((dim) => {
                     const dimScore = team.dimensionAverages.find((d) => d.dimensionCode === dim.code);
                     const score = dimScore?.score ?? null;
                     return (

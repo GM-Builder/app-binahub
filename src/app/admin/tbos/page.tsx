@@ -37,12 +37,14 @@ import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam } from "@/modules/tbos/api-client";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
 import type { TbosDashboardData, TbosObservation } from "@/modules/tbos/types";
+import type { DimensionCode } from "@/modules/tbos/config";
 import { TbosRadarChart } from "./_components/radar-chart";
 import { TbosHeatmap } from "./_components/heatmap";
 import { TbosRanking } from "./_components/ranking";
 import { TbosBatchComparison } from "./_components/batch-comparison";
 import { TbosExecutiveSummary } from "./_components/executive-summary";
 import { TbosTeamReports } from "./_components/team-reports";
+import { TbosProgramCompetencySettings } from "./_components/program-competency-settings";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 
 type Tab = "overview" | "summary" | "teams" | "radar" | "heatmap" | "ranking" | "batch";
@@ -81,6 +83,7 @@ function TbosDashboardContent() {
   const [activePrograms, setActivePrograms] = useState<Array<{ id: string; code: string | null; title: string }>>([]);
   const [selectedProgramId, setSelectedProgramId] = useState("");
   const [selectedBatch, setSelectedBatch] = useState("");
+  const [selectedDimensionCodes, setSelectedDimensionCodes] = useState<DimensionCode[]>([]);
 
   // Create Team Modal State
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
@@ -159,12 +162,13 @@ function TbosDashboardContent() {
     setError("");
     try {
       const { fetchDashboardRawData, fetchTeams, fetchBatches } = await import("@/modules/tbos/api-client");
-      const [{ teams, observations }, roster] = await Promise.all([
+      const [{ teams, observations, selectedDimensionCodes: configuredDimensions }, roster] = await Promise.all([
         fetchDashboardRawData(selectedProgramId),
         fetchTeams(selectedProgramId),
       ]);
-      const computed = generateDashboardData(teams, observations);
+      const computed = generateDashboardData(teams, observations, configuredDimensions);
       setDashboardData(computed);
+      setSelectedDimensionCodes(configuredDimensions);
       setTeamRoster(roster);
       setObservations(observations);
 
@@ -194,11 +198,11 @@ function TbosDashboardContent() {
     const roster = teamRoster.filter((team) => team.batch === selectedBatch);
     const filteredObservations = observations.filter((obs) => obs.batch === selectedBatch);
     return {
-      data: generateDashboardData(roster, filteredObservations),
+      data: generateDashboardData(roster, filteredObservations, selectedDimensionCodes),
       roster,
       observations: filteredObservations,
     };
-  }, [dashboardData, teamRoster, observations, selectedBatch]);
+  }, [dashboardData, teamRoster, observations, selectedBatch, selectedDimensionCodes]);
 
   useEffect(() => {
     let active = true;
@@ -484,6 +488,8 @@ function TbosDashboardContent() {
           </div>
         </div>
 
+        {selectedProgramId && <div className="mt-4"><TbosProgramCompetencySettings programId={selectedProgramId} onSaved={() => void fetchData("refresh")} /></div>}
+
         <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0B2C6B]/[0.05]">
           <Users className="w-7 h-7 text-[#0B2C6B]/40" aria-hidden="true" />
@@ -659,6 +665,8 @@ function TbosDashboardContent() {
         </div>
       </div>
 
+      {selectedProgramId && <div className="mt-4"><TbosProgramCompetencySettings programId={selectedProgramId} onSaved={() => void fetchData("refresh")} /></div>}
+
       {/* Band 3 — Stats strip + Band 4 — Tabs & export */}
       {viewData && viewData.data.teams.length > 0 ? (
         <>
@@ -666,7 +674,7 @@ function TbosDashboardContent() {
             <MetricTile label="Total tim" value={String(viewData.data.teams.length)} />
             <MetricTile label="Total observasi" value={String(summary?.totalObservations || 0)} />
             <MetricTile
-              label="Dimensi terobservasi"
+              label="Kompetensi terobservasi"
               value={String(viewData.data.batchComparisons.filter((b) => b.batchAverages.some((ba) => ba.avg !== null)).length)}
               suffix={`/ ${viewData.data.batchComparisons.length}`}
             />
@@ -723,7 +731,7 @@ function TbosDashboardContent() {
           <div className="mt-5">
             {activeTab === "overview" && <OverviewTab data={viewData.data} roster={viewData.roster} observations={viewData.observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
             {activeTab === "summary" && <TbosExecutiveSummary data={viewData.data} />}
-            {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} />}
+            {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} onRosterUpdated={() => void fetchData("refresh")} />}
             {activeTab === "radar" && <TbosRadarChart teams={viewData.data.teams} />}
             {activeTab === "heatmap" && <TbosHeatmap teams={viewData.data.teams} />}
             {activeTab === "ranking" && <TbosRanking teams={viewData.data.teams} />}
@@ -1069,7 +1077,7 @@ function ExportButtons({ programId, batch }: { programId: string; batch?: string
         ? observations.filter((o) => o.batch === batch)
         : observations;
 
-      const headers = ["ID", "Tim", "Batch", "Misi", "Fasilitator", "Tanggal Observasi", "Status", "Catatan"];
+      const headers = ["ID", "Tim", "Batch", "Observasi", "Fasilitator", "Tanggal Observasi", "Status", "Catatan"];
       const csvCell = (value: string) => {
         const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
         return `"${safeValue.replace(/"/g, '""')}"`;
@@ -1276,7 +1284,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
             <TrendingUp className="w-4 h-4 text-emerald-600" />
             <div>
               <h3 className="text-sm font-bold text-[#0B2C6B]">Kekuatan Utama</h3>
-              <p className="text-[10px] text-[#4A4C54]/60">Dimensi perilaku terbaik</p>
+              <p className="text-[10px] text-[#4A4C54]/60">Kompetensi perilaku terbaik</p>
             </div>
           </div>
           <div className="space-y-3.5">
@@ -1461,7 +1469,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
 
                            <div className="mt-4">
                              <p className="text-xs font-bold uppercase tracking-wider text-[#0B2C6B]">
-                               Riwayat observasi per misi
+                               Riwayat observasi
                              </p>
                              {observationsByTeam(team.teamId).length === 0 ? (
                                <p className="mt-2 text-sm text-slate-400 italic">Belum ada observasi untuk tim ini.</p>
@@ -1470,7 +1478,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                                  <table className="w-full text-xs bg-white">
                                    <thead>
                                      <tr className="bg-[#F7F6F2]">
-                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Misi</th>
+                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Sesi</th>
                                        <th className="text-center py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Skor</th>
                                        <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Fasilitator</th>
                                        <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Tanggal</th>

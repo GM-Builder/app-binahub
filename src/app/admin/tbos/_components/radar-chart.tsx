@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from "@/components/lazy-charts";
 import type { TeamScoreSummary } from "@/modules/tbos/types";
 import { getScoreColor } from "@/modules/tbos/score-color";
-import { DIMENSION_LIST } from "@/modules/tbos";
 
 interface Props {
   teams: TeamScoreSummary[];
@@ -35,8 +34,12 @@ export function TbosRadarChart({ teams }: Props) {
   const selectedTeam = filteredTeams.find((t) => t.teamId === selectedTeamId) || filteredTeams[0];
   const teamA = filteredTeams.find((t) => t.teamId === teamAId) || filteredTeams[0];
   const teamB = filteredTeams.find((t) => t.teamId === teamBId) || filteredTeams[1] || filteredTeams[0];
+  const competencies = useMemo(() => teams[0]?.dimensionAverages.map((item) => ({
+    code: item.dimensionCode,
+    name: item.dimensionName,
+  })) || [], [teams]);
 
-  const singleChartData = DIMENSION_LIST.map((dim) => {
+  const singleChartData = competencies.map((dim) => {
     const dimScore = selectedTeam?.dimensionAverages.find(
       (d) => d.dimensionCode === dim.code
     );
@@ -51,7 +54,7 @@ export function TbosRadarChart({ teams }: Props) {
     };
   });
 
-  const versusChartData = DIMENSION_LIST.map((dim) => {
+  const versusChartData = competencies.map((dim) => {
     const dimA = teamA?.dimensionAverages.find((d) => d.dimensionCode === dim.code);
     const dimB = teamB?.dimensionAverages.find((d) => d.dimensionCode === dim.code);
     const hasA = dimA?.score !== null && dimA?.score !== undefined;
@@ -399,7 +402,7 @@ export function TbosRadarChart({ teams }: Props) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-[#F7F6F2]">
-                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Dimensi</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-semibold text-[#0B2C6B] uppercase tracking-wide">Kompetensi</th>
                       <th className="text-center py-2.5 px-3 text-xs font-semibold uppercase tracking-wide" style={{ color: TEAM_A_COLOR }}>
                         {teamA.teamName}
                       </th>
@@ -410,7 +413,7 @@ export function TbosRadarChart({ teams }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {DIMENSION_LIST.map((dim, idx) => {
+                    {competencies.map((dim, idx) => {
                       const dimA = teamA?.dimensionAverages.find((d) => d.dimensionCode === dim.code);
                       const dimB = teamB?.dimensionAverages.find((d) => d.dimensionCode === dim.code);
                       const scoreA = dimA?.score ?? null;
