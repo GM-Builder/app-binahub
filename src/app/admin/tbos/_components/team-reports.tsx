@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, Crown, Download, Loader2, Plus, Search, UsersRound, X } from "lucide-react";
+import { BarChart3, CalendarClock, Crown, Download, Loader2, MessageSquareText, Plus, Search, UserRound, UsersRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
 import { apiFetch } from "@/lib/api-fetch";
 import type { TbosDbTeam } from "@/modules/tbos/api-client";
-import type { TeamScoreSummary } from "@/modules/tbos/types";
+import type { TbosObservation, TeamScoreSummary } from "@/modules/tbos/types";
 
 const DIMENSION_COLORS: Record<string, { bar: string; dot: string }> = {
   goal_alignment: { bar: "bg-blue-600", dot: "bg-blue-600" },
@@ -19,7 +19,7 @@ const DIMENSION_COLORS: Record<string, { bar: string; dot: string }> = {
   org_ownership: { bar: "bg-indigo-500", dot: "bg-indigo-500" },
 };
 
-export function TbosTeamReports({ teams, roster, onRosterUpdated }: { teams: TeamScoreSummary[]; roster: TbosDbTeam[]; onRosterUpdated?: () => void }) {
+export function TbosTeamReports({ teams, roster, observations, onRosterUpdated }: { teams: TeamScoreSummary[]; roster: TbosDbTeam[]; observations: TbosObservation[]; onRosterUpdated?: () => void }) {
   const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.teamId || "");
   const [query, setQuery] = useState("");
   const [downloading, setDownloading] = useState(false);
@@ -42,6 +42,14 @@ export function TbosTeamReports({ teams, roster, onRosterUpdated }: { teams: Tea
   const rosterTeam = roster.find((item) => item.id === team?.teamId);
   const members = rosterTeam?.members || [];
   const captain = members.find((member) => member.is_captain);
+  const teamObservations = useMemo(
+    () => observations
+      .filter((observation) => observation.teamId === team?.teamId)
+      .sort((a, b) => new Date(b.observedAt).getTime() - new Date(a.observedAt).getTime()),
+    [observations, team?.teamId],
+  );
+  const facilitatorCount = new Set(teamObservations.map((observation) => observation.profileId)).size;
+  const noteCount = teamObservations.filter((observation) => observation.notes?.trim()).length;
   const parsedNames = Array.from(new Set(memberNames.split(/\r?\n|,/).map((name) => name.replace(/\s+/g, " ").trim()).filter(Boolean)));
 
   const saveMembers = async () => {
@@ -227,10 +235,94 @@ export function TbosTeamReports({ teams, roster, onRosterUpdated }: { teams: Tea
               </div>
             </section>
           </div>
+
+          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5" aria-labelledby="facilitator-evidence-title">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B2C6B] text-white" aria-hidden="true">
+                  <MessageSquareText className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 id="facilitator-evidence-title" className="text-sm font-bold text-[#0B2C6B]">Evidence & catatan fasilitator</h3>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500">Jejak penilaian tim, siapa yang menilai, kapan dinilai, dan catatan yang diberikan.</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600">{teamObservations.length} observasi</span>
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600">{facilitatorCount} fasilitator</span>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800">{noteCount} catatan</span>
+              </div>
+            </div>
+
+            {teamObservations.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white p-5 text-center">
+                <MessageSquareText className="mx-auto h-6 w-6 text-slate-300" aria-hidden="true" />
+                <p className="mt-2 text-sm font-semibold text-slate-600">Belum ada evidence penilaian untuk tim ini.</p>
+              </div>
+            ) : (
+              <ol className="mt-4 max-h-[38rem] space-y-3 overflow-y-auto pr-1" aria-label={`Riwayat penilaian ${team.teamName}`}>
+                {teamObservations.map((observation) => (
+                  <li key={observation.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_4px_14px_rgba(8,29,66,0.04)]">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0B2C6B]/[0.07] text-[#0B2C6B]" aria-hidden="true">
+                          <UserRound className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-[#0B2C6B]">{observation.facilitatorName || "Fasilitator tidak tercatat"}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">{observation.missionName}</p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
+                          <CalendarClock className="h-3 w-3" aria-hidden="true" /> {formatObservationDate(observation.observedAt)}
+                        </span>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${observation.status === "locked" ? "bg-slate-200 text-slate-700" : observation.status === "submitted" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                          {observation.status === "locked" ? "Terkunci" : observation.status === "submitted" ? "Tersimpan" : "Draf"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-amber-100 bg-[#FFF9EA] px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">Catatan fasilitator</p>
+                      <p className={`mt-1 whitespace-pre-wrap text-sm leading-6 ${observation.notes?.trim() ? "text-slate-700" : "italic text-slate-400"}`}>
+                        {observation.notes?.trim() || "Tidak ada catatan tambahan pada observasi ini."}
+                      </p>
+                    </div>
+
+                    <div className="mt-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Evidence skor kompetensi</p>
+                      <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Skor kompetensi oleh ${observation.facilitatorName || "fasilitator"}`}>
+                        {observation.scores.map((score) => (
+                          <li key={`${observation.id}-${score.dimensionCode}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
+                            <span className="font-medium">{score.dimensionName}</span>
+                            <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-[#0B2C6B] px-1.5 font-extrabold text-white">{score.levelValue}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
         </div>
       </section>
     </div>
   );
+}
+
+function formatObservationDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Waktu tidak tercatat";
+  return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date).replace(" pukul", " ·");
 }
 
 function ReportStat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {

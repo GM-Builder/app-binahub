@@ -731,7 +731,7 @@ function TbosDashboardContent() {
           <div className="mt-5">
             {activeTab === "overview" && <OverviewTab data={viewData.data} roster={viewData.roster} observations={viewData.observations} onEditTeam={handleEditTeam} onDeleteTeam={handleDeleteTeam} />}
             {activeTab === "summary" && <TbosExecutiveSummary data={viewData.data} />}
-            {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} onRosterUpdated={() => void fetchData("refresh")} />}
+            {activeTab === "teams" && <TbosTeamReports teams={viewData.data.teams} roster={viewData.roster} observations={viewData.observations} onRosterUpdated={() => void fetchData("refresh")} />}
             {activeTab === "radar" && <TbosRadarChart teams={viewData.data.teams} />}
             {activeTab === "heatmap" && <TbosHeatmap teams={viewData.data.teams} />}
             {activeTab === "ranking" && <TbosRanking teams={viewData.data.teams} />}
