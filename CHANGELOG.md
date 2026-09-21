@@ -5,6 +5,23 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-09-21
+
+### Added — T-BOS facilitator visibility
+
+- Menampilkan daftar fasilitator yang sudah ditugaskan pada program aktif di dashboard admin T-BOS, lengkap dengan jumlah dan tanggal penugasan.
+- Memungkinkan admin menambah penugasan langsung dari panel yang sama, termasuk saat program belum memiliki data tim.
+
+### Improved — User and role management
+
+- Menambahkan ringkasan jumlah pengguna per peran, filter peran, pencarian nama/email, identitas pengguna yang lebih jelas, dan indikator penyimpanan tanpa refresh halaman.
+- Menyeragamkan nilai peserta dari `participant` menjadi `peserta` sesuai kontrak API sambil tetap membaca data legacy secara aman.
+
+### Fixed — Authentication callback
+
+- Memindahkan pertukaran kode PKCE Google ke route server agar code verifier hanya dikonsumsi sekali dan tidak lagi menampilkan error autentikasi sementara sebelum login berhasil.
+- Menambahkan pengujian callback untuk keberhasilan, code yang hilang, dan pertukaran code yang gagal.
+
 ## [0.24.0] - 2026-09-20
 
 ### Added — T-BOS program competencies and field readiness

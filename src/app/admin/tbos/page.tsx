@@ -26,6 +26,7 @@ import {
   MoreHorizontal,
   MonitorUp,
   Settings2,
+  UserCheck,
 } from "lucide-react";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AdminShell } from "@/components/admin-shell";
@@ -35,7 +36,7 @@ import { downloadBlob } from "@/lib/download";
 import { apiFetch } from "@/lib/api-fetch";
 import { generateDashboardData } from "@/modules/tbos/scoring";
 import { createTeam } from "@/modules/tbos/api-client";
-import type { TbosDbTeam } from "@/modules/tbos/api-client";
+import type { TbosDbTeam, TbosFacilitatorMission } from "@/modules/tbos/api-client";
 import type { TbosDashboardData, TbosObservation } from "@/modules/tbos/types";
 import type { DimensionCode } from "@/modules/tbos/config";
 import { TbosRadarChart } from "./_components/radar-chart";
@@ -113,6 +114,8 @@ function TbosDashboardContent() {
   const [assigning, setAssigning] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
+  const [facilitatorAssignments, setFacilitatorAssignments] = useState<TbosFacilitatorMission[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "batch" | "team"; id: string; name: string } | null>(null);
   const [deletingItem, setDeletingItem] = useState(false);
   const [editingTeam, setEditingTeam] = useState<{ id: string; name: string } | null>(null);
@@ -192,6 +195,22 @@ function TbosDashboardContent() {
     setSelectedProgramId(programId);
   };
 
+  const loadFacilitatorAssignments = useCallback(async () => {
+    if (!selectedProgramId) {
+      setFacilitatorAssignments([]);
+      return;
+    }
+    setAssignmentsLoading(true);
+    try {
+      const { fetchFacilitatorMissions } = await import("@/modules/tbos/api-client");
+      setFacilitatorAssignments(await fetchFacilitatorMissions(selectedProgramId));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal memuat penugasan fasilitator.");
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  }, [selectedProgramId]);
+
   const viewData = useMemo(() => {
     if (!dashboardData) return null;
     if (!selectedBatch) return { data: dashboardData, roster: teamRoster, observations };
@@ -222,6 +241,10 @@ function TbosDashboardContent() {
       void Promise.resolve().then(() => setSelectedProgramId(activePrograms[0].id));
     }
   }, [activePrograms, selectedProgramId]);
+
+  useEffect(() => {
+    void Promise.resolve().then(loadFacilitatorAssignments);
+  }, [loadFacilitatorAssignments]);
 
   const openAssignmentModal = async () => {
     setAssignmentError("");
@@ -259,6 +282,7 @@ function TbosDashboardContent() {
       });
       if (!result.success) throw new Error(result.error || "Gagal menugaskan fasilitator.");
       setAssignmentSuccess(true);
+      await loadFacilitatorAssignments();
     } catch (err) {
       setAssignmentError(err instanceof Error ? err.message : "Gagal menugaskan fasilitator.");
     } finally {
@@ -490,6 +514,14 @@ function TbosDashboardContent() {
 
         {selectedProgramId && <div className="mt-4"><TbosProgramCompetencySettings programId={selectedProgramId} onSaved={() => void fetchData("refresh")} /></div>}
 
+        {selectedProgramId && (
+          <FacilitatorAssignmentsPanel
+            assignments={facilitatorAssignments}
+            loading={assignmentsLoading}
+            onAssign={() => void openAssignmentModal()}
+          />
+        )}
+
         <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_8px_24px_rgba(8,29,66,0.05)]">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0B2C6B]/[0.05]">
           <Users className="w-7 h-7 text-[#0B2C6B]/40" aria-hidden="true" />
@@ -545,6 +577,22 @@ function TbosDashboardContent() {
             success={createTeamSuccess}
             onSubmit={handleCreateTeam}
             onClose={() => setShowAddTeamModal(false)}
+          />
+        )}
+        {showAssignmentModal && (
+          <AssignmentModal
+            facilitators={facilitators}
+            facilitatorId={selectedFacilitatorId}
+            setFacilitatorId={(value) => {
+              setSelectedFacilitatorId(value);
+              setAssignmentError("");
+              setAssignmentSuccess(false);
+            }}
+            loading={assigning}
+            error={assignmentError}
+            success={assignmentSuccess}
+            onSubmit={handleAssignFacilitator}
+            onClose={() => setShowAssignmentModal(false)}
           />
         )}
         {deleteConfirmation}
@@ -666,6 +714,14 @@ function TbosDashboardContent() {
       </div>
 
       {selectedProgramId && <div className="mt-4"><TbosProgramCompetencySettings programId={selectedProgramId} onSaved={() => void fetchData("refresh")} /></div>}
+
+      {selectedProgramId && (
+        <FacilitatorAssignmentsPanel
+          assignments={facilitatorAssignments}
+          loading={assignmentsLoading}
+          onAssign={() => void openAssignmentModal()}
+        />
+      )}
 
       {/* Band 3 — Stats strip + Band 4 — Tabs & export */}
       {viewData && viewData.data.teams.length > 0 ? (
@@ -830,6 +886,54 @@ function TbosDashboardContent() {
       {deleteConfirmation}
     </div>
   );
+}
+
+function FacilitatorAssignmentsPanel({ assignments, loading, onAssign }: { assignments: TbosFacilitatorMission[]; loading: boolean; onAssign: () => void }) {
+  return (
+    <section className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-[0_12px_36px_-32px_rgba(8,29,66,0.35)]" aria-labelledby="assigned-facilitators-title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#EEF3FA] text-[#0B2C6B]"><UserCheck className="h-4.5 w-4.5" aria-hidden="true" /></span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 id="assigned-facilitators-title" className="text-sm font-bold text-[#0B2C6B]">Fasilitator program</h2>
+              <span className="rounded-full bg-[#0B2C6B]/[0.06] px-2 py-0.5 text-[10px] font-bold text-[#0B2C6B]">{assignments.length}</span>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500">Daftar orang yang sudah memiliki akses observasi pada program ini.</p>
+          </div>
+        </div>
+        <button type="button" onClick={onAssign} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 bg-white px-3 text-xs font-semibold text-[#0B2C6B] transition-colors hover:bg-[#F5F7FA]">
+          <UserPlus className="h-3.5 w-3.5" aria-hidden="true" /> Tambah fasilitator
+        </button>
+      </div>
+      {loading ? (
+        <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F7F9FC] px-3 py-3 text-xs text-slate-500" role="status"><Loader2 className="h-4 w-4 animate-spin" /> Memuat penugasan…</div>
+      ) : assignments.length === 0 ? (
+        <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-[#FAFBFC] px-4 py-4 text-sm text-slate-500">Belum ada fasilitator yang ditugaskan.</div>
+      ) : (
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {assignments.map((assignment) => (
+            <li key={assignment.profileId} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-[#FAFBFC] px-3 py-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#0B2C6B] text-xs font-bold uppercase text-white">{facilitatorInitials(assignment.facilitatorName)}</span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[#0B2C6B]">{assignment.facilitatorName}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500">Ditugaskan {formatAssignmentDate(assignment.assignedAt)}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function facilitatorInitials(name: string) {
+  return (name || "F").trim().split(/\s+/).slice(0, 2).map((part) => part[0] || "").join("");
+}
+
+function formatAssignmentDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function TeamNameModal({
