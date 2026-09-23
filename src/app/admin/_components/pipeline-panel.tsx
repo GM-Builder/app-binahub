@@ -174,16 +174,16 @@ function PipelineMetric({
 }) {
   const tones = {
     navy: "bg-[#0B2C6B] text-white",
-    gold: "bg-[#FFF4D8] text-[#9B6C17]",
-    red: "bg-red-50 text-red-700",
+    gold: "border border-[#D9A441]/30 bg-[#FFF8EA] text-[#8C6512]",
+    red: "bg-rose-50 text-rose-700",
     green: "bg-emerald-50 text-emerald-700",
   };
   return (
-    <article className="border border-slate-200 bg-white p-5 shadow-[0_18px_48px_-42px_rgba(7,27,61,0.6)] first:rounded-t-2xl last:rounded-b-2xl sm:rounded-2xl">
+    <article className="border border-slate-200/80 bg-white p-5 shadow-xs first:rounded-t-2xl last:rounded-b-2xl sm:rounded-2xl transition hover:border-slate-300">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-          <p className="mt-2 text-2xl font-bold tracking-[-0.035em] text-slate-950">{value}</p>
+          <p className="text-xs font-semibold text-slate-500">{label}</p>
+          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
         </div>
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={18} aria-hidden="true" /></span>
@@ -195,14 +195,14 @@ function PipelineMetric({
 function PipelineCard({ lead, onOpen }: { lead: PipelineLeadRecord; onOpen: (lead: PipelineLeadRecord) => void }) {
   const overdue = isOverdue(lead);
   const needsAttention = leadNeedsAttention(lead);
-  const borderClass = overdue ? "border-red-200" : needsAttention ? "border-amber-200" : "border-slate-200";
+  const borderClass = overdue ? "border-rose-200" : needsAttention ? "border-amber-200" : "border-slate-200/80";
   return (
-    <article className={`group relative overflow-hidden rounded-2xl border bg-white shadow-[0_16px_36px_-32px_rgba(7,27,61,0.75)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_44px_-30px_rgba(7,27,61,0.45)] ${borderClass}`}>
-      <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? "bg-red-500" : needsAttention ? "bg-[#D9A441]" : "bg-[#0B2C6B]"}`} aria-hidden="true" />
+    <article className={`group relative overflow-hidden rounded-2xl border bg-white shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${borderClass}`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${overdue ? "bg-rose-500" : needsAttention ? "bg-[#D9A441]" : "bg-[#0B2C6B]"}`} aria-hidden="true" />
       <div className="p-4 pl-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h4 className="truncate text-sm font-bold text-slate-950">{lead.name}</h4>
+            <h4 className="truncate text-sm font-bold text-slate-900">{lead.name}</h4>
             <p className="mt-0.5 truncate text-xs text-slate-500">{lead.company || "Perusahaan belum tercatat"}</p>
           </div>
           <p className="shrink-0 text-xs font-bold text-[#0B2C6B]">{lead.opportunityValue == null ? "–" : compactRupiah(lead.opportunityValue)}</p>
@@ -214,7 +214,7 @@ function PipelineCard({ lead, onOpen }: { lead: PipelineLeadRecord; onOpen: (lea
           {lead.outreachPaused && <Badge tone="red">Tindak lanjut dijeda</Badge>}
         </div>
 
-        <dl className="mt-4 space-y-3 text-xs">
+        <dl className="mt-4 space-y-2.5 text-xs">
           <div className="flex items-start gap-2.5">
             <UserRound size={14} className={`mt-0.5 shrink-0 ${lead.opportunityOwner ? "text-slate-400" : "text-amber-600"}`} aria-hidden="true" />
             <div className="min-w-0"><dt className="sr-only">Penanggung jawab</dt><dd className={`truncate font-semibold ${lead.opportunityOwner ? "text-slate-700" : "text-amber-700"}`}>{lead.opportunityOwner || "Belum ada penanggung jawab"}</dd></div>
@@ -224,12 +224,12 @@ function PipelineCard({ lead, onOpen }: { lead: PipelineLeadRecord; onOpen: (lea
             <div className="min-w-0"><dt className="sr-only">Tindakan berikutnya</dt><dd className={`line-clamp-2 leading-5 ${lead.nextAction ? "text-slate-700" : "text-slate-400"}`}>{lead.nextAction || "Tindakan berikutnya belum ditentukan"}</dd></div>
           </div>
           <div className="flex items-center gap-2.5">
-            <Clock3 size={14} className={`shrink-0 ${overdue ? "text-red-600" : "text-slate-400"}`} aria-hidden="true" />
-            <div><dt className="sr-only">Tenggat</dt><dd className={`font-semibold ${overdue ? "text-red-700" : lead.nextActionDueAt ? "text-slate-600" : "text-slate-400"}`}>{lead.nextActionDueAt ? formatDate(lead.nextActionDueAt) : "Belum ada tenggat"}</dd></div>
+            <Clock3 size={14} className={`shrink-0 ${overdue ? "text-rose-600" : "text-slate-400"}`} aria-hidden="true" />
+            <div><dt className="sr-only">Tenggat</dt><dd className={`font-semibold ${overdue ? "text-rose-700" : lead.nextActionDueAt ? "text-slate-600" : "text-slate-400"}`}>{lead.nextActionDueAt ? formatDate(lead.nextActionDueAt) : "Belum ada tenggat"}</dd></div>
           </div>
         </dl>
 
-        <button type="button" onClick={() => onOpen(lead)} className="mt-4 inline-flex min-h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-bold text-[#0B2C6B] transition hover:border-[#0B2C6B]/20 hover:bg-[#0B2C6B] hover:text-white" aria-label={`Buka detail peluang ${lead.name}`}>
+        <button type="button" onClick={() => onOpen(lead)} className="mt-4 inline-flex min-h-9 w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 text-xs font-semibold text-[#0B2C6B] transition hover:border-[#0B2C6B]/25 hover:bg-[#0B2C6B] hover:text-white" aria-label={`Buka detail peluang ${lead.name}`}>
           Buka detail <ArrowRight size={14} aria-hidden="true" />
         </button>
       </div>

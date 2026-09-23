@@ -29,14 +29,14 @@ export function AdminSearch({
 }) {
   return (
     <div className="relative">
-      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30" />
+      <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
       <input
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-12 w-full rounded-[12px] border border-black/10 bg-white pl-11 pr-4 text-sm outline-none focus:border-[#D9A441]"
+        className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-300 focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10"
       />
     </div>
   );
@@ -71,18 +71,18 @@ export function CollapsibleModule({
   const contentId = useId();
 
   return (
-    <div className="rounded-[12px] border border-black/[0.05] bg-[#FCFCFB]">
+    <div className="rounded-xl border border-slate-200/80 bg-white shadow-2xs">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={contentId}
-        className="flex w-full items-center justify-between px-4 py-4 text-left text-sm font-semibold text-[#0B2C6B]"
+        className="flex w-full items-center justify-between px-4 py-3.5 text-left text-sm font-semibold text-slate-900 transition hover:text-[#0B2C6B]"
       >
         {title}
-        <ChevronDown size={16} className={`transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={15} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && <div id={contentId} className="border-t border-black/[0.05] p-4">{children}</div>}
+      {open && <div id={contentId} className="border-t border-slate-100 p-4">{children}</div>}
     </div>
   );
 }
@@ -99,24 +99,24 @@ export function HrmItem({
   onDelete?: () => void;
 }) {
   return (
-    <div className="rounded-[10px] border border-black/[0.05] bg-[#FCFCFB] p-4">
+    <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-[#0B2C6B]">{title}</p>
-          <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-black/34">{meta}</p>
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="mt-1 text-xs font-medium text-slate-500">{meta}</p>
         </div>
         {onDelete && (
           <button
             type="button"
             onClick={onDelete}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-[9px] border border-red-100 bg-red-50 text-red-600"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-rose-100 bg-rose-50 text-rose-600 transition hover:bg-rose-100"
             aria-label={`Hapus ${title}`}
           >
             <Trash2 size={13} />
           </button>
         )}
       </div>
-      {detail && <p className="mt-3 text-xs leading-relaxed text-black/50">{detail}</p>}
+      {detail && <p className="mt-2.5 text-xs leading-relaxed text-slate-600">{detail}</p>}
     </div>
   );
 }
@@ -137,7 +137,7 @@ export function AdminSelect({
       value={value}
       onChange={(event) => onChange(event.target.value)}
       aria-label={ariaLabel}
-      className="h-12 w-full rounded-[12px] border border-black/10 bg-white px-3 text-sm outline-none focus:border-[#D9A441]"
+      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10"
     >
       {options.map((option) => {
         const optionValue = Array.isArray(option) ? option[0] : option;
@@ -169,7 +169,7 @@ export function AdminInput({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-black/36">
+      <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
         {label}
         {help ? <HelpTooltip content={help} /> : null}
       </span>
@@ -178,7 +178,7 @@ export function AdminInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-11 w-full rounded-[10px] border border-black/10 bg-white px-3 text-sm outline-none focus:border-[#D9A441]"
+        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-300 focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10"
       />
     </label>
   );
@@ -201,7 +201,7 @@ export function AdminTextarea({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-black/36">
+      <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
         {label}
         {help ? <HelpTooltip content={help} /> : null}
       </span>
@@ -209,7 +209,7 @@ export function AdminTextarea({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className={`${minHeight} w-full rounded-[10px] border border-black/10 bg-white px-3 py-3 text-sm outline-none focus:border-[#D9A441]`}
+        className={`${minHeight} w-full rounded-xl border border-slate-200 bg-white p-3 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition hover:border-slate-300 focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10`}
       />
     </label>
   );
@@ -225,11 +225,11 @@ export function HelpTooltip({ content }: { content: string }) {
         title={content}
         aria-describedby={tooltipId}
         aria-label="Bantuan kolom"
-        className="grid h-4 w-4 cursor-help place-items-center rounded-full text-black/34 outline-none transition hover:text-[#0B2C6B] focus:text-[#0B2C6B]"
+        className="grid h-4 w-4 cursor-help place-items-center rounded-full text-slate-400 outline-none transition hover:text-[#0B2C6B] focus:text-[#0B2C6B]"
       >
         <HelpCircle size={13} aria-hidden="true" />
       </span>
-      <span id={tooltipId} role="tooltip" className="pointer-events-none absolute left-1/2 top-6 z-40 hidden w-64 -translate-x-1/2 rounded-[10px] border border-black/10 bg-[#071B3D] px-3 py-2 text-[11px] font-medium normal-case leading-relaxed tracking-normal text-white shadow-[0_18px_45px_-22px_rgba(7,27,61,0.75)] group-hover:block group-focus-within:block">
+      <span id={tooltipId} role="tooltip" className="pointer-events-none absolute left-1/2 top-6 z-40 hidden w-64 -translate-x-1/2 rounded-xl border border-slate-800 bg-[#071B3D] px-3 py-2 text-xs font-medium normal-case leading-relaxed text-white shadow-xl group-hover:block group-focus-within:block">
         {content}
       </span>
     </span>
@@ -238,7 +238,7 @@ export function HelpTooltip({ content }: { content: string }) {
 
 export function FieldLabel({ label, help }: { label: string; help?: string }) {
   return (
-    <span className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-black/36">
+    <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-700">
       {label}
       {help ? <HelpTooltip content={help} /> : null}
     </span>
@@ -255,10 +255,10 @@ export function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[12px] border border-black/[0.05] bg-[#FCFCFB] p-4">
-      <div className="mb-4">
-        <p className="text-sm font-semibold text-[#0B2C6B]">{title}</p>
-        <p className="mt-1 text-xs leading-relaxed text-black/48">{description}</p>
+    <div className="rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-2xs">
+      <div className="mb-3.5">
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{description}</p>
       </div>
       {children}
     </div>
@@ -267,13 +267,13 @@ export function FormSection({
 
 export function PresetButtons({ options, onPick }: { options: string[]; onPick: (value: string) => void }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="mt-2 flex flex-wrap gap-1.5">
       {options.map((option) => (
         <button
           key={option}
           type="button"
           onClick={() => onPick(option)}
-          className="rounded-full border border-[#0B2C6B]/12 bg-[#F8FAFC] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0B2C6B]/70 transition hover:border-[#D9A441]/50 hover:bg-[#FFF8EA]"
+          className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-[#D9A441] hover:bg-[#FFF8EA] hover:text-[#8C6512]"
         >
           {option}
         </button>
@@ -284,14 +284,14 @@ export function PresetButtons({ options, onPick }: { options: string[]; onPick: 
 
 export function Badge({ children, tone = "navy" }: { children: React.ReactNode; tone?: "navy" | "gold" | "green" | "red" }) {
   const toneClass = {
-    navy: "bg-[#0B2C6B]/7 text-[#0B2C6B]/62",
-    gold: "bg-[#D9A441]/12 text-[#9B6C17]",
-    green: "bg-emerald-50 text-emerald-700",
-    red: "bg-red-50 text-red-700",
+    navy: "border border-[#0B2C6B]/15 bg-[#0B2C6B]/5 text-[#0B2C6B]",
+    gold: "border border-[#D9A441]/30 bg-[#FFF8EA] text-[#8C6512]",
+    green: "border border-emerald-200/60 bg-emerald-50 text-emerald-700",
+    red: "border border-rose-200/60 bg-rose-50 text-rose-700",
   }[tone];
   return (
     <span
-      className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${toneClass}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium tracking-normal ${toneClass}`}
     >
       {children}
     </span>
@@ -300,7 +300,7 @@ export function Badge({ children, tone = "navy" }: { children: React.ReactNode; 
 
 export function NotificationBadge({ count }: { count: number }) {
   return (
-    <span className="min-w-5 rounded-full bg-red-600 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white shadow-[0_8px_18px_-10px_rgba(220,38,38,0.9)]">
+    <span className="min-w-5 rounded-full bg-rose-600 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white shadow-xs">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -319,8 +319,8 @@ export function StatCard({
 }) {
   const toneClass = {
     default: "bg-[#0B2C6B]/[0.06] text-[#0B2C6B]",
-    gold: "bg-[#D9A441]/15 text-[#9B6C17]",
-    danger: "bg-red-50 text-red-700",
+    gold: "bg-[#D9A441]/15 text-[#8C6512]",
+    danger: "bg-rose-50 text-rose-700",
     success: "bg-emerald-50 text-emerald-700",
   }[tone];
 
@@ -331,7 +331,7 @@ export function StatCard({
           <Icon size={18} />
         </div>
       ) : null}
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
     </div>
   );
@@ -351,21 +351,21 @@ export function CompactStatusPill({
   const hasValue = Number(value) > 0;
   const toneClass = {
     default: "border-slate-200 bg-slate-50/80 text-[#0B2C6B]",
-    gold: "border-[#D9A441]/30 bg-[#FFF8EA] text-[#9B6C17]",
-    danger: "border-red-200 bg-red-50 text-red-700",
+    gold: "border-[#D9A441]/30 bg-[#FFF8EA] text-[#8C6512]",
+    danger: "border-rose-200 bg-rose-50 text-rose-700",
     success: "border-emerald-200 bg-emerald-50 text-emerald-700",
   }[tone];
 
   return (
-    <div className={`relative flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold ${toneClass}`}>
+    <div className={`relative flex h-8 items-center gap-2 rounded-xl border px-2.5 text-xs font-semibold ${toneClass}`}>
       <Icon size={14} className="shrink-0" />
-      <span className="text-[11px] font-medium text-slate-600">{label}</span>
+      <span className="text-xs font-medium text-slate-600">{label}</span>
       {hasValue ? (
         <span className="rounded-full bg-[#0B2C6B] px-1.5 py-0.2 text-[10px] font-bold leading-none text-white">
           {Number(value) > 99 ? "99+" : value}
         </span>
       ) : (
-        <span className="text-[11px] font-medium text-slate-400">0</span>
+        <span className="text-xs font-medium text-slate-400">0</span>
       )}
     </div>
   );
@@ -393,7 +393,7 @@ export function ModuleHero({
     <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#C79A3C]">{eyebrow}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#C58D27]">{eyebrow}</p>
           <h2 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{title}</h2>
           <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-500">{description}</p>
         </div>
@@ -419,15 +419,15 @@ export function EmptyState({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="rounded-[12px] border border-dashed border-black/10 bg-[#FAFAF8] p-8 text-center">
-      <ShieldCheck className="mx-auto mb-4 text-[#D9A441]" size={32} />
-      <p className="text-sm font-semibold text-[#0B2C6B]">{title}</p>
-      <p className="mx-auto mt-2 max-w-xl text-sm font-light leading-relaxed text-black/48">{description}</p>
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
+      <ShieldCheck className="mx-auto mb-3 text-[#D9A441]" size={30} />
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-slate-500">{description}</p>
       {action ? (
         <button
           type="button"
           onClick={action.onClick}
-          className="mx-auto mt-5 flex h-11 items-center gap-2 rounded-[10px] bg-[#0B2C6B] px-4 text-xs font-bold uppercase tracking-[0.14em] text-white"
+          className="mx-auto mt-4 inline-flex h-9 items-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-xs font-semibold text-white shadow-xs transition hover:bg-[#071B3D]"
         >
           {action.label} <ArrowRight size={14} />
         </button>
@@ -443,10 +443,10 @@ export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onCl
   const descriptionId = useId();
   const buttonClass =
     action.tone === "danger"
-      ? "bg-red-600 text-white"
+      ? "bg-rose-600 text-white hover:bg-rose-700"
       : action.tone === "gold"
-        ? "bg-[#D9A441] text-[#071B3D]"
-        : "bg-[#0B2C6B] text-white";
+        ? "bg-[#D9A441] text-[#071B3D] hover:bg-[#C58D27]"
+        : "bg-[#0B2C6B] text-white hover:bg-[#071B3D]";
 
   const handleConfirm = async () => {
     setSubmitting(true);
@@ -460,41 +460,41 @@ export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onCl
   };
 
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-[#071B3D]/58 px-4 py-6 backdrop-blur-sm">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={submitting} className="w-full max-w-lg rounded-[16px] bg-white p-6 shadow-[0_36px_90px_-38px_rgba(7,27,61,0.65)]">
-        <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/45 px-4 py-6 backdrop-blur-sm">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={submitting} className="w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Review Aksi</p>
-            <h2 id={titleId} className="mt-2 text-xl font-semibold tracking-[-0.03em] text-[#0B2C6B]">{action.title}</h2>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#C58D27]">Review Aksi</p>
+            <h2 id={titleId} className="mt-1 text-lg font-bold tracking-tight text-slate-900">{action.title}</h2>
           </div>
           <button
             type="button"
             data-autofocus
             onClick={onClose}
             disabled={submitting}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-black/10 text-[#0B2C6B] disabled:opacity-50"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
             aria-label="Tutup dialog konfirmasi"
           >
             <X size={16} />
           </button>
         </div>
-        <p id={descriptionId} className="text-sm leading-relaxed text-black/58">{action.description}</p>
+        <p id={descriptionId} className="text-sm leading-relaxed text-slate-600">{action.description}</p>
         {action.details?.length ? (
-          <div className="mt-4 rounded-[12px] border border-black/[0.06] bg-[#F8FAFC] p-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-black/36">Yang akan diproses</p>
-            <div className="space-y-2">
+          <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="mb-2 text-xs font-semibold text-slate-700">Yang akan diproses</p>
+            <div className="space-y-1.5">
               {action.details.map((detail) => (
-                <p key={detail} className="text-xs leading-relaxed text-[#0B2C6B]/70">{detail}</p>
+                <p key={detail} className="text-xs leading-relaxed text-slate-600">{detail}</p>
               ))}
             </div>
           </div>
         ) : null}
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="h-11 rounded-[10px] border border-black/10 px-4 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
+            className="h-10 rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             Batal
           </button>
@@ -502,7 +502,7 @@ export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onCl
             type="button"
             onClick={handleConfirm}
             disabled={submitting}
-            className={`h-11 rounded-[10px] px-4 text-xs font-bold uppercase tracking-[0.12em] disabled:opacity-50 ${buttonClass}`}
+            className={`h-10 rounded-xl px-4 text-xs font-semibold shadow-xs transition disabled:opacity-50 ${buttonClass}`}
           >
             {submitting ? "Memproses..." : action.confirmLabel}
           </button>
@@ -514,7 +514,7 @@ export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onCl
 
 export function AdminNotice({ children }: { children: React.ReactNode }) {
   return (
-    <div role="status" aria-live="polite" className="mb-5 rounded-[10px] border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div role="status" aria-live="polite" className="mb-4 rounded-xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-xs sm:text-sm font-medium text-rose-800">
       {children}
     </div>
   );
@@ -536,18 +536,18 @@ export function AdminModal({
   const dialogRef = useDialogFocus<HTMLDivElement>(onClose);
   const titleId = useId();
   return (
-    <div className="fixed inset-0 z-[55] bg-[#071B3D]/55 px-4 py-6 backdrop-blur-sm">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`mx-auto flex h-full w-full ${maxWidth} flex-col overflow-hidden rounded-[16px] bg-white shadow-[0_36px_90px_-38px_rgba(7,27,61,0.65)]`}>
-        <div className="flex items-start justify-between gap-4 border-b border-black/[0.06] bg-[#FAFAF8] px-5 py-4">
+    <div className="fixed inset-0 z-[55] bg-slate-950/45 px-4 py-6 backdrop-blur-sm">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`mx-auto flex h-full w-full ${maxWidth} flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl`}>
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
           <div>
-            {eyebrow && <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">{eyebrow}</p>}
-            <h2 id={titleId} className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#0B2C6B]">{title}</h2>
+            {eyebrow && <p className="text-[10px] font-bold uppercase tracking-wider text-[#C58D27]">{eyebrow}</p>}
+            <h2 id={titleId} className="mt-1 text-lg font-bold tracking-tight text-slate-900">{title}</h2>
           </div>
           <button
             type="button"
             data-autofocus
             onClick={onClose}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-black/10 bg-white text-[#0B2C6B]"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
             aria-label="Tutup modal"
           >
             <X size={16} />
@@ -561,10 +561,10 @@ export function AdminModal({
 
 export function Panel({ title, action, children }: { title: string; action?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[8px] border border-black/[0.05] bg-white p-5 shadow-[0_16px_50px_-44px_rgba(11,44,107,0.28)] md:p-6">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h3 className="text-lg font-semibold tracking-[-0.02em] text-[#0B2C6B]">{title}</h3>
-        {action && <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-black/34">{action}</span>}
+    <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs md:p-6">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <h3 className="text-base font-bold tracking-tight text-slate-900">{title}</h3>
+        {action && <span className="text-xs font-medium text-slate-400">{action}</span>}
       </div>
       {children}
     </section>
@@ -574,12 +574,12 @@ export function Panel({ title, action, children }: { title: string; action?: str
 export function MetricBar({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between text-sm">
-        <span className="font-medium text-[#0B2C6B]/76">{label}</span>
-        <span className="font-semibold text-[#0B2C6B]">{value}%</span>
+      <div className="mb-1.5 flex items-center justify-between text-xs sm:text-sm">
+        <span className="font-medium text-slate-700">{label}</span>
+        <span className="font-bold text-[#0B2C6B]">{value}%</span>
       </div>
-      <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(Math.max(value, 0), 100)} className="h-2 overflow-hidden rounded-full bg-[#EDF1F6]">
-        <div className="h-full rounded-full bg-[#0B2C6B]" style={{ width: `${Math.min(Math.max(value, 0), 100)}%` }} />
+      <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(Math.max(value, 0), 100)} className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-[#0B2C6B] transition-all duration-300" style={{ width: `${Math.min(Math.max(value, 0), 100)}%` }} />
       </div>
     </div>
   );
@@ -590,7 +590,7 @@ export function DashboardSkeleton() {
     <div role="status" aria-live="polite" aria-label="Memuat dashboard admin" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       <span className="sr-only">Memuat dashboard admin...</span>
       {Array.from({ length: 8 }).map((_, index) => (
-        <div key={index} className="h-40 animate-pulse rounded-[8px] bg-white" />
+        <div key={index} className="h-36 animate-pulse rounded-2xl border border-slate-200/80 bg-white shadow-xs" />
       ))}
     </div>
   );

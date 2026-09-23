@@ -33,12 +33,12 @@ export function Overview({ data }: { data: DashboardData }) {
         </Panel>
 
         <Panel title="Kategori Assessment" action={data.summary.mostCommonCategory}>
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {data.categoryBreakdown.map((item, index) => (
-              <div key={item.category} className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />
-                  <span className="text-xs font-semibold text-slate-900">{item.category}</span>
+              <div key={item.category} className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-2.5 transition-colors hover:bg-slate-50">
+                <div className="flex items-center gap-2.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />
+                  <span className="text-xs font-semibold text-slate-800">{item.category}</span>
                 </div>
                 <span className="text-xs font-bold text-[#0B2C6B]">{item.count}</span>
               </div>
@@ -57,11 +57,11 @@ export function Overview({ data }: { data: DashboardData }) {
         </Panel>
 
         <Panel title="Layanan Paling Sering Direkomendasikan" action="Tren kebutuhan">
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {data.topRecommendations.slice(0, 8).map((item) => (
-              <div key={item.service} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-2.5">
-                <span className="text-xs font-semibold text-slate-800">{item.service}</span>
-                <span className="rounded-full bg-[#D9A441]/15 px-2.5 py-0.5 text-xs font-bold text-[#9B6C17]">
+              <div key={item.service} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-2.5 transition-colors hover:bg-slate-50">
+                <span className="text-xs font-semibold text-slate-700">{item.service}</span>
+                <span className="inline-flex items-center rounded-full border border-[#D9A441]/30 bg-[#FFF8EA] px-2.5 py-0.5 text-xs font-semibold text-[#8C6512]">
                   {item.count}x
                 </span>
               </div>

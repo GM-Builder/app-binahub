@@ -5,6 +5,26 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.24.2] - 2026-09-23
+
+### Changed — Visual UI Design System Modernization (Pure Visual Polish)
+
+- **Typography & Font Stack**: Mengintegrasikan Google Fonts `Plus Jakarta Sans` dengan fallback modern (`Inter`, `-apple-system`, `sans-serif`) untuk hierarki visual tipografi yang lebih tajam, bersih, dan profesional.
+- **Color Palette & Kontras WCAG AA**:
+  - Memperbarui token warna dasar ke Navy (`#0b2c6b`), Deep Dark Navy (`#071b3d`), Soft Warm Gold Accent (`#d9a441`), dan Dark Gold Accent (`#8c6512`) dengan kontras 4.5:1 untuk teks/label agar memenuhi standar aksesibilitas WCAG AA.
+  - Menstandarkan token latar belakang ke Slate halus (`#f8fafc`) dan border hairline slate (`#e2e8f0`).
+- **Focus Rings & Input Controls**:
+  - Mengganti focus ring tebal 3px emas menjadi focus outline navy 2px yang presisi dan rapi (`outline: 2px solid #0b2c6b; outline-offset: 2px`).
+  - Menstandarkan tinggi search bar dan select input ke `h-10` dengan rounded corners (`rounded-xl`), border lembut (`border-slate-200`), dan transisi hover yang halus.
+  - Memperbarui label form input dari mikro uppercase 10px menjadi sentence-case 12px semi-bold (`text-xs font-semibold text-slate-700`) yang jauh lebih mudah dibaca.
+- **Badges & Status Indicators**:
+  - Mengubah tampilan badge status menjadi pill-shaped (`rounded-full`) dengan perpaduan latar tint lembut dan kontras teks solid (emerald, blue, dark gold, slate, rose) tanpa teks pudar atau border kasar.
+- **Cards, Panels & Elevated Modals**:
+  - Memperhalus bayangan kartu dan panel ke hairline soft ambient elevation (`shadow-xs` / `shadow-sm`) dengan border radius terpadu `0.625rem`–`1rem`.
+  - Memperbarui backdrop overlay dialog konfirmasi dan modal admin dengan modern backdrop blur (`backdrop-blur-xs bg-slate-950/45`) serta kartu dialog rounded-2xl yang elegan.
+  - Memperbarui status empty state dari border putus-putus kasar ke kontainer slate minimalis.
+- **Scope Compliance**: Seluruh pembaruan strictly berfokus pada visual UI (styling, spacing, typography, contrast). Seluruh UX flow, rute halaman, state management, modal logic, event handlers, dan fungsionalitas bisnis dipertahankan 100% tanpa perubahan.
+
 ## [0.24.1] - 2026-09-21
 
 ### Added — T-BOS facilitator visibility
