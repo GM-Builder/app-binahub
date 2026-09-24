@@ -86,12 +86,17 @@ function rupiah(value: number | null) {
 }
 
 function compactRupiah(value: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
+  const absolute = Math.abs(value);
+  const compact = (divisor: number, suffix: string) => {
+    const amount = (value / divisor).toFixed(1).replace(/\.0$/, "").replace(".", ",");
+    return `Rp${amount} ${suffix}`;
+  };
+
+  if (absolute >= 1_000_000_000_000) return compact(1_000_000_000_000, "triliun");
+  if (absolute >= 1_000_000_000) return compact(1_000_000_000, "miliar");
+  if (absolute >= 1_000_000) return compact(1_000_000, "jt");
+  if (absolute >= 1_000) return compact(1_000, "rb");
+  return `Rp${Math.round(value)}`;
 }
 
 function isActiveStage(stage: string): stage is typeof ACTIVE_STAGES[number] {
@@ -173,22 +178,20 @@ function PipelineMetric({
   tone?: "navy" | "gold" | "red" | "green";
 }) {
   const tones = {
-    navy: "bg-[#0B2C6B] text-white",
-    gold: "border border-[#D9A441]/30 bg-[#FFF8EA] text-[#8C6512]",
+    navy: "bg-[#EAF0F8] text-[#0B2C6B]",
+    gold: "bg-[#FFF8EA] text-[#80560F]",
     red: "bg-rose-50 text-rose-700",
     green: "bg-emerald-50 text-emerald-700",
   };
   return (
-    <article className="border border-slate-200/80 bg-white p-5 shadow-xs first:rounded-t-2xl last:rounded-b-2xl sm:rounded-2xl transition hover:border-slate-300">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-slate-500">{label}</p>
-          <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">{value}</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
-        </div>
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={18} aria-hidden="true" /></span>
+    <div className="flex min-w-0 items-start gap-3 border-l border-slate-200 pl-4 first:border-l-0 first:pl-0">
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={16} aria-hidden="true" /></span>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-slate-500">{label}</p>
+        <p className="mt-0.5 text-xl font-semibold tracking-tight text-slate-950">{value}</p>
+        <p className="mt-0.5 truncate text-[10px] text-slate-400">{description}</p>
       </div>
-    </article>
+    </div>
   );
 }
 
@@ -329,15 +332,16 @@ export function PipelinePanel({
 
   return (
     <div className="space-y-6">
-      <section aria-labelledby="pipeline-overview-title">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs" aria-labelledby="pipeline-overview-title">
+        <div className="flex flex-col gap-2 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#80560F]">Ringkasan komersial</p>
-            <h2 id="pipeline-overview-title" className="mt-1 text-xl font-bold tracking-[-0.025em] text-slate-950">Kondisi pipeline saat ini</h2>
+            <h2 id="pipeline-overview-title" className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Kondisi pipeline saat ini</h2>
+            <p className="mt-1 text-sm text-slate-500">Lihat nilai aktif dan hambatan yang perlu dibereskan sebelum membuka board.</p>
           </div>
-          <p className="max-w-xl text-xs leading-5 text-slate-500">Peluang yang paling mendesak selalu ditempatkan lebih dahulu di setiap tahap.</p>
+          <p className="text-xs font-semibold text-slate-400">{activeLeads.length} peluang aktif</p>
         </div>
-        <div className="grid gap-px overflow-hidden rounded-2xl bg-slate-200 sm:grid-cols-2 sm:gap-3 sm:overflow-visible sm:bg-transparent xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-5 px-5 py-5 sm:px-6 xl:grid-cols-4">
           <PipelineMetric label="Nilai pipeline aktif" value={compactRupiah(pipelineValue)} description={`${activeLeads.length} peluang dalam proses`} icon={CircleDollarSign} />
           <PipelineMetric label="Perlu tindakan" value={attentionCount} description="Tanpa owner, tindakan, atau tenggat" icon={AlertTriangle} tone={attentionCount ? "gold" : "green"} />
           <PipelineMetric label="Tenggat terlewat" value={overdueCount} description="Tindakan yang perlu segera diselesaikan" icon={CalendarClock} tone={overdueCount ? "red" : "green"} />
@@ -350,7 +354,7 @@ export function PipelinePanel({
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#80560F]">Ruang kerja penjualan</p>
-              <h2 id="sales-pipeline-title" className="mt-1 text-xl font-bold tracking-[-0.025em] text-slate-950">Sales Pipeline</h2>
+              <h2 id="sales-pipeline-title" className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Alur peluang</h2>
               <p className="mt-1 text-sm leading-6 text-slate-500">Tentukan penanggung jawab dan tindakan berikutnya agar setiap peluang terus bergerak.</p>
             </div>
             <div className="inline-flex w-full rounded-xl bg-slate-100 p-1 sm:w-auto" role="group" aria-label="Tampilan pipeline">
@@ -367,7 +371,7 @@ export function PipelinePanel({
           <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(260px,1fr)_220px_auto]">
             <AdminSearch value={search} onChange={setSearch} placeholder="Cari nama, perusahaan, owner, atau tindakan…" />
             <AdminSelect ariaLabel="Filter penanggung jawab" value={ownerFilter} onChange={setOwnerFilter} options={[["all", "Semua penanggung jawab"], ["unassigned", "Belum ditugaskan"], ...owners.map((owner) => [owner, owner] as [string, string])]} />
-            <button type="button" onClick={() => setAttentionOnly((current) => !current)} aria-pressed={attentionOnly} className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-4 text-xs font-bold transition ${attentionOnly ? "border-amber-300 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
+            <button type="button" onClick={() => setAttentionOnly((current) => !current)} aria-pressed={attentionOnly} className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 text-xs font-semibold transition ${attentionOnly ? "border-amber-300 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>
               <AlertTriangle size={15} aria-hidden="true" /> Perlu tindakan {attentionOnly && `(${attentionCount})`}
             </button>
           </div>
@@ -390,10 +394,10 @@ export function PipelinePanel({
                   const stageLeads = filtered.filter((lead) => lead.opportunityStage === stage);
                   const stageValue = stageLeads.reduce((sum, lead) => sum + (lead.opportunityValue || 0), 0);
                   return (
-                    <section key={stage} className="flex min-h-[440px] flex-col rounded-2xl border border-slate-200 bg-[#F7F8FA]" aria-labelledby={`pipeline-stage-${stage}`}>
+                    <section key={stage} className="flex min-h-[420px] flex-col rounded-2xl border border-slate-200 bg-slate-50/60" aria-labelledby={`pipeline-stage-${stage}`}>
                       <div className="border-b border-slate-200 px-4 py-4">
                         <div className="flex items-start justify-between gap-3">
-                          <div><h3 id={`pipeline-stage-${stage}`} className="text-xs font-bold uppercase tracking-[0.11em] text-[#0B2C6B]">{STAGE_LABELS[stage]}</h3><p className="mt-1 text-[11px] leading-4 text-slate-500">{STAGE_DESCRIPTIONS[stage]}</p></div>
+                          <div><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">Tahap {ACTIVE_STAGES.indexOf(stage as typeof ACTIVE_STAGES[number]) + 1}</p><h3 id={`pipeline-stage-${stage}`} className="mt-1 text-sm font-semibold text-[#0B2C6B]">{STAGE_LABELS[stage]}</h3><p className="mt-1 text-[11px] leading-4 text-slate-500">{STAGE_DESCRIPTIONS[stage]}</p></div>
                           <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-white px-2 text-xs font-bold text-slate-600 shadow-sm">{stageLeads.length}</span>
                         </div>
                         <p className="mt-3 text-xs font-bold text-slate-700">{compactRupiah(stageValue)}</p>
@@ -448,20 +452,22 @@ export function PipelinePanel({
           <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
             <div className="space-y-4">
               {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+              <div><p className="text-sm font-semibold text-slate-950">Langkah berikutnya</p><p className="mt-1 text-xs text-slate-500">Pastikan peluang memiliki PIC, tindakan konkret, dan tenggat yang jelas.</p></div>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="block"><span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-black/36">Tahap peluang</span><AdminSelect ariaLabel="Tahap peluang" value={form.stage} onChange={(stage) => setForm({ ...form, stage })} options={STAGES.map((stage) => [stage, STAGE_LABELS[stage]])} /></label>
+                <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">Tahap peluang</span><AdminSelect ariaLabel="Tahap peluang" value={form.stage} onChange={(stage) => setForm({ ...form, stage })} options={STAGES.map((stage) => [stage, STAGE_LABELS[stage]])} /></label>
                 <AdminInput label="Penanggung jawab" value={form.owner} onChange={(owner) => setForm({ ...form, owner })} placeholder="nama@binahub.id" />
-                <AdminInput label="Nilai peluang" type="number" value={form.opportunityValue} onChange={(opportunityValue) => setForm({ ...form, opportunityValue })} placeholder="0" />
-                <AdminInput label="Zona waktu klien" value={form.leadTimeZone} onChange={(leadTimeZone) => setForm({ ...form, leadTimeZone })} />
                 <div className="md:col-span-2"><AdminTextarea label="Tindakan berikutnya" value={form.nextAction} onChange={(nextAction) => setForm({ ...form, nextAction })} placeholder="Tuliskan tindakan konkret berikutnya dan siapa yang menunggu siapa." /></div>
                 <AdminInput label="Tenggat tindakan" type="datetime-local" value={form.nextActionDueAt} onChange={(nextActionDueAt) => setForm({ ...form, nextActionDueAt })} />
                 {form.stage === "lost" && <AdminInput label="Alasan tidak lanjut" value={form.lostReason} onChange={(lostReason) => setForm({ ...form, lostReason })} placeholder="Jelaskan alasan keputusan" />}
-                <div className="md:col-span-2"><AdminTextarea label="Catatan keputusan" value={form.note} onChange={(note) => setForm({ ...form, note })} placeholder="Tambahkan konteks agar keputusan mudah dipahami tim." /></div>
               </div>
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <label className="flex items-start gap-3 text-sm font-semibold text-slate-800"><input type="checkbox" checked={form.outreachPaused} onChange={(event) => setForm({ ...form, outreachPaused: event.target.checked })} className="mt-1" /><span>Jeda tindak lanjut otomatis<span className="mt-1 block text-xs font-normal leading-relaxed text-slate-600">Gunakan ketika klien sudah membalas, sedang berkonsultasi, atau memerlukan penanganan khusus.</span></span></label>
-                {form.outreachPaused && <div className="mt-3"><AdminInput label="Alasan jeda" value={form.outreachPauseReason} onChange={(outreachPauseReason) => setForm({ ...form, outreachPauseReason })} /></div>}
-              </div>
+              <details className="group rounded-xl border border-slate-200 bg-white">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-xs font-semibold text-slate-700 marker:hidden">Informasi tambahan <ChevronDown size={15} className="text-slate-400 transition group-open:rotate-180" /></summary>
+                <div className="grid gap-4 border-t border-slate-100 p-4 md:grid-cols-2"><AdminInput label="Nilai peluang" type="number" value={form.opportunityValue} onChange={(opportunityValue) => setForm({ ...form, opportunityValue })} placeholder="0" /><AdminInput label="Zona waktu klien" value={form.leadTimeZone} onChange={(leadTimeZone) => setForm({ ...form, leadTimeZone })} /><div className="md:col-span-2"><AdminTextarea label="Catatan keputusan" value={form.note} onChange={(note) => setForm({ ...form, note })} placeholder="Tambahkan konteks agar keputusan mudah dipahami tim." /></div></div>
+              </details>
+              <details className="group rounded-xl border border-slate-200 bg-white">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-xs font-semibold text-slate-700 marker:hidden">Pengaturan tindak lanjut <span className="flex items-center gap-2 text-[10px] font-normal text-slate-400">{form.outreachPaused ? "Dijeda" : "Berjalan"}<ChevronDown size={15} className="transition group-open:rotate-180" /></span></summary>
+                <div className="border-t border-slate-100 p-4"><label className="flex items-start gap-3 text-sm font-semibold text-slate-800"><input type="checkbox" checked={form.outreachPaused} onChange={(event) => setForm({ ...form, outreachPaused: event.target.checked })} className="mt-1" /><span>Jeda tindak lanjut otomatis<span className="mt-1 block text-xs font-normal leading-relaxed text-slate-600">Gunakan ketika klien sudah membalas, sedang berkonsultasi, atau memerlukan penanganan khusus.</span></span></label>{form.outreachPaused && <div className="mt-3"><AdminInput label="Alasan jeda" value={form.outreachPauseReason} onChange={(outreachPauseReason) => setForm({ ...form, outreachPauseReason })} /></div>}</div>
+              </details>
               {formInvalid && <p role="status" className="text-xs leading-relaxed text-amber-700">Peluang yang sedang berjalan wajib memiliki penanggung jawab, tindakan berikutnya, dan tenggat. Peluang tidak lanjut wajib memiliki alasan.</p>}
               <button type="button" disabled={saving || formInvalid} onClick={() => void save()} className="w-full rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#071B3D] disabled:cursor-not-allowed disabled:opacity-45">{saving ? "Menyimpan…" : "Simpan perubahan"}</button>
             </div>

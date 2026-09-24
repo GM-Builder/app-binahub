@@ -3,6 +3,28 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.25.5] - 2026-09-24
+
+### Changed — Sales pipeline and consultation workspace
+
+- Mendesain ulang Pipeline Penjualan sebagai alur peluang yang ringkas dengan ringkasan nilai komersial, jumlah peluang aktif, pekerjaan melewati tenggat, dan peluang tanpa PIC dalam satu panel yang mudah dipindai.
+- Memperjelas urutan setiap tahap penjualan, merapikan kartu peluang, dan mempertahankan konteks kanban ketika detail dibuka melalui drawer samping.
+- Memprioritaskan langkah berikutnya, PIC, serta tenggat di formulir peluang; informasi pendukung dan pengaturan tindak lanjut dipindahkan ke bagian lanjutan agar layar utama tidak terasa penuh.
+- Mendesain ulang Konsultasi sebagai agenda operasional dengan jadwal terdekat, metrik hari ini/mendatang/menunggu/selesai, pencarian, filter status, dan pemisahan konsultasi mendatang, riwayat, serta pembatalan.
+- Menambahkan drawer detail konsultasi yang menampilkan waktu, penyelenggara, kontak peserta, tautan ruang pertemuan, dan alasan pembatalan tanpa membawa pengguna keluar dari agenda.
+- Menambahkan pengujian regresi untuk pemisahan jadwal aktif dan dibatalkan serta akses detail dan tautan konsultasi.
+
+## [0.25.4] - 2026-09-24
+
+### Changed — Contacts and inquiry workspace
+
+- Mendesain ulang Kontak & Lead sebagai database relasi yang ringkas: ringkasan operasional, pencarian dan filter terpadu, daftar yang mudah dipindai, serta drawer detail tanpa memenuhi layar dengan formulir.
+- Memisahkan kontak yang dapat dikelola dari sumber referensi baca-saja, sekaligus mempertahankan tindakan email, WhatsApp, perubahan status, catatan internal, dan preset tindak lanjut.
+- Mendesain ulang Inquiry Masuk sebagai kotak masuk penjualan berbasis prioritas dengan metrik inquiry baru, kebutuhan balasan, balasan siap kirim, dan follow-up jatuh tempo.
+- Menempatkan kebutuhan calon klien, status kerja, balasan berbantuan AI dengan human review, dan follow-up terjadwal dalam satu drawer bertahap dengan progressive disclosure.
+- Mempertahankan status inquiry yang berasal dari backend meskipun nilainya belum terdaftar dalam opsi standar, sehingga status tidak lagi tampak berubah saat detail dibuka.
+- Menambahkan pengujian regresi untuk pencarian kontak, identitas lintas sumber, alur balasan inquiry, dan kompatibilitas status backend.
+
 ## [0.25.3] - 2026-09-24
 
 ### Improved — Action-oriented admin experience
