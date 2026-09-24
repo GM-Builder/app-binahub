@@ -3,7 +3,20 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.25.2] - 2026-09-24
+
+### Fixed — Stable production build
+
+- Mengalihkan `npm run build` ke bundler Webpack resmi Next.js 16 agar deployment Hostinger tidak lagi gagal akibat panic worker PostCSS Turbopack saat memproses `globals.css`.
+- Turbopack tetap digunakan untuk development lokal; perubahan ini hanya menstabilkan jalur production build.
+
+### Changed — Acquisition control experience
+
+- Menata ulang Kontrol Akuisisi menjadi workspace bertahap dengan ringkasan, kanal inbound, outbound terkontrol, serta data dan kampanye sehingga seluruh alat tidak tampil sekaligus.
+- Menyederhanakan hierarki aksi: satu aksi utama per bagian, sedangkan setup khusus Apollo dipindahkan ke menu titik tiga.
+- Menambahkan ringkasan antrean dan petunjuk langkah berikutnya dengan visual minimal, status yang lebih mudah dipindai, serta istilah yang lebih manusiawi.
+- Menyederhanakan panel pencarian prospek menjadi status, aksi utama, hasil terakhir, dan kandidat; konfigurasi teknis kini memakai progressive disclosure.
+- Memperbaiki aksi impor Apollo agar benar-benar membuka bagian batch prospek, termasuk navigasi tab yang tetap ringkas dan dapat digeser pada layar kecil.
 
 ## [0.25.1] - 2026-09-24
 

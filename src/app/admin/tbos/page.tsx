@@ -22,7 +22,6 @@ import {
   ChevronDown,
   ChevronUp,
   Home,
-  Building2,
   MoreHorizontal,
   MonitorUp,
   Settings2,
@@ -1634,120 +1633,6 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// Kept exported for backward-compatible imports; the dashboard now routes all
-// creation through the canonical program wizard so module selection is not duplicated.
-export function CreateProgramModal({
-  code,
-  title,
-  company,
-  setCode,
-  setTitle,
-  setCompany,
-  loading,
-  error,
-  onSubmit,
-  onClose,
-}: {
-  code: string;
-  title: string;
-  company: string;
-  setCode: (v: string) => void;
-  setTitle: (v: string) => void;
-  setCompany: (v: string) => void;
-  loading: boolean;
-  error: string;
-  onSubmit: (e: React.FormEvent) => void;
-  onClose: () => void;
-}) {
-  const dialogRef = useDialogFocus<HTMLDivElement>(onClose, loading);
-  return (
-    <div ref={dialogRef} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="create-program-title">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06]">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-[#0B2C6B]" />
-            <h2 id="create-program-title" className="text-base font-bold text-[#0B2C6B]">Buat Program Baru</h2>
-          </div>
-          <button type="button" data-autofocus onClick={onClose} aria-label="Tutup" className="p-1 rounded-lg hover:bg-black/[0.04] text-[#4A4C54]">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={onSubmit} className="p-6 space-y-4">
-          {error && (
-            <div role="alert" className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
-              Nama Perusahaan
-            </label>
-            <input
-              type="text"
-              required
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="Contoh: PT Masmindo Dwi Area"
-              maxLength={160}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
-              Kode Program
-            </label>
-            <input
-              type="text"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="Contoh: TBOS-MAS-2026-01"
-              maxLength={50}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 font-mono text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[#0B2C6B] uppercase mb-1.5">
-              Nama Program
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Contoh: Leadership Readiness Sprint"
-              maxLength={200}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B] focus:ring-1 focus:ring-[#0B2C6B]/20"
-            />
-          </div>
-
-          <div className="pt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-black/10 text-sm font-semibold text-[#4A4C54] hover:bg-black/[0.02] transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-[#0B2C6B] text-white text-sm font-semibold hover:bg-[#071B3D] transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Buat Program
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

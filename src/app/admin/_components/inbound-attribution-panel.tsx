@@ -57,16 +57,16 @@ export function InboundAttributionPanel({ onAction }: { onAction: AdminAction })
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
   const channelRows = useMemo(() => Object.entries(data?.summary?.channels || {}).sort(([, left], [, right]) => right - left), [data]);
 
-  if (loading && !data) return <Panel title="Funnel & Attribution"><p className="text-sm text-slate-500">Memuat jejak perjalanan inbound…</p></Panel>;
-  if (!data?.phase20Ready) return <Panel title="Funnel & Attribution"><p className="text-sm text-amber-800">Phase 20.1 belum tersedia di database. Terapkan migrasi 0049 sebelum data funnel dapat dibaca.</p></Panel>;
+  if (loading && !data) return <Panel title="Perjalanan calon klien"><p className="text-sm text-slate-500">Memuat jejak perjalanan inbound…</p></Panel>;
+  if (!data?.phase20Ready) return <Panel title="Perjalanan calon klien"><p className="text-sm text-amber-800">Pelacakan perjalanan calon klien belum tersedia di database.</p></Panel>;
 
   return (
     <section className="space-y-4" aria-labelledby="inbound-attribution-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#D9A441]">Phase 20.1</p><h2 id="inbound-attribution-heading" className="mt-1 text-lg font-bold text-[#0B2C6B]">Funnel & Attribution Inbound</h2></div>
+        <div><h2 id="inbound-attribution-heading" className="text-lg font-semibold text-slate-900">Perjalanan calon klien</h2><p className="mt-1 text-xs text-slate-500">Lihat kanal yang membawa pengunjung hingga menjadi inquiry atau assessment.</p></div>
         <button type="button" onClick={() => void load()} disabled={loading} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 disabled:opacity-50"><RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Perbarui</button>
       </div>
-      <p className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-900">Halaman ini hanya membaca jejak anonim, sumber awal/terakhir, dan minat katalog. Ia tidak mengirim email, mengubah lead, atau mengaktifkan outbound.</p>
+      <p className="rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-xs leading-5 text-sky-900">Data pada bagian ini bersifat anonim sampai pengunjung mengisi form. Membuka bagian ini tidak mengirim email atau mengubah status lead.</p>
       {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Journey tercatat" value={data.summary?.journeyCount || 0} icon={Route} />

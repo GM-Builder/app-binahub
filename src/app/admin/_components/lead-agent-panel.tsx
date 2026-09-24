@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bot, Building2, CheckCircle2, Cloud, Play, RefreshCw, ShieldCheck, Sparkles, Upload, UserSearch } from "lucide-react";
+import { Bot, Building2, ChevronDown, Play, RefreshCw, ShieldCheck, Sparkles, Upload, UserSearch } from "lucide-react";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
 type LeadAgentRun = {
@@ -71,7 +71,7 @@ function formatTime(value: string | null | undefined) {
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Jakarta" }).format(new Date(value));
 }
 
-export function LeadAgentPanel({ onAction }: { onAction: AdminAction }) {
+export function LeadAgentPanel({ onAction, onOpenBatch }: { onAction: AdminAction; onOpenBatch?: () => void }) {
   const [data, setData] = useState<LeadAgentResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -119,26 +119,25 @@ export function LeadAgentPanel({ onAction }: { onAction: AdminAction }) {
   }
 
   return (
-    <section aria-labelledby="lead-agent-title" className="overflow-hidden border border-slate-200 bg-white shadow-sm">
-      <div className="grid gap-6 border-b border-slate-200 bg-[#071F4A] p-6 text-white lg:grid-cols-[1fr_auto] lg:items-center">
-        <div className="flex gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-amber-400 text-[#071F4A]"><Bot size={23} aria-hidden="true" /></div>
+    <section aria-labelledby="lead-agent-title" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+      <div className="flex flex-col gap-5 border-b border-slate-100 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex max-w-3xl gap-3.5">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#0B2C6B] text-[#E6BC66]"><Bot size={19} aria-hidden="true" /></div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">Lead Discovery</p>
-              <span className={`px-2 py-1 text-[10px] font-bold uppercase ${manualApolloMode || data?.readiness.ready ? "bg-emerald-400/20 text-emerald-200" : "bg-white/10 text-slate-200"}`}>
-                {manualApolloMode ? "Apollo manual aktif" : data?.readiness.ready ? "Otomasi siap" : "Perlu konfigurasi"}
+              <h2 id="lead-agent-title" className="text-base font-semibold text-slate-950">Pencarian prospek</h2>
+              <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${manualApolloMode || data?.readiness.ready ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                {manualApolloMode ? "Impor manual siap" : data?.readiness.ready ? "Pratinjau siap" : "Perlu disiapkan"}
               </span>
             </div>
-            <h2 id="lead-agent-title" className="mt-2 text-xl font-semibold">Temukan perusahaan dan pengambil keputusan yang sesuai ICP</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">Gunakan ekspor Apollo Free dan unggah CSV sekarang. Saat Apollo API Pro tersedia, otomasi dapat diaktifkan tanpa mengganti alur validasi, suppression, dan tinjauan manusia.</p>
+            <p className="mt-1.5 text-sm leading-6 text-slate-500">Temukan perusahaan dan pengambil keputusan yang sesuai sasaran. Semua hasil tetap masuk antrean tinjauan sebelum dipakai.</p>
           </div>
         </div>
         {manualApolloMode ? (
-          <a href="#batch-prospek" className="inline-flex h-11 items-center justify-center gap-2 bg-amber-400 px-5 text-sm font-bold text-[#071F4A] transition hover:bg-amber-300"><Upload size={16} /> Impor Apollo CSV</a>
+          <button type="button" onClick={onOpenBatch} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-xs font-semibold text-white transition hover:bg-[#071B3D]"><Upload size={15} /> Buka impor prospek</button>
         ) : (
-          <button type="button" onClick={() => void runPreview()} disabled={!data?.readiness.ready || running} className="inline-flex h-11 items-center justify-center gap-2 bg-amber-400 px-5 text-sm font-bold text-[#071F4A] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300">
-            {running ? <RefreshCw className="animate-spin" size={16} /> : <Play size={16} fill="currentColor" />}
+          <button type="button" onClick={() => void runPreview()} disabled={!data?.readiness.ready || running} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-xs font-semibold text-white transition hover:bg-[#071B3D] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
+            {running ? <RefreshCw className="animate-spin" size={15} /> : <Play size={15} fill="currentColor" />}
             {running ? "Mencari kandidat…" : selectedProvider === "hunter" ? "Cari perusahaan" : "Jalankan pratinjau"}
           </button>
         )}
@@ -150,63 +149,50 @@ export function LeadAgentPanel({ onAction }: { onAction: AdminAction }) {
         <div className="p-6 text-sm text-amber-800">Fondasi AI Lead Agent belum tersedia di environment ini.</div>
       ) : (
         <>
-          <div className="grid border-b border-slate-200 lg:grid-cols-3">
-            <div className="border-b border-slate-200 bg-emerald-50 p-5 lg:border-r lg:border-b-0">
-              <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm font-bold text-slate-950"><Upload size={16} className="text-emerald-700" /> Apollo Manual</span><span className="bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase text-emerald-800">Digunakan sekarang</span></div>
-              <p className="mt-3 text-xs leading-5 text-slate-600">Ekspor prospek dari Apollo Free, lalu unggah CSV/JSON ke Batch Prospek. Tidak memerlukan API key dan tidak menjalankan outbound.</p>
-              <a href="#batch-prospek" className="mt-3 inline-flex text-xs font-bold text-[#0B2C6B] underline-offset-4 hover:underline">Buka Batch Prospek</a>
-            </div>
-            <div className={`p-5 ${selectedProvider === "apollo" ? "bg-blue-50" : "bg-white"} border-b border-slate-200 lg:border-r lg:border-b-0`}>
-              <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm font-bold text-slate-950"><Sparkles size={16} className="text-[#0B2C6B]" /> Apollo API</span><span className="bg-blue-100 px-2 py-1 text-[10px] font-bold uppercase text-[#0B2C6B]">Siap saat Pro</span></div>
-              <p className="mt-3 text-xs leading-5 text-slate-600">People Search dan enrichment sudah disiapkan. Nanti cukup pasang API key dan membuka switch yang saat ini tetap terkunci.</p>
-              <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">{manualApolloMode ? "API dinonaktifkan" : selectedProvider === "apollo" ? "Provider aktif" : "Standby"}</p>
-            </div>
-            <div className="bg-white p-5">
-              <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm font-bold text-slate-950"><Cloud size={16} className="text-slate-500" /> Hunter</span><span className="bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-600">Ditunda</span></div>
-              <p className="mt-3 text-xs leading-5 text-slate-600">Adapter tetap tersedia sebagai alternatif, tetapi tidak perlu akun, API key, source, campaign, atau konfigurasi Hunter sekarang.</p>
-              <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">Tidak digunakan</p>
-            </div>
-          </div>
-          <div className="grid border-b border-slate-200 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="border-b border-slate-200 p-5 sm:border-r xl:border-b-0"><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Jalur aktif</p><p className="mt-2 text-sm font-semibold text-slate-900">{manualApolloMode ? "Apollo Manual" : `${selectedProvider} API`} · {data.readiness.source?.name || "sumber belum dipilih"}</p></div>
-            <div className="border-b border-slate-200 p-5 xl:border-b-0 xl:border-r"><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Mode</p><p className="mt-2 text-sm font-semibold text-slate-900">{data.config.dryRun || !data.config.stagingEnabled ? "Pratinjau aman" : "Stage ke tinjauan"}</p></div>
-            <div className="border-b border-slate-200 p-5 sm:border-r sm:border-b-0"><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Batas pencarian</p><p className="mt-2 text-sm font-semibold text-slate-900">{data.config.maximumCandidatesPerRun}/run · {data.config.maximumCandidatesPerDay}/hari · skor ≥ {data.config.minimumFitScore}</p></div>
-            <div className="p-5"><p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Run terakhir</p><p className="mt-2 text-sm font-semibold text-slate-900">{formatTime(latestRun?.finished_at || latestRun?.started_at)}</p></div>
-          </div>
-
           {!data.readiness.ready && !manualApolloMode && (
-            <div className="border-b border-amber-200 bg-amber-50 p-5">
-              <p className="text-sm font-semibold text-amber-950">Konfigurasi belum lengkap</p>
+            <div className="border-b border-amber-100 bg-amber-50/70 p-5">
+              <p className="text-sm font-semibold text-amber-950">Pencarian belum dapat dijalankan</p>
               <ul className="mt-2 space-y-1 text-xs leading-5 text-amber-800">{data.readiness.blockers.map((blocker) => <li key={blocker}>• {blocker}</li>)}</ul>
             </div>
           )}
 
-          <div className="grid gap-0 xl:grid-cols-[280px_1fr]">
-            <div className="border-b border-slate-200 bg-slate-50 p-6 xl:border-r xl:border-b-0">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Ringkasan terakhir</p>
+          <div className="grid xl:grid-cols-[260px_1fr]">
+            <div className="border-b border-slate-100 bg-slate-50/70 p-5 sm:p-6 xl:border-r xl:border-b-0">
+              <p className="text-xs font-semibold text-slate-500">Hasil terakhir</p>
               <div className="mt-5 space-y-4">
                 <div className="flex items-center justify-between"><span className="flex items-center gap-2 text-sm text-slate-600"><UserSearch size={15} /> Ditemukan</span><strong className="text-slate-950">{latestRun?.discovered_count || 0}</strong></div>
                 <div className="flex items-center justify-between"><span className="flex items-center gap-2 text-sm text-slate-600"><Building2 size={15} /> Tinjau perusahaan</span><strong className="text-slate-950">{latestRun?.company_review_count || 0}</strong></div>
                 <div className="flex items-center justify-between"><span className="flex items-center gap-2 text-sm text-slate-600"><Sparkles size={15} /> Sesuai ICP</span><strong className="text-slate-950">{latestRun?.eligible_count || 0}</strong></div>
                 <div className="flex items-center justify-between"><span className="flex items-center gap-2 text-sm text-slate-600"><ShieldCheck size={15} /> Di-stage</span><strong className="text-slate-950">{latestRun?.staged_count || 0}</strong></div>
               </div>
-              <p className="mt-6 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500"><CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-emerald-600" /> Batch yang di-stage tetap harus ditinjau dan disetujui manusia sebelum diproses.</p>
+              <p className="mt-6 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">Hasil belum menjadi lead sampai admin menyetujuinya.</p>
             </div>
-            <div className="min-w-0 p-6">
-              <div className="flex items-center justify-between gap-4"><h3 className="text-sm font-bold text-[#0B2C6B]">Kandidat terbaru</h3><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{latestCandidates.length} ditampilkan</span></div>
+            <div className="min-w-0 p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4"><h3 className="text-sm font-semibold text-slate-900">Kandidat terbaru</h3><span className="text-xs text-slate-400">{latestCandidates.length} ditampilkan</span></div>
               {latestCandidates.length ? (
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                <div className="mt-4 divide-y divide-slate-100">
                   {latestCandidates.map((candidate) => (
-                    <article key={candidate.id} className="border border-slate-200 p-4">
-                      <div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-950">{candidate.candidate_kind === "company" ? candidate.company : candidate.full_name}</p><p className="mt-1 truncate text-xs text-slate-500">{candidate.candidate_kind === "company" ? `Perusahaan · ${candidate.employee_range || "ukuran belum tersedia"}` : candidate.role_title || "Jabatan belum tersedia"}</p></div><span className="bg-blue-50 px-2 py-1 text-xs font-bold text-[#0B2C6B]">{candidate.fit_score}</span></div>
-                      <p className="mt-3 flex items-center gap-2 truncate text-xs font-medium text-slate-700"><Building2 size={13} className="shrink-0 text-slate-400" /> {candidate.company || "Perusahaan belum tersedia"}</p>
-                      <div className="mt-3 flex flex-wrap gap-2"><span className="bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase text-slate-600">{statusCopy[candidate.status] || candidate.status}</span>{candidate.location && <span className="bg-slate-50 px-2 py-1 text-[10px] text-slate-500">{candidate.location}</span>}</div>
+                    <article key={candidate.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">{candidate.fit_score}</span>
+                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-900">{candidate.candidate_kind === "company" ? candidate.company : candidate.full_name}</p><p className="mt-1 truncate text-xs text-slate-500">{candidate.candidate_kind === "company" ? `Perusahaan · ${candidate.employee_range || "ukuran belum tersedia"}` : `${candidate.role_title || "Jabatan belum tersedia"} · ${candidate.company || "Perusahaan belum tersedia"}`}</p></div>
+                      <span className="hidden rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600 sm:inline">{statusCopy[candidate.status] || candidate.status}</span>
                     </article>
                   ))}
                 </div>
-              ) : <div className="mt-4 border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{manualApolloMode ? "Mode Apollo Manual aktif. Kandidat yang diunggah akan muncul di Batch Prospek untuk ditinjau." : "Belum ada kandidat. Lengkapi konfigurasi lalu jalankan pratinjau pertama."}</div>}
+              ) : <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-8 text-center text-sm text-slate-500">{manualApolloMode ? "Belum ada kandidat. Impor daftar prospek untuk memulai tinjauan." : "Belum ada kandidat. Jalankan pratinjau pertama setelah konfigurasi siap."}</div>}
             </div>
           </div>
+
+          <details className="group border-t border-slate-100 px-5 py-4 sm:px-6">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold text-slate-600 [&::-webkit-details-marker]:hidden">Lihat konfigurasi dan batas <ChevronDown size={15} className="transition group-open:rotate-180" /></summary>
+            <div className="mt-4 grid gap-4 text-xs text-slate-500 sm:grid-cols-2 xl:grid-cols-4">
+              <div><p className="font-semibold text-slate-700">Jalur aktif</p><p className="mt-1">{manualApolloMode ? "Apollo manual" : `${selectedProvider} API`} · {data.readiness.source?.name || "sumber belum dipilih"}</p></div>
+              <div><p className="font-semibold text-slate-700">Mode</p><p className="mt-1">{data.config.dryRun || !data.config.stagingEnabled ? "Pratinjau aman" : "Masuk antrean tinjauan"}</p></div>
+              <div><p className="font-semibold text-slate-700">Batas pencarian</p><p className="mt-1">{data.config.maximumCandidatesPerRun}/proses · {data.config.maximumCandidatesPerDay}/hari · skor ≥ {data.config.minimumFitScore}</p></div>
+              <div><p className="font-semibold text-slate-700">Terakhir dijalankan</p><p className="mt-1">{formatTime(latestRun?.finished_at || latestRun?.started_at)}</p></div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-slate-500">Apollo API tetap standby sampai paket Pro tersedia. Adapter alternatif tidak dijalankan dan tidak memerlukan konfigurasi saat ini.</p>
+          </details>
         </>
       )}
     </section>

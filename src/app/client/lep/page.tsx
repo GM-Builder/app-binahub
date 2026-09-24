@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ClientAuthGate } from "@/components/client-auth-gate";
 import { ClientProgramShell, type ClientProgramSummary } from "@/components/client-program-shell";
-import { PesertaLepContent } from "@/app/peserta/lep/page";
+import { PesertaLepContent } from "@/app/peserta/lep/_components/peserta-lep-content";
 import { supabase } from "@/lib/supabase";
 import { programAccessPath } from "@/lib/program-access-link";
 
