@@ -5,7 +5,8 @@ import { ClientProgramModules } from "./client-program-modules";
 describe("ClientProgramModules", () => {
   it("shows only modules enabled for the program", () => {
     render(<ClientProgramModules modules={[{ key: "lep", enabled: true, clientAvailable: true }]} />);
-    expect(screen.getByText("LEP")).toBeInTheDocument();
+    expect(screen.getAllByText("LEP")).toHaveLength(2);
+    expect(screen.getByLabelText("Perjalanan program")).toBeInTheDocument();
     expect(screen.queryByText("Game T-BOS")).not.toBeInTheDocument();
   });
 

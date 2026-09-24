@@ -51,7 +51,7 @@ function proposalGateLabel(status?: string) {
   const labels: Record<string, string> = {
     not_evaluated: "Belum dievaluasi",
     clear: "Lolos otomatis",
-    pending_approval: "Menunggu persetujuan manusia",
+    pending_approval: "Menunggu keputusan penanggung jawab",
     approved: "Disetujui manusia",
     rejected: "Ditolak",
     revision_required: "Perlu revisi",

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import type { DashboardData, PipelineLeadRecord } from "../_lib/types";
 import { formatDate } from "../_lib/utils";
-import { AdminInput, AdminModal, AdminSearch, AdminSelect, AdminTextarea, Badge, EmptyState } from "./shared";
+import { AdminDrawer, AdminInput, AdminSearch, AdminSelect, AdminTextarea, Badge, EmptyState } from "./shared";
 
 const ACTIVE_STAGES = ["identified", "qualified", "consultation", "proposal", "negotiation"] as const;
 const CLOSED_STAGES = ["won", "lost"] as const;
@@ -214,23 +214,22 @@ function PipelineCard({ lead, onOpen }: { lead: PipelineLeadRecord; onOpen: (lea
           {lead.outreachPaused && <Badge tone="red">Tindak lanjut dijeda</Badge>}
         </div>
 
-        <dl className="mt-4 space-y-2.5 text-xs">
-          <div className="flex items-start gap-2.5">
-            <UserRound size={14} className={`mt-0.5 shrink-0 ${lead.opportunityOwner ? "text-slate-400" : "text-amber-600"}`} aria-hidden="true" />
-            <div className="min-w-0"><dt className="sr-only">Penanggung jawab</dt><dd className={`truncate font-semibold ${lead.opportunityOwner ? "text-slate-700" : "text-amber-700"}`}>{lead.opportunityOwner || "Belum ada penanggung jawab"}</dd></div>
+        <dl className="mt-3 space-y-2 text-xs">
+          <div className="flex items-center gap-2">
+            <UserRound size={13} className={`shrink-0 ${lead.opportunityOwner ? "text-slate-400" : "text-amber-600"}`} aria-hidden="true" />
+            <dt className="sr-only">Penanggung jawab</dt>
+            <dd className={`min-w-0 truncate font-semibold ${lead.opportunityOwner ? "text-slate-700" : "text-amber-700"}`}>{lead.opportunityOwner || "Belum ada penanggung jawab"}</dd>
           </div>
-          <div className="flex items-start gap-2.5">
-            <ArrowRight size={14} className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
-            <div className="min-w-0"><dt className="sr-only">Tindakan berikutnya</dt><dd className={`line-clamp-2 leading-5 ${lead.nextAction ? "text-slate-700" : "text-slate-400"}`}>{lead.nextAction || "Tindakan berikutnya belum ditentukan"}</dd></div>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <Clock3 size={14} className={`shrink-0 ${overdue ? "text-rose-600" : "text-slate-400"}`} aria-hidden="true" />
-            <div><dt className="sr-only">Tenggat</dt><dd className={`font-semibold ${overdue ? "text-rose-700" : lead.nextActionDueAt ? "text-slate-600" : "text-slate-400"}`}>{lead.nextActionDueAt ? formatDate(lead.nextActionDueAt) : "Belum ada tenggat"}</dd></div>
+          <div className="flex items-center gap-2">
+            <Clock3 size={13} className={`shrink-0 ${overdue ? "text-rose-600" : "text-slate-400"}`} aria-hidden="true" />
+            <dt className="sr-only">Tenggat</dt>
+            <dd className={`truncate font-semibold ${overdue ? "text-rose-700" : lead.nextActionDueAt ? "text-slate-600" : "text-slate-400"}`}>{lead.nextActionDueAt ? formatDate(lead.nextActionDueAt) : "Belum ada tenggat"}</dd>
           </div>
         </dl>
 
-        <button type="button" onClick={() => onOpen(lead)} className="mt-4 inline-flex min-h-9 w-full items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 text-xs font-semibold text-[#0B2C6B] transition hover:border-[#0B2C6B]/25 hover:bg-[#0B2C6B] hover:text-white" aria-label={`Buka detail peluang ${lead.name}`}>
-          Buka detail <ArrowRight size={14} aria-hidden="true" />
+        <button type="button" onClick={() => onOpen(lead)} className="mt-3 flex w-full items-center gap-2 border-t border-slate-100 pt-3 text-left text-xs text-slate-600 transition hover:text-[#0B2C6B]" aria-label={`Buka detail peluang ${lead.name}`}>
+          <span className="min-w-0 flex-1 truncate">{lead.nextAction || "Tentukan tindakan berikutnya"}</span>
+          <ArrowRight size={14} className="shrink-0" aria-hidden="true" />
         </button>
       </div>
     </article>
@@ -333,7 +332,7 @@ export function PipelinePanel({
       <section aria-labelledby="pipeline-overview-title">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C68B22]">Ringkasan komersial</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#80560F]">Ringkasan komersial</p>
             <h2 id="pipeline-overview-title" className="mt-1 text-xl font-bold tracking-[-0.025em] text-slate-950">Kondisi pipeline saat ini</h2>
           </div>
           <p className="max-w-xl text-xs leading-5 text-slate-500">Peluang yang paling mendesak selalu ditempatkan lebih dahulu di setiap tahap.</p>
@@ -350,7 +349,7 @@ export function PipelinePanel({
         <div className="border-b border-slate-200 px-4 py-5 sm:px-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C68B22]">Ruang kerja penjualan</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#80560F]">Ruang kerja penjualan</p>
               <h2 id="sales-pipeline-title" className="mt-1 text-xl font-bold tracking-[-0.025em] text-slate-950">Sales Pipeline</h2>
               <p className="mt-1 text-sm leading-6 text-slate-500">Tentukan penanggung jawab dan tindakan berikutnya agar setiap peluang terus bergerak.</p>
             </div>
@@ -440,13 +439,13 @@ export function PipelinePanel({
       </details>
 
       {selected && form && (
-        <AdminModal title={selected.name} eyebrow="Detail peluang" onClose={closeEditor} maxWidth="max-w-5xl">
+        <AdminDrawer title={selected.name} eyebrow="Detail peluang" onClose={closeEditor}>
           <div className="mb-6 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-3">
             <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Perusahaan</p><p className="mt-1 text-sm font-bold text-slate-900">{selected.company || "Belum tercatat"}</p></div>
             <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nilai peluang</p><p className="mt-1 text-sm font-bold text-slate-900">{rupiah(selected.opportunityValue)}</p></div>
             <div className="bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tahap saat ini</p><p className="mt-1 text-sm font-bold text-slate-900">{stageLabel(selected.opportunityStage)}</p></div>
           </div>
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
+          <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
             <div className="space-y-4">
               {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
               <div className="grid gap-4 md:grid-cols-2">
@@ -479,7 +478,7 @@ export function PipelinePanel({
               </div>
             </aside>
           </div>
-        </AdminModal>
+        </AdminDrawer>
       )}
     </div>
   );

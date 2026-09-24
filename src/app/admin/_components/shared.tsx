@@ -393,7 +393,7 @@ export function ModuleHero({
     <section className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#C58D27]">{eyebrow}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#80560F]">{eyebrow}</p>
           <h2 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{title}</h2>
           <p className="mt-1 text-xs sm:text-sm leading-relaxed text-slate-500">{description}</p>
         </div>
@@ -464,7 +464,7 @@ export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onCl
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={submitting} className="w-full max-w-lg rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#C58D27]">Review Aksi</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#80560F]">Tinjau tindakan</p>
             <h2 id={titleId} className="mt-1 text-lg font-bold tracking-tight text-slate-900">{action.title}</h2>
           </div>
           <button
@@ -540,7 +540,7 @@ export function AdminModal({
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`mx-auto flex h-full w-full ${maxWidth} flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50/80 px-6 py-4">
           <div>
-            {eyebrow && <p className="text-[10px] font-bold uppercase tracking-wider text-[#C58D27]">{eyebrow}</p>}
+            {eyebrow && <p className="text-[10px] font-bold uppercase tracking-wider text-[#80560F]">{eyebrow}</p>}
             <h2 id={titleId} className="mt-1 text-lg font-bold tracking-tight text-slate-900">{title}</h2>
           </div>
           <button
@@ -554,6 +554,46 @@ export function AdminModal({
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-5 md:p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+export function AdminDrawer({
+  title,
+  eyebrow,
+  children,
+  onClose,
+  maxWidth = "max-w-3xl",
+}: {
+  title: string;
+  eyebrow?: string;
+  children: React.ReactNode;
+  onClose: () => void;
+  maxWidth?: string;
+}) {
+  const dialogRef = useDialogFocus<HTMLDivElement>(onClose);
+  const titleId = useId();
+  return (
+    <div className="fixed inset-0 z-[55] flex justify-end bg-slate-950/35 backdrop-blur-[2px]">
+      <button type="button" className="min-w-0 flex-1 cursor-default" onClick={onClose} aria-label="Tutup panel detail" />
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`flex h-full w-[min(100%,48rem)] ${maxWidth} flex-col overflow-hidden border-l border-slate-200 bg-white shadow-[-24px_0_70px_-38px_rgba(7,27,61,0.5)]`}>
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            {eyebrow && <p className="text-[10px] font-bold uppercase tracking-wider text-[#80560F]">{eyebrow}</p>}
+            <h2 id={titleId} className="mt-1 truncate text-lg font-bold tracking-tight text-slate-900">{title}</h2>
+          </div>
+          <button
+            type="button"
+            data-autofocus
+            onClick={onClose}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+            aria-label="Tutup panel"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">{children}</div>
       </div>
     </div>
   );

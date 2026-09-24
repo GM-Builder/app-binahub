@@ -3,6 +3,26 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.25.3] - 2026-09-24
+
+### Improved — Action-oriented admin experience
+
+- Mengubah dashboard admin menjadi pusat tindakan harian yang menampilkan pekerjaan melewati tenggat, peluang tanpa PIC, proposal menunggu keputusan, klien berisiko, dan milestone terlambat sebelum analitik diagnostik.
+- Menambahkan ringkasan nilai pipeline, deal bulan berjalan, inquiry baru, klien aktif, serta pintasan langsung ke ruang kerja terkait tanpa menampilkan tren yang belum memiliki data pembanding.
+- Merampingkan kartu pipeline agar lebih mudah dipindai dan mengganti modal detail dengan drawer kanan sehingga konteks kanban tetap terlihat.
+- Menyederhanakan istilah teknis yang masih terlihat pengguna, termasuk `suppression` menjadi "daftar jangan dihubungi" dan "persetujuan manusia" menjadi keputusan penanggung jawab.
+
+### Improved — Client program journey
+
+- Menambahkan peta perjalanan program yang memperlihatkan modul selesai, tersedia, dipandu fasilitator, dan belum dibuka dalam satu alur yang mudah dipahami.
+- Mengganti spinner halaman dengan skeleton stabil untuk mengurangi pergeseran tata letak saat data dimuat.
+- Mengubah kegagalan sesi menjadi pesan yang ramah pengguna dengan tombol masuk kembali, serta memperbaiki kontras label emas pada kartu program.
+
+### Improved — Commercial approval form
+
+- Mengubah persetujuan peluang lanjutan menjadi kartu keputusan penanggung jawab dengan penjelasan yang jelas.
+- Memindahkan konteks dan alasan opsional ke bagian informasi lanjutan agar formulir utama lebih ringkas tanpa mengubah aturan validasi bisnis.
+
 ## [0.25.2] - 2026-09-24
 
 ### Fixed — Stable production build

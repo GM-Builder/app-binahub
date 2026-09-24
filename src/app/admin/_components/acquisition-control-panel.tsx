@@ -166,7 +166,7 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
       name: "AI Lead Discovery — Apollo",
       providerType: "apollo",
       channel: "outbound",
-      acquisitionMethod: "Ekspor prospek secara manual dari Apollo Free dan impor CSV/JSON ke Batch Prospek. API tetap dinonaktifkan sampai paket Apollo Pro tersedia; seluruh data melalui validasi, deduplikasi, suppression, dan tinjauan manusia.",
+      acquisitionMethod: "Ekspor prospek secara manual dari Apollo Free dan impor CSV/JSON ke Batch Prospek. API tetap dinonaktifkan sampai paket Apollo Pro tersedia; seluruh data melalui validasi, deduplikasi, daftar jangan dihubungi, dan tinjauan manusia.",
       dataOwner: "admin@binahub.id",
       legalOwner: "admin@binahub.id",
       config: { mode: "manual_export", apiCallsEnabled: false },
@@ -261,7 +261,7 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
         <h3 className="mt-5 text-lg font-semibold">Alur yang aman</h3>
         <ol className="mt-4 space-y-4 text-sm text-white/68">
           <li className="flex gap-3"><span className="font-semibold text-[#E6BC66]">01</span><span>Data masuk dan sumbernya dicatat.</span></li>
-          <li className="flex gap-3"><span className="font-semibold text-[#E6BC66]">02</span><span>Duplikasi, suppression, dan kelengkapan diperiksa.</span></li>
+          <li className="flex gap-3"><span className="font-semibold text-[#E6BC66]">02</span><span>Duplikasi, daftar jangan dihubungi, dan kelengkapan diperiksa.</span></li>
           <li className="flex gap-3"><span className="font-semibold text-[#E6BC66]">03</span><span>Manusia memutuskan sebelum data dipromosikan.</span></li>
         </ol>
       </aside>

@@ -245,7 +245,7 @@ export function BusinessRulesPanel({ onAction }: { onAction: (url: string, init?
               <p className="mt-1 text-xs leading-relaxed text-slate-600">
                 {selected?.is_mock
                   ? "Katalog sementara masih aktif. Harga yang belum disepakati tidak dapat digunakan untuk penawaran resmi."
-                  : "Aturan aktif menggunakan katalog resmi. Proposal tetap mengikuti persetujuan manusia dan batas komersial."}
+                  : "Aturan aktif menggunakan katalog resmi. Proposal tetap mengikuti keputusan penanggung jawab dan batas komersial."}
               </p>
             </div>
           </div>

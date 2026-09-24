@@ -279,7 +279,7 @@ export function AdminShell({
           <section className="mb-6 border-b border-slate-200 pb-5">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#C58D27]">{eyebrow}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#80560F]">{eyebrow}</p>
                 <h1 className="mt-2 max-w-4xl text-2xl font-semibold tracking-[-0.035em] text-[#0B2C6B] sm:text-[2rem]">{title}</h1>
                 {description && <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>}
               </div>
