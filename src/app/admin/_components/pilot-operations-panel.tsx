@@ -343,7 +343,7 @@ export function PilotOperationsPanel({ onAction }: { onAction: AdminAction }) {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="UAT wajib" value={`${gates?.uat.passed || 0}/${gates?.uat.required || 12}`} icon={CheckCircle2} tone={gates?.uat.ready ? "success" : "gold"} />
-        <StatCard label="Template approved" value={`${gates?.templates.approvedNonMock || 0}/${gates?.templates.required || 18}`} icon={Gauge} tone={gates?.templates.ready ? "success" : "gold"} />
+        <StatCard label="Template approved" value={`${gates?.templates.approvedNonMock || 0}/${gates?.templates.required || 14}`} icon={Gauge} tone={gates?.templates.ready ? "success" : "gold"} />
         <StatCard label="Business Rules" value={gates?.businessRules.ready ? `Siap · ${gates.businessRules.activeVersion}` : "Terkunci"} icon={ShieldAlert} tone={gates?.businessRules.ready ? "success" : "danger"} />
         <StatCard label="Release approved" value={gates?.approvedRelease.count || 0} icon={Power} tone={gates?.approvedRelease.ready ? "success" : "default"} />
       </div>

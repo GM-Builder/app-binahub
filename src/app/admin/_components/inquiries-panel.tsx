@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Mail, PauseCircle, Phone, PlayCircle, Save } from "lucide-react";
+import { Bot, CheckCircle2, Mail, PauseCircle, Phone, PlayCircle, Save, Send } from "lucide-react";
 import { FOLLOW_UP_LEVELS, INQUIRY_STATUS_OPTIONS, NOTE_PRESETS } from "../_lib/constants";
 import type { ConfirmAction, InquiryRecord } from "../_lib/types";
 import { daysSince, formatDate, uniqueOptions } from "../_lib/utils";
@@ -20,6 +20,8 @@ export function InquiriesPanel({
   const [drafts, setDrafts] = useState<Record<string, { status: string; notes: string }>>({});
   const [actionError, setActionError] = useState("");
   const [followUpSending, setFollowUpSending] = useState<string | null>(null);
+  const [replyWorking, setReplyWorking] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, { subject: string; body: string }>>({});
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("Semua");
@@ -42,6 +44,66 @@ export function InquiriesPanel({
 
   const getDraft = (inquiry: InquiryRecord) =>
     drafts[inquiry.id] || { status: inquiry.status || "Baru", notes: inquiry.notes || "" };
+
+  const getReplyDraft = (inquiry: InquiryRecord) => replyDrafts[inquiry.id] || {
+    subject: inquiry.replySubject || "",
+    body: inquiry.replyBody || "",
+  };
+
+  const generateReplyDraft = async (inquiry: InquiryRecord) => {
+    setReplyWorking(`${inquiry.id}:generate`);
+    setActionError("");
+    try {
+      const result = await onAction("/api/admin/inquiries", {
+        method: "POST",
+        body: JSON.stringify({ action: "generate_reply_draft", id: inquiry.id }),
+      }) as { draft?: { subject?: string; body?: string } };
+      setReplyDrafts((current) => ({
+        ...current,
+        [inquiry.id]: {
+          subject: result.draft?.subject || "",
+          body: result.draft?.body || "",
+        },
+      }));
+      await onRefresh();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Gagal menyiapkan draf balasan.");
+    } finally {
+      setReplyWorking(null);
+    }
+  };
+
+  const saveReplyReview = async (inquiry: InquiryRecord) => {
+    setReplyWorking(`${inquiry.id}:review`);
+    setActionError("");
+    try {
+      await onAction("/api/admin/inquiries", {
+        method: "POST",
+        body: JSON.stringify({ action: "save_reply_review", id: inquiry.id, ...getReplyDraft(inquiry) }),
+      });
+      await onRefresh();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Gagal menyimpan hasil review.");
+    } finally {
+      setReplyWorking(null);
+    }
+  };
+
+  const sendReviewedReply = async (inquiry: InquiryRecord) => {
+    setReplyWorking(`${inquiry.id}:send`);
+    setActionError("");
+    try {
+      await onAction("/api/admin/inquiries", {
+        method: "POST",
+        body: JSON.stringify({ action: "send_reviewed_reply", id: inquiry.id, confirmation: "SEND_REVIEWED_INQUIRY_REPLY" }),
+      });
+      await onRefresh();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Gagal mengirim balasan yang telah direview.");
+    } finally {
+      setReplyWorking(null);
+    }
+  };
 
   const saveInquiry = async (inquiry: InquiryRecord) => {
     setSavingId(inquiry.id);
@@ -149,6 +211,57 @@ export function InquiriesPanel({
                 </div>
               </div>
             )}
+            <div className="mt-4 rounded-[12px] border border-[#0B2C6B]/12 bg-white p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-semibold text-[#0B2C6B]"><Bot size={16} /> Balasan inquiry dengan review manusia</p>
+                  <p className="mt-1 text-xs leading-relaxed text-black/50">AI hanya menyiapkan draf sesuai kebutuhan calon klien. Admin wajib membaca, mengedit bila perlu, menyimpan hasil review, lalu mengonfirmasi pengiriman.</p>
+                </div>
+                <Badge tone={inquiry.replyStatus === "sent" || inquiry.replyStatus === "reviewed" ? "green" : "gold"}>
+                  {inquiry.replyStatus === "sent" ? "Terkirim" : inquiry.replyStatus === "sending" ? "Sedang dikirim" : inquiry.replyStatus === "reviewed" ? "Sudah direview" : inquiry.replyStatus === "draft" ? "Draf AI" : "Belum dibuat"}
+                </Badge>
+              </div>
+              <div className="mt-4 grid gap-3">
+                <input
+                  value={getReplyDraft(inquiry).subject}
+                  onChange={(event) => setReplyDrafts((current) => ({ ...current, [inquiry.id]: { ...getReplyDraft(inquiry), subject: event.target.value } }))}
+                  disabled={inquiry.replyStatus === "sent"}
+                  placeholder="Subjek balasan"
+                  className="h-11 rounded-[10px] border border-black/10 bg-white px-3 text-sm outline-none focus:border-[#D9A441] disabled:bg-slate-50"
+                />
+                <textarea
+                  value={getReplyDraft(inquiry).body}
+                  onChange={(event) => setReplyDrafts((current) => ({ ...current, [inquiry.id]: { ...getReplyDraft(inquiry), body: event.target.value } }))}
+                  disabled={inquiry.replyStatus === "sent"}
+                  placeholder="Isi balasan yang relevan dengan pertanyaan atau kebutuhan calon klien..."
+                  className="min-h-44 rounded-[10px] border border-black/10 bg-white p-3 text-sm leading-relaxed outline-none focus:border-[#D9A441] disabled:bg-slate-50"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => void generateReplyDraft(inquiry)} disabled={Boolean(replyWorking) || inquiry.replyStatus === "sent"} className="inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-[#0B2C6B]/15 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-50">
+                    <Bot size={15} /> {replyWorking === `${inquiry.id}:generate` ? "Menyiapkan..." : inquiry.replyStatus === "draft" ? "Buat ulang draf AI" : "Siapkan draf AI"}
+                  </button>
+                  <button type="button" onClick={() => void saveReplyReview(inquiry)} disabled={Boolean(replyWorking) || inquiry.replyStatus === "sent" || getReplyDraft(inquiry).subject.trim().length < 3 || getReplyDraft(inquiry).body.trim().length < 20} className="inline-flex min-h-10 items-center gap-2 rounded-[10px] bg-[#0B2C6B] px-3 text-xs font-semibold text-white disabled:opacity-50">
+                    <CheckCircle2 size={15} /> {replyWorking === `${inquiry.id}:review` ? "Menyimpan..." : "Simpan hasil review"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction({
+                      title: "Kirim balasan inquiry yang sudah direview?",
+                      description: "Email akan langsung dikirim ke calon klien. Setelah terkirim, draf dikunci dan follow-up otomatis inquiry dijeda.",
+                      confirmLabel: "Kirim Balasan",
+                      tone: "gold",
+                      details: [`Nama: ${inquiry.name}`, `Email: ${inquiry.email}`, `Subjek: ${inquiry.replySubject || getReplyDraft(inquiry).subject}`],
+                      onConfirm: () => sendReviewedReply(inquiry),
+                    })}
+                    disabled={Boolean(replyWorking) || inquiry.replyStatus !== "reviewed"}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-[10px] bg-[#D9A441] px-3 text-xs font-semibold text-[#071B3D] disabled:opacity-50"
+                  >
+                    <Send size={15} /> {replyWorking === `${inquiry.id}:send` ? "Mengirim..." : "Kirim yang direview"}
+                  </button>
+                </div>
+                {inquiry.replyReviewedBy && <p className="text-[10px] uppercase tracking-[0.1em] text-black/35">Review terakhir: {inquiry.replyReviewedBy} · {formatDate(inquiry.replyReviewedAt || null)}</p>}
+              </div>
+            </div>
             <div className="mt-4 grid gap-2 rounded-[12px] border border-black/[0.05] bg-white p-3 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <p className="text-xs leading-relaxed text-black/50">

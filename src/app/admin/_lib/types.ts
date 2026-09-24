@@ -176,6 +176,14 @@ export type InquiryRecord = {
   followUpLevel?: number;
   followUpLastSentAt?: string | null;
   followUpPaused?: boolean;
+  replySubject?: string;
+  replyBody?: string;
+  replyStatus?: "none" | "draft" | "reviewed" | "sending" | "sent";
+  replyGeneratedAt?: string | null;
+  replyReviewedAt?: string | null;
+  replyReviewedBy?: string | null;
+  replySentAt?: string | null;
+  replyEmailId?: string | null;
   moduleRequest?: {
     requestedAt?: string;
     modules?: Array<{ id?: string; code?: string; name?: string; basePrice?: number; currency?: string; catalogVersion?: string }>;

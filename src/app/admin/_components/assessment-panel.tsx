@@ -1000,7 +1000,7 @@ function AssessmentFollowUpBox({
         <Badge tone={disabled ? "navy" : "gold"}>{disabled ? "Belum siap" : "Ready"}</Badge>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        {FOLLOW_UP_LEVELS.map((item) => {
+        {(channel === "proposal" ? FOLLOW_UP_LEVELS.slice(0, 1) : FOLLOW_UP_LEVELS).map((item) => {
           const id = `${record.id}:${channel}:follow_up_${item.level}`;
           const currentLevel = channel === "result" ? record.resultFollowUpLevel || 0 : record.proposalFollowUpLevel || 0;
           const sent = item.level <= currentLevel;

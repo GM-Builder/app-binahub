@@ -5,6 +5,16 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-09-24
+
+### Added — Email template administration
+
+- Menambahkan pilihan template marketing blast awal, follow-up marketing, dan konfirmasi konsultasi pada editor template Pengaturan Bisnis.
+- Menyelaraskan editor app dengan katalog email bilingual API v0.26.2 dan 14 template wajib pada activation gate follow-up production.
+- Menambahkan workspace balasan inquiry berbantuan AI: buat draf, edit, simpan hasil review manusia, dan konfirmasi kirim sebagai tindakan terpisah.
+- Menampilkan status draf/review/pengiriman, identitas reviewer, serta mengunci tombol kirim sampai human gate benar-benar lulus.
+- Membatasi kontrol follow-up Preliminary Recommendation menjadi satu kali sesuai keputusan bisnis terbaru.
+
 ## [0.24.2] - 2026-09-23
 
 ### Changed — Visual UI Design System Modernization (Pure Visual Polish)

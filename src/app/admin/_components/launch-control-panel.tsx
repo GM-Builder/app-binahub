@@ -197,7 +197,7 @@ export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
                 <div>
                   <p className="font-bold">Snapshot lama perlu diselaraskan</p>
                   <p className="mt-1 max-w-2xl text-xs leading-relaxed text-blue-900/75">
-                    Sistem akan memvalidasi kebijakan transaksi, tujuh owner, enam approver, empat SLA, dua wording finance/legal, dan 18 template yang tersimpan. Katalog tetap dikelola admin dan kesiapan setiap modul diperiksa saat modul digunakan.
+                    Sistem akan memvalidasi kebijakan transaksi, tujuh owner, enam approver, empat SLA, dua wording finance/legal, dan 14 template follow-up wajib yang tersimpan. Katalog tetap dikelola admin dan kesiapan setiap modul diperiksa saat modul digunakan.
                   </p>
                   <p className="mt-2 text-xs font-semibold text-blue-900">Penyelarasan tidak mengaktifkan workflow, n8n, release, atau master switch.</p>
                 </div>
@@ -231,7 +231,7 @@ export function LaunchControlPanel({ onAction }: { onAction: AdminAction }) {
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">Modul siap</p><p className="mt-1 text-lg font-bold text-[#0B2C6B]">{payload?.catalog.readyNonMockModules || 0}</p></div>
             <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">Modul siap berharga</p><p className="mt-1 text-lg font-bold text-[#0B2C6B]">{payload?.catalog.pricedReadyModules || 0}</p></div>
-            <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">Template approved</p><p className="mt-1 text-lg font-bold text-[#0B2C6B]">{payload?.templates.approvedNonMock || 0}/{payload?.templates.required || 18}</p></div>
+            <div className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">Template approved</p><p className="mt-1 text-lg font-bold text-[#0B2C6B]">{payload?.templates.approvedNonMock || 0}/{payload?.templates.required || 14}</p></div>
           </div>
         </Panel>
 
