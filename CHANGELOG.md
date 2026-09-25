@@ -3,6 +3,22 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.0] - 2026-09-25
+
+### Added — Satu pintu penugasan melalui AMS
+
+- Mengubah penugasan fasilitator T-BOS menjadi penawaran assignment ke associate aktif di AMS; akses program baru aktif setelah associate menerima dan memulai assignment.
+- Menambahkan penugasan pembicara LEP dari daftar associate aktif AMS; opsi pemateri manual tetap tersedia untuk pembicara eksternal.
+- Menambahkan endpoint admin APP untuk mencari associate AMS dan membuat assignment dengan komunikasi server-to-server bertanda tangan HMAC.
+- Menambahkan callback tiket sekali pakai yang membuat sesi APP dari identitas AMS tanpa meminta associate membuat akun atau password kedua.
+- Memindahkan klaim tiket dan pembuatan token login ke API tepercaya; frontend APP tidak menyimpan atau membutuhkan service-role key.
+- Menambahkan runbook deployment, environment, worker, smoke test, UAT, dan rollback integrasi AMS–APP di `docs/AMS_APP_INTEGRATION.md`.
+
+### Security
+
+- Membatasi akses modul tetap berdasarkan assignment program; role fasilitator saja tidak memberikan akses ke program lain.
+- Menambahkan ledger event integrasi, tautan identitas AMS–APP, tiket masuk kedaluwarsa, dan pemrosesan event yang idempoten melalui migrasi API `0056_ams_assignment_integration.sql`.
+
 ## [0.25.5] - 2026-09-24
 
 ### Changed — Sales pipeline and consultation workspace

@@ -15,6 +15,7 @@ import {
   Quote,
   RefreshCw,
   Trash2,
+  UserPlus,
   UsersRound,
   X,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { TbosProgramSelector } from "@/components/tbos-program-selector";
 import { supabase } from "@/lib/supabase";
 import { BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Bar, Cell, LabelList } from "@/components/lazy-charts";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface LepSpeaker {
   id: string;
@@ -99,6 +101,13 @@ function AdminLepContent() {
   const [mutationError, setMutationError] = useState("");
   const [mutating, setMutating] = useState(false);
   const speakerDialogRef = useDialogFocus<HTMLDivElement>(() => setShowSpeakerModal(false), mutating, showSpeakerModal);
+  const [showAmsModal, setShowAmsModal] = useState(false);
+  const [amsAssociates, setAmsAssociates] = useState<Array<{ id: string; fullName: string; email: string; availability?: string | null }>>([]);
+  const [selectedAssociateId, setSelectedAssociateId] = useState("");
+  const [amsError, setAmsError] = useState("");
+  const [amsSuccess, setAmsSuccess] = useState(false);
+  const [amsLoading, setAmsLoading] = useState(false);
+  const amsDialogRef = useDialogFocus<HTMLDivElement>(() => setShowAmsModal(false), amsLoading, showAmsModal);
 
   // Open text filter
   const [openTextTab, setOpenTextTab] = useState<OpenTextTab>("halTerpenting");
@@ -196,6 +205,52 @@ function AdminLepContent() {
       setMutationError(err instanceof Error ? err.message : "Gagal menambah pemateri.");
     } finally {
       setMutating(false);
+    }
+  };
+
+  const openAmsAssignment = async () => {
+    setAmsLoading(true);
+    setAmsError("");
+    setAmsSuccess(false);
+    try {
+      const response = await apiFetch("/api/integrations/ams/associates");
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal memuat associate AMS.");
+      const associates = Array.isArray(result.data) ? result.data : [];
+      setAmsAssociates(associates);
+      setSelectedAssociateId(associates[0]?.id || "");
+      setShowAmsModal(true);
+    } catch (error) {
+      setMutationError(error instanceof Error ? error.message : "Gagal memuat associate AMS.");
+    } finally {
+      setAmsLoading(false);
+    }
+  };
+
+  const handleAmsAssignment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!programId || !selectedAssociateId) return;
+    setAmsLoading(true);
+    setAmsError("");
+    try {
+      const response = await apiFetch("/api/integrations/ams/assignment-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          programId,
+          moduleKey: "lep",
+          role: "Pembicara LEP",
+          associateIds: [selectedAssociateId],
+          scope: {},
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal mengirim penawaran assignment.");
+      setAmsSuccess(true);
+    } catch (error) {
+      setAmsError(error instanceof Error ? error.message : "Gagal mengirim penawaran assignment.");
+    } finally {
+      setAmsLoading(false);
     }
   };
 
@@ -352,19 +407,25 @@ function AdminLepContent() {
                   <p className="text-xs text-[#4A4C54]/60">Jumlah pemateri fleksibel sesuai kebutuhan program.</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingSpeaker(null);
-                  setNewSpeakerName("");
-                  setMutationError("");
-                  setShowSpeakerModal(true);
-                }}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#071B3D]"
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                Tambah Pemateri
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => void openAmsAssignment()} disabled={amsLoading} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#071B3D] disabled:opacity-60">
+                  {amsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />}
+                  Tugaskan dari AMS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingSpeaker(null);
+                    setNewSpeakerName("");
+                    setMutationError("");
+                    setShowSpeakerModal(true);
+                  }}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 px-3.5 py-2 text-xs font-semibold text-[#0B2C6B] transition hover:bg-[#F5F7FA]"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  Tambah manual
+                </button>
+              </div>
             </div>
             <div className="px-5 py-4">
               {speakers.length === 0 ? (
@@ -526,6 +587,36 @@ function AdminLepContent() {
       )}
 
       {/* Add / edit speaker modal */}
+      {showAmsModal && (
+        <div ref={amsDialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="ams-speaker-title">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-4">
+              <div>
+                <h2 id="ams-speaker-title" className="font-bold text-[#0B2C6B]">Tugaskan Pembicara dari AMS</h2>
+                <p className="mt-1 text-xs text-slate-500">Pembicara masuk ke daftar setelah menerima assignment.</p>
+              </div>
+              <button type="button" data-autofocus onClick={() => setShowAmsModal(false)} aria-label="Tutup" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-slate-100"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={handleAmsAssignment} className="space-y-4 p-5">
+              {amsError && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">{amsError}</p>}
+              {amsSuccess && <p className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Penawaran dikirim. Daftar pemateri diperbarui otomatis setelah associate menerima assignment.</p>}
+              {amsAssociates.length > 0 ? (
+                <div>
+                  <label htmlFor="lep-ams-associate" className="mb-1.5 block text-xs font-semibold text-[#0B2C6B]">Associate AMS</label>
+                  <select id="lep-ams-associate" value={selectedAssociateId} onChange={(event) => setSelectedAssociateId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm outline-none focus:border-[#0B2C6B]">
+                    {amsAssociates.map((associate) => <option key={associate.id} value={associate.id}>{associate.fullName || associate.email}{associate.availability ? ` · ${associate.availability}` : ""}</option>)}
+                  </select>
+                </div>
+              ) : <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada associate aktif di AMS.</p>}
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setShowAmsModal(false)} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
+                <button type="submit" disabled={amsLoading || amsSuccess || !selectedAssociateId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">{amsLoading ? "Mengirim..." : "Kirim Penawaran"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showSpeakerModal && (
         <div ref={speakerDialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="add-speaker-title">
           <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl">

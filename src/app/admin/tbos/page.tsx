@@ -108,7 +108,7 @@ function TbosDashboardContent() {
 
   // Facilitator assignment state
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
-  const [facilitators, setFacilitators] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
+  const [facilitators, setFacilitators] = useState<Array<{ id: string; full_name: string; email: string; headline?: string | null; availability?: string | null }>>([]);
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
@@ -249,13 +249,18 @@ function TbosDashboardContent() {
     setAssignmentError("");
     setAssignmentSuccess(false);
     try {
-      const usersRes = await apiFetch("/api/users");
+      const usersRes = await apiFetch("/api/integrations/ams/associates");
       const usersResult = await usersRes.json();
 
-      if (!usersRes.ok || !usersResult.success) throw new Error(usersResult.error || "Gagal memuat fasilitator.");
+      if (!usersRes.ok || !usersResult.success) throw new Error(usersResult.error || "Gagal memuat associate AMS.");
 
-      const available = (usersResult.users as Array<{ id: string; full_name: string; email: string; role: string }>)
-        .filter((user) => user.role === "facilitator");
+      const available = (usersResult.data as Array<{ id: string; fullName: string; email: string; headline?: string | null; availability?: string | null }>).map((associate) => ({
+        id: associate.id,
+        full_name: associate.fullName,
+        email: associate.email,
+        headline: associate.headline,
+        availability: associate.availability,
+      }));
       setFacilitators(available);
       setSelectedFacilitatorId(available[0]?.id || "");
 
@@ -274,16 +279,22 @@ function TbosDashboardContent() {
     setAssigning(true);
     setAssignmentError("");
     try {
-      const { assignFacilitatorToProgram } = await import("@/modules/tbos/api-client");
-      const result = await assignFacilitatorToProgram({
-        facilitatorId: selectedFacilitatorId,
-        programId: selectedProgramId,
+      const response = await apiFetch("/api/integrations/ams/assignment-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          programId: selectedProgramId,
+          moduleKey: "tbos",
+          role: "Fasilitator T-BOS",
+          associateIds: [selectedFacilitatorId],
+          scope: {},
+        }),
       });
-      if (!result.success) throw new Error(result.error || "Gagal menugaskan fasilitator.");
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || "Gagal mengirim penawaran assignment.");
       setAssignmentSuccess(true);
-      await loadFacilitatorAssignments();
     } catch (err) {
-      setAssignmentError(err instanceof Error ? err.message : "Gagal menugaskan fasilitator.");
+      setAssignmentError(err instanceof Error ? err.message : "Gagal mengirim penawaran assignment.");
     } finally {
       setAssigning(false);
     }
@@ -977,7 +988,7 @@ function AssignmentModal({
   onSubmit,
   onClose,
 }: {
-  facilitators: Array<{ id: string; full_name: string; email: string }>;
+  facilitators: Array<{ id: string; full_name: string; email: string; headline?: string | null; availability?: string | null }>;
   facilitatorId: string;
   setFacilitatorId: (value: string) => void;
   loading: boolean;
@@ -1003,21 +1014,22 @@ function AssignmentModal({
         </div>
         <form onSubmit={onSubmit} className="space-y-4 p-5">
           {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-          {success && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Fasilitator berhasil ditugaskan ke program.</p>}
+          {success && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Penawaran assignment sudah dikirim melalui AMS. Akses program aktif otomatis setelah associate menerima dan memulai penugasan.</p>}
           {facilitators.length === 0 ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Belum ada akun dengan role fasilitator.</p>
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Belum ada associate aktif di AMS.</p>
           ) : (
             <div>
-              <label htmlFor="tbos-facilitator" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#0B2C6B]">Fasilitator</label>
+              <label htmlFor="tbos-facilitator" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#0B2C6B]">Associate AMS</label>
               <select id="tbos-facilitator" value={facilitatorId} onChange={(event) => setFacilitatorId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white">
-                {facilitators.map((facilitator) => <option key={facilitator.id} value={facilitator.id}>{facilitator.full_name || facilitator.email}</option>)}
+                {facilitators.map((facilitator) => <option key={facilitator.id} value={facilitator.id}>{facilitator.full_name || facilitator.email}{facilitator.availability ? ` · ${facilitator.availability}` : ""}</option>)}
               </select>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Associate menerima penawaran di AMS terlebih dahulu. Akun dan akses T-BOS disiapkan otomatis saat status assignment berjalan.</p>
             </div>
           )}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-[#4A4C54] transition-colors hover:bg-slate-50">Batal</button>
             <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50">
-              {loading ? "Menyimpan..." : "Simpan Penugasan"}
+              {loading ? "Mengirim..." : "Kirim Penawaran"}
             </button>
           </div>
         </form>
