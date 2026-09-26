@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolvePublicAppOrigin } from "@/lib/public-app-origin";
 
 const API_ORIGIN = (process.env.NEXT_PUBLIC_BINAHUB_API_URL || "https://api.binahub.id").replace(/\/+$/, "");
 
 function signInRedirect(request: NextRequest, response: NextResponse) {
-  const url = new URL("/", request.url);
+  const url = new URL("/", resolvePublicAppOrigin(request.nextUrl.origin));
   url.searchParams.set("mode", "signin");
   url.searchParams.set("reason", "session_expired");
   url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
@@ -14,7 +15,7 @@ function signInRedirect(request: NextRequest, response: NextResponse) {
 }
 
 function accessDeniedRedirect(request: NextRequest, response: NextResponse) {
-  const redirect = NextResponse.redirect(new URL("/access-denied", request.url), 303);
+  const redirect = NextResponse.redirect(new URL("/access-denied", resolvePublicAppOrigin(request.nextUrl.origin)), 303);
   response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
   return redirect;
 }

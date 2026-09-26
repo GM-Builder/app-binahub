@@ -3,6 +3,12 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.1] - 2026-09-27
+
+### Fixed
+
+- Menggunakan origin publik APP yang terpercaya pada callback AMS, callback login, dan redirect proxy agar reverse proxy Hostinger tidak lagi mengarahkan browser ke alamat internal `0.0.0.0:3000`.
+
 ## [0.26.0] - 2026-09-25
 
 ### Added — Satu pintu penugasan melalui AMS

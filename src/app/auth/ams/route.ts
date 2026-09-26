@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeInternalPath } from "@/lib/safe-navigation";
+import { resolvePublicAppOrigin } from "@/lib/public-app-origin";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -34,11 +35,11 @@ export async function GET(request: NextRequest) {
   if (verifyError) return redirectToSignIn(request, "ams_session_failed");
 
   const destination = safeInternalPath(login.nextPath || "/fasilitator/tbos", "/fasilitator/tbos");
-  return NextResponse.redirect(new URL(destination, request.nextUrl.origin), 303);
+  return NextResponse.redirect(new URL(destination, resolvePublicAppOrigin(request.nextUrl.origin)), 303);
 }
 
 function redirectToSignIn(request: NextRequest, reason: string) {
-  const destination = new URL("/", request.nextUrl.origin);
+  const destination = new URL("/", resolvePublicAppOrigin(request.nextUrl.origin));
   destination.searchParams.set("mode", "signin");
   destination.searchParams.set("error", reason);
   return NextResponse.redirect(destination, 303);
