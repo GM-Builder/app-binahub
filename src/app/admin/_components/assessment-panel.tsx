@@ -47,6 +47,19 @@ function pricingUnitLabel(unit?: string) {
   return labels[unit || ""] || unit?.replaceAll("_", " ") || "paket";
 }
 
+function proposalModuleSuggestions(record: AssessmentRecord, products: CatalogProduct[], modules: CatalogModule[]) {
+  const serviceKeys = new Set(record.recommendations
+    .map((recommendation) => String(recommendation.service || "").toLocaleLowerCase("id-ID").replace(/[^a-z0-9]+/g, ""))
+    .filter(Boolean));
+  return modules.filter((module) => {
+    const product = products.find((item) => item.id === module.product_id);
+    const productKey = String(product?.product_key || "").toLocaleLowerCase("id-ID").replace(/[^a-z0-9]+/g, "");
+    const productName = String(product?.name || "").toLocaleLowerCase("id-ID").replace(/[^a-z0-9]+/g, "");
+    return module.active && module.readiness_status === "ready" && !module.is_mock
+      && Array.from(serviceKeys).some((service) => productKey === service || productKey === `bina${service}` || productName === service || productName === `bina${service}`);
+  }).slice(0, 2);
+}
+
 function proposalGateLabel(status?: string) {
   const labels: Record<string, string> = {
     not_evaluated: "Belum dievaluasi",
@@ -236,11 +249,18 @@ export function AssessmentPanel({
       });
     }
     setBuilderId((current) => current === record.id ? null : record.id);
-    if (catalog) return;
+    if (catalog) {
+      const suggestions = proposalModuleSuggestions(record, catalog.products, catalog.modules);
+      if (suggestions.length > 0) setSelectedModules(Object.fromEntries(suggestions.map((module) => [module.id, 1])));
+      return;
+    }
     setCatalogLoading(true);
     try {
       const result = await onAction("/api/admin/business-rules") as { products?: CatalogProduct[]; modules?: CatalogModule[]; selectedRuleSet?: { version?: string; is_mock?: boolean } };
-      setCatalog({ products: result.products || [], modules: result.modules || [], selectedRuleSet: result.selectedRuleSet });
+      const nextCatalog = { products: result.products || [], modules: result.modules || [], selectedRuleSet: result.selectedRuleSet };
+      setCatalog(nextCatalog);
+      const suggestions = proposalModuleSuggestions(record, nextCatalog.products, nextCatalog.modules);
+      if (suggestions.length > 0) setSelectedModules(Object.fromEntries(suggestions.map((module) => [module.id, 1])));
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal memuat katalog modul.");
     } finally {
@@ -641,10 +661,11 @@ export function AssessmentPanel({
                           <button
                             type="button"
                             onClick={() => void openProposalBuilder(record)}
-                            disabled={catalogLoading}
+                            disabled={catalogLoading || record.proposalEligibility?.eligible === false}
+                            title={record.proposalEligibility?.eligible === false ? record.proposalEligibility.summary : "AI menyusun draf dari hasil assessment dan modul katalog resmi yang relevan."}
                             className="h-12 rounded-[10px] border border-[#0B2C6B]/20 bg-[#EAF0F7] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
                           >
-                            {builderId === record.id ? "Tutup Draft" : "Siapkan Draft"}
+                            {builderId === record.id ? "Tutup Draf AI" : "Buat dengan AI"}
                           </button>
                           <button
                             onClick={() =>
@@ -665,6 +686,11 @@ export function AssessmentPanel({
                           </button>
                         </div>
                       </div>
+                      {record.proposalEligibility && (
+                        <div className={`mt-3 rounded-[10px] border px-3 py-3 text-xs leading-5 ${record.proposalEligibility.eligible ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+                          <strong>{record.proposalEligibility.eligible ? "Siap dibuat dengan AI." : "Draf AI belum dapat dibuat."}</strong>{" "}{record.proposalEligibility.summary}
+                        </div>
+                      )}
                       <div className="mt-4 rounded-[12px] border border-black/[0.07] bg-[#F8FAFC] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
@@ -796,7 +822,7 @@ export function AssessmentPanel({
                             <textarea value={proposalNotes} onChange={(event) => setProposalNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-slate-200 p-3 font-normal" />
                           </label>
                           <div className="mt-3 flex justify-end">
-                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft`} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">Buat Draf & Periksa Persetujuan</button>
+                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft` || record.proposalEligibility?.eligible === false} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">Buat Draf dengan AI</button>
                           </div>
                         </div>
                       )}

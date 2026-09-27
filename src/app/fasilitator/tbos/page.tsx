@@ -57,6 +57,7 @@ const LEVEL_COLORS: Record<number, { chip: string; chipActive: string; badge: st
 const levelColors = (value: number | undefined) => LEVEL_COLORS[value || 0] || LEVEL_COLORS[3];
 
 const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
+const OBSERVATION_NOTES_MAX_LENGTH = 2000;
 
 export default function TbosObservationPage() {
   return (
@@ -394,7 +395,7 @@ function TbosObservationContent() {
   };
 
   const handleNotesChange = (value: string) => {
-    const nextNotes = value.slice(0, 50);
+    const nextNotes = value.slice(0, OBSERVATION_NOTES_MAX_LENGTH);
     setNotes(nextNotes);
     if (selectedTeam && selectedMission) saveDraft(selectedTeam.id, selectedMission.id, scores, nextNotes);
   };
@@ -961,9 +962,10 @@ function TbosObservationContent() {
            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="notes-title">
             <div className="flex items-center justify-between gap-3">
               <label id="notes-title" htmlFor="observation-notes" className="font-bold text-primary-dark">Catatan observasi <span className="font-normal text-slate-400">(opsional)</span></label>
-              <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/50</span>
+              <span className="text-xs font-bold tabular-nums text-slate-500" aria-live="polite">{notes.length}/{OBSERVATION_NOTES_MAX_LENGTH}</span>
             </div>
-            <textarea id="observation-notes" value={notes} maxLength={50} rows={3} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Contoh: Tim mengubah strategi setelah twist." className={`mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
+            <p className="mt-1 text-xs leading-5 text-slate-500">Catat perilaku yang terlihat, konteks kejadian, dan bukti yang mendukung skor.</p>
+            <textarea id="observation-notes" value={notes} maxLength={OBSERVATION_NOTES_MAX_LENGTH} rows={6} onChange={(event) => handleNotesChange(event.target.value)} placeholder="Contoh: Tim mengubah strategi setelah twist, membagi peran dengan jelas, tetapi keputusan akhir masih didominasi satu anggota." className={`mt-3 w-full resize-y rounded-2xl border border-slate-200 bg-[#F7F6F2] p-3 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 ${FOCUS}`} />
           </section>
 
           <BottomAction disabled={!allDimensionsScored} onClick={() => setStep("review")} label={allDimensionsScored ? "Tinjau Observasi" : `${scoredCount}/${selectedMission.dimensions.length} Kompetensi Dinilai`} />
@@ -1026,7 +1028,7 @@ function TbosObservationContent() {
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(8,29,66,0.05)]" aria-labelledby="review-notes-title">
             <div className="flex items-center justify-between gap-3">
               <h2 id="review-notes-title" className="text-lg font-bold text-primary-dark">Catatan <span className="text-sm font-normal text-slate-400">(opsional)</span></h2>
-              <span className="text-xs font-bold tabular-nums text-slate-400">{notes.length}/50</span>
+              <span className="text-xs font-bold tabular-nums text-slate-400">{notes.length}/{OBSERVATION_NOTES_MAX_LENGTH}</span>
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">{notes || "Tidak ada catatan."}</p>
           </section>

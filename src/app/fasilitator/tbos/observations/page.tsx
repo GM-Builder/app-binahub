@@ -548,13 +548,13 @@ function ObservationDetailPanel({
               <div>
                 <h3 className="text-sm font-semibold text-[#0B2C6B] mb-2">Catatan</h3>
                 {editing ? (
-                  <input
-                    type="text"
+                  <textarea
                     value={editedNotes}
-                    onChange={(e) => setEditedNotes(e.target.value.slice(0, 50))}
-                    maxLength={50}
-                    className="w-full px-3 py-2 rounded-lg border border-black/10 text-sm focus:outline-none focus:border-[#0B2C6B]"
-                    placeholder="Catatan opsional (maks 50 karakter)"
+                    onChange={(e) => setEditedNotes(e.target.value.slice(0, 2000))}
+                    maxLength={2000}
+                    rows={6}
+                    className="w-full resize-y px-3 py-2 rounded-lg border border-black/10 text-sm leading-relaxed focus:outline-none focus:border-[#0B2C6B]"
+                    placeholder="Catatan observasi (maksimal 2.000 karakter)"
                   />
                 ) : (
                   <p className="text-sm text-[#4A4C54] p-3 rounded-lg bg-[#F5F7FA]">

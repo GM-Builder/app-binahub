@@ -3,6 +3,20 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.2] - 2026-09-27
+
+### Added
+
+- Menampilkan kesiapan pembuatan Preliminary Recommendation berbantuan AI pada detail assessment, termasuk alasan yang masih harus dilengkapi sebelum tombol dapat digunakan.
+- Menyarankan modul katalog resmi yang relevan berdasarkan rekomendasi hasil assessment ketika admin membuka penyusun proposal.
+- Mendokumentasikan model program induk multi-modul: T-BOS dan LEP menggunakan assignment terpisah agar fasilitator, jumlah kebutuhan, kompensasi, progres, dan akses dapat dikelola secara independen.
+- Mendokumentasikan kompensasi khusus per associate dalam assignment yang sama, termasuk penguncian nilai setelah undangan diterima dan migrasi AMS `012_assignee_compensation.sql`.
+
+### Changed
+
+- Memulai jadwal follow-up inquiry setelah balasan awal BinaHub benar-benar dikirim, bukan sejak inquiry dibuat; pengiriman balasan awal tidak lagi otomatis menjeda seluruh rangkaian follow-up.
+- Memperluas catatan observasi fasilitator T-BOS menjadi maksimum 2.000 karakter, lengkap dengan penghitung karakter dan area tulis yang lebih nyaman.
+
 ## [0.26.1] - 2026-09-27
 
 ### Fixed

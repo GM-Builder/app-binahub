@@ -26,12 +26,25 @@ Dokumen ini menjelaskan jalur produksi untuk identitas associate, penawaran assi
 
 Untuk T-BOS, sinkronisasi menggunakan prosedur assignment yang sudah ada agar kompetensi default dan guardrail program tetap dijalankan. Untuk LEP, associate aktif dipetakan menjadi pembicara program. Pembicara eksternal tetap dapat ditambahkan secara manual.
 
+## Model program dengan beberapa modul
+
+Satu kontrak atau program klien adalah **program induk** di APP. T-BOS, LEP, dan layanan lain adalah **modul pekerjaan** di bawah program tersebut. Assignment tidak mewakili satu orang; assignment mewakili satu kebutuhan kerja dengan modul, peran, ruang lingkup, jadwal, kebutuhan jumlah orang, dan kompensasi yang sama. Satu assignment dapat mengundang beberapa associate.
+
+Contoh program induk yang membutuhkan T-BOS dan LEP:
+
+1. Buat assignment **Fasilitator T-BOS** yang terhubung ke program induk dan modul `tbos`. Isi jumlah fasilitator yang dibutuhkan serta kompensasi T-BOS, lalu undang satu atau beberapa associate yang sesuai.
+2. Buat assignment **Pembicara LEP** yang terhubung ke program induk yang sama dan modul `lep`. Isi jumlah pembicara serta kompensasi LEP secara terpisah, lalu undang associate yang berbeda.
+3. Penerimaan, penolakan, progres, bukti kerja, kompensasi, dan akses APP dikelola per assignment. Perubahan assignment T-BOS tidak mengubah assignment LEP.
+
+Jangan menggabungkan dua modul dengan peran atau kompensasi berbeda dalam satu assignment. Perbedaan kompensasi antara T-BOS dan LEP dikelola melalui dua assignment modul. Jika associate dalam modul yang sama menerima nilai berbeda, admin menetapkan kompensasi khusus untuk setiap associate saat memilih penerima, sebelum undangan dikirim. Nilai masih dapat dikoreksi selama statusnya `invited` atau `applied`; setelah undangan diterima, kesepakatan dikunci.
+
 ## Migrasi database wajib
 
 Jalankan satu kali sebelum deployment aplikasi:
 
 1. Pada database Supabase APP/API: `binahub-api/supabase/migrations/0056_ams_assignment_integration.sql`.
 2. Pada database Supabase AMS: `binahub-platform/packages/database/migrations/011_app_assignment_integration.sql`.
+3. Untuk kompensasi berbeda per associate, jalankan `binahub-platform/packages/database/migrations/012_assignee_compensation.sql`.
 
 Kedua migrasi idempoten untuk object utama, tetapi tetap simpan bukti hasil eksekusinya.
 

@@ -34,6 +34,11 @@ export type AssessmentRecord = {
   scores: Record<string, number>;
   aiAnalysis: string;
   recommendations: Recommendation[];
+  proposalEligibility?: {
+    eligible: boolean;
+    missing: string[];
+    summary: string;
+  };
   answers: Record<string, number>;
   assessmentStatus: string;
   resultEmailSentAt: string | null;
