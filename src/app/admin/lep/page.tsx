@@ -27,6 +27,7 @@ import { supabase } from "@/lib/supabase";
 import { BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Bar, Cell, LabelList } from "@/components/lazy-charts";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { apiFetch } from "@/lib/api-fetch";
+import { AssignmentOfferFields, newAssignmentOfferDraft, parseAssignmentOffer, type AssignmentOfferDraft } from "@/components/assignment-offer-fields";
 
 interface LepSpeaker {
   id: string;
@@ -107,6 +108,7 @@ function AdminLepContent() {
   const [amsError, setAmsError] = useState("");
   const [amsSuccess, setAmsSuccess] = useState(false);
   const [amsLoading, setAmsLoading] = useState(false);
+  const [amsOffer, setAmsOffer] = useState<AssignmentOfferDraft>(newAssignmentOfferDraft);
   const amsDialogRef = useDialogFocus<HTMLDivElement>(() => setShowAmsModal(false), amsLoading, showAmsModal);
 
   // Open text filter
@@ -212,6 +214,7 @@ function AdminLepContent() {
     setAmsLoading(true);
     setAmsError("");
     setAmsSuccess(false);
+    setAmsOffer(newAssignmentOfferDraft());
     try {
       const response = await apiFetch("/api/integrations/ams/associates");
       const result = await response.json().catch(() => ({}));
@@ -230,6 +233,9 @@ function AdminLepContent() {
   const handleAmsAssignment = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!programId || !selectedAssociateId) return;
+    let offer;
+    try { offer = parseAssignmentOffer(amsOffer); }
+    catch (offerError) { setAmsError(offerError instanceof Error ? offerError.message : "Fee penawaran belum lengkap."); return; }
     setAmsLoading(true);
     setAmsError("");
     try {
@@ -239,8 +245,9 @@ function AdminLepContent() {
         body: JSON.stringify({
           programId,
           moduleKey: "lep",
-          role: "Pembicara LEP",
+          role: "Pembicara",
           associateIds: [selectedAssociateId],
+          ...offer,
           scope: {},
         }),
       });
@@ -356,8 +363,8 @@ function AdminLepContent() {
             <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Pilih Program</p>
-            <p className="mt-0.5 text-xs text-[#4A4C54]/70">Kelola pemateri dan lihat hasil evaluasi per program.</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D9A441]">Pilih Project</p>
+            <p className="mt-0.5 text-xs text-[#4A4C54]/70">Kelola pemateri dan lihat hasil evaluasi per project.</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -389,8 +396,8 @@ function AdminLepContent() {
         <section className="rounded-2xl border border-slate-200 bg-white">
           <EmptyState
             icon={ClipboardCheck}
-            title="Pilih program terlebih dahulu"
-            description="Data pemateri dan hasil evaluasi LEP ditampilkan per program."
+            title="Pilih project terlebih dahulu"
+            description="Data pemateri dan hasil evaluasi LEP ditampilkan per project."
           />
         </section>
       ) : (
@@ -404,7 +411,7 @@ function AdminLepContent() {
                 </span>
                 <div>
                   <h2 className="text-sm font-bold text-[#0B2C6B]">Daftar Pemateri</h2>
-                  <p className="text-xs text-[#4A4C54]/60">Jumlah pemateri fleksibel sesuai kebutuhan program.</p>
+                  <p className="text-xs text-[#4A4C54]/60">Jumlah pemateri fleksibel sesuai kebutuhan project.</p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -429,7 +436,7 @@ function AdminLepContent() {
             </div>
             <div className="px-5 py-4">
               {speakers.length === 0 ? (
-                <EmptyState icon={UsersRound} title="Belum ada pemateri untuk program ini" description="Tambahkan pemateri agar peserta dapat memberikan penilaian per pembicara." action={<button type="button" onClick={() => { setEditingSpeaker(null); setNewSpeakerName(""); setMutationError(""); setShowSpeakerModal(true); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-blue-900 px-4 text-xs font-bold text-white"><Plus className="h-4 w-4" /> Tambah Pemateri</button>} />
+                <EmptyState icon={UsersRound} title="Belum ada pemateri untuk project ini" description="Tambahkan pemateri agar peserta dapat memberikan penilaian per pembicara." action={<button type="button" onClick={() => { setEditingSpeaker(null); setNewSpeakerName(""); setMutationError(""); setShowSpeakerModal(true); }} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-blue-900 px-4 text-xs font-bold text-white"><Plus className="h-4 w-4" /> Tambah Pemateri</button>} />
               ) : (
                 <ul className="flex flex-wrap gap-2">
                   {speakers.map((speaker) => (
@@ -608,9 +615,10 @@ function AdminLepContent() {
                   </select>
                 </div>
               ) : <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Belum ada associate aktif di AMS.</p>}
+              <AssignmentOfferFields value={amsOffer} onChange={setAmsOffer} />
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setShowAmsModal(false)} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600">Batal</button>
-                <button type="submit" disabled={amsLoading || amsSuccess || !selectedAssociateId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">{amsLoading ? "Mengirim..." : "Kirim Penawaran"}</button>
+                <button type="submit" disabled={amsLoading || amsSuccess || !selectedAssociateId || !amsOffer.compensation || !amsOffer.deadline} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white disabled:opacity-50">{amsLoading ? "Mengirim..." : "Kirim Penawaran"}</button>
               </div>
             </form>
           </div>

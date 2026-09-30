@@ -272,7 +272,7 @@ export function TbosLiveScoreScreen({ programId, initialBatchId }: { programId: 
           <div className={styles.title}>
             <p>KLASEMEN TIM</p>
             <h1 id="live-score-heading">{data.session.title}</h1>
-            <span>{data.session.scoresVisible ? "Setiap kompetensi, satu langkah tumbuh bersama." : "Skor disembunyikan oleh fasilitator."}</span>
+            <span>{data.session.scoresVisible ? "Setiap kompetensi, satu langkah tumbuh bersama." : "Skor disembunyikan oleh observer."}</span>
           </div>
           <div className={styles.timer} data-urgent={urgent || finished}>
             <span>{finished ? "Waktu habis" : "Sisa waktu sesi"}</span>

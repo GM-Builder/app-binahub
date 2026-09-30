@@ -243,13 +243,13 @@ export function TbosTeamReports({ teams, roster, observations, onRosterUpdated }
                   <MessageSquareText className="h-5 w-5" />
                 </span>
                 <div>
-                  <h3 id="facilitator-evidence-title" className="text-sm font-bold text-[#0B2C6B]">Evidence & catatan fasilitator</h3>
+                  <h3 id="facilitator-evidence-title" className="text-sm font-bold text-[#0B2C6B]">Evidence & catatan observer</h3>
                   <p className="mt-0.5 text-xs leading-5 text-slate-500">Jejak penilaian tim, siapa yang menilai, kapan dinilai, dan catatan yang diberikan.</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 text-[11px] font-bold">
                 <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600">{teamObservations.length} observasi</span>
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600">{facilitatorCount} fasilitator</span>
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-600">{facilitatorCount} observer</span>
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800">{noteCount} catatan</span>
               </div>
             </div>
@@ -269,7 +269,7 @@ export function TbosTeamReports({ teams, roster, observations, onRosterUpdated }
                           <UserRound className="h-4 w-4" />
                         </span>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-[#0B2C6B]">{observation.facilitatorName || "Fasilitator tidak tercatat"}</p>
+                          <p className="truncate text-sm font-bold text-[#0B2C6B]">{observation.facilitatorName || "Observer tidak tercatat"}</p>
                           <p className="mt-0.5 text-xs text-slate-500">{observation.missionName}</p>
                         </div>
                       </div>
@@ -284,7 +284,7 @@ export function TbosTeamReports({ teams, roster, observations, onRosterUpdated }
                     </div>
 
                     <div className="mt-3 rounded-xl border border-amber-100 bg-[#FFF9EA] px-3 py-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">Catatan fasilitator</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">Catatan observer</p>
                       <p className={`mt-1 whitespace-pre-wrap text-sm leading-6 ${observation.notes?.trim() ? "text-slate-700" : "italic text-slate-400"}`}>
                         {observation.notes?.trim() || "Tidak ada catatan tambahan pada observasi ini."}
                       </p>
@@ -292,7 +292,7 @@ export function TbosTeamReports({ teams, roster, observations, onRosterUpdated }
 
                     <div className="mt-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Evidence skor kompetensi</p>
-                      <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Skor kompetensi oleh ${observation.facilitatorName || "fasilitator"}`}>
+                      <ul className="mt-2 flex flex-wrap gap-2" aria-label={`Skor kompetensi oleh ${observation.facilitatorName || "observer"}`}>
                         {observation.scores.map((score) => (
                           <li key={`${observation.id}-${score.dimensionCode}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
                             <span className="font-medium">{score.dimensionName}</span>

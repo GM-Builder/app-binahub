@@ -76,7 +76,7 @@ export function TbosProgramCompetencySettings({ programId, onSaved }: { programI
           <div>
             <h2 id="program-competencies-title" className="text-sm font-bold text-[#0B2C6B]">Kompetensi yang diukur</h2>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
-              Pilih 1–8 kompetensi. Fasilitator hanya akan melihat kompetensi ini; dashboard dan PDF mengikuti pilihan yang sama.
+              Pilih 1–8 kompetensi. Observer hanya akan melihat kompetensi ini; dashboard dan PDF mengikuti pilihan yang sama.
             </p>
           </div>
         </div>

@@ -27,7 +27,7 @@ export function TbosProgramSelector({
       .catch((failure) => {
         if (active) {
           setPrograms([]);
-          setError(failure instanceof Error ? failure.message : "Daftar program tidak dapat dimuat.");
+          setError(failure instanceof Error ? failure.message : "Daftar project tidak dapat dimuat.");
           setLoading(false);
         }
       });
@@ -52,15 +52,15 @@ export function TbosProgramSelector({
   return (
     <div className="min-w-0">
       <label className="flex flex-col gap-1.5 text-xs font-semibold text-[#0B2C6B] sm:flex-row sm:items-center sm:gap-2">
-        Program
+        Project
         <select value={value} onChange={(event) => handleChange(event.target.value)} disabled={loading || Boolean(error) || programs.length === 0} aria-describedby={error || programs.length === 0 ? statusId : undefined} className="min-h-11 w-full min-w-0 rounded-xl border border-[#0B2C6B]/15 bg-white px-3 text-sm font-semibold outline-none focus:border-[#D9A441] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 sm:w-auto sm:min-w-64">
-          {loading && <option value="">Memuat program...</option>}
-          {!loading && error && <option value="">Program gagal dimuat</option>}
-          {!loading && !error && programs.length === 0 && <option value="">Belum ada program {moduleKey === "lep" ? "LEP" : "T-BOS"} aktif</option>}
+          {loading && <option value="">Memuat project...</option>}
+          {!loading && error && <option value="">Project gagal dimuat</option>}
+          {!loading && !error && programs.length === 0 && <option value="">Belum ada project {moduleKey === "lep" ? "LEP" : "T-BOS"} aktif</option>}
           {programs.map((program) => <option key={program.id} value={program.id}>{program.code ? `${program.code} · ` : ""}{program.title}</option>)}
         </select>
       </label>
-      {!loading && (error || programs.length === 0) && <p id={statusId} role={error ? "alert" : "status"} className={`mt-1 text-[11px] ${error ? "text-red-700" : "text-slate-500"}`}>{error || `Aktifkan modul ${moduleKey === "lep" ? "LEP" : "T-BOS"} pada salah satu program aktif.`}</p>}
+      {!loading && (error || programs.length === 0) && <p id={statusId} role={error ? "alert" : "status"} className={`mt-1 text-[11px] ${error ? "text-red-700" : "text-slate-500"}`}>{error || `Aktifkan modul ${moduleKey === "lep" ? "LEP" : "T-BOS"} pada salah satu project aktif.`}</p>}
     </div>
   );
 }

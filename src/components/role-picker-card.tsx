@@ -19,7 +19,7 @@ const roleOptions = [
   },
   {
     role: "facilitator" as const,
-    label: "Fasilitator",
+    label: "Observer",
     icon: <UsersRound size={22} />,
     note: "Review dan penilaian",
   },

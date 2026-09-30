@@ -114,7 +114,7 @@ describe("TbosTeamReports", () => {
     expect(screen.getByText("Bima")).toBeInTheDocument();
     expect(screen.getAllByRole("img", { name: /dari 5/ })).toHaveLength(8);
     expect(screen.getByRole("button", { name: "Unduh PDF Tim" })).toBeEnabled();
-    expect(screen.getByRole("heading", { name: "Evidence & catatan fasilitator" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Evidence & catatan observer" })).toBeInTheDocument();
     expect(screen.getByText("Dian Puspitasari")).toBeInTheDocument();
     expect(screen.getByText("Tim membagi peran dengan jelas dan menjaga komunikasi selama aktivitas.")).toBeInTheDocument();
     expect(screen.queryByText("Fajar Hidayat")).not.toBeInTheDocument();

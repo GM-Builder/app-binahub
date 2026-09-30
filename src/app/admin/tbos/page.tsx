@@ -46,6 +46,7 @@ import { TbosExecutiveSummary } from "./_components/executive-summary";
 import { TbosTeamReports } from "./_components/team-reports";
 import { TbosProgramCompetencySettings } from "./_components/program-competency-settings";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
+import { AssignmentOfferFields, newAssignmentOfferDraft, parseAssignmentOffer, type AssignmentOfferDraft } from "@/components/assignment-offer-fields";
 
 type Tab = "overview" | "summary" | "teams" | "radar" | "heatmap" | "ranking" | "batch";
 
@@ -113,6 +114,7 @@ function TbosDashboardContent() {
   const [assigning, setAssigning] = useState(false);
   const [assignmentError, setAssignmentError] = useState("");
   const [assignmentSuccess, setAssignmentSuccess] = useState(false);
+  const [assignmentOffer, setAssignmentOffer] = useState<AssignmentOfferDraft>(newAssignmentOfferDraft);
   const [facilitatorAssignments, setFacilitatorAssignments] = useState<TbosFacilitatorMission[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "batch" | "team"; id: string; name: string } | null>(null);
@@ -204,7 +206,7 @@ function TbosDashboardContent() {
       const { fetchFacilitatorMissions } = await import("@/modules/tbos/api-client");
       setFacilitatorAssignments(await fetchFacilitatorMissions(selectedProgramId));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Gagal memuat penugasan fasilitator.");
+      toast.error(error instanceof Error ? error.message : "Gagal memuat penugasan observer.");
     } finally {
       setAssignmentsLoading(false);
     }
@@ -227,7 +229,7 @@ function TbosDashboardContent() {
     void import("@/modules/tbos/api-client")
       .then(({ fetchTbosPrograms }) => fetchTbosPrograms("tbos"))
       .then((programs) => { if (active) setActivePrograms(programs); })
-      .catch((error) => { if (active) setError(error instanceof Error ? error.message : "Gagal memuat program T-BOS."); });
+      .catch((error) => { if (active) setError(error instanceof Error ? error.message : "Gagal memuat project T-BOS."); });
     return () => { active = false; };
   }, []);
 
@@ -248,6 +250,7 @@ function TbosDashboardContent() {
   const openAssignmentModal = async () => {
     setAssignmentError("");
     setAssignmentSuccess(false);
+    setAssignmentOffer(newAssignmentOfferDraft());
     try {
       const usersRes = await apiFetch("/api/integrations/ams/associates");
       const usersResult = await usersRes.json();
@@ -273,9 +276,12 @@ function TbosDashboardContent() {
   const handleAssignFacilitator = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedFacilitatorId || !selectedProgramId) {
-      setAssignmentError("Pilih fasilitator terlebih dahulu.");
+      setAssignmentError("Pilih observer terlebih dahulu.");
       return;
     }
+    let offer;
+    try { offer = parseAssignmentOffer(assignmentOffer); }
+    catch (offerError) { setAssignmentError(offerError instanceof Error ? offerError.message : "Fee penawaran belum lengkap."); return; }
     setAssigning(true);
     setAssignmentError("");
     try {
@@ -285,8 +291,9 @@ function TbosDashboardContent() {
         body: JSON.stringify({
           programId: selectedProgramId,
           moduleKey: "tbos",
-          role: "Fasilitator T-BOS",
+          role: "Observer",
           associateIds: [selectedFacilitatorId],
+          ...offer,
           scope: {},
         }),
       });
@@ -303,7 +310,7 @@ function TbosDashboardContent() {
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProgramId) {
-      setCreateTeamError("Pilih program aktif terlebih dahulu.");
+      setCreateTeamError("Pilih project aktif terlebih dahulu.");
       return;
     }
     if (!newTeamName.trim()) {
@@ -475,7 +482,7 @@ function TbosDashboardContent() {
       value={selectedProgramId}
       onChange={(event) => handleProgramSelect(event.target.value)}
       className="min-h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-[#F7F6F2] px-2.5 text-xs font-semibold text-[#0B2C6B] outline-none transition-colors focus:border-[#D9A441] focus:bg-white sm:w-auto sm:max-w-72"
-      aria-label="Pilih program aktif"
+      aria-label="Pilih project aktif"
     >
       {activePrograms.map((program) => (
         <option key={program.id} value={program.id}>{program.title}</option>
@@ -501,7 +508,7 @@ function TbosDashboardContent() {
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
             </button>
             <Link href="/admin/engagements/new" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#071B3D]">
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Buat Program
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Buat Project
             </Link>
           </div>
         </header>
@@ -513,7 +520,7 @@ function TbosDashboardContent() {
             <button
               onClick={() => setShowAddTeamModal(true)}
               disabled={!selectedProgramId}
-              title={selectedProgramId ? "Tambah tim ke program aktif" : "Pilih program aktif terlebih dahulu"}
+              title={selectedProgramId ? "Tambah tim ke project aktif" : "Pilih project aktif terlebih dahulu"}
               className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] disabled:opacity-40"
             >
               <Plus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -538,7 +545,7 @@ function TbosDashboardContent() {
         </span>
         <h3 className="mt-4 text-base font-bold text-[#0B2C6B] mb-2">Belum Ada Data Tim T-BOS</h3>
         <p className="text-sm text-[#4A4C54] mb-6 leading-relaxed">
-          Mulai dengan menambahkan tim dan batch peserta untuk diobservasi oleh fasilitator.
+          Mulai dengan menambahkan tim dan batch peserta untuk diobservasi oleh observer.
         </p>
         <form onSubmit={handleCreateBatch} className="mx-auto mb-5 flex max-w-md gap-2 text-left">
           <label className="sr-only" htmlFor="first-batch-name">Nama batch pertama</label>
@@ -601,6 +608,8 @@ function TbosDashboardContent() {
             loading={assigning}
             error={assignmentError}
             success={assignmentSuccess}
+            offer={assignmentOffer}
+            setOffer={setAssignmentOffer}
             onSubmit={handleAssignFacilitator}
             onClose={() => setShowAssignmentModal(false)}
           />
@@ -628,7 +637,7 @@ function TbosDashboardContent() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
           </button>
           <Link href="/admin/engagements/new" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#071B3D]">
-            <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Buat Program
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Buat Project
           </Link>
         </div>
       </header>
@@ -686,7 +695,7 @@ function TbosDashboardContent() {
           <button
             onClick={() => setShowAddTeamModal(true)}
             disabled={!selectedProgramId}
-            title={selectedProgramId ? "Tambah tim ke program aktif" : "Pilih program aktif terlebih dahulu"}
+            title={selectedProgramId ? "Tambah tim ke project aktif" : "Pilih project aktif terlebih dahulu"}
             className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-[#4A4C54] transition-colors hover:border-[#0B2C6B]/30 hover:text-[#0B2C6B] disabled:opacity-40"
           >
             <Plus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -697,7 +706,7 @@ function TbosDashboardContent() {
             className="flex h-9 items-center gap-1.5 rounded-lg bg-[#D9A441] px-3 text-xs font-bold text-[#071B3D] transition-colors hover:bg-[#C89432]"
           >
             <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
-            Tugaskan Fasilitator
+            Tugaskan Observer
           </button>
           <Link
             href={liveScoreHref}
@@ -709,7 +718,7 @@ function TbosDashboardContent() {
             }}
             title={
               !selectedProgramId
-                ? "Pilih program aktif terlebih dahulu"
+                ? "Pilih project aktif terlebih dahulu"
                 : teamRoster.length === 0
                   ? "Tambahkan tim sebelum membuka live score"
                   : "Buka layar Live Score untuk proyektor"
@@ -813,7 +822,7 @@ function TbosDashboardContent() {
           <p className="mt-1 text-xs leading-relaxed text-[#4A4C54]">
             {selectedBatch
               ? `Batch "${selectedBatch}" belum memiliki tim yang terobservasi. Pilih batch lain atau tambahkan tim.`
-              : "Belum ada data tim untuk program ini."}
+              : "Belum ada data tim untuk project ini."}
           </p>
         </div>
       )}
@@ -880,6 +889,8 @@ function TbosDashboardContent() {
           loading={assigning}
           error={assignmentError}
           success={assignmentSuccess}
+          offer={assignmentOffer}
+          setOffer={setAssignmentOffer}
           onSubmit={handleAssignFacilitator}
           onClose={() => setShowAssignmentModal(false)}
         />
@@ -906,20 +917,20 @@ function FacilitatorAssignmentsPanel({ assignments, loading, onAssign }: { assig
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#EEF3FA] text-[#0B2C6B]"><UserCheck className="h-4.5 w-4.5" aria-hidden="true" /></span>
           <div>
             <div className="flex items-center gap-2">
-              <h2 id="assigned-facilitators-title" className="text-sm font-bold text-[#0B2C6B]">Fasilitator program</h2>
+              <h2 id="assigned-facilitators-title" className="text-sm font-bold text-[#0B2C6B]">Observer project</h2>
               <span className="rounded-full bg-[#0B2C6B]/[0.06] px-2 py-0.5 text-[10px] font-bold text-[#0B2C6B]">{assignments.length}</span>
             </div>
-            <p className="mt-0.5 text-xs text-slate-500">Daftar orang yang sudah memiliki akses observasi pada program ini.</p>
+            <p className="mt-0.5 text-xs text-slate-500">Daftar orang yang sudah memiliki akses observasi pada project ini.</p>
           </div>
         </div>
         <button type="button" onClick={onAssign} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#0B2C6B]/15 bg-white px-3 text-xs font-semibold text-[#0B2C6B] transition-colors hover:bg-[#F5F7FA]">
-          <UserPlus className="h-3.5 w-3.5" aria-hidden="true" /> Tambah fasilitator
+          <UserPlus className="h-3.5 w-3.5" aria-hidden="true" /> Tambah observer
         </button>
       </div>
       {loading ? (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-[#F7F9FC] px-3 py-3 text-xs text-slate-500" role="status"><Loader2 className="h-4 w-4 animate-spin" /> Memuat penugasan…</div>
       ) : assignments.length === 0 ? (
-        <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-[#FAFBFC] px-4 py-4 text-sm text-slate-500">Belum ada fasilitator yang ditugaskan.</div>
+        <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-[#FAFBFC] px-4 py-4 text-sm text-slate-500">Belum ada observer yang ditugaskan.</div>
       ) : (
         <ul className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {assignments.map((assignment) => (
@@ -985,6 +996,8 @@ function AssignmentModal({
   loading,
   error,
   success,
+  offer,
+  setOffer,
   onSubmit,
   onClose,
 }: {
@@ -994,6 +1007,8 @@ function AssignmentModal({
   loading: boolean;
   error: string;
   success: boolean;
+  offer: AssignmentOfferDraft;
+  setOffer: (value: AssignmentOfferDraft) => void;
   onSubmit: (event: React.FormEvent) => void;
   onClose: () => void;
 }) {
@@ -1006,7 +1021,7 @@ function AssignmentModal({
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0B2C6B]/[0.06] text-[#0B2C6B]">
               <UsersRound className="h-4.5 w-4.5" />
             </span>
-            <h2 id="assignment-title" className="font-bold text-[#0B2C6B]">Tugaskan Fasilitator ke Program</h2>
+            <h2 id="assignment-title" className="font-bold text-[#0B2C6B]">Undang Observer ke Project</h2>
           </div>
           <button type="button" data-autofocus onClick={onClose} aria-label="Tutup penugasan" className="flex h-9 w-9 items-center justify-center rounded-xl text-[#4A4C54] transition-colors hover:bg-slate-100">
             <X className="h-5 w-5" />
@@ -1014,7 +1029,7 @@ function AssignmentModal({
         </div>
         <form onSubmit={onSubmit} className="space-y-4 p-5">
           {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-          {success && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Penawaran assignment sudah dikirim melalui AMS. Akses program aktif otomatis setelah associate menerima dan memulai penugasan.</p>}
+          {success && <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700" role="status">Penawaran assignment sudah dikirim melalui AMS. Akses project aktif otomatis setelah associate menerima dan memulai penugasan.</p>}
           {facilitators.length === 0 ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Belum ada associate aktif di AMS.</p>
           ) : (
@@ -1023,12 +1038,13 @@ function AssignmentModal({
               <select id="tbos-facilitator" value={facilitatorId} onChange={(event) => setFacilitatorId(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-[#F7F6F2] px-3 text-sm outline-none transition-colors focus:border-[#0B2C6B] focus:bg-white">
                 {facilitators.map((facilitator) => <option key={facilitator.id} value={facilitator.id}>{facilitator.full_name || facilitator.email}{facilitator.availability ? ` · ${facilitator.availability}` : ""}</option>)}
               </select>
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">Associate menerima penawaran di AMS terlebih dahulu. Akun dan akses T-BOS disiapkan otomatis saat status assignment berjalan.</p>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">Associate menerima penawaran di AMS terlebih dahulu. Akses observasi disiapkan saat penugasan dimulai.</p>
             </div>
           )}
+          <AssignmentOfferFields value={offer} onChange={setOffer} />
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-slate-200 text-sm font-semibold text-[#4A4C54] transition-colors hover:bg-slate-50">Batal</button>
-            <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50">
+            <button type="submit" disabled={loading || success || facilitators.length === 0 || !facilitatorId || !offer.compensation || !offer.deadline} className="min-h-11 flex-1 rounded-xl bg-[#0B2C6B] text-sm font-semibold text-white shadow-sm shadow-[#0B2C6B]/20 transition-colors hover:bg-[#071B3D] disabled:opacity-50">
               {loading ? "Mengirim..." : "Kirim Penawaran"}
             </button>
           </div>
@@ -1192,7 +1208,7 @@ function ExportButtons({ programId, batch }: { programId: string; batch?: string
         ? observations.filter((o) => o.batch === batch)
         : observations;
 
-      const headers = ["ID", "Tim", "Batch", "Observasi", "Fasilitator", "Tanggal Observasi", "Status", "Catatan"];
+      const headers = ["ID", "Tim", "Batch", "Observasi", "Observer", "Tanggal Observasi", "Status", "Catatan"];
       const csvCell = (value: string) => {
         const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
         return `"${safeValue.replace(/"/g, '""')}"`;
@@ -1289,7 +1305,7 @@ function TbosOverflowMenu() {
 
   const OVERFLOW_ACTIONS = [
     { key: "observations", href: "/fasilitator/tbos/observations", icon: <Lock className="h-3.5 w-3.5" aria-hidden="true" />, label: "Kelola Observasi" },
-    { key: "facilitator", href: "/fasilitator/tbos", icon: <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />, label: "Buka Form Fasilitator" },
+    { key: "facilitator", href: "/fasilitator/tbos", icon: <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />, label: "Buka Form Observer" },
     { key: "admin", href: "/admin", icon: <Home className="h-3.5 w-3.5" aria-hidden="true" />, label: "Kembali ke Admin" },
   ];
 
@@ -1468,7 +1484,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                 <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Kekuatan</th>
                 <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Area Pengembangan</th>
                 <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Observasi</th>
-                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Fasilitator</th>
+                <th className="text-left py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Observer</th>
                  <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Anggota</th>
                  <th className="text-center py-3 px-4 text-[10px] font-bold text-[#0B2C6B] uppercase tracking-wider">Kelola</th>
               </tr>
@@ -1595,7 +1611,7 @@ function OverviewTab({ data, roster, observations, onEditTeam, onDeleteTeam }: {
                                      <tr className="bg-[#F7F6F2]">
                                        <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Sesi</th>
                                        <th className="text-center py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Skor</th>
-                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Fasilitator</th>
+                                       <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Observer</th>
                                        <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Tanggal</th>
                                        <th className="text-left py-2 px-3 font-bold text-[#0B2C6B] uppercase tracking-wide">Status</th>
                                      </tr>

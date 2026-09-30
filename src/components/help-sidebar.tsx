@@ -167,9 +167,9 @@ const HELP_TIPS: Record<string, string[]> = {
     "Jangan membuka environment guard atau menjalankan worker sebelum release scheduled, window aktif, seluruh blocker kosong, dan rollback sudah siap.",
   ],
   "/admin/tbos": [
-    "Pilih program dan batch sebelum membaca ringkasan observasi tim.",
+    "Pilih project dan batch sebelum membaca ringkasan observasi tim.",
     "Tab mengubah sudut analisis, sedangkan PDF Grup dan Data CSV mengunduh hasil pada konteks yang sedang dipilih.",
-    "Tambah Tim dan Tugaskan Fasilitator menyiapkan struktur pelaksanaan sebelum observasi dimulai.",
+    "Tambah Tim dan Tugaskan Observer menyiapkan struktur pelaksanaan sebelum observasi dimulai.",
   ],
 };
 

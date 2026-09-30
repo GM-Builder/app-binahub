@@ -3,6 +3,16 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.3] - 2026-09-30
+
+### Added
+
+- Undangan observer T-BOS dan pembicara LEP dari dashboard admin kini meminta kompensasi sebelum dikirim, dengan transportasi dan persiapan opsional serta batas waktu respons.
+
+### Changed
+
+- Menyelaraskan istilah peran menjadi Observer/Pembicara dan istilah project pada pemilihan project serta panduan observer; identitas rute dan kontrak API internal tetap kompatibel.
+
 ## [0.26.2] - 2026-09-27
 
 ### Added

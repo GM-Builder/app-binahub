@@ -7,7 +7,7 @@ const STEPS = [
   {
     icon: <ClipboardCheck size={18} />,
     title: "Form Observasi T-BOS",
-    description: "Pilih program, misi, dan tim; lalu isi dimensi perilaku yang muncul untuk misi tersebut.",
+    description: "Pilih project dan tim yang ditugaskan, lalu nilai kompetensi yang ditetapkan untuk project tersebut.",
     href: "/fasilitator/tbos",
   },
   {
@@ -19,14 +19,14 @@ const STEPS = [
   {
     icon: <BarChart3 size={18} />,
     title: "Hasil & Statistik",
-    description: "Lihat ringkasan skor dan perkembangan seluruh tim pada program yang ditugaskan.",
+    description: "Lihat ringkasan skor dan perkembangan seluruh tim pada project yang ditugaskan.",
     href: "/fasilitator/tbos/results",
   },
 ];
 
 const TIPS = [
-  "Pilih misi yang sedang dilalui tim sebelum mulai menilai.",
-  "Pastikan semua dimensi wajib terisi sebelum mengirim observasi.",
+  "Pastikan tim yang dipilih sesuai dengan penugasan Anda sebelum mulai menilai.",
+  "Pastikan semua kompetensi yang ditetapkan terisi sebelum mengirim observasi.",
   "Kunci observasi hanya setelah hasilnya benar-benar final.",
 ];
 
@@ -38,8 +38,8 @@ export default function FacilitatorGuidePage() {
           <ArrowLeft size={12} /> Kembali ke Help Center
         </Link>
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D9A441]">Panduan Peran</p>
-        <h1 className="mt-2 text-3xl font-light tracking-[-0.04em]">Panduan Fasilitator T-BOS</h1>
-        <p className="mt-2 text-sm text-[#4A4C54]/70">Area fasilitator difokuskan pada alur observasi T-BOS agar tugas lapangan tetap jelas.</p>
+        <h1 className="mt-2 text-3xl font-light tracking-[-0.04em]">Panduan Observer</h1>
+        <p className="mt-2 text-sm text-[#4A4C54]/70">Area observer difokuskan pada alur observasi agar tugas lapangan tetap jelas.</p>
 
         <section className="mt-8 space-y-4">
           {STEPS.map((step, index) => (
