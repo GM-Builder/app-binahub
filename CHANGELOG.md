@@ -7,6 +7,7 @@ Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/
 
 ### Changed
 
+- Form penawaran observer/pembicara menerima seluruh nominal rupiah bulat, termasuk kelipatan seribu yang sebelumnya ditolak validasi browser.
 - Katalog publik tidak lagi menampilkan harga. Tampilan produk dirapikan agar fokus pada manfaat, keluaran, dan durasi.
 - Katalog publik dapat dipilih dalam Bahasa Indonesia atau Inggris tanpa mengubah kode solusi maupun menampilkan harga.
 - Penyusun proposal custom sekarang meminta nama project dan nilai investasi final sebelum draf dibuat; pengiriman tetap melalui review manusia.

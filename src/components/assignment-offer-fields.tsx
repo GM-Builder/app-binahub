@@ -15,12 +15,12 @@ export function newAssignmentOfferDraft(): AssignmentOfferDraft {
 
 export function parseAssignmentOffer(draft: AssignmentOfferDraft) {
   const compensation = Number(draft.compensation);
-  if (!draft.compensation || !Number.isFinite(compensation) || compensation <= 0) throw new Error("Isi kompensasi lebih dari nol sebelum mengirim undangan.");
+  if (!draft.compensation || !Number.isSafeInteger(compensation) || compensation <= 0) throw new Error("Isi kompensasi dalam rupiah bulat lebih dari nol sebelum mengirim undangan.");
   const fee: { compensation: number; transport?: number; preparation?: number } = { compensation };
   for (const field of ["transport", "preparation"] as const) {
     if (draft[field] === "") continue;
     const amount = Number(draft[field]);
-    if (!Number.isFinite(amount) || amount < 0) throw new Error("Transportasi dan persiapan tidak boleh negatif.");
+    if (!Number.isSafeInteger(amount) || amount < 0) throw new Error("Transportasi dan persiapan harus berupa rupiah bulat dan tidak boleh negatif.");
     fee[field] = amount;
   }
   const expiry = new Date(draft.deadline);
@@ -39,7 +39,7 @@ export function AssignmentOfferFields({ value, onChange }: { value: AssignmentOf
       <div className="grid gap-3 sm:grid-cols-3">
         {([ ["compensation", "Kompensasi *"], ["transport", "Transportasi"], ["preparation", "Persiapan"] ] as const).map(([field, label]) => (
           <label key={field} className="text-xs font-medium text-slate-700">{label}
-            <input type="number" min={field === "compensation" ? "1" : "0"} step="1000" inputMode="numeric" value={value[field]} onChange={(event) => onChange({ ...value, [field]: event.target.value })} placeholder={field === "compensation" ? "1000000" : "Opsional"} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm" />
+            <input type="number" min={field === "compensation" ? "1" : "0"} step="1" inputMode="numeric" value={value[field]} onChange={(event) => onChange({ ...value, [field]: event.target.value })} placeholder={field === "compensation" ? "1000000" : "Opsional"} className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm" />
           </label>
         ))}
       </div>
