@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.26.0",
+  "version": "0.26.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -23,7 +23,7 @@
     "framer-motion": "^12.40.0",
     "jimp": "^1.6.1",
     "lucide-react": "^1.18.0",
-    "next": "^16.3.4",
+    "next": "^16.3.6",
     "openai": "^6.42.0",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
@@ -50,7 +50,7 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^6.0.3",
     "eslint": "^9",
-    "eslint-config-next": "^16.3.4",
+    "eslint-config-next": "^16.3.6",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
@@ -58,6 +58,7 @@
   },
   "overrides": {
     "minimatch": "^10.2.5",
-    "brace-expansion": "^5.0.9"
+    "brace-expansion": "^5.0.12",
+    "undici": "^7.29.1"
   }
 }

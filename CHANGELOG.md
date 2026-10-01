@@ -3,6 +3,13 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.4] - 2026-10-01
+
+### Security
+
+- Memperbarui Next.js dan `eslint-config-next` ke patch 16.3.8 untuk menutup CVE-2026-94545 pada `next/og`.
+- Memperbarui `brace-expansion` ke 5.0.12 dan `undici` ke 7.30.0 melalui override untuk menutup temuan dependency pada pemindaian Hostinger.
+
 ## [0.26.3] - 2026-09-30
 
 ### Added
