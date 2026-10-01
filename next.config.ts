@@ -37,6 +37,7 @@ const sessionSensitiveRoutes = [
   "/home",
   "/login",
   "/peserta/:path*",
+  "/proposal/:path*",
   "/register",
 ];
 
@@ -57,6 +58,13 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       ...sessionSensitiveRoutes.map((source) => ({ source, headers: noStoreHeaders })),
+      {
+        source: "/proposal/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+        ],
+      },
     ];
   },
   turbopack: {
