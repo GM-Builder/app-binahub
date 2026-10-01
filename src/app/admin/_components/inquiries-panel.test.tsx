@@ -43,4 +43,17 @@ describe("InquiriesPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Buka inquiry Maya Sari" }));
     expect(screen.getByLabelText("Status inquiry")).toHaveValue("Diproses");
   });
+
+  it("mewajibkan hasil edit balasan disimpan sebelum dikirim", () => {
+    render(<InquiriesPanel inquiries={[inquiry()]} onAction={vi.fn()} onRefresh={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Buka inquiry Maya Sari" }));
+    fireEvent.change(screen.getByLabelText("Isi balasan"), {
+      target: { value: "Yth. Ibu Maya, kami dapat membantu menyiapkan program yang sesuai bagi manajer baru." },
+    });
+
+    expect(screen.getByText("Perubahan belum disimpan. Simpan hasil edit sebelum mengirim.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Simpan hasil edit" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Kirim balasan" })).toBeDisabled();
+  });
 });

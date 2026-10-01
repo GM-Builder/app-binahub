@@ -148,6 +148,8 @@ export function AssessmentPanel({
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>({});
   const [scopeType, setScopeType] = useState<"standard" | "custom">("standard");
+  const [customProjectName, setCustomProjectName] = useState("");
+  const [customInvestment, setCustomInvestment] = useState("");
   const [discountPercent, setDiscountPercent] = useState("0");
   const [proposalRisk, setProposalRisk] = useState("");
   const [proposalNotes, setProposalNotes] = useState("");
@@ -285,6 +287,7 @@ export function AssessmentPanel({
           assessmentId: record.id,
           moduleItems,
           scopeType,
+          ...(scopeType === "custom" ? { customProjectName: customProjectName.trim(), customInvestment: Number(customInvestment) } : {}),
           discountPercent: Number(discountPercent || 0),
           riskFlags: proposalRisk.trim() ? [proposalRisk.trim()] : [],
           notes: proposalNotes,
@@ -789,17 +792,22 @@ export function AssessmentPanel({
                           )}
                           <div className="mt-4 grid gap-3 md:grid-cols-3">
                             <label className="text-xs font-semibold text-slate-600">Jenis cakupan
-                              <select value={scopeType} onChange={(event) => setScopeType(event.target.value as "standard" | "custom")} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal">
+                              <select value={scopeType} onChange={(event) => { setScopeType(event.target.value as "standard" | "custom"); setDiscountPercent("0"); }} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal">
                                 <option value="standard">Standar</option><option value="custom">Custom</option>
                               </select>
                             </label>
                             <label className="text-xs font-semibold text-slate-600">Diskon (%)
-                              <input type="number" min={0} max={100} value={discountPercent} onChange={(event) => setDiscountPercent(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 font-normal" />
+                              <input type="number" min={0} max={100} value={discountPercent} disabled={scopeType === "custom"} onChange={(event) => setDiscountPercent(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 font-normal disabled:bg-slate-100" />
                             </label>
                             <label className="text-xs font-semibold text-slate-600">Catatan risiko (opsional)
                               <input value={proposalRisk} onChange={(event) => setProposalRisk(event.target.value)} placeholder="Legal, reputasi, komersial..." className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 font-normal" />
                             </label>
                           </div>
+                          {scopeType === "custom" && <div className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 md:grid-cols-2">
+                            <div className="md:col-span-2 text-xs leading-5 text-amber-950">Proposal custom disusun oleh admin. Nama project, cakupan, dan nilai akhir di bawah akan masuk ke draf; pengiriman tetap menunggu persetujuan manusia.</div>
+                            <label className="text-xs font-semibold text-slate-700">Nama project custom<input value={customProjectName} onChange={(event) => setCustomProjectName(event.target.value)} maxLength={200} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal" placeholder="Contoh: Penguatan Kepemimpinan 2026" /></label>
+                            <label className="text-xs font-semibold text-slate-700">Investasi akhir sebelum pajak (Rp)<input type="number" min={1} step={1} value={customInvestment} onChange={(event) => setCustomInvestment(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal" placeholder="Masukkan nilai yang disetujui" /></label>
+                          </div>}
                           <div className="mt-4">
                             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                               <h6 className="text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B]">Data wajib proposal</h6>
@@ -822,7 +830,7 @@ export function AssessmentPanel({
                             <textarea value={proposalNotes} onChange={(event) => setProposalNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-slate-200 p-3 font-normal" />
                           </label>
                           <div className="mt-3 flex justify-end">
-                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft` || record.proposalEligibility?.eligible === false} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">Buat Draf dengan AI</button>
+                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft` || record.proposalEligibility?.eligible === false || (scopeType === "custom" && (customProjectName.trim().length < 3 || Number(customInvestment) <= 0))} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">{scopeType === "custom" ? "Buat draf custom" : "Buat Draf dengan AI"}</button>
                           </div>
                         </div>
                       )}

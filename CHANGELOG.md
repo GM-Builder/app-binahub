@@ -3,6 +3,16 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [Unreleased] - 2026-10-01
+
+### Changed
+
+- Katalog publik tidak lagi menampilkan harga. Tampilan produk dirapikan agar fokus pada manfaat, keluaran, dan durasi.
+- Katalog publik dapat dipilih dalam Bahasa Indonesia atau Inggris tanpa mengubah kode solusi maupun menampilkan harga.
+- Penyusun proposal custom sekarang meminta nama project dan nilai investasi final sebelum draf dibuat; pengiriman tetap melalui review manusia.
+- Editor balasan inquiry memperjelas langkah edit–simpan–kirim dan menahan pengiriman jika perubahan lokal belum tersimpan.
+- Menyusun spesifikasi implementasi katalog Signature Solutions 2026 serta proposal standar dan custom dalam Bahasa Indonesia dan Inggris.
+
 ## [0.26.4] - 2026-10-01
 
 ### Security
