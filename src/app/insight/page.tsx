@@ -54,7 +54,7 @@ export default function InsightPage() {
   const [formData, setFormData] = useState<FormData>({
     email: "", company: "", employees: "", name: "",
     role: "", whatsapp: "", challenge: "", target: "", industry: "", location: "",
-    timeline: "unknown", budgetStatus: "unknown", sponsorStatus: "unknown",
+    timeline: "unknown",
     nextStepIntent: "explore", businessConsequence: "",
   });
   const [answers, setAnswers] = useState<Record<number, number>>({});

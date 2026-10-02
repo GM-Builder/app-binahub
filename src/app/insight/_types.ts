@@ -10,8 +10,6 @@ export type FormData = {
   challenge: string;
   target: string;
   timeline: string;
-  budgetStatus: string;
-  sponsorStatus: string;
   nextStepIntent: string;
   businessConsequence: string;
 };

@@ -3,6 +3,16 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.7] - 2026-10-02
+
+### Changed
+
+- Menghapus pertanyaan status anggaran dan dukungan pengambil keputusan dari diagnosis gratis dalam Bahasa Indonesia dan Inggris. Kedua field juga tidak lagi dikirim ke API; pertanyaan waktu inisiatif dan langkah berikutnya tetap tersedia.
+
+### Verification
+
+- Typecheck, lint pada file yang berubah, 117 tes, dan production build lulus.
+
 ## [0.26.6] - 2026-10-02
 
 ### Changed
