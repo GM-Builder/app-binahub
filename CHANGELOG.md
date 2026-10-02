@@ -3,6 +3,21 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.8] - 2026-10-03
+
+### Changed
+
+- Panel inbound mengelompokkan perjalanan berdasarkan sumber pertama dan kampanye, menampilkan form/lead terkait, pencarian, serta urutan aktivitas dan sumber terakhir. Angka diberi label sebagai sampel terbaru, bukan total historis.
+- Panel outbound menghubungkan kampanye, prospek, tautan UAT, pengunjung unik, dan aktivitas form dalam tampilan yang dapat difilter; pembuatan tautan hanya aktif untuk kampanye yang telah disetujui/aktif.
+- Halaman proposal klien membedakan proposal standar dari proposal custom, menampilkan cakupan dan output katalog resmi serta asumsi jumlah hari pelaksanaan pada harga dasar.
+- Admin tidak lagi dapat mengirim ulang proposal assessment yang sudah memiliki waktu pengiriman.
+- Assessment Admin menampilkan brief tantangan, target, dampak, dan jawaban diagnosis untuk CEO, serta tetap menyediakan salinan email/PDF hasil dari arsip Resend.
+- Penyusun draf admin hanya menawarkan proposal standar dan dinonaktifkan setelah proposal dikirim. Proposal custom ditangani manual oleh CEO di luar aplikasi.
+
+### Verification
+
+- Typecheck, lint file yang berubah, 117 tes, dan production build lulus. Tidak ada email atau tautan outbound nyata yang dikirim saat pengujian.
+
 ## [0.26.7] - 2026-10-02
 
 ### Changed

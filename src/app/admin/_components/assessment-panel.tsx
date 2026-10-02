@@ -147,9 +147,6 @@ export function AssessmentPanel({
   const [catalog, setCatalog] = useState<{ products: CatalogProduct[]; modules: CatalogModule[]; selectedRuleSet?: { version?: string; is_mock?: boolean } } | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [selectedModules, setSelectedModules] = useState<Record<string, number>>({});
-  const [scopeType, setScopeType] = useState<"standard" | "custom">("standard");
-  const [customProjectName, setCustomProjectName] = useState("");
-  const [customInvestment, setCustomInvestment] = useState("");
   const [discountPercent, setDiscountPercent] = useState("0");
   const [proposalRisk, setProposalRisk] = useState("");
   const [proposalNotes, setProposalNotes] = useState("");
@@ -286,8 +283,7 @@ export function AssessmentPanel({
         body: JSON.stringify({
           assessmentId: record.id,
           moduleItems,
-          scopeType,
-          ...(scopeType === "custom" ? { customProjectName: customProjectName.trim(), customInvestment: Number(customInvestment) } : {}),
+          scopeType: "standard",
           discountPercent: Number(discountPercent || 0),
           riskFlags: proposalRisk.trim() ? [proposalRisk.trim()] : [],
           notes: proposalNotes,
@@ -519,7 +515,7 @@ export function AssessmentPanel({
         </div>
         {records.map((record) => {
           const isOpen = expandedId === record.id;
-          const proposalCanSend = ["approved", "clear"].includes(record.proposalGateStatus || "") && !record.proposalDraft?.isSimulation;
+          const proposalCanSend = !record.proposalSentAt && ["approved", "clear"].includes(record.proposalGateStatus || "") && !record.proposalDraft?.isSimulation;
           return (
             <div key={record.id} className="border-b border-black/[0.05] last:border-0">
               <button
@@ -569,9 +565,15 @@ export function AssessmentPanel({
                         <span>Industri: <strong>{record.industry || "-"}</strong></span>
                         <span>Lokasi: <strong>{record.location || "-"}</strong></span>
                         <span>Timeline: <strong>{record.timeline?.replaceAll("_", "-") || "unknown"}</strong></span>
-                        <span>Budget: <strong>{record.budgetStatus?.replaceAll("_", " ") || "unknown"}</strong></span>
-                        <span>Sponsor: <strong>{record.sponsorStatus?.replaceAll("_", " ") || "unknown"}</strong></span>
                         <span>Intent: <strong>{record.nextStepIntent?.replaceAll("_", " ") || "explore"}</strong></span>
+                      </div>
+                      <div className="mb-4 rounded-[10px] border border-[#0B2C6B]/15 bg-[#F5F8FC] p-4 text-xs leading-6 text-slate-700">
+                        <p className="font-bold uppercase tracking-[0.12em] text-[#0B2C6B]">Brief assessment untuk CEO</p>
+                        <p className="mt-2"><strong>Tantangan:</strong> {record.challenge || "Tidak diisi"}</p>
+                        <p className="mt-1"><strong>Target 3–6 bulan:</strong> {record.target || "Tidak diisi"}</p>
+                        {record.businessConsequence && <p className="mt-1"><strong>Dampak bila belum ditangani:</strong> {record.businessConsequence}</p>}
+                        <p className="mt-2 text-slate-500">Analisis, rekomendasi, salinan email klien, dan PDF hasil tersedia di bagian bawah. Proposal custom dibuat manual oleh CEO di luar aplikasi.</p>
+                        <details className="mt-3 border-t border-[#0B2C6B]/10 pt-3"><summary className="cursor-pointer font-semibold text-[#0B2C6B]">Lihat jawaban diagnosis ({Object.keys(record.answers || {}).length})</summary><ol className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-2">{QUESTIONS.filter((question) => record.answers?.[question.id] != null).map((question) => <li key={question.id} className="flex justify-between gap-4 border-b border-slate-200 pb-2"><span>Q{question.id}. {question.text}</span><strong className="shrink-0">{record.answers[question.id]}/5</strong></li>)}</ol></details>
                       </div>
                       {(record.leadScoreReason || record.leadScoreRuleVersion) && (
                         <div className="mb-4 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600">
@@ -664,8 +666,8 @@ export function AssessmentPanel({
                           <button
                             type="button"
                             onClick={() => void openProposalBuilder(record)}
-                            disabled={catalogLoading || record.proposalEligibility?.eligible === false}
-                            title={record.proposalEligibility?.eligible === false ? record.proposalEligibility.summary : "AI menyusun draf dari hasil assessment dan modul katalog resmi yang relevan."}
+                            disabled={catalogLoading || Boolean(record.proposalSentAt) || record.proposalEligibility?.eligible === false}
+                            title={record.proposalSentAt ? "Proposal standar sudah terkirim. Proposal custom disusun manual oleh CEO menggunakan brief dan arsip assessment di halaman ini." : record.proposalEligibility?.eligible === false ? record.proposalEligibility.summary : "AI menyusun draf standar dari hasil assessment dan modul katalog resmi yang relevan."}
                             className="h-12 rounded-[10px] border border-[#0B2C6B]/20 bg-[#EAF0F7] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
                           >
                             {builderId === record.id ? "Tutup Draf AI" : "Buat dengan AI"}
@@ -756,8 +758,8 @@ export function AssessmentPanel({
                       {builderId === record.id && (
                         <div className="mt-4 rounded-[12px] border border-[#0B2C6B]/15 bg-white p-4">
                           <div className="mb-3">
-                            <h5 className="text-sm font-semibold text-[#0B2C6B]">Konfigurasi Modul Proposal</h5>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">Harga dihitung dari modul. Modul yang belum siap selalu memerlukan persetujuan manual.</p>
+                            <h5 className="text-sm font-semibold text-[#0B2C6B]">Konfigurasi Proposal Standar</h5>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">Draf admin ini untuk pengecualian proposal standar. Proposal custom disusun manual oleh CEO di luar aplikasi.</p>
                           </div>
                           {catalogLoading ? <p className="text-xs text-slate-500">Memuat katalog...</p> : (
                             <div className="space-y-2">
@@ -790,24 +792,14 @@ export function AssessmentPanel({
                               })}
                             </div>
                           )}
-                          <div className="mt-4 grid gap-3 md:grid-cols-3">
-                            <label className="text-xs font-semibold text-slate-600">Jenis cakupan
-                              <select value={scopeType} onChange={(event) => { setScopeType(event.target.value as "standard" | "custom"); setDiscountPercent("0"); }} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal">
-                                <option value="standard">Standar</option><option value="custom">Custom</option>
-                              </select>
-                            </label>
+                          <div className="mt-4 grid gap-3 md:grid-cols-2">
                             <label className="text-xs font-semibold text-slate-600">Diskon (%)
-                              <input type="number" min={0} max={100} value={discountPercent} disabled={scopeType === "custom"} onChange={(event) => setDiscountPercent(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 font-normal disabled:bg-slate-100" />
+                              <input type="number" min={0} max={100} value={discountPercent} onChange={(event) => setDiscountPercent(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 font-normal" />
                             </label>
                             <label className="text-xs font-semibold text-slate-600">Catatan risiko (opsional)
                               <input value={proposalRisk} onChange={(event) => setProposalRisk(event.target.value)} placeholder="Legal, reputasi, komersial..." className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 font-normal" />
                             </label>
                           </div>
-                          {scopeType === "custom" && <div className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 md:grid-cols-2">
-                            <div className="md:col-span-2 text-xs leading-5 text-amber-950">Proposal custom disusun oleh admin. Nama project, cakupan, dan nilai akhir di bawah akan masuk ke draf; pengiriman tetap menunggu persetujuan manusia.</div>
-                            <label className="text-xs font-semibold text-slate-700">Nama project custom<input value={customProjectName} onChange={(event) => setCustomProjectName(event.target.value)} maxLength={200} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal" placeholder="Contoh: Penguatan Kepemimpinan 2026" /></label>
-                            <label className="text-xs font-semibold text-slate-700">Investasi akhir sebelum pajak (Rp)<input type="number" min={1} step={1} value={customInvestment} onChange={(event) => setCustomInvestment(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 font-normal" placeholder="Masukkan nilai yang disetujui" /></label>
-                          </div>}
                           <div className="mt-4">
                             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                               <h6 className="text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B]">Data wajib proposal</h6>
@@ -830,7 +822,7 @@ export function AssessmentPanel({
                             <textarea value={proposalNotes} onChange={(event) => setProposalNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-slate-200 p-3 font-normal" />
                           </label>
                           <div className="mt-3 flex justify-end">
-                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft` || record.proposalEligibility?.eligible === false || (scopeType === "custom" && (customProjectName.trim().length < 3 || Number(customInvestment) <= 0))} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">{scopeType === "custom" ? "Buat draf custom" : "Buat Draf dengan AI"}</button>
+                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft` || record.proposalEligibility?.eligible === false} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">Buat Draf Standar dengan AI</button>
                           </div>
                         </div>
                       )}

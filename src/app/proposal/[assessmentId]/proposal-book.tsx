@@ -17,6 +17,7 @@ export type ProposalView = {
     opening?: string;
     proposedProgram?: string;
     scope?: string[];
+    deliverables?: string[];
     timeline?: string;
     investmentNote?: string;
     nextStep?: string;
@@ -36,6 +37,7 @@ const copy = {
     confidential: "Disiapkan khusus untuk penerima",
     preliminary: "Rekomendasi Awal",
     proposal: "Proposal Solusi",
+    standardProposal: "Proposal Standar",
     preparedFor: "Disusun untuk",
     issued: "Diterbitkan",
     context: "Konteks dan kebutuhan",
@@ -45,11 +47,14 @@ const copy = {
     delivery: "Rancangan pelaksanaan",
     deliveryBody: "Pengalaman belajar dapat memadukan fasilitasi, praktik, refleksi, diskusi terstruktur, dan penerapan dalam pekerjaan sehari-hari. Rincian akhir diselaraskan bersama organisasi Anda.",
     scope: "Cakupan awal",
+    standardScope: "Cakupan standar katalog",
+    outputs: "Output yang disediakan",
     schedule: "Perkiraan waktu",
     investment: "Investasi",
     estimate: "Estimasi awal",
     commercial: "Total sebelum pajak",
     note: "Nilai dan ruang lingkup akhir akan dikonfirmasi setelah jumlah peserta, format, durasi, serta kebutuhan pelaksanaan disepakati.",
+    standardNote: "Harga dasar ini berlaku untuk jumlah hari pelaksanaan yang tertulis dalam proposal. Pajak dan perubahan peserta, lokasi, durasi, atau cakupan memerlukan konfirmasi terpisah.",
     validity: "Berlaku",
     days: "hari sejak diterbitkan",
     next: "Langkah berikutnya",
@@ -65,6 +70,7 @@ const copy = {
     confidential: "Prepared exclusively for the recipient",
     preliminary: "Preliminary Recommendation",
     proposal: "Solution Proposal",
+    standardProposal: "Standard Proposal",
     preparedFor: "Prepared for",
     issued: "Issued",
     context: "Context and need",
@@ -74,11 +80,14 @@ const copy = {
     delivery: "Delivery approach",
     deliveryBody: "The learning experience may combine facilitation, practice, reflection, structured discussion, and workplace application. Final details will be aligned with your organization.",
     scope: "Indicative scope",
+    standardScope: "Standard catalog scope",
+    outputs: "Expected outputs",
     schedule: "Indicative timeline",
     investment: "Investment",
     estimate: "Initial estimate",
     commercial: "Total before tax",
     note: "Final scope and investment will be confirmed after participant count, format, duration, and delivery requirements are agreed.",
+    standardNote: "This catalog base price covers the delivery days stated in this proposal. Tax and changes to participants, location, duration, or scope require separate confirmation.",
     validity: "Valid for",
     days: "days from issue",
     next: "Next steps",
@@ -113,8 +122,9 @@ export function ProposalBook({ view, downloadUrl }: { view: ProposalView; downlo
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const t = copy[view.locale];
   const proposal = view.proposal;
+  const isStandard = proposal.proposalType === "standard" && proposal.documentKind === "commercial";
   const pages = t.pages;
-  const title = proposal.documentKind === "preliminary" ? t.preliminary : t.proposal;
+  const title = proposal.documentKind === "preliminary" ? t.preliminary : isStandard ? t.standardProposal : t.proposal;
   const date = new Date(view.issuedAt).toLocaleDateString(view.locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
   const solutions = proposal.selectedSolutions || [];
 
@@ -143,8 +153,8 @@ export function ProposalBook({ view, downloadUrl }: { view: ProposalView; downlo
     </div>,
     <div key="context" className="flex min-h-full flex-col"><PageHeading number="01 / 05" title={t.summary} /><p className="max-w-[37rem] font-serif text-[clamp(1.1rem,2vw,1.45rem)] leading-[1.6] text-[#27384A]">{proposal.opening || t.about}</p>{view.challenge && <div className="mt-10 border-l-2 border-[#B78742] bg-[#F7F5F0] px-5 py-5"><p className="text-[10px] font-bold uppercase tracking-[0.17em] text-[#8E6B3C]">{t.context}</p><p className="mt-3 text-sm leading-7 text-[#4A5869]">{view.challenge}</p></div>}<Folio label={pages[1]} number={2} total={6} /></div>,
     <div key="solutions" className="flex min-h-full flex-col"><PageHeading number="02 / 05" title={t.solutions} />{solutions.length > 0 ? <div className="space-y-6">{solutions.map((solution, index) => <div key={`${solution.code}-${index}`} className="border-t border-[#DCD9D1] pt-5"><div className="flex items-baseline gap-4"><span className="font-serif text-xl text-[#A37637]">{solution.code || String(index + 1).padStart(2, "0")}</span><h3 className="font-serif text-xl text-[#172941]">{view.locale === "en" ? solution.nameEn || solution.name : solution.name}</h3></div><p className="mt-2 pl-11 text-sm leading-6 text-[#667185]">{view.locale === "en" ? solution.focusEn || solution.focus : solution.focus}</p></div>)}</div> : <p className="text-sm leading-7 text-[#556477]">{proposal.proposedProgram}</p>}{(proposal.learningObjectives || []).length > 0 && <div className="mt-9"><p className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em] text-[#A37637]">{t.objectives}</p><BulletList items={proposal.learningObjectives || []} /></div>}<Folio label={pages[2]} number={3} total={6} /></div>,
-    <div key="delivery" className="flex min-h-full flex-col"><PageHeading number="03 / 05" title={t.delivery} /><p className="text-sm leading-7 text-[#556477]">{t.deliveryBody}</p><h3 className="mb-5 mt-10 text-[10px] font-bold uppercase tracking-[0.18em] text-[#A37637]">{t.scope}</h3><BulletList items={proposal.scope || []} />{proposal.timeline && <p className="mt-8 border-t border-[#DCD9D1] pt-5 text-sm text-[#556477]"><strong className="mr-3 text-[#172941]">{t.schedule}</strong>{proposal.timeline}</p>}<Folio label={pages[3]} number={4} total={6} /></div>,
-    <div key="investment" className="flex min-h-full flex-col"><PageHeading number="04 / 05" title={t.investment} /><div className="border-y border-[#DCD9D1] py-6"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#A37637]">{proposal.documentKind === "preliminary" ? t.estimate : t.commercial}</p><p className="mt-5 font-serif text-[clamp(1.5rem,3.5vw,2.2rem)] leading-snug text-[#172941]">{proposal.investmentNote || (proposal.commercialSnapshot?.totalBeforeTax != null ? new Intl.NumberFormat(view.locale === "en" ? "en-US" : "id-ID", { style: "currency", currency: proposal.commercialSnapshot.currency || "IDR", maximumFractionDigits: 0 }).format(proposal.commercialSnapshot.totalBeforeTax) : t.note)}</p></div>{(proposal.commercialSnapshot?.items || []).length > 0 && <div className="mt-8 space-y-3">{proposal.commercialSnapshot?.items.map((item, index) => <div key={`${item.name}-${index}`} className="flex justify-between gap-4 border-b border-[#EEEAE3] pb-3 text-sm"><span className="text-[#334357]">{item.name}</span><span className="shrink-0 text-[#78818A]">× {item.quantity}</span></div>)}</div>}<p className="mt-8 text-xs leading-6 text-[#78818A]">{t.note}</p>{proposal.commercialSnapshot?.validityDays && <p className="mt-3 text-xs text-[#78818A]">{t.validity} {proposal.commercialSnapshot.validityDays} {t.days}.</p>}<Folio label={pages[4]} number={5} total={6} /></div>,
+    <div key="delivery" className="flex min-h-full flex-col"><PageHeading number="03 / 05" title={t.delivery} /><p className="text-sm leading-7 text-[#556477]">{t.deliveryBody}</p><h3 className="mb-5 mt-10 text-[10px] font-bold uppercase tracking-[0.18em] text-[#A37637]">{isStandard ? t.standardScope : t.scope}</h3><BulletList items={proposal.scope || []} />{proposal.deliverables?.length ? <div className="mt-8"><h3 className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#A37637]">{t.outputs}</h3><BulletList items={proposal.deliverables} /></div> : null}{proposal.timeline && <p className="mt-8 border-t border-[#DCD9D1] pt-5 text-sm text-[#556477]"><strong className="mr-3 text-[#172941]">{t.schedule}</strong>{proposal.timeline}</p>}<Folio label={pages[3]} number={4} total={6} /></div>,
+    <div key="investment" className="flex min-h-full flex-col"><PageHeading number="04 / 05" title={t.investment} /><div className="border-y border-[#DCD9D1] py-6"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#A37637]">{proposal.documentKind === "preliminary" ? t.estimate : t.commercial}</p><p className="mt-5 font-serif text-[clamp(1.5rem,3.5vw,2.2rem)] leading-snug text-[#172941]">{proposal.investmentNote || (proposal.commercialSnapshot?.totalBeforeTax != null ? new Intl.NumberFormat(view.locale === "en" ? "en-US" : "id-ID", { style: "currency", currency: proposal.commercialSnapshot.currency || "IDR", maximumFractionDigits: 0 }).format(proposal.commercialSnapshot.totalBeforeTax) : t.note)}</p></div>{(proposal.commercialSnapshot?.items || []).length > 0 && <div className="mt-8 space-y-3">{proposal.commercialSnapshot?.items.map((item, index) => <div key={`${item.name}-${index}`} className="flex justify-between gap-4 border-b border-[#EEEAE3] pb-3 text-sm"><span className="text-[#334357]">{item.name}</span><span className="shrink-0 text-[#78818A]">× {item.quantity}</span></div>)}</div>}<p className="mt-8 text-xs leading-6 text-[#78818A]">{isStandard ? t.standardNote : t.note}</p>{proposal.commercialSnapshot?.validityDays && <p className="mt-3 text-xs text-[#78818A]">{t.validity} {proposal.commercialSnapshot.validityDays} {t.days}.</p>}<Folio label={pages[4]} number={5} total={6} /></div>,
     <div key="next" className="flex min-h-full flex-col"><PageHeading number="05 / 05" title={t.next} /><p className="max-w-[35rem] font-serif text-[clamp(1.15rem,2.5vw,1.65rem)] leading-[1.55] text-[#27384A]">{proposal.nextStep || t.nextBody}</p><div className="mt-12 border-t border-[#DCD9D1] pt-7"><p className="text-sm leading-7 text-[#556477]">{t.about}</p><p className="mt-9 text-sm font-semibold text-[#173560]">Bina<span className="text-[#B78742]">Hub</span></p><p className="mt-1 text-xs text-[#78818A]">People. Learning. Elevated.<br />PT Binahub Solusi Transformasi</p></div><Folio label={pages[5]} number={6} total={6} /></div>,
   ];
 
