@@ -3,6 +3,18 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.6] - 2026-10-02
+
+### Changed
+
+- Halaman `/catalog` membaca rincian 27 Signature Solutions dari API publik yang sama dengan website: tujuan pembelajaran, cakupan konten, hasil, sasaran, format, durasi, kapasitas, merek layanan, dan catatan tersedia dalam Bahasa Indonesia/Inggris.
+- Katalog publik tetap tidak menampilkan harga; setiap solusi memiliki rincian yang dapat dibuka tanpa mencampur data komersial internal.
+- Editor katalog admin menampilkan pratinjau rincian CEO dalam kedua bahasa dari metadata yang tersimpan, berdampingan dengan field harga dan pengaturan internal.
+
+### Verification
+
+- `npm run typecheck`, lint untuk kedua halaman katalog, production build, dan uji tampilan seluler lokal lulus.
+
 ## [0.26.5] - 2026-10-01
 
 ### Changed
