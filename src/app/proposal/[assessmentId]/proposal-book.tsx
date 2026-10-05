@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowDownToLine, ArrowLeft, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./proposal-book.module.css";
+import { clientProposalCopy } from "@/lib/proposal-copy";
 
 export type ProposalView = {
   company: string;
@@ -37,7 +38,6 @@ const copy = {
     confidential: "Disiapkan khusus untuk penerima",
     preliminary: "Rekomendasi Awal",
     proposal: "Proposal Solusi",
-    standardProposal: "Proposal Standar",
     preparedFor: "Disusun untuk",
     issued: "Diterbitkan",
     context: "Konteks dan kebutuhan",
@@ -47,14 +47,14 @@ const copy = {
     delivery: "Rancangan pelaksanaan",
     deliveryBody: "Pengalaman belajar dapat memadukan fasilitasi, praktik, refleksi, diskusi terstruktur, dan penerapan dalam pekerjaan sehari-hari. Rincian akhir diselaraskan bersama organisasi Anda.",
     scope: "Cakupan awal",
-    standardScope: "Cakupan standar katalog",
+    standardScope: "Cakupan program",
     outputs: "Output yang disediakan",
     schedule: "Perkiraan waktu",
     investment: "Investasi",
     estimate: "Estimasi awal",
     commercial: "Total sebelum pajak",
     note: "Nilai dan ruang lingkup akhir akan dikonfirmasi setelah jumlah peserta, format, durasi, serta kebutuhan pelaksanaan disepakati.",
-    standardNote: "Harga dasar ini berlaku untuk jumlah hari pelaksanaan yang tertulis dalam proposal. Pajak dan perubahan peserta, lokasi, durasi, atau cakupan memerlukan konfirmasi terpisah.",
+    standardNote: "Investasi mencakup jumlah hari pelaksanaan yang tercantum dalam proposal. Pajak serta perubahan jumlah peserta, lokasi, durasi, atau cakupan akan dikonfirmasi bersama.",
     validity: "Berlaku",
     days: "hari sejak diterbitkan",
     next: "Langkah berikutnya",
@@ -70,7 +70,6 @@ const copy = {
     confidential: "Prepared exclusively for the recipient",
     preliminary: "Preliminary Recommendation",
     proposal: "Solution Proposal",
-    standardProposal: "Standard Proposal",
     preparedFor: "Prepared for",
     issued: "Issued",
     context: "Context and need",
@@ -80,14 +79,14 @@ const copy = {
     delivery: "Delivery approach",
     deliveryBody: "The learning experience may combine facilitation, practice, reflection, structured discussion, and workplace application. Final details will be aligned with your organization.",
     scope: "Indicative scope",
-    standardScope: "Standard catalog scope",
+    standardScope: "Program scope",
     outputs: "Expected outputs",
     schedule: "Indicative timeline",
     investment: "Investment",
     estimate: "Initial estimate",
     commercial: "Total before tax",
     note: "Final scope and investment will be confirmed after participant count, format, duration, and delivery requirements are agreed.",
-    standardNote: "This catalog base price covers the delivery days stated in this proposal. Tax and changes to participants, location, duration, or scope require separate confirmation.",
+    standardNote: "The investment covers the delivery days stated in this proposal. Taxes and changes to participant count, location, duration, or scope will be confirmed together.",
     validity: "Valid for",
     days: "days from issue",
     next: "Next steps",
@@ -121,10 +120,10 @@ export function ProposalBook({ view, downloadUrl }: { view: ProposalView; downlo
   const reducedMotion = useReducedMotion();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const t = copy[view.locale];
-  const proposal = view.proposal;
+  const proposal = clientProposalCopy(view.proposal);
   const isStandard = proposal.proposalType === "standard" && proposal.documentKind === "commercial";
   const pages = t.pages;
-  const title = proposal.documentKind === "preliminary" ? t.preliminary : isStandard ? t.standardProposal : t.proposal;
+  const title = proposal.documentKind === "preliminary" ? t.preliminary : t.proposal;
   const date = new Date(view.issuedAt).toLocaleDateString(view.locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
   const solutions = proposal.selectedSolutions || [];
 

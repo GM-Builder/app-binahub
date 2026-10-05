@@ -439,7 +439,7 @@ export function EmptyState({
   );
 }
 
-export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onClose: () => void }) {
+export function ConfirmDialog({ action, onClose, errorText }: { action: ConfirmAction; onClose: () => void; errorText?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useDialogFocus<HTMLDivElement>(onClose, submitting);
   const titleId = useId();
@@ -492,6 +492,7 @@ export function ConfirmDialog({ action, onClose }: { action: ConfirmAction; onCl
             </div>
           </div>
         ) : null}
+        {errorText && <p role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{errorText}</p>}
         <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
           <button
             type="button"

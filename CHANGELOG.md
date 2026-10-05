@@ -3,6 +3,30 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.27.0] - 2026-10-05
+
+### Changed
+
+- Mendesain ulang Assessment Admin menjadi workspace daftar klien dan detail bertab: Ringkasan, Proposal, Dokumen, dan Tindak lanjut. Tampilan ponsel menggunakan navigasi daftar/detail dengan pemulihan fokus; semua tab dapat diakses tanpa gulir horizontal.
+- Copywriting lebih ringkas dan profesional: **Brief assessment**, ringkasan hasil, minat klien, dan jadwal pengingat. Rincian penilaian teknis, perubahan status manual, dan penyusun draf ditempatkan dalam bagian yang dapat dibuka sesuai kebutuhan.
+- Kartu antrean menyaring klien berdasarkan kebutuhan perhatian, proses aktif, dan proposal terkirim. Pencarian, filter lanjutan, urutan prioritas, pemuatan bertahap, dan ekspor CSV mengikuti hasil filter. Angka diberi konteks data yang dimuat, bukan total historis.
+- Judul proposal klien tidak lagi menampilkan klasifikasi standar/custom. Cakupan dan catatan investasi menggunakan bahasa program; narasi lama dirapikan saat ditampilkan tanpa mengubah nilai investasi atau jumlah pelaksanaan.
+
+### Fixed
+
+- Membedakan dokumen yang belum tersedia dari dokumen yang sedang dimuat. Salinan email/PDF proposal yang belum tersedia tidak lagi tampak aktif atau menampilkan indikator loading palsu.
+- Menyelaraskan kelayakan pengingat dengan jadwal dan status API: hasil hari ke-2/7/14, satu pengingat proposal, penghentian setelah permintaan proposal/diskusi, dan jeda.
+- Mempertahankan konfirmasi sebelum pengiriman email, menampilkan kesalahan di dalam dialog, mengunci tindakan saat proses aktif, dan mencegah pengiriman ulang ketika status pengiriman belum pasti.
+- Mereset pilihan modul, diskon, dan catatan saat berganti klien pada penyusun draf sehingga data klien sebelumnya tidak ikut terbawa.
+
+### Verification
+
+- 169 tes lulus, typecheck, lint file yang berubah, serta production build lulus. Preview desktop dan ponsel menggunakan komponen asli dengan data sintetis dan callback lokal, tanpa email atau perubahan database produksi.
+
+### Deployment
+
+- Deploy bersama API **0.27.10** untuk copywriting proposal web, PDF, dan email yang konsisten. Tidak ada migrasi SQL. Email yang sudah terkirim tetap menjadi arsip asli; perubahan berlaku untuk email baru dan dokumen yang ditampilkan/dihasilkan ulang.
+
 ## [0.26.9] - 2026-10-05
 
 ### Fixed

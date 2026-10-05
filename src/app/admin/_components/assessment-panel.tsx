@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronDown, Download, Eye, FileText, LoaderCircle, PauseCircle, PlayCircle, Search, X } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Download, Eye, FileText, LoaderCircle, PauseCircle, PlayCircle, Search, SlidersHorizontal, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   AdminNotice,
@@ -13,10 +13,11 @@ import {
   Panel,
 } from "./shared";
 import { FOLLOW_UP_LEVELS } from "../_lib/constants";
-import { daysSince, exportCsv, formatDate, uniqueOptions } from "../_lib/utils";
+import { exportCsv, formatDate, uniqueOptions } from "../_lib/utils";
 import type { AssessmentDocumentType, AssessmentRecord, CatalogModule, CatalogProduct, ConfirmAction, DashboardData, EmailPreview } from "../_lib/types";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { QUESTIONS } from "@/app/insight/questions";
+import { assessmentLabel, dueFollowUp, matchesQueue, needsAttention, profileLabel, proposalState, type AssessmentDetailTab, type AssessmentQueue } from "../_lib/assessment-presentation";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
@@ -63,9 +64,9 @@ function proposalModuleSuggestions(record: AssessmentRecord, products: CatalogPr
 function proposalGateLabel(status?: string) {
   const labels: Record<string, string> = {
     not_evaluated: "Belum dievaluasi",
-    clear: "Lolos otomatis",
+    clear: "Siap dikirim",
     pending_approval: "Menunggu keputusan penanggung jawab",
-    approved: "Disetujui manusia",
+    approved: "Draf disetujui",
     rejected: "Ditolak",
     revision_required: "Perlu revisi",
   };
@@ -89,13 +90,13 @@ const proposalContextFields = [
   ["objective", "Tujuan"],
   ["participantEstimate", "Estimasi peserta"],
   ["targetAudience", "Target peserta / pengguna"],
-  ["scope", "Scope"],
-  ["timeline", "Timeline"],
-  ["decisionMakerOrSponsor", "Decision maker / sponsor"],
-  ["budgetIndication", "Indikasi / rentang budget"],
-  ["deliveryLocationOrMode", "Lokasi / mode delivery"],
-  ["expectedOutcome", "Expected outcome"],
-  ["nextStep", "Next step"],
+  ["scope", "Ruang lingkup"],
+  ["timeline", "Jadwal pelaksanaan"],
+  ["decisionMakerOrSponsor", "Penanggung jawab"],
+  ["budgetIndication", "Perkiraan anggaran"],
+  ["deliveryLocationOrMode", "Lokasi / cara pelaksanaan"],
+  ["expectedOutcome", "Hasil yang diharapkan"],
+  ["nextStep", "Langkah berikutnya"],
 ] as const;
 
 type ProposalContextKey = typeof proposalContextFields[number][0];
@@ -152,6 +153,14 @@ export function AssessmentPanel({
   const [proposalNotes, setProposalNotes] = useState("");
   const [proposalContext, setProposalContext] = useState<ProposalContext>(emptyProposalContext);
   const [approvalNotes, setApprovalNotes] = useState<Record<string, string>>({});
+  const tabId = useId();
+  const detailHeadingRef = useRef<HTMLHeadingElement>(null);
+  const clientListRef = useRef<HTMLElement>(null);
+  const [detailTab, setDetailTab] = useState<AssessmentDetailTab>("summary");
+  const [queue, setQueue] = useState<AssessmentQueue>("all");
+  const [sort, setSort] = useState("latest");
+  const [actionSuccess, setActionSuccess] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(20);
   const [selectedDistributionQuestion, setSelectedDistributionQuestion] = useState<number | null>(null);
 
   const hasProcessingProposal = records.some((record) => !record.proposalSentAt && ["Diminta", "Sedang Disusun"].includes(record.proposalStatus));
@@ -235,6 +244,7 @@ export function AssessmentPanel({
 
   const runAssessmentAction = async (record: AssessmentRecord, action: string) => {
     setActionError("");
+    setActionSuccess("");
     setActionId(`${record.id}:${action}`);
     try {
       await onAction("/api/admin/assessments", {
@@ -242,8 +252,10 @@ export function AssessmentPanel({
         body: JSON.stringify({ id: record.id, action }),
       });
       await onRefresh();
+      setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Gagal menjalankan tindakan assessment.");
+      setActionError(error instanceof Error ? error.message : "Tindakan belum berhasil. Silakan coba lagi.");
+      throw error;
     } finally {
       setActionId(null);
     }
@@ -252,6 +264,10 @@ export function AssessmentPanel({
   const openProposalBuilder = async (record: AssessmentRecord) => {
     setActionError("");
     if (builderId !== record.id) {
+      setSelectedModules({});
+      setDiscountPercent("0");
+      setProposalRisk("");
+      setProposalNotes("");
       setProposalContext({
         ...emptyProposalContext,
         organizationName: record.company || "",
@@ -262,7 +278,7 @@ export function AssessmentPanel({
     setBuilderId((current) => current === record.id ? null : record.id);
     if (catalog) {
       const suggestions = proposalModuleSuggestions(record, catalog.products, catalog.modules);
-      if (suggestions.length > 0) setSelectedModules(Object.fromEntries(suggestions.map((module) => [module.id, 1])));
+      setSelectedModules(Object.fromEntries(suggestions.map((module) => [module.id, 1])));
       return;
     }
     setCatalogLoading(true);
@@ -271,7 +287,7 @@ export function AssessmentPanel({
       const nextCatalog = { products: result.products || [], modules: result.modules || [], selectedRuleSet: result.selectedRuleSet };
       setCatalog(nextCatalog);
       const suggestions = proposalModuleSuggestions(record, nextCatalog.products, nextCatalog.modules);
-      if (suggestions.length > 0) setSelectedModules(Object.fromEntries(suggestions.map((module) => [module.id, 1])));
+      setSelectedModules(Object.fromEntries(suggestions.map((module) => [module.id, 1])));
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal memuat katalog modul.");
     } finally {
@@ -288,6 +304,7 @@ export function AssessmentPanel({
       return;
     }
     setActionError("");
+    setActionSuccess("");
     setActionId(`${record.id}:proposal-draft`);
     try {
       await onAction("/api/admin/proposals/draft", {
@@ -304,6 +321,7 @@ export function AssessmentPanel({
       });
       setBuilderId(null);
       await onRefresh();
+      setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal membuat draft proposal.");
     } finally {
@@ -313,6 +331,7 @@ export function AssessmentPanel({
 
   const decideProposal = async (record: AssessmentRecord, decision: "approve" | "reject" | "request_revision") => {
     setActionError("");
+    setActionSuccess("");
     setActionId(`${record.id}:proposal-${decision}`);
     try {
       await onAction("/api/admin/proposals/approval", {
@@ -320,6 +339,7 @@ export function AssessmentPanel({
         body: JSON.stringify({ assessmentId: record.id, decision, note: approvalNotes[record.id] || "" }),
       });
       await onRefresh();
+      setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal menyimpan keputusan proposal.");
     } finally {
@@ -360,6 +380,7 @@ export function AssessmentPanel({
     level: number
   ) => {
     setActionError("");
+    setActionSuccess("");
     setActionId(`${record.id}:${channel}:follow_up_${level}`);
     try {
       await onAction("/api/admin/follow-up", {
@@ -367,8 +388,10 @@ export function AssessmentPanel({
         body: JSON.stringify({ assessmentId: record.id, channel, level }),
       });
       await onRefresh();
+      setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Gagal mengirim follow up assessment.");
+      setActionError(error instanceof Error ? error.message : "Pengingat belum berhasil dikirim.");
+      throw error;
     } finally {
       setActionId(null);
     }
@@ -376,6 +399,7 @@ export function AssessmentPanel({
 
   const saveAssessmentStatus = async (record: AssessmentRecord, assessmentStatus: string, proposalStatus: string) => {
     setActionError("");
+    setActionSuccess("");
     setActionId(`${record.id}:status`);
     try {
       await onAction("/api/admin/assessments", {
@@ -383,6 +407,7 @@ export function AssessmentPanel({
         body: JSON.stringify({ id: record.id, assessmentStatus, proposalStatus }),
       });
       await onRefresh();
+      setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal memperbarui status assessment.");
     } finally {
@@ -392,6 +417,7 @@ export function AssessmentPanel({
 
   const toggleAssessmentFollowUp = async (record: AssessmentRecord) => {
     setActionError("");
+    setActionSuccess("");
     setActionId(`${record.id}:follow-up-pause`);
     try {
       await onAction("/api/admin/assessments", {
@@ -404,6 +430,7 @@ export function AssessmentPanel({
         }),
       });
       await onRefresh();
+      setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal mengubah jeda follow up assessment.");
     } finally {
@@ -411,340 +438,208 @@ export function AssessmentPanel({
     }
   };
 
-  const resultFollowUpDue = records.filter(
-    (record) => daysSince(record.resultEmailSentAt || record.createdAt) >= 2 && !/closed|deal|lost|lanjut diskusi/i.test(`${record.assessmentStatus} ${record.proposalStatus}`)
-  ).length;
-  const proposalFollowUpDue = records.filter(
-    (record) => record.proposalSentAt && daysSince(record.proposalSentAt) >= 2 && !/closed|deal|lost|lanjut diskusi/i.test(record.proposalStatus || "")
-  ).length;
-  const highPotential = records.filter((record) => Number(record.overallScore || 0) >= 70).length;
+
+  const filtered = records.filter((record) => matchesQueue(record, queue)).sort((a, b) => {
+    if (sort === "attention") {
+      const priority = Number(needsAttention(b)) - Number(needsAttention(a));
+      if (priority) return priority;
+    }
+    return (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0);
+  });
+  const selected = filtered.find((record) => record.id === expandedId) || filtered[0];
+  const record = selected;
+  const state = record ? proposalState(record) : { manual: false, processing: false, reconcile: false, failed: false, sent: false, review: false, label: "" };
+  const hasManualDraft = state.manual;
+  const proposalProcessing = state.processing;
+  const deliveryProtected = state.processing || state.reconcile || state.failed;
+  const showManualApproval = hasManualDraft && record?.proposalGateStatus === "pending_approval";
+  const proposalCanSend = !state.sent && !deliveryProtected && hasManualDraft && ["approved", "clear"].includes(record?.proposalGateStatus || "") && !record?.proposalDraft?.isSimulation;
+  const busy = Boolean(actionId);
+  const showingDetail = Boolean(expandedId && filtered.some((record) => record.id === expandedId));
+  const resetFilters = () => {
+    setQuery(""); setCategory("Semua"); setEmployeeRange("Semua"); setMinScore("0");
+    setQueue("all"); setVisibleLimit(20); setExpandedId(null);
+  };
+  const selectClient = (id: string) => {
+    setExpandedId(id); setDetailTab("summary"); setActionError(""); setActionSuccess("");
+    window.requestAnimationFrame(() => {
+      detailHeadingRef.current?.focus({ preventScroll: true });
+      detailHeadingRef.current?.scrollIntoView({ block: "start" });
+    });
+  };
+  const returnToClientList = (id: string) => {
+    setExpandedId(null);
+    window.requestAnimationFrame(() => {
+      clientListRef.current?.scrollIntoView({ block: "start" });
+      document.getElementById(`${tabId}-client-${id}`)?.focus({ preventScroll: true });
+    });
+  };
+  const tabs: { id: AssessmentDetailTab; label: string }[] = [
+    { id: "summary", label: "Ringkasan" }, { id: "proposal", label: "Proposal" },
+    { id: "documents", label: "Dokumen" }, { id: "followup", label: "Tindak lanjut" },
+  ];
 
   return (
-    <div className="space-y-6">
-      {confirmAction && (
-        <ConfirmDialog
-          action={confirmAction}
-          onClose={() => setConfirmAction(null)}
-        />
-      )}
+    <div className="space-y-5">
+      {confirmAction && <ConfirmDialog action={confirmAction} errorText={actionError} onClose={() => setConfirmAction(null)} />}
       {emailPreview && <EmailPreviewModal preview={emailPreview} onClose={() => setEmailPreview(null)} />}
-      {actionError && <AdminNotice>{actionError}</AdminNotice>}
-      <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_150px_auto]">
-        <div className="relative max-w-md flex-1">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-black/30" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari nama, email, perusahaan, kategori..."
-            className="h-12 w-full rounded-[12px] border border-black/10 bg-white pl-11 pr-4 text-sm outline-none focus:border-[#D9A441]"
-          />
-        </div>
-        <AdminSelect value={category} onChange={setCategory} options={["Semua", ...categories]} />
-        <AdminSelect value={employeeRange} onChange={setEmployeeRange} options={["Semua", ...employeeRanges]} />
-        <AdminSelect
-          value={minScore}
-          onChange={setMinScore}
-          options={[
-            ["0", "Skor 0+"],
-            ["50", "Skor 50+"],
-            ["70", "Skor 70+"],
-            ["85", "Skor 85+"],
-          ]}
-        />
-        <button
-          onClick={() =>
-            exportCsv(
-              "binahub-assessments.csv",
-              records.map((item) => ({
-                name: item.name,
-                email: item.email,
-                company: item.company,
-                role: item.role,
-                employees: item.employees,
-                category: item.category,
-                overallScore: item.overallScore,
-                createdAt: item.createdAt,
-              }))
-            )
-          }
-          className="flex h-12 items-center justify-center gap-2 rounded-[12px] border border-black/10 bg-white px-4 text-xs font-bold uppercase tracking-[0.14em]"
-        >
-          <Download size={15} /> CSV
-        </button>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-3">
-        {[
-          { label: "Result perlu follow up", value: resultFollowUpDue, action: () => setQuery("Result Follow Up") },
-          { label: "Proposal perlu follow up", value: proposalFollowUpDue, action: () => setQuery("Proposal Follow Up") },
-          { label: "High potential", value: highPotential, action: () => setMinScore("70") },
-        ].map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            onClick={item.action}
-            className="rounded-[12px] border border-black/[0.05] bg-white p-4 text-left transition hover:border-[#D9A441]/40 hover:bg-[#FFF8EA]"
-          >
-            <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-black/38">{item.label}</span>
-            <span className="mt-2 block text-3xl font-light tracking-[-0.04em] text-[#0B2C6B]">{item.value}</span>
+      {actionError && !confirmAction && <AdminNotice>{actionError}</AdminNotice>}
+      {actionSuccess && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{actionSuccess}</p>}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Antrean assessment">
+        {([
+          { id: "all", label: "Semua assessment", hint: "Dalam hasil filter", icon: FileText },
+          { id: "attention", label: "Perlu perhatian", hint: "Permintaan, kendala, atau pengingat", icon: Eye },
+          { id: "processing", label: "Sedang diproses", hint: "Proposal standar otomatis", icon: LoaderCircle },
+          { id: "sent", label: "Proposal terkirim", hint: "Pengiriman berhasil tercatat", icon: Check },
+        ] as const).map(({ id, label, hint, icon: Icon }) => (
+          <button key={id} type="button" aria-pressed={queue === id} onClick={() => { setQueue(id); setExpandedId(null); setVisibleLimit(20); }}
+            className={`rounded-2xl border p-4 text-left transition sm:p-5 ${queue === id ? "border-[#0B2C6B] bg-[#0B2C6B] text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"}`}>
+            <div className="flex items-center justify-between gap-2"><span className="text-xs font-medium sm:text-sm">{label}</span><Icon size={16} className="shrink-0 opacity-60" aria-hidden="true" /></div>
+            <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">{records.filter((record) => matchesQueue(record, id)).length}</p>
+            <p className="mt-2 text-[11px] leading-4 opacity-70">{hint}</p>
           </button>
         ))}
       </div>
 
-      <Panel title="Distribusi jawaban" action="Persentase jawaban 4–5">
-        {data.answerDistribution.length === 0 ? (
-          <EmptyState title="Belum ada distribusi jawaban" description="Grafik akan muncul setelah assessment pertama berhasil disubmit." />
-        ) : (
-          <>
-            <div className="overflow-x-auto pb-2" aria-label="Distribusi jawaban per pertanyaan">
-              <div className="flex min-w-max items-end gap-2 px-1 pt-2">
-              {data.answerDistribution.map((item) => {
-                const summary = answerSummary(item);
-                return (
-                  <button type="button" key={String(item.question)} onClick={() => setSelectedDistributionQuestion(Number(String(item.question).replace(/\D/g, "")))} className="group flex w-5 shrink-0 flex-col items-center text-center" aria-label={`Lihat isi ${summary.label}: ${summary.percent}% menjawab 4 atau 5 dari ${summary.total} respons`}>
-                    <div className="flex h-20 w-5 items-end rounded-sm bg-slate-100 px-0.5 transition group-hover:bg-blue-100 group-focus-visible:ring-2 group-focus-visible:ring-blue-700 group-focus-visible:ring-offset-2" role="img" aria-label={`${summary.label}: ${summary.percent}% menjawab 4 atau 5`}>
-                      <div className="w-full rounded-[2px] bg-blue-900 transition-colors group-hover:bg-blue-700" style={{ height: `${Math.max(summary.percent, 3)}%` }} />
-                    </div>
-                    <span className="mt-1 text-[8px] font-bold leading-none text-slate-500">{summary.label}</span>
-                    <span className="mt-1 text-[9px] font-bold leading-none tabular-nums text-blue-950">{summary.percent}%</span>
-                  </button>
-                );
-              })}
-              </div>
-            </div>
-            {selectedDistributionQuestion && <div className="mt-4 flex items-start gap-3 border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950" role="status"><span className="shrink-0 bg-blue-900 px-2 py-1 text-[10px] font-bold text-white">Q{selectedDistributionQuestion}</span><p className="min-w-0 flex-1 leading-6">{QUESTIONS.find((question) => question.id === selectedDistributionQuestion)?.text || "Pertanyaan tidak ditemukan."}</p><button type="button" onClick={() => setSelectedDistributionQuestion(null)} aria-label="Tutup pertanyaan" className="grid h-8 w-8 shrink-0 place-items-center text-blue-900 hover:bg-blue-100"><X className="h-4 w-4" /></button></div>}
-          </>
-        )}
-      </Panel>
-
-      <div className="overflow-x-auto rounded-[8px] border border-black/[0.06] bg-white">
-        <div className="grid min-w-[760px] grid-cols-[1.25fr_1fr_0.75fr_0.65fr_44px] border-b border-black/[0.06] bg-[#FAFAF8] px-5 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-black/42">
-          <span>Klien</span>
-          <span>Perusahaan</span>
-          <span>Status</span>
-          <span>Skor</span>
-          <span />
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative min-w-0 flex-1">
+            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <input type="search" aria-label="Cari assessment" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama, perusahaan, atau email…"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm outline-none focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10" />
+          </div>
+          <button type="button" onClick={() => exportCsv("binahub-assessments.csv", filtered.map((item) => ({ name: item.name, email: item.email, company: item.company, role: item.role, employees: item.employees, category: item.category, overallScore: item.overallScore, assessmentStatus: item.assessmentStatus, proposalStatus: item.proposalStatus, createdAt: item.createdAt })))}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"><Download size={16} aria-hidden="true" /> Ekspor CSV</button>
         </div>
-        {records.map((record) => {
-          const isOpen = expandedId === record.id;
-          const hasManualDraft = Boolean(record.proposalDraft?.proposal && !record.proposalDraft.automatic);
-          const proposalProcessing = record.proposalStatus === "Sedang Disusun" && !hasManualDraft;
-          const deliveryProtected = proposalProcessing || ["Perlu Rekonsiliasi", "Gagal Otomatis"].includes(record.proposalStatus);
-          const showManualApproval = hasManualDraft && record.proposalGateStatus === "pending_approval";
-          const proposalCanSend = !record.proposalSentAt && !deliveryProtected && hasManualDraft && ["approved", "clear"].includes(record.proposalGateStatus || "") && !record.proposalDraft?.isSimulation;
-          return (
-            <div key={record.id} className="border-b border-black/[0.05] last:border-0">
-              <button
-                onClick={() => setExpandedId(isOpen ? null : record.id)}
-                className="grid min-w-[760px] w-full grid-cols-[1.25fr_1fr_0.75fr_0.65fr_44px] items-center gap-4 px-5 py-4 text-left transition hover:bg-[#F8FAFC]"
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-[#0B2C6B]">{record.name}</span>
-                  <span className="text-xs text-black/42">{record.email}</span>
-                </span>
-                <span className="text-sm text-black/62">{record.company}</span>
-                <span>
-                  <span className="block text-sm font-medium text-[#0B2C6B]">{record.assessmentStatus}</span>
-                  <span className="text-xs text-black/42">{record.proposalStatus}</span>
-                </span>
-                <span className="text-2xl font-light tracking-[-0.04em]">{record.overallScore}</span>
-                <ChevronDown size={17} className={`transition ${isOpen ? "rotate-180" : ""}`} />
-              </button>
-              {isOpen && (
-                <div className="grid gap-6 bg-[#FAFAF8] px-5 py-6 lg:grid-cols-[0.8fr_1.2fr]">
-                  <div className="rounded-[12px] border border-black/[0.05] bg-white p-5">
-                    <h4 className="mb-4 text-sm font-semibold">Skor Dimensi</h4>
-                    <div className="space-y-3">
-                      {Object.entries(record.scores)
-                        .filter(([key]) => key !== "overall")
-                        .map(([dimension, value]) => (
-                          <MetricBar key={dimension} label={dimension} value={Number(value)} />
-                        ))}
-                    </div>
+        <details className="mt-3">
+          <summary className="w-fit cursor-pointer list-none text-xs font-medium text-slate-600"><span className="flex items-center gap-2"><SlidersHorizontal size={14} aria-hidden="true" /> Filter lanjutan{category !== "Semua" || employeeRange !== "Semua" || minScore !== "0" ? " · Aktif" : ""}</span></summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <label className="text-xs text-slate-500">Kategori<div className="mt-1"><AdminSelect ariaLabel="Kategori assessment" value={category} onChange={setCategory} options={[["Semua", "Semua kategori"], ...categories.map((item) => [item, item] as [string, string])]} /></div></label>
+            <label className="text-xs text-slate-500">Ukuran perusahaan<div className="mt-1"><AdminSelect ariaLabel="Ukuran perusahaan" value={employeeRange} onChange={setEmployeeRange} options={[["Semua", "Semua ukuran"], ...employeeRanges.map((item) => [item, item] as [string, string])]} /></div></label>
+            <label className="text-xs text-slate-500">Skor diagnosis minimum<div className="mt-1"><AdminSelect ariaLabel="Skor diagnosis minimum" value={minScore} onChange={setMinScore} options={[["0", "Semua skor"], ["50", "50 atau lebih"], ["70", "70 atau lebih"], ["85", "85 atau lebih"]]} /></div></label>
+          </div>
+        </details>
+        {(query || category !== "Semua" || employeeRange !== "Semua" || minScore !== "0" || queue !== "all") && <button type="button" onClick={resetFilters} className="mt-3 text-xs font-medium text-[#0B2C6B] underline underline-offset-4">Hapus semua filter</button>}
+      </div>
+
+      <div className="grid items-start gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <section ref={clientListRef} aria-label="Daftar klien assessment" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white ${showingDetail ? "hidden xl:block" : ""}`}>
+          <div className="border-b border-slate-100 p-4">
+            <div className="mb-3 flex items-center justify-between gap-2"><h2 className="text-sm font-semibold text-slate-900">Daftar klien</h2><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs tabular-nums text-slate-600">{filtered.length}</span></div>
+            <AdminSelect ariaLabel="Urutkan assessment" value={sort} onChange={setSort} options={[["latest", "Terbaru dahulu"], ["attention", "Perlu perhatian dahulu"]]} />
+          </div>
+          <div className="max-h-[760px] overflow-y-auto">
+            {filtered.slice(0, visibleLimit).map((record) => {
+              const state = proposalState(record);
+              const active = selected?.id === record.id;
+              return <button type="button" key={record.id} id={`${tabId}-client-${record.id}`} aria-pressed={active} aria-label={`Buka assessment ${record.name}, ${record.company}`} onClick={() => selectClient(record.id)}
+                className={`block w-full border-b border-slate-100 border-l-[3px] p-4 text-left transition last:border-b-0 ${active ? "border-l-[#0B2C6B] bg-[#F1F5FB]" : "border-l-transparent hover:bg-slate-50"}`}>
+                <div className="flex items-start gap-3">
+                  <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-xs font-semibold text-[#0B2C6B] ring-1 ring-slate-200">{record.name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "K"}</span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-900">{record.name}</span><span className="mt-1 block truncate text-xs text-slate-500">{record.company}</span></span>
+                </div>
+                <span className={`mt-3 inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${state.failed || state.reconcile || state.review ? "bg-amber-50 text-amber-800" : state.sent ? "bg-emerald-50 text-emerald-700" : "bg-white text-slate-600"}`}>{state.label}</span>
+                <span className="mt-2 flex flex-wrap justify-between gap-1 text-[10px] text-slate-500"><span>{formatDate(record.createdAt)}</span><span>Skor diagnosis {record.overallScore}</span></span>
+              </button>;
+            })}
+            {!filtered.length && <div className="p-5"><EmptyState title="Tidak ada assessment yang cocok" description="Coba kata kunci atau filter lain." action={{ label: "Hapus filter", onClick: resetFilters }} /></div>}
+          </div>
+          {filtered.length > visibleLimit && <button type="button" onClick={() => setVisibleLimit((value) => value + 20)} className="w-full border-t border-slate-100 p-4 text-xs font-semibold text-[#0B2C6B]">Tampilkan lebih banyak</button>}
+          <p className="border-t border-slate-100 p-4 text-[11px] leading-5 text-slate-500">Menampilkan data assessment yang dimuat, bukan total historis.</p>
+        </section>
+
+        <section aria-label="Detail assessment" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${!showingDetail ? "hidden xl:block" : ""}`}>
+          {!record ? <div className="p-8"><EmptyState title="Belum ada klien untuk ditampilkan" description="Hapus filter untuk melihat assessment yang tersedia." /></div> : <>
+              <header className="p-5 sm:p-6">
+                <button type="button" onClick={() => returnToClientList(record.id)} className="mb-4 flex min-h-10 items-center gap-2 text-xs font-medium text-slate-600 xl:hidden"><ArrowLeft size={16} /> Kembali ke daftar klien</button>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0"><p className="text-xs font-medium text-slate-500">{record.company}</p><h2 ref={detailHeadingRef} tabIndex={-1} className="mt-1 scroll-mt-24 break-words text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{record.name}</h2><p className="mt-1 text-xs text-slate-500">{record.role || "Peran belum diisi"} · {record.employees ? `${record.employees} karyawan` : "Ukuran perusahaan belum diisi"}</p></div>
+                  <span className={`rounded-full px-3 py-1.5 text-xs font-medium ${state.failed || state.reconcile || state.review ? "bg-amber-50 text-amber-800" : state.sent ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-[#0B2C6B]"}`}>{state.label}</span>
+                </div>
+                <p className="mt-3 break-all text-sm text-slate-600">{record.email}</p>
+                {record.whatsapp && <p className="mt-1 text-xs text-slate-500">WhatsApp: {record.whatsapp}</p>}
+                <div className="mt-5 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3">
+                  {[["Assessment", record.createdAt], ["Hasil dikirim", record.resultEmailSentAt], ["Proposal dikirim", record.proposalSentAt]].map(([label, date]) => <div key={label} className="min-w-0"><p className="flex items-center gap-1.5 text-[11px] font-medium text-slate-700"><span className={`h-1.5 w-1.5 shrink-0 rounded-full ${date ? "bg-emerald-500" : "bg-slate-300"}`} />{label}</p><p className="mt-1.5 text-[10px] leading-4 text-slate-500">{date ? formatDate(date) : "Belum tercatat"}</p></div>)}
+                </div>
+              </header>
+              <div role="tablist" aria-label="Bagian assessment" className="grid grid-cols-4 gap-1 border-y border-slate-100 px-2 sm:flex sm:overflow-x-auto sm:px-4">
+                {tabs.map((tab, index) => <button type="button" role="tab" key={tab.id} id={`${tabId}-${tab.id}`} aria-controls={`${tabId}-panel`} aria-selected={detailTab === tab.id} tabIndex={detailTab === tab.id ? 0 : -1}
+                  onClick={() => setDetailTab(tab.id)} onKeyDown={(event) => {
+                    const next = event.key === "ArrowRight" ? (index + 1) % tabs.length : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
+                    if (next >= 0) { event.preventDefault(); setDetailTab(tabs[next].id); document.getElementById(`${tabId}-${tabs[next].id}`)?.focus(); }
+                  }} className={`min-h-12 min-w-0 border-b-2 px-1 text-[11px] font-semibold transition sm:shrink-0 sm:px-3 sm:text-sm ${detailTab === tab.id ? "border-[#0B2C6B] text-[#0B2C6B]" : "border-transparent text-slate-500 hover:text-slate-900"}`}>{tab.label}</button>)}
+              </div>
+              <div role="tabpanel" id={`${tabId}-panel`} aria-labelledby={`${tabId}-${detailTab}`} tabIndex={0} className="space-y-5 p-5 sm:p-6">
+                {busy && <p role="status" className="flex items-center gap-2 rounded-xl bg-blue-50 p-3 text-xs text-[#0B2C6B]"><LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" />Memproses tindakan. Mohon tunggu…</p>}
+                {detailTab === "summary" && <>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge tone="navy">{profileLabel(record.lifecycleStage || "prospect")}</Badge>
+                    <Badge tone="gold">{profileLabel(record.leadTemperature || record.leadStatus)}</Badge>
+                    <Badge tone="green">{profileLabel(record.opportunityStage || "identified")}</Badge>
                   </div>
-                  <div className="space-y-5">
-                    <div className="rounded-[12px] border border-black/[0.05] bg-white p-5">
-                      <h4 className="mb-3 text-sm font-semibold">Tindakan Assessment</h4>
-                      <div className="mb-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.12em]">
-                        <span className="rounded-full bg-[#0B2C6B]/8 px-3 py-1.5 text-[#0B2C6B]">
-                          {record.lifecycleStage || "prospect"}
-                        </span>
-                        <span className="rounded-full bg-[#D9A441]/14 px-3 py-1.5 text-[#7A5A16]">
-                          {record.leadTemperature || record.leadStatus || "belum dinilai"}
-                          {typeof record.leadScore === "number" ? ` · ${record.leadScore}` : ""}
-                        </span>
-                        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-700">
-                          {record.opportunityStage || "identified"}
-                        </span>
-                      </div>
-                      <div className="mb-4 grid gap-2 rounded-[10px] border border-slate-200 bg-white p-3 text-xs text-slate-600 sm:grid-cols-2 xl:grid-cols-3">
-                        <span>Industri: <strong>{record.industry || "-"}</strong></span>
-                        <span>Lokasi: <strong>{record.location || "-"}</strong></span>
-                        <span>Timeline: <strong>{record.timeline?.replaceAll("_", "-") || "unknown"}</strong></span>
-                        <span>Intent: <strong>{record.nextStepIntent?.replaceAll("_", " ") || "explore"}</strong></span>
-                      </div>
-                      <div className="mb-4 rounded-[10px] border border-[#0B2C6B]/15 bg-[#F5F8FC] p-4 text-xs leading-6 text-slate-700">
-                        <p className="font-bold uppercase tracking-[0.12em] text-[#0B2C6B]">Brief assessment untuk CEO</p>
-                        <p className="mt-2"><strong>Tantangan:</strong> {record.challenge || "Tidak diisi"}</p>
-                        <p className="mt-1"><strong>Target 3–6 bulan:</strong> {record.target || "Tidak diisi"}</p>
-                        {record.businessConsequence && <p className="mt-1"><strong>Dampak bila belum ditangani:</strong> {record.businessConsequence}</p>}
-                        <p className="mt-2 text-slate-500">Analisis, rekomendasi, salinan email klien, dan PDF hasil tersedia di bagian bawah. Proposal custom dibuat manual oleh CEO di luar aplikasi.</p>
-                        <details className="mt-3 border-t border-[#0B2C6B]/10 pt-3"><summary className="cursor-pointer font-semibold text-[#0B2C6B]">Lihat jawaban diagnosis ({Object.keys(record.answers || {}).length})</summary><ol className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-2">{QUESTIONS.filter((question) => record.answers?.[question.id] != null).map((question) => <li key={question.id} className="flex justify-between gap-4 border-b border-slate-200 pb-2"><span>Q{question.id}. {question.text}</span><strong className="shrink-0">{record.answers[question.id]}/5</strong></li>)}</ol></details>
-                      </div>
-                      {(record.leadScoreReason || record.leadScoreRuleVersion) && (
-                        <div className="mb-4 rounded-[10px] border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-600">
-                          <div className="flex flex-wrap gap-x-4 gap-y-1">
-                            <span>Confidence: <strong>{typeof record.leadScoreConfidence === "number" ? `${Math.round(record.leadScoreConfidence * 100)}%` : "-"}</strong></span>
-                            <span>Sinyal minat: <strong>{record.leadScoreEvidence?.buyingSignalCount ?? "-"}</strong></span>
-                            <span>Versi aturan: <strong>{record.leadScoreRuleVersion || "-"}</strong></span>
+                  <div className="grid grid-cols-2 gap-4 text-xs"><div><p className="text-slate-500">Industri</p><p className="mt-1 font-medium text-slate-800">{record.industry || "Belum diisi"}</p></div><div><p className="text-slate-500">Lokasi</p><p className="mt-1 font-medium text-slate-800">{record.location || "Belum diisi"}</p></div><div><p className="text-slate-500">Rencana mulai</p><p className="mt-1 font-medium text-slate-800">{profileLabel(record.timeline)}</p></div><div><p className="text-slate-500">Langkah yang diminati</p><p className="mt-1 font-medium text-slate-800">{profileLabel(record.nextStepIntent || "explore")}</p></div></div>
+                  <div className="space-y-4 rounded-xl bg-slate-50 p-4 text-sm leading-6">
+                    <h3 className="text-sm font-semibold text-slate-900">Brief assessment</h3>
+                    <div><p className="text-xs font-medium text-slate-500">Tantangan utama</p><p className="mt-1 whitespace-pre-wrap text-slate-800">{record.challenge || "Belum diisi"}</p></div>
+                    <div><p className="text-xs font-medium text-slate-500">Target 3–6 bulan</p><p className="mt-1 whitespace-pre-wrap text-slate-800">{record.target || "Belum diisi"}</p></div>
+                    {record.businessConsequence && <div><p className="text-xs font-medium text-slate-500">Dampak bagi bisnis</p><p className="mt-1 whitespace-pre-wrap text-slate-800">{record.businessConsequence}</p></div>}
+                  </div>
+                                      <div>
+                      <h4 className="mb-2 text-sm font-semibold">Ringkasan hasil</h4>
+                      <p className="text-sm whitespace-pre-wrap leading-7 text-slate-600">
+                        {record.aiAnalysis || "Ringkasan hasil belum tersedia."}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="mb-3 text-sm font-semibold">Rekomendasi</h4>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {record.recommendations.map((rec, index) => (
+                          <div key={`${record.id}-${index}`} className="rounded-[12px] border border-black/[0.05] bg-white p-4">
+                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D9A441]">
+                              {rec.service || "Solusi"}
+                            </span>
+                            <p className="mt-2 text-sm font-semibold">{rec.title}</p>
+                            <p className="mt-2 text-xs leading-relaxed text-black/52">{rec.description}</p>
                           </div>
-                          {record.leadScoreReason && <p className="mt-1">{record.leadScoreReason}</p>}
-                          {(record.leadScoreEvidence?.missingData || []).length > 0 && (
-                            <p className="mt-1 text-amber-700">Data belum lengkap: {record.leadScoreEvidence?.missingData?.join(", ")}</p>
-                          )}
-                          {(record.leadScoreEvidence?.exclusionReasons || []).length > 0 && (
-                            <p className="mt-1 font-semibold text-red-700">Kelayakan profil: {record.leadScoreEvidence?.exclusionReasons?.join(" ")}</p>
-                          )}
-                        </div>
-                      )}
-                      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                        <AdminSelect
-                          value={record.assessmentStatus}
-                          onChange={(value) => saveAssessmentStatus(record, value, record.proposalStatus)}
-                          options={[
-                            "Result Otomatis Terkirim",
-                            "Result Email Terkirim",
-                            "Minta Proposal",
-                            "Proposal Terkirim",
-                            "Follow Up",
-                            "Result Follow Up 1 Terkirim",
-                            "Result Follow Up 2 Terkirim",
-                            "Result Follow Up 3 Terkirim",
-                            "Lanjut Diskusi",
-                            "Closed",
-                          ]}
-                        />
-                        <AdminSelect
-                          value={record.proposalStatus}
-                          disabled={deliveryProtected}
-                          onChange={(value) => saveAssessmentStatus(record, record.assessmentStatus, value)}
-                          options={[
-                            "Belum Diminta",
-                            "Diminta",
-                            "Sedang Disusun",
-                            "Gagal Otomatis",
-                            "Perlu Rekonsiliasi",
-                            "Draft Simulasi",
-                            "Menunggu Approval",
-                            "Disetujui",
-                            "Terkirim",
-                            "Proposal Follow Up 1 Terkirim",
-                            "Proposal Follow Up 2 Terkirim",
-                            "Proposal Follow Up 3 Terkirim",
-                            "Revisi",
-                            "Lanjut Diskusi",
-                            "Deal",
-                            "Lost",
-                            "Closed",
-                          ]}
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setConfirmAction({
-                                title: "Kirim ulang result assessment?",
-                                description: "Email result assessment akan dikirim ke klien ini. Pastikan data kontak dan analisis sudah benar.",
-                                confirmLabel: "Kirim Result",
-                                tone: "gold",
-                                details: [`Klien: ${record.name}`, `Email: ${record.email}`, `Perusahaan: ${record.company}`],
-                                onConfirm: () => runAssessmentAction(record, "resend_result"),
-                              })
-                            }
-                            disabled={actionId === `${record.id}:resend_result`}
-                            className="h-12 rounded-[10px] border border-black/10 bg-white px-3 text-xs font-bold uppercase tracking-[0.12em] disabled:opacity-50"
-                          >
-                            Kirim Result
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setConfirmAction({
-                                title: "Buat dan kirim proposal standar?",
-                                description: "Proposal standar akan disusun dari hasil assessment dan katalog resmi, lalu dikirim otomatis ke email klien. Gunakan juga untuk melanjutkan permintaan yang sebelumnya gagal.",
-                                confirmLabel: "Buat & Kirim Standar",
-                                details: [`Klien: ${record.name}`, `Kategori: ${record.category}`, `Skor: ${record.overallScore}`],
-                                onConfirm: () => runAssessmentAction(record, "request_proposal"),
-                              })
-                            }
-                            disabled={actionId === `${record.id}:request_proposal` || proposalProcessing || Boolean(record.proposalSentAt) || record.proposalStatus === "Perlu Rekonsiliasi" || hasManualDraft}
-                            className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-[#D9A441]/40 bg-[#FFF8EA] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#9B6C17] disabled:opacity-50"
-                          >
-                            {(actionId === `${record.id}:request_proposal` || proposalProcessing) && <LoaderCircle size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
-                            {proposalProcessing ? "Sedang Disusun" : "Buat & Kirim Standar"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void openProposalBuilder(record)}
-                            disabled={catalogLoading || deliveryProtected || Boolean(record.proposalSentAt) || record.proposalEligibility?.eligible === false}
-                            title={record.proposalSentAt ? "Proposal standar sudah terkirim. Proposal custom disusun manual oleh CEO menggunakan brief dan arsip assessment di halaman ini." : record.proposalEligibility?.eligible === false ? record.proposalEligibility.summary : "AI menyusun draf standar dari hasil assessment dan modul katalog resmi yang relevan."}
-                            className="h-12 rounded-[10px] border border-[#0B2C6B]/20 bg-[#EAF0F7] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
-                          >
-                            {builderId === record.id ? "Tutup Draf AI" : "Buat dengan AI"}
-                          </button>
-                          <button
-                            onClick={() =>
-                              setConfirmAction({
-                                title: "Kirim proposal ke klien?",
-                                description: "Proposal dari katalog yang sudah memperoleh persetujuan manual akan dikirim ke email klien.",
-                                confirmLabel: "Kirim Proposal",
-                                tone: "gold",
-                                details: [`Klien: ${record.name}`, `Email: ${record.email}`, `Status persetujuan: ${record.proposalGateStatus || "belum dievaluasi"}`, `Katalog: ${record.proposalCatalogVersion || "-"}`],
-                                onConfirm: () => runAssessmentAction(record, "send_proposal"),
-                              })
-                            }
-                            disabled={actionId === `${record.id}:send_proposal` || !proposalCanSend}
-                            title={record.proposalDraft?.isSimulation ? "Pengiriman proposal simulasi dinonaktifkan." : !proposalCanSend ? "Selesaikan draf dan persetujuan manual terlebih dahulu." : undefined}
-                            className="h-12 rounded-[10px] bg-[#0B2C6B] px-3 text-xs font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50"
-                          >
-                            Kirim Proposal
-                          </button>
-                        </div>
+                        ))}
                       </div>
-                      {proposalProcessing && <p role="status" className="mt-3 flex items-center gap-2 rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-3 text-xs text-[#0B2C6B]"><LoaderCircle size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />Proposal standar sedang disusun dan dikirim. Status diperbarui otomatis.</p>}
-                      {record.proposalEligibility && !proposalProcessing && !record.proposalSentAt && (
-                        <div className={`mt-3 rounded-[10px] border px-3 py-3 text-xs leading-5 ${record.proposalEligibility.eligible ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
-                          <strong>{record.proposalEligibility.eligible ? "Data assessment lengkap." : "Data assessment perlu dilengkapi."}</strong>{" "}{record.proposalEligibility.eligible ? "Proposal standar dapat dibuat dan dikirim otomatis. Lihat status di bawah untuk kendala penyusunan atau pengiriman." : record.proposalEligibility.summary}
-                        </div>
-                      )}
-                      <div className="mt-4 rounded-[12px] border border-black/[0.07] bg-[#F8FAFC] p-4">
+                    </div>
+
+                  <div className="rounded-xl border border-slate-200 p-4"><div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-sm font-semibold text-slate-900">Skor per dimensi</h3><span className="text-xs text-slate-500">Diagnosis: {record.overallScore}/100</span></div><div className="space-y-3">{Object.entries(record.scores).filter(([key]) => key !== "overall").map(([dimension, value]) => <MetricBar key={dimension} label={dimension} value={Math.max(0, Math.min(100, Number(value) || 0))} />)}</div><p className="mt-4 text-[11px] leading-5 text-slate-500">Skor diagnosis menggambarkan kondisi organisasi, bukan kesiapan membeli.</p></div>
+                  <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-sm font-medium text-slate-800">Jawaban diagnosis ({Object.keys(record.answers || {}).length})</summary><ol className="mt-4 space-y-3">{QUESTIONS.filter((question) => record.answers?.[question.id] != null).map((question) => <li key={question.id} className="flex justify-between gap-4 border-b border-slate-100 pb-3 text-xs leading-5 text-slate-600"><span>{question.id}. {question.text}</span><strong className="shrink-0 text-[#0B2C6B]">{record.answers[question.id]}/5</strong></li>)}</ol></details>
+                  <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Rincian penilaian minat</summary><div className="mt-3 space-y-2 text-xs leading-5 text-slate-600"><p>Skor minat: {record.leadScore ?? "Belum dinilai"} · Sinyal minat: {record.leadScoreEvidence?.buyingSignalCount ?? "Belum dinilai"}</p><p>Tingkat keyakinan: {typeof record.leadScoreConfidence === "number" ? `${Math.round(record.leadScoreConfidence * 100)}%` : "Belum dinilai"}</p>{record.leadScoreReason && <p>{record.leadScoreReason}</p>}{Boolean(record.leadScoreEvidence?.missingData?.length) && <p className="text-amber-800">Perlu dilengkapi: {record.leadScoreEvidence?.missingData?.map(profileLabel).join(", ")}</p>}{record.leadScoreEvidence?.exclusionReasons?.map((reason, index) => <p key={index}>{reason}</p>)}<p>Versi aturan: {record.leadScoreRuleVersion || "Belum tersedia"}</p></div></details>
+                  <button type="button" onClick={() => setDetailTab("proposal")} className="flex min-h-11 w-full items-center justify-between rounded-xl bg-[#0B2C6B] px-4 text-sm font-medium text-white">Lihat status proposal <ArrowRight size={17} /></button>
+                </>}
+                {detailTab === "proposal" && <>
+                  <div><h3 className="text-base font-semibold text-slate-900">Proposal</h3><p className="mt-2 text-sm leading-6 text-slate-500">Disusun berdasarkan hasil assessment dan solusi BinaHub. Pengiriman otomatis dapat dipantau di sini.</p></div>
+                                        <div className="mt-4 rounded-[12px] border border-black/[0.07] bg-[#F8FAFC] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#D9A441]">{hasManualDraft ? "Persetujuan Draf Admin" : "Status Proposal Standar"}</p>
-                            <p className="mt-1 text-sm font-semibold text-[#0B2C6B]">{hasManualDraft ? proposalGateLabel(record.proposalGateStatus) : record.proposalSentAt ? "Proposal terkirim" : record.proposalStatus === "Gagal Otomatis" ? "Proses gagal — periksa log dan jalankan ulang" : record.proposalStatus === "Perlu Rekonsiliasi" ? "Periksa penerimaan email sebelum mengirim ulang" : proposalProcessing ? "Sedang disusun dan dikirim otomatis" : record.proposalStatus === "Diminta" ? "Permintaan tercatat — siap diproses" : "Belum terkirim"}</p>
+                            <p className="text-xs font-medium text-slate-500">{hasManualDraft ? "Persetujuan Draf Admin" : "Status Proposal Standar"}</p>
+                            <p className="mt-1 text-sm font-semibold text-[#0B2C6B]">{hasManualDraft ? proposalGateLabel(record.proposalGateStatus) : record.proposalSentAt ? "Proposal terkirim" : record.proposalStatus === "Gagal Otomatis" ? "Penyusunan belum berhasil. Coba ulang permintaan proposal." : record.proposalStatus === "Perlu Rekonsiliasi" ? "Periksa penerimaan email sebelum mengirim ulang" : proposalProcessing ? "Sedang disusun dan dikirim otomatis" : record.proposalStatus === "Diminta" ? "Permintaan tercatat — siap diproses" : "Belum terkirim"}</p>
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {record.proposalDraft && (
+                            {record.proposalDraft?.proposal && (
                               <button
                                 type="button"
                                 onClick={() => void downloadDraftProposal(record)}
                                 disabled={documentId === `${record.id}:proposal-draft-pdf`}
                                 className="rounded-[9px] border border-black/10 bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
                               >
-                                Preview PDF
+                                Unduh draf PDF
                               </button>
                             )}
                             {showManualApproval && (
                               <>
-                                <button type="button" disabled={(approvalNotes[record.id] || "").trim().length < 5} onClick={() => void decideProposal(record, "approve")} className="rounded-[9px] bg-emerald-600 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:cursor-not-allowed disabled:opacity-40">Setujui</button>
-                                <button type="button" onClick={() => void decideProposal(record, "request_revision")} className="rounded-[9px] border border-amber-300 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800">Minta Revisi</button>
-                                <button type="button" onClick={() => void decideProposal(record, "reject")} className="rounded-[9px] border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-red-700">Tolak</button>
+                                <button type="button" disabled={Boolean(actionId) || (approvalNotes[record.id] || "").trim().length < 5} onClick={() => void decideProposal(record, "approve")} className="rounded-[9px] bg-emerald-600 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:cursor-not-allowed disabled:opacity-40">Setujui</button>
+                                <button type="button" disabled={Boolean(actionId)} onClick={() => void decideProposal(record, "request_revision")} className="rounded-[9px] border border-amber-300 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800">Minta Revisi</button>
+                                <button type="button" disabled={Boolean(actionId)} onClick={() => void decideProposal(record, "reject")} className="rounded-[9px] border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-red-700">Tolak</button>
                               </>
                             )}
                           </div>
                         </div>
                         {record.proposalDraft?.isSimulation && (
-                          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">SIMULASI — pengiriman eksternal dinonaktifkan sampai katalog dan aturan bisnis resmi disetujui.</p>
+                          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">Draf uji coba. Draf ini tidak dapat dikirim kepada klien.</p>
                         )}
                         {(record.proposalGateReasons || []).length > 0 && (
                           <ul className="mt-3 space-y-1 text-xs leading-5 text-slate-600">
@@ -764,7 +659,7 @@ export function AssessmentPanel({
                         )}
                         {(record.proposalDraft?.requiredDataMissing || []).length > 0 && (
                           <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                            Data wajib belum lengkap: {record.proposalDraft?.requiredDataMissing?.join(", ")}.
+                            Informasi yang perlu dilengkapi: {record.proposalDraft?.requiredDataMissing?.map(profileLabel).join(", ")}.
                           </p>
                         )}
                         {record.proposalDraft?.commercials && (
@@ -776,11 +671,19 @@ export function AssessmentPanel({
                           </div>
                         )}
                       </div>
-                      {builderId === record.id && (
+
+                  {proposalProcessing && <p role="status" className="flex items-center gap-2 rounded-xl bg-blue-50 p-4 text-sm text-[#0B2C6B]"><LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" />Proposal sedang disusun dan dikirim. Status diperbarui otomatis.</p>}
+                  {state.reconcile && <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">Status pengiriman belum dapat dipastikan. Periksa arsip pengiriman sebelum mencoba lagi agar klien tidak menerima proposal ganda.</p>}
+                  {record.proposalEligibility?.eligible === false && !state.sent && <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">{record.proposalEligibility.summary}</p>}
+                  {!state.sent && !hasManualDraft && <button type="button" disabled={busy || proposalProcessing || state.reconcile || record.proposalEligibility?.eligible === false}
+                    onClick={() => setConfirmAction({ title: state.failed ? "Coba ulang proposal standar?" : "Buat dan kirim proposal standar?", description: "Proposal berdasarkan hasil assessment dan katalog akan disusun, lalu dikirim ke email klien.", confirmLabel: state.failed ? "Coba lagi" : "Buat & kirim", details: [`Klien: ${record.name}`, `Email: ${record.email}`, `Perusahaan: ${record.company}`], onConfirm: () => runAssessmentAction(record, "request_proposal") })}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{proposalProcessing ? <><LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" />Sedang diproses</> : state.failed ? "Coba ulang proposal" : "Buat & kirim proposal standar"}</button>}
+                  {hasManualDraft && !state.sent && <button type="button" disabled={busy || !proposalCanSend} onClick={() => setConfirmAction({ title: "Kirim draf proposal yang disetujui?", description: "Draf ini akan dikirim langsung ke email klien.", confirmLabel: "Kirim proposal", details: [`Email: ${record.email}`, `Persetujuan: ${proposalGateLabel(record.proposalGateStatus)}`], onConfirm: () => runAssessmentAction(record, "send_proposal") })} className="min-h-11 w-full rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">Kirim draf yang disetujui</button>}
+                  {!state.sent && <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Draf standar yang perlu peninjauan</summary><p className="mt-3 text-xs leading-5 text-slate-500">Gunakan bila proposal standar perlu disiapkan dan ditinjau terlebih dahulu.</p><button type="button" onClick={() => void openProposalBuilder(record)} disabled={busy || catalogLoading || deliveryProtected || record.proposalEligibility?.eligible === false} className="mt-3 min-h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">{builderId === record.id ? "Tutup penyusun draf" : "Siapkan draf untuk ditinjau"}</button>                      {builderId === record.id && (
                         <div className="mt-4 rounded-[12px] border border-[#0B2C6B]/15 bg-white p-4">
                           <div className="mb-3">
                             <h5 className="text-sm font-semibold text-[#0B2C6B]">Konfigurasi Proposal Standar</h5>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">Draf admin ini untuk pengecualian proposal standar. Proposal custom disusun manual oleh CEO di luar aplikasi.</p>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">Gunakan untuk proposal standar yang memerlukan peninjauan. Tidak ada email yang dikirim saat menyusun draf.</p>
                           </div>
                           {catalogLoading ? <p className="text-xs text-slate-500">Memuat katalog...</p> : (
                             <div className="space-y-2">
@@ -843,61 +746,15 @@ export function AssessmentPanel({
                             <textarea value={proposalNotes} onChange={(event) => setProposalNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-slate-200 p-3 font-normal" />
                           </label>
                           <div className="mt-3 flex justify-end">
-                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={actionId === `${record.id}:proposal-draft` || record.proposalEligibility?.eligible === false} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">Buat Draf Standar dengan AI</button>
+                          <button type="button" onClick={() => void generateProposalDraft(record)} disabled={Boolean(actionId) || record.proposalEligibility?.eligible === false} className="rounded-[9px] bg-[#0B2C6B] px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:opacity-50">Susun draf untuk ditinjau</button>
                           </div>
                         </div>
                       )}
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => void toggleAssessmentFollowUp(record)}
-                          disabled={actionId === `${record.id}:follow-up-pause`}
-                          className="inline-flex min-h-9 items-center gap-2 rounded-[9px] border border-black/10 bg-white px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
-                        >
-                          {record.followUpPaused ? <PlayCircle size={14} /> : <PauseCircle size={14} />}
-                          {record.followUpPaused ? "Lanjutkan semua follow up" : "Jeda semua follow up"}
-                        </button>
-                      </div>
-                      <div className="mt-3 grid gap-3 xl:grid-cols-2">
-                        <AssessmentFollowUpBox
-                          title="Follow Up Result"
-                          description="H+2 memastikan result masuk dan terbaca, H+7 soft push diskusi, H+14 hard push keputusan."
-                          record={record}
-                          channel="result"
-                          actionId={actionId}
-                          disabled={record.followUpPaused || (!record.resultEmailSentAt && record.assessmentStatus !== "Result Otomatis Terkirim")}
-                          onSend={(target, channel, level) =>
-                            setConfirmAction({
-                              title: `Kirim follow up result level ${level}?`,
-                              description: "Email follow-up akan dibuat dengan bantuan AI dan dikirim ke klien assessment ini.",
-                              confirmLabel: `Kirim Follow Up ${level}`,
-                              tone: "gold",
-                              details: [`Klien: ${target.name}`, `Email: ${target.email}`, `Terakhir level: ${target.resultFollowUpLevel || 0}`],
-                              onConfirm: () => sendAssessmentFollowUp(target, channel, level),
-                            })
-                          }
-                        />
-                        <AssessmentFollowUpBox
-                          title="Follow Up Proposal"
-                          description="H+2 memastikan proposal diterima, H+7 dorong jadwal diskusi, H+14 final push keputusan lanjut atau tidak."
-                          record={record}
-                          channel="proposal"
-                          actionId={actionId}
-                          disabled={record.followUpPaused || !record.proposalSentAt}
-                          onSend={(target, channel, level) =>
-                            setConfirmAction({
-                              title: `Kirim follow up proposal level ${level}?`,
-                              description: "Email follow-up proposal akan dibuat dengan bantuan AI dan dikirim ke klien.",
-                              confirmLabel: `Kirim Follow Up ${level}`,
-                              tone: "gold",
-                              details: [`Klien: ${target.name}`, `Email: ${target.email}`, `Terakhir level: ${target.proposalFollowUpLevel || 0}`],
-                              onConfirm: () => sendAssessmentFollowUp(target, channel, level),
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="rounded-[12px] border border-black/[0.05] bg-white p-5">
+</details>}
+                  <p className="rounded-xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">Butuh proposal khusus? CEO menyiapkannya secara manual setelah diskusi dengan klien. Gunakan hasil assessment dan arsip di tab Dokumen sebagai acuan.</p>
+                </>}
+                {detailTab === "documents" && <>
+                                      <div className="rounded-[12px] border border-black/[0.05] bg-white p-5">
                       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                         <div>
                           <h4 className="text-sm font-semibold">Dokumen & Email</h4>
@@ -912,84 +769,88 @@ export function AssessmentPanel({
                       <div className="grid gap-3 md:grid-cols-2">
                         <DocumentActionButton
                           icon={Eye}
-                          label="Lihat Email Result"
-                          disabled={documentId === `${record.id}:result-email`}
+                          label="Salinan email hasil"
+                          loading={documentId === `${record.id}:result-email`}
+                          disabled={Boolean(documentId) || !record.resultEmailId}
                           onClick={() => previewEmail(record, "result-email")}
                         />
                         <DocumentActionButton
                           icon={Download}
-                          label="PDF Result"
-                          disabled={documentId === `${record.id}:result-pdf`}
+                          label="Unduh laporan hasil"
+                          loading={documentId === `${record.id}:result-pdf`}
+                          disabled={Boolean(documentId)}
                           onClick={() => downloadPdf(record, "result-pdf")}
                         />
                         <DocumentActionButton
                           icon={Eye}
-                          label="Lihat Email Proposal"
-                          disabled={documentId === `${record.id}:proposal-email`}
+                          label="Salinan email proposal"
+                          loading={documentId === `${record.id}:proposal-email`}
+                          disabled={Boolean(documentId) || !record.proposalEmailId}
                           onClick={() => previewEmail(record, "proposal-email")}
                         />
                         <DocumentActionButton
                           icon={FileText}
-                          label="PDF Proposal"
-                          disabled={documentId === `${record.id}:proposal-pdf`}
+                          label="Unduh proposal terkirim"
+                          loading={documentId === `${record.id}:proposal-pdf`}
+                          disabled={Boolean(documentId) || !record.proposalSentAt}
                           onClick={() => downloadPdf(record, "proposal-pdf")}
                         />
                       </div>
                       {!record.proposalSentAt && (
                         <p className="mt-3 text-xs leading-relaxed text-black/42">
-                          Proposal akan tersedia setelah proposal dibuat atau dikirim dari tombol tindakan.
+                          PDF proposal terkirim akan tersedia setelah pengiriman berhasil. Draf dapat diunduh di tab Proposal.
                         </p>
                       )}
                       {(!record.resultEmailId || (record.proposalSentAt && !record.proposalEmailId)) && (
                         <p className="mt-3 text-xs leading-relaxed text-black/42">
-                          Sebagian arsip lama belum memiliki salinan email. Kirim ulang hasil satu kali bila salinan perlu ditampilkan di sini.
+                          Salinan email belum tersedia untuk sebagian arsip. Laporan hasil tetap dapat diunduh; Anda tidak perlu mengirim email ulang untuk membacanya.
                         </p>
                       )}
                     </div>
-                    <div>
-                      <h4 className="mb-2 text-sm font-semibold">Analisis AI</h4>
-                      <p className="text-sm font-light leading-relaxed text-black/58">
-                        {record.aiAnalysis || "Belum ada analisis AI."}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="mb-3 text-sm font-semibold">Rekomendasi</h4>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {record.recommendations.map((rec, index) => (
-                          <div key={`${record.id}-${index}`} className="rounded-[12px] border border-black/[0.05] bg-white p-4">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#D9A441]">
-                              {rec.service || "Service"}
-                            </span>
-                            <p className="mt-2 text-sm font-semibold">{rec.title}</p>
-                            <p className="mt-2 text-xs leading-relaxed text-black/52">{rec.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {records.length === 0 && (
-          <div className="p-5">
-            <EmptyState
-              title="Tidak ada assessment yang cocok dengan filter."
-              description="Ubah kata kunci, kategori, ukuran perusahaan, atau batas skor untuk melihat data assessment lain."
-              action={{
-                label: "Reset Filter",
-                onClick: () => {
-                  setQuery("");
-                  setCategory("Semua");
-                  setEmployeeRange("Semua");
-                  setMinScore("0");
-                },
-              }}
-            />
-          </div>
-        )}
+
+                  <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Kirim ulang hasil assessment</summary><p className="mt-3 text-xs leading-5 text-slate-500">Gunakan jika klien meminta hasil dikirim kembali. Tindakan ini mengirim email baru, bukan sekadar membuka arsip.</p><button type="button" disabled={busy} onClick={() => setConfirmAction({ title: "Kirim ulang hasil assessment?", description: "Salinan hasil akan dikirim kembali ke email klien.", confirmLabel: "Kirim ulang hasil", details: [`Klien: ${record.name}`, `Email: ${record.email}`], onConfirm: () => runAssessmentAction(record, "resend_result") })} className="mt-3 min-h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">Kirim ulang hasil</button></details>
+                </>}
+                {detailTab === "followup" && <>
+                  <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-base font-semibold text-slate-900">Tindak lanjut klien</h3><p className="mt-1 text-xs leading-5 text-slate-500">Kirim pengingat sesuai jadwal, atau jeda saat percakapan sedang berlangsung.</p></div><button type="button" disabled={busy} onClick={() => void toggleAssessmentFollowUp(record)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">{record.followUpPaused ? <PlayCircle size={15} /> : <PauseCircle size={15} />}{record.followUpPaused ? "Lanjutkan pengingat" : "Jeda pengingat"}</button></div>
+                  {record.followUpPaused && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Pengingat untuk klien ini sedang dijeda.</p>}
+                  <AssessmentFollowUpBox title="Pengingat hasil assessment" description="Hari ke-2, ke-7, dan ke-14 setelah hasil dikirim. Pengingat hasil berhenti ketika klien meminta proposal atau melanjutkan diskusi." record={record} channel="result" actionId={actionId} disabled={Boolean(record.followUpPaused)} onSend={(target, channel, level) => setConfirmAction({ title: `Kirim pengingat hasil ke-${level}?`, description: "Email pengingat akan dikirim kepada klien.", confirmLabel: "Kirim pengingat", details: [`Klien: ${target.name}`, `Email: ${target.email}`], onConfirm: () => sendAssessmentFollowUp(target, channel, level) })} />
+                  <AssessmentFollowUpBox title="Pengingat proposal" description="Satu pengingat pada hari ke-2 setelah proposal dikirim. Tidak dikirim jika klien sudah melanjutkan diskusi atau peluang ditutup." record={record} channel="proposal" actionId={actionId} disabled={Boolean(record.followUpPaused) || !record.proposalSentAt} onSend={(target, channel, level) => setConfirmAction({ title: "Kirim pengingat proposal?", description: "Email pengingat proposal akan dikirim kepada klien.", confirmLabel: "Kirim pengingat", details: [`Klien: ${target.name}`, `Email: ${target.email}`], onConfirm: () => sendAssessmentFollowUp(target, channel, level) })} />
+                  <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Perbarui status secara manual</summary><p className="mt-3 text-xs leading-5 text-slate-500">Perubahan status tidak membuat proposal atau mengirim email. Status pengiriman diperbarui oleh proses otomatis.</p><div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="text-xs text-slate-500">Assessment<div className="mt-1"><AdminSelect ariaLabel="Status assessment" disabled={busy || deliveryProtected} value={record.assessmentStatus} onChange={(value) => void saveAssessmentStatus(record, value, record.proposalStatus)} options={Array.from(new Set([record.assessmentStatus, "Follow Up", "Lanjut Diskusi", "Closed"])).map((value) => [value, assessmentLabel(value)] as [string, string])} /></div></label>
+                    <label className="text-xs text-slate-500">Proposal<div className="mt-1"><AdminSelect ariaLabel="Status proposal" disabled={busy || deliveryProtected} value={record.proposalStatus} onChange={(value) => void saveAssessmentStatus(record, record.assessmentStatus, value)} options={Array.from(new Set([record.proposalStatus, "Revisi", "Lanjut Diskusi", "Deal", "Lost", "Closed"])).map((value) => [value, assessmentLabel(value)] as [string, string])} /></div></label>
+                  </div></details>
+                </>}
+              </div>
+            </>}
+        </section>
       </div>
+      <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-800">Pola jawaban seluruh assessment</summary><p className="mt-2 text-xs leading-5 text-slate-500">Ringkasan data yang dimuat. Grafik ini tidak mengikuti filter daftar klien.</p><div className="mt-4">      <Panel title="Distribusi jawaban" action="Persentase jawaban 4–5">
+        {data.answerDistribution.length === 0 ? (
+          <EmptyState title="Belum ada distribusi jawaban" description="Grafik akan muncul setelah assessment pertama berhasil disubmit." />
+        ) : (
+          <>
+            <div className="overflow-x-auto pb-2" aria-label="Distribusi jawaban per pertanyaan">
+              <div className="flex min-w-max items-end gap-2 px-1 pt-2">
+              {data.answerDistribution.map((item) => {
+                const summary = answerSummary(item);
+                return (
+                  <button type="button" key={String(item.question)} onClick={() => setSelectedDistributionQuestion(Number(String(item.question).replace(/\D/g, "")))} className="group flex w-5 shrink-0 flex-col items-center text-center" aria-label={`Lihat isi ${summary.label}: ${summary.percent}% menjawab 4 atau 5 dari ${summary.total} respons`}>
+                    <div className="flex h-20 w-5 items-end rounded-sm bg-slate-100 px-0.5 transition group-hover:bg-blue-100 group-focus-visible:ring-2 group-focus-visible:ring-blue-700 group-focus-visible:ring-offset-2" role="img" aria-label={`${summary.label}: ${summary.percent}% menjawab 4 atau 5`}>
+                      <div className="w-full rounded-[2px] bg-blue-900 transition-colors group-hover:bg-blue-700" style={{ height: `${Math.max(summary.percent, 3)}%` }} />
+                    </div>
+                    <span className="mt-1 text-[8px] font-bold leading-none text-slate-500">{summary.label}</span>
+                    <span className="mt-1 text-[9px] font-bold leading-none tabular-nums text-blue-950">{summary.percent}%</span>
+                  </button>
+                );
+              })}
+              </div>
+            </div>
+            {selectedDistributionQuestion && <div className="mt-4 flex items-start gap-3 border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950" role="status"><span className="shrink-0 bg-blue-900 px-2 py-1 text-[10px] font-bold text-white">Q{selectedDistributionQuestion}</span><p className="min-w-0 flex-1 leading-6">{QUESTIONS.find((question) => question.id === selectedDistributionQuestion)?.text || "Pertanyaan tidak ditemukan."}</p><button type="button" onClick={() => setSelectedDistributionQuestion(null)} aria-label="Tutup pertanyaan" className="grid h-8 w-8 shrink-0 place-items-center text-blue-900 hover:bg-blue-100"><X className="h-4 w-4" /></button></div>}
+          </>
+        )}
+      </Panel>
+
+</div></details>
     </div>
   );
 }
@@ -998,9 +859,11 @@ function DocumentActionButton({
   icon: Icon,
   label,
   disabled,
+  loading = false,
   onClick,
 }: {
   icon: typeof Eye;
+  loading?: boolean;
   label: string;
   disabled: boolean;
   onClick: () => void;
@@ -1009,10 +872,10 @@ function DocumentActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 items-center justify-center gap-2 rounded-[10px] border border-black/10 bg-[#FCFCFB] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] transition hover:border-[#D9A441]/50 hover:bg-[#FFF8EA] disabled:cursor-wait disabled:opacity-50"
+      className="flex h-12 items-center justify-center gap-2 rounded-[10px] border border-black/10 bg-[#FCFCFB] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] transition hover:border-[#D9A441]/50 hover:bg-[#FFF8EA] disabled:cursor-not-allowed disabled:opacity-40"
     >
-      <Icon size={15} />
-      {disabled ? "Memuat..." : label}
+      {loading ? <LoaderCircle size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}
+      {loading ? "Memuat…" : label}
     </button>
   );
 }
@@ -1034,17 +897,18 @@ function AssessmentFollowUpBox({
   disabled: boolean;
   onSend: (record: AssessmentRecord, channel: "result" | "proposal", level: number) => void;
 }) {
+  const due = dueFollowUp(record, channel);
   return (
-    <div className="rounded-[12px] border border-black/[0.05] bg-[#FAFAF8] p-4">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#0B2C6B]">{title}</p>
           <p className="mt-2 text-xs leading-relaxed text-black/50">{description}</p>
           <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.12em] text-black/34">
-            Terakhir: level {channel === "result" ? record.resultFollowUpLevel || 0 : record.proposalFollowUpLevel || 0}
+            Pengingat terkirim: {channel === "result" ? record.resultFollowUpLevel || 0 : record.proposalFollowUpLevel || 0}
           </p>
         </div>
-        <Badge tone={disabled ? "navy" : "gold"}>{disabled ? "Belum siap" : "Ready"}</Badge>
+        <Badge tone={due === null ? "navy" : "gold"}>{record.followUpPaused ? "Dijeda" : due === null ? "Tidak ada yang jatuh tempo" : "Jatuh tempo"}</Badge>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {(channel === "proposal" ? FOLLOW_UP_LEVELS.slice(0, 1) : FOLLOW_UP_LEVELS).map((item) => {
@@ -1057,10 +921,10 @@ function AssessmentFollowUpBox({
               key={item.level}
               type="button"
               onClick={() => onSend(record, channel, item.level)}
-              disabled={disabled || sent || !isNext || actionId === id}
+              disabled={disabled || sent || !isNext || due !== item.level || Boolean(actionId)}
               className="h-9 rounded-[9px] border border-black/10 bg-white px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0B2C6B] transition hover:border-[#D9A441]/45 hover:bg-[#FFF8EA] disabled:opacity-50"
             >
-              {actionId === id ? "Kirim..." : sent ? "Terkirim" : !isNext ? "Terkunci" : item.label}
+              {actionId === id ? "Mengirim…" : sent ? `Pengingat ${item.level} terkirim` : `Hari ke-${item.days}`}
             </button>
           );
         })}
@@ -1082,7 +946,7 @@ function EmailPreviewModal({
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="email-preview-title" className="mx-auto flex h-full max-w-5xl flex-col overflow-hidden rounded-[16px] bg-white shadow-[0_40px_100px_-40px_rgba(7,27,61,0.55)]">
         <div className="flex flex-col gap-4 border-b border-black/[0.06] bg-[#FAFAF8] px-5 py-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D9A441]">Pratinjau Email</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D9A441]">Salinan email terkirim</p>
             <h2 id="email-preview-title" className="mt-1 text-lg font-semibold text-[#0B2C6B]">{preview.subject}</h2>
             <p className="mt-1 text-xs text-black/45">{preview.recordName}</p>
             <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-black/45">
@@ -1095,7 +959,7 @@ function EmailPreviewModal({
             data-autofocus
             onClick={onClose}
             className="grid h-10 w-10 place-items-center rounded-[10px] border border-black/10 bg-white text-[#0B2C6B]"
-            aria-label="Tutup preview email"
+            aria-label="Tutup salinan email"
           >
             <X size={17} />
           </button>
@@ -1106,8 +970,8 @@ function EmailPreviewModal({
             <div className="mt-3 space-y-2">
               {(preview.from || preview.to?.length) && (
                 <div className="rounded-[10px] border border-black/[0.06] bg-white p-3">
-                  {preview.from && <p className="break-all text-[11px] leading-relaxed text-black/50">From: {preview.from}</p>}
-                  {preview.to?.length ? <p className="mt-1 break-all text-[11px] leading-relaxed text-black/50">To: {preview.to.join(", ")}</p> : null}
+                  {preview.from && <p className="break-all text-[11px] leading-relaxed text-black/50">Pengirim: {preview.from}</p>}
+                  {preview.to?.length ? <p className="mt-1 break-all text-[11px] leading-relaxed text-black/50">Penerima: {preview.to.join(", ")}</p> : null}
                 </div>
               )}
               {preview.attachments.map((attachment) => (
@@ -1130,7 +994,7 @@ function EmailPreviewModal({
           </aside>
           <div className="min-h-0 bg-[#E2E8F0] p-3">
             <iframe
-              title="Preview isi email"
+              title="Isi email yang dikirim"
               srcDoc={preview.html}
               sandbox=""
               className="h-full min-h-[520px] w-full rounded-[10px] border border-black/10 bg-white"

@@ -12,9 +12,9 @@ export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: s
     description: "Siapkan proyek, tinjau rekomendasi penugasan, dan pastikan undangan diperiksa sebelum dikirim.",
   },
   Assessment: {
-    eyebrow: "Informasi klien",
-    title: "Tinjau assessment dan tindak lanjut komersial",
-    description: "Buka detail klien, periksa hasil, siapkan proposal, dan pastikan tindak lanjut tidak terlewat.",
+    eyebrow: "Hubungan klien",
+    title: "Assessment klien",
+    description: "Pahami kebutuhan klien, pantau proposal, dan kelola tindak lanjut dalam satu tempat.",
   },
   "Acquisition Control": {
     eyebrow: "Tata kelola pertumbuhan",
