@@ -80,6 +80,8 @@ export type AssessmentRecord = {
 export type ProposalGateReason = { code: string; message: string; severity: "warning" | "blocking" };
 
 export type ProposalDraftSnapshot = {
+  automatic?: boolean;
+  selectionMethod?: "ai" | "assessment_catalog_match";
   proposal?: { subject?: string; proposedProgram?: string; isSimulation?: boolean; rulesVersion?: string };
   commercials?: {
     items?: Array<{ id: string; moduleCode: string; name: string; pricingUnit: string; quantity: number; lineTotal: number; isMock: boolean; readinessStatus: string }>;

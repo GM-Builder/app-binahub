@@ -126,17 +126,20 @@ export function AdminSelect({
   onChange,
   options,
   ariaLabel,
+  disabled,
 }: {
   value: string;
   onChange: (value: string) => void;
   options: Array<string | [string, string]>;
   ariaLabel?: string;
+  disabled?: boolean;
 }) {
   return (
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
       aria-label={ariaLabel}
+      disabled={disabled}
       className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs sm:text-sm text-slate-800 outline-none transition hover:border-slate-300 focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10"
     >
       {options.map((option) => {

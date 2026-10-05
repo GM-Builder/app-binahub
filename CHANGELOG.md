@@ -3,6 +3,22 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.26.9] - 2026-10-05
+
+### Fixed
+
+- Tindakan Assessment Admin menjadi **Buat & Kirim Standar**: menjadwalkan penyusunan dan pengiriman proposal standar, bukan hanya mengubah status menjadi Diminta. Panel memperbarui status proses secara berkala dan menampilkan spinner.
+- Memisahkan status proses otomatis dari persetujuan draf manual. Tombol persetujuan dan catatan keputusan hanya ditampilkan untuk draf manual; proses otomatis yang gagal tidak lagi terlihat seolah-olah sekadar menunggu persetujuan kosong.
+- Mencegah pembuatan draf/pengiriman manual di atas proses otomatis, draf manual yang perlu dijaga, atau pengiriman yang memerlukan rekonsiliasi. Dropdown status terkunci ketika proses aktif atau status pengiriman belum pasti.
+
+### Verification
+
+- 117 tes, typecheck, lint file yang berubah, dan production build lulus. Konfirmasi publik dan indikator loading diuji pada preview seluler lokal tanpa email nyata.
+
+### Deployment
+
+- Deploy bersama API **0.27.9**. Tidak ada migrasi SQL baru. Permintaan lama yang tertahan dapat dilanjutkan dari Assessment Admin setelah deployment; tindakan ini akan mengirim email nyata.
+
 ## [0.26.8] - 2026-10-03
 
 ### Changed

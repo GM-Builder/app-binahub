@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Download, Eye, FileText, PauseCircle, PlayCircle, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Download, Eye, FileText, LoaderCircle, PauseCircle, PlayCircle, Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   AdminNotice,
@@ -153,6 +153,18 @@ export function AssessmentPanel({
   const [proposalContext, setProposalContext] = useState<ProposalContext>(emptyProposalContext);
   const [approvalNotes, setApprovalNotes] = useState<Record<string, string>>({});
   const [selectedDistributionQuestion, setSelectedDistributionQuestion] = useState<number | null>(null);
+
+  const hasProcessingProposal = records.some((record) => !record.proposalSentAt && ["Diminta", "Sedang Disusun"].includes(record.proposalStatus));
+  useEffect(() => {
+    if (!hasProcessingProposal) return;
+    let refreshing = false;
+    const interval = window.setInterval(() => {
+      if (refreshing || document.visibilityState !== "visible") return;
+      refreshing = true;
+      void onRefresh().catch(() => undefined).finally(() => { refreshing = false; });
+    }, 10_000);
+    return () => window.clearInterval(interval);
+  }, [hasProcessingProposal, onRefresh]);
 
   const requestAssessmentDocument = async (record: AssessmentRecord, type: AssessmentDocumentType) => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -515,7 +527,11 @@ export function AssessmentPanel({
         </div>
         {records.map((record) => {
           const isOpen = expandedId === record.id;
-          const proposalCanSend = !record.proposalSentAt && ["approved", "clear"].includes(record.proposalGateStatus || "") && !record.proposalDraft?.isSimulation;
+          const hasManualDraft = Boolean(record.proposalDraft?.proposal && !record.proposalDraft.automatic);
+          const proposalProcessing = record.proposalStatus === "Sedang Disusun" && !hasManualDraft;
+          const deliveryProtected = proposalProcessing || ["Perlu Rekonsiliasi", "Gagal Otomatis"].includes(record.proposalStatus);
+          const showManualApproval = hasManualDraft && record.proposalGateStatus === "pending_approval";
+          const proposalCanSend = !record.proposalSentAt && !deliveryProtected && hasManualDraft && ["approved", "clear"].includes(record.proposalGateStatus || "") && !record.proposalDraft?.isSimulation;
           return (
             <div key={record.id} className="border-b border-black/[0.05] last:border-0">
               <button
@@ -610,11 +626,14 @@ export function AssessmentPanel({
                         />
                         <AdminSelect
                           value={record.proposalStatus}
+                          disabled={deliveryProtected}
                           onChange={(value) => saveAssessmentStatus(record, record.assessmentStatus, value)}
                           options={[
                             "Belum Diminta",
                             "Diminta",
                             "Sedang Disusun",
+                            "Gagal Otomatis",
+                            "Perlu Rekonsiliasi",
                             "Draft Simulasi",
                             "Menunggu Approval",
                             "Disetujui",
@@ -651,22 +670,23 @@ export function AssessmentPanel({
                             type="button"
                             onClick={() =>
                               setConfirmAction({
-                                title: "Tandai permintaan proposal?",
-                                description: "Status assessment akan dipindahkan ke alur proposal agar tim bisa menyiapkan penawaran.",
-                                confirmLabel: "Minta Proposal",
+                                title: "Buat dan kirim proposal standar?",
+                                description: "Proposal standar akan disusun dari hasil assessment dan katalog resmi, lalu dikirim otomatis ke email klien. Gunakan juga untuk melanjutkan permintaan yang sebelumnya gagal.",
+                                confirmLabel: "Buat & Kirim Standar",
                                 details: [`Klien: ${record.name}`, `Kategori: ${record.category}`, `Skor: ${record.overallScore}`],
                                 onConfirm: () => runAssessmentAction(record, "request_proposal"),
                               })
                             }
-                            disabled={actionId === `${record.id}:request_proposal`}
-                            className="h-12 rounded-[10px] border border-[#D9A441]/40 bg-[#FFF8EA] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#9B6C17] disabled:opacity-50"
+                            disabled={actionId === `${record.id}:request_proposal` || proposalProcessing || Boolean(record.proposalSentAt) || record.proposalStatus === "Perlu Rekonsiliasi" || hasManualDraft}
+                            className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] border border-[#D9A441]/40 bg-[#FFF8EA] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#9B6C17] disabled:opacity-50"
                           >
-                            Minta Proposal
+                            {(actionId === `${record.id}:request_proposal` || proposalProcessing) && <LoaderCircle size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}
+                            {proposalProcessing ? "Sedang Disusun" : "Buat & Kirim Standar"}
                           </button>
                           <button
                             type="button"
                             onClick={() => void openProposalBuilder(record)}
-                            disabled={catalogLoading || Boolean(record.proposalSentAt) || record.proposalEligibility?.eligible === false}
+                            disabled={catalogLoading || deliveryProtected || Boolean(record.proposalSentAt) || record.proposalEligibility?.eligible === false}
                             title={record.proposalSentAt ? "Proposal standar sudah terkirim. Proposal custom disusun manual oleh CEO menggunakan brief dan arsip assessment di halaman ini." : record.proposalEligibility?.eligible === false ? record.proposalEligibility.summary : "AI menyusun draf standar dari hasil assessment dan modul katalog resmi yang relevan."}
                             className="h-12 rounded-[10px] border border-[#0B2C6B]/20 bg-[#EAF0F7] px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0B2C6B] disabled:opacity-50"
                           >
@@ -691,16 +711,17 @@ export function AssessmentPanel({
                           </button>
                         </div>
                       </div>
-                      {record.proposalEligibility && (
+                      {proposalProcessing && <p role="status" className="mt-3 flex items-center gap-2 rounded-[10px] border border-blue-200 bg-blue-50 px-3 py-3 text-xs text-[#0B2C6B]"><LoaderCircle size={15} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />Proposal standar sedang disusun dan dikirim. Status diperbarui otomatis.</p>}
+                      {record.proposalEligibility && !proposalProcessing && !record.proposalSentAt && (
                         <div className={`mt-3 rounded-[10px] border px-3 py-3 text-xs leading-5 ${record.proposalEligibility.eligible ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
-                          <strong>{record.proposalEligibility.eligible ? "Siap dibuat dengan AI." : "Draf AI belum dapat dibuat."}</strong>{" "}{record.proposalEligibility.summary}
+                          <strong>{record.proposalEligibility.eligible ? "Data assessment lengkap." : "Data assessment perlu dilengkapi."}</strong>{" "}{record.proposalEligibility.eligible ? "Proposal standar dapat dibuat dan dikirim otomatis. Lihat status di bawah untuk kendala penyusunan atau pengiriman." : record.proposalEligibility.summary}
                         </div>
                       )}
                       <div className="mt-4 rounded-[12px] border border-black/[0.07] bg-[#F8FAFC] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#D9A441]">Persetujuan Manual</p>
-                            <p className="mt-1 text-sm font-semibold text-[#0B2C6B]">{proposalGateLabel(record.proposalGateStatus)}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#D9A441]">{hasManualDraft ? "Persetujuan Draf Admin" : "Status Proposal Standar"}</p>
+                            <p className="mt-1 text-sm font-semibold text-[#0B2C6B]">{hasManualDraft ? proposalGateLabel(record.proposalGateStatus) : record.proposalSentAt ? "Proposal terkirim" : record.proposalStatus === "Gagal Otomatis" ? "Proses gagal — periksa log dan jalankan ulang" : record.proposalStatus === "Perlu Rekonsiliasi" ? "Periksa penerimaan email sebelum mengirim ulang" : proposalProcessing ? "Sedang disusun dan dikirim otomatis" : record.proposalStatus === "Diminta" ? "Permintaan tercatat — siap diproses" : "Belum terkirim"}</p>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {record.proposalDraft && (
@@ -713,7 +734,7 @@ export function AssessmentPanel({
                                 Preview PDF
                               </button>
                             )}
-                            {record.proposalGateStatus === "pending_approval" && (
+                            {showManualApproval && (
                               <>
                                 <button type="button" disabled={(approvalNotes[record.id] || "").trim().length < 5} onClick={() => void decideProposal(record, "approve")} className="rounded-[9px] bg-emerald-600 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-white disabled:cursor-not-allowed disabled:opacity-40">Setujui</button>
                                 <button type="button" onClick={() => void decideProposal(record, "request_revision")} className="rounded-[9px] border border-amber-300 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-800">Minta Revisi</button>
@@ -730,7 +751,7 @@ export function AssessmentPanel({
                             {(record.proposalGateReasons || []).map((reason) => <li key={reason.code}>• {reason.message}</li>)}
                           </ul>
                         )}
-                        {record.proposalGateStatus === "pending_approval" && (
+                        {showManualApproval && (
                           <label className="mt-3 block text-xs font-semibold text-slate-600">Catatan keputusan
                             <textarea
                               value={approvalNotes[record.id] || ""}
