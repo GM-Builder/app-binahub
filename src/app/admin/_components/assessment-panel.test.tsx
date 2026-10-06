@@ -26,6 +26,15 @@ afterEach(cleanup);
 const tab = (name: string) => fireEvent.click(screen.getByRole("tab", { name }));
 
 describe("Assessment Admin workspace", () => {
+  it("explains the current score separately from core-data completeness and historic lead records", () => {
+    render(<Harness records={[assessmentFixture({ leadScoreRuleVersion: "v1.2-public-diagnostic", recordedLeadScoreRuleVersion: "v1.1-public-diagnostic", leadScoreEvidence: { buyingSignalCount: 3, maximumBuyingSignals: 4, scoreBreakdown: [{ key: "challenge", label: "Tantangan terisi (minimal 20 karakter)", points: 20, maximum: 20 }] } })]} />);
+    fireEvent.click(screen.getByText("Rincian penilaian minat"));
+    expect(screen.getByText(/Sinyal minat: 3 dari 4/)).toBeInTheDocument();
+    expect(screen.getByText(/Kelengkapan data inti:/)).toHaveTextContent("Bukan peluang membeli");
+    expect(screen.getByText("20/20")).toBeInTheDocument();
+    expect(screen.getByText(/Anggaran dan dukungan pengambil keputusan tidak digunakan/)).toBeInTheDocument();
+    expect(screen.getByText(/Riwayat skor lead/)).toBeInTheDocument();
+  });
   it("starts with a readable summary and separates technical details", () => {
     render(<Harness records={[assessmentFixture()]} />);
     expect(screen.getByRole("tab", { name: "Ringkasan" })).toHaveAttribute("aria-selected", "true");

@@ -65,9 +65,12 @@ export type AssessmentRecord = {
   leadScoreConfidence?: number | null;
   leadScoreReason?: string | null;
   leadScoreRuleVersion?: string | null;
+  recordedLeadScoreRuleVersion?: string | null;
   leadScoreEvidence?: {
     eligible?: boolean;
     buyingSignalCount?: number;
+    maximumBuyingSignals?: number;
+    scoreBreakdown?: Array<{ key: string; label: string; points: number; maximum: number }>;
     missingData?: string[];
     exclusionReasons?: string[];
   } | null;

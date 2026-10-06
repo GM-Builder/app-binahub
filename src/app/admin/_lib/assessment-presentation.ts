@@ -68,6 +68,9 @@ export function profileLabel(value?: string | null) {
     "0_3": "Dalam 3 bulan", "3_6": "Dalam 3–6 bulan", "6_12": "Dalam 6–12 bulan",
     unknown: "Belum ditentukan", later: "Belum ditentukan",
     objectiveOrExpectedOutcome: "tujuan atau hasil yang diharapkan", nextStepOrMeeting: "rencana langkah berikutnya",
+    industry: "industri", location: "lokasi", companySizeConfirmation: "konfirmasi jumlah karyawan",
+    decisionMakerOrChampion: "jabatan kontak", problemOrNeed: "rincian tantangan", timeline: "waktu mulai",
+    businessConsequence: "dampak bisnis",
   };
   return value ? labels[value.toLowerCase()] || labels[value] || value.replaceAll("_", " ") : "Belum diisi";
 }

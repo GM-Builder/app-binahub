@@ -6,6 +6,9 @@ import { AdminInput, AdminModal, AdminSelect, AdminTextarea, FieldLabel } from "
 import { LeadAgentPanel } from "./lead-agent-panel";
 import { InboundAttributionPanel } from "./inbound-attribution-panel";
 import { ControlledOutboundPanel } from "./controlled-outbound-panel";
+import { OutboundEmailPanel } from "./outbound-email-panel";
+import { prospectsFromCsv, validateImportedProspects } from "../_lib/prospect-import";
+export { parseCsvRows, prospectsFromCsv } from "../_lib/prospect-import";
 
 type AdminAction = (url: string, init?: RequestInit) => Promise<unknown>;
 type Source = { id: string; source_key: string; name: string; provider_type: string; channel: string; acquisition_method: string; lawful_basis: string | null; privacy_notice_url: string | null; retention_days: number | null; data_owner: string | null; legal_owner: string | null; status: string; active: boolean; config: Record<string, unknown>; approval_note: string | null };
@@ -64,61 +67,6 @@ function MoreActions({ label, children }: { label: string; children: React.React
 
 const menuActionClass = "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#0B2C6B] disabled:cursor-not-allowed disabled:opacity-40";
 
-export function parseCsvRows(value: string) {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = "";
-  let quoted = false;
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index];
-    if (character === '"' && quoted && value[index + 1] === '"') { field += '"'; index += 1; continue; }
-    if (character === '"') { quoted = !quoted; continue; }
-    if (character === "," && !quoted) { row.push(field.trim()); field = ""; continue; }
-    if ((character === "\n" || character === "\r") && !quoted) {
-      if (character === "\r" && value[index + 1] === "\n") index += 1;
-      row.push(field.trim()); field = "";
-      if (row.some(Boolean)) rows.push(row);
-      row = [];
-      continue;
-    }
-    field += character;
-  }
-  row.push(field.trim());
-  if (row.some(Boolean)) rows.push(row);
-  return rows;
-}
-
-export function prospectsFromCsv(value: string) {
-  const rows = parseCsvRows(value.replace(/^\uFEFF/, ""));
-  if (rows.length < 2) throw new Error("CSV harus memiliki header dan minimal satu baris prospek.");
-  const headers = rows[0].map((header) => header.trim().toLowerCase().replaceAll(/[\s-]+/g, "_"));
-  const get = (values: string[], ...names: string[]) => {
-    const index = names.map((name) => headers.indexOf(name)).find((item) => item >= 0) ?? -1;
-    return index >= 0 ? values[index]?.trim() || null : null;
-  };
-  return rows.slice(1).map((values, index) => {
-    const firstName = get(values, "first_name", "firstname");
-    const lastName = get(values, "last_name", "lastname");
-    const name = get(values, "name", "full_name", "contact_name") || [firstName, lastName].filter(Boolean).join(" ");
-    const email = get(values, "email", "work_email", "email_address");
-    if (!name || !email) throw new Error(`Baris ${index + 2} harus memiliki nama dan email.`);
-    return {
-      externalId: get(values, "external_id", "id"),
-      name,
-      email,
-      company: get(values, "company", "organization", "company_name"),
-      roleTitle: get(values, "role_title", "title", "position", "job_title"),
-      industry: get(values, "industry"),
-      location: get(values, "location", "city"),
-      employeeRange: get(values, "employee_range", "headcount", "employee_count"),
-      websiteUrl: get(values, "website_url", "website", "domain"),
-      linkedinUrl: get(values, "linkedin_url", "linkedin"),
-      sourceUrl: get(values, "source_url"),
-      consentStatus: get(values, "consent_status") || "unknown",
-    };
-  }).slice(0, 500);
-}
-
 export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction }) {
   const [data, setData] = useState<AcquisitionResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,6 +121,14 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
     });
     setModal("source");
   };
+  const prepareManualOutboundSource = () => {
+    setSourceForm({ ...emptySource, sourceKey: `manual_outbound_${crypto.randomUUID().slice(0, 8)}`, name: "Daftar email manual", channel: "outbound", acquisitionMethod: "Daftar target yang disiapkan dan diperiksa secara manual oleh tim." });
+    setModal("source");
+  };
+  const prepareEmailCampaign = () => {
+    setCampaignForm({ ...emptyCampaign, sourceId: activeSources.find((source) => source.channel === "outbound")?.id || "", campaignCode: `EMAIL-${crypto.randomUUID().slice(0, 8).toUpperCase()}`, name: "Kampanye email", channel: "email", objective: "assessment", utmSource: "email", utmMedium: "outbound" });
+    setModal("campaign");
+  };
   const editCampaign = (campaign?: Campaign) => {
     setCampaignForm(campaign ? { id: campaign.id, sourceId: campaign.source_id, campaignCode: campaign.campaign_code, name: campaign.name, objective: campaign.objective, channel: campaign.channel, status: campaign.status, owner: campaign.owner, budgetAmount: campaign.budget_amount?.toString() || "", currency: campaign.currency, startsOn: campaign.starts_on || "", endsOn: campaign.ends_on || "", humanApproved: ["approved", "active"].includes(campaign.status), approvalNote: campaign.approval_note || "", utmSource: String(campaign.utm_config?.source || ""), utmMedium: String(campaign.utm_config?.medium || ""), utmCampaign: String(campaign.utm_config?.campaign || campaign.campaign_code.toLowerCase()), targetDefinition: campaign.target_definition || {} } : { ...emptyCampaign, sourceId: activeSources[0]?.id || "" });
     setModal("campaign");
@@ -208,7 +164,7 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
   return <div className="space-y-5">
     {error && <div role="alert" aria-live="assertive" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+    {view !== "outbound" && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
       <div className="flex flex-col gap-5 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl">
           <div className="flex items-center gap-2 text-[11px] font-semibold text-emerald-700"><CheckCircle2 size={14} /> Guardrail aktif</div>
@@ -225,10 +181,10 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
         <AcquisitionMetric label="Perlu ditinjau" value={stagedBatches.length} note="Batch menunggu keputusan" tone={stagedBatches.length ? "gold" : "green"} />
         <AcquisitionMetric label="Tersaring" value={excludedProspects.length} note="Tidak valid, ganda, atau diblokir" />
       </div>
-    </section>
+    </section>}
 
-    <nav aria-label="Bagian kontrol akuisisi" className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-100/70 p-1">
-      {WORKSPACE_VIEWS.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={`min-w-36 flex-1 rounded-xl px-4 py-3 text-left transition sm:min-w-0 ${view === item.id ? "bg-white text-[#0B2C6B] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-800"}`}>
+    <nav aria-label="Bagian kontrol akuisisi" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-slate-100/70 p-1 sm:grid-cols-4">
+      {WORKSPACE_VIEWS.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={`min-h-11 min-w-0 rounded-xl px-4 py-3 text-left transition ${view === item.id ? "bg-white text-[#0B2C6B] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-800"}`}>
         <span className="block text-xs font-semibold">{item.label}</span>
         <span className="mt-0.5 hidden text-[10px] text-slate-400 lg:block">{item.description}</span>
       </button>)}
@@ -268,9 +224,14 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
     </div>}
 
     {view === "inbound" && <InboundAttributionPanel onAction={onAction} />}
-    {view === "outbound" && <div className="space-y-5"><LeadAgentPanel onAction={onAction} onOpenBatch={() => setView("governance")} /><ControlledOutboundPanel onAction={onAction} /></div>}
+    {view === "outbound" && <div className="space-y-5">
+      <OutboundEmailPanel onAction={onAction} onRefresh={load} sources={sources} campaigns={campaigns} batches={batches}
+        onSetup={() => setView("governance")} />
+      <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-600">Pencarian prospek & uji tautan lanjutan</summary><div className="mt-5 space-y-5"><LeadAgentPanel onAction={onAction} onOpenBatch={() => setView("governance")} /><ControlledOutboundPanel onAction={onAction} /></div></details>
+    </div>}
 
     {view === "governance" && <div className="space-y-5">
+      <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5"><h3 className="text-sm font-semibold text-[#0B2C6B]">Pengaturan sekali, operasional dari halaman Outbound</h3><p className="mt-2 max-w-3xl text-xs leading-5 text-slate-600">Untuk daftar email sendiri, buat sumber manual outbound dan lengkapi persetujuan penggunaan data. Setelah sumber aktif, siapkan kampanye Email. Impor, tinjauan target, preview, uji, dan pengiriman selanjutnya tersedia bersama di Outbound.</p><div className="mt-4 flex flex-wrap gap-2"><button className={secondaryButton} onClick={prepareManualOutboundSource}>1. Sumber outbound manual</button><button className={secondaryButton} onClick={prepareEmailCampaign} disabled={!activeSources.some((source) => source.channel === "outbound")}>2. Kampanye email</button><button className={buttonClass} onClick={() => setView("outbound")}>Buka Outbound <ArrowRight size={14} /></button></div></div>
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
           <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">Sumber data</p><p className="mt-1 text-xs text-slate-500">Asal data dan dasar pemrosesannya.</p></div><div className="flex gap-2"><button type="button" className={secondaryButton} onClick={() => editSource()}><Plus size={13} /> Tambah</button><MoreActions label="Aksi sumber lainnya"><button type="button" className={menuActionClass} onClick={prepareApolloSource}><Sparkles size={14} /> Siapkan Apollo manual</button></MoreActions></div></div>
@@ -293,7 +254,7 @@ export function AcquisitionControlPanel({ onAction }: { onAction: AdminAction })
       {error && <div role="alert" aria-live="assertive" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       {modal === "source" && <div className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><AdminInput label="Kunci sumber" value={sourceForm.sourceKey} onChange={(value) => setSourceForm((form) => ({ ...form, sourceKey: value.toLowerCase() }))} /><AdminInput label="Nama sumber" value={sourceForm.name} onChange={(value) => setSourceForm((form) => ({ ...form, name: value }))} /><label><FieldLabel label="Penyedia" /><AdminSelect value={sourceForm.providerType} onChange={(value) => setSourceForm((form) => ({ ...form, providerType: value }))} options={["manual_upload","website","google_ads","meta_ads","microsoft_ads","apollo","hunter","linkedin","google_maps","referral","partner","other"]} /></label><label><FieldLabel label="Kanal" /><AdminSelect value={sourceForm.channel} onChange={(value) => setSourceForm((form) => ({ ...form, channel: value }))} options={["inbound","outbound","partner","offline"]} /></label><label><FieldLabel label="Dasar pemrosesan" /><AdminSelect value={sourceForm.lawfulBasis} onChange={(value) => setSourceForm((form) => ({ ...form, lawfulBasis: value }))} options={[["","Belum ditentukan"],["consent","Persetujuan"],["legitimate_interest","Kepentingan sah"],["contract","Kontrak"],["legal_obligation","Kewajiban hukum"],["public_task","Tugas publik"],["not_applicable","Tidak berlaku"]]} /></label><AdminInput label="Masa simpan (hari)" type="number" value={sourceForm.retentionDays} onChange={(value) => setSourceForm((form) => ({ ...form, retentionDays: value }))} /><AdminInput label="Pemilik data" type="email" value={sourceForm.dataOwner} onChange={(value) => setSourceForm((form) => ({ ...form, dataOwner: value }))} /><AdminInput label="Penanggung jawab legal" type="email" value={sourceForm.legalOwner} onChange={(value) => setSourceForm((form) => ({ ...form, legalOwner: value }))} /><label><FieldLabel label="Status" /><AdminSelect value={sourceForm.status} onChange={(value) => setSourceForm((form) => ({ ...form, status: value, active: value === "approved" ? form.active : false }))} options={[["draft","Draf"],["approved","Disetujui"],["paused","Dijeda"],["rejected","Ditolak"]]} /></label><AdminInput label="URL kebijakan privasi" value={sourceForm.privacyNoticeUrl} onChange={(value) => setSourceForm((form) => ({ ...form, privacyNoticeUrl: value }))} /></div><AdminTextarea label="Metode akuisisi" value={sourceForm.acquisitionMethod} onChange={(value) => setSourceForm((form) => ({ ...form, acquisitionMethod: value }))} /><div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={sourceForm.active} onChange={(event) => setSourceForm((form) => ({ ...form, active: event.target.checked }))} /> Sumber aktif</label><label className="mt-3 flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={sourceForm.humanApproved} onChange={(event) => setSourceForm((form) => ({ ...form, humanApproved: event.target.checked }))} /> Disetujui penanggung jawab</label><div className="mt-3"><AdminTextarea label="Catatan persetujuan" value={sourceForm.approvalNote} onChange={(value) => setSourceForm((form) => ({ ...form, approvalNote: value }))} /></div></div><button type="button" className={buttonClass} disabled={saving} onClick={() => execute(async () => { await onAction("/api/admin/acquisition", { method: "POST", body: JSON.stringify({ action: "source", payload: { ...sourceForm, id: sourceForm.id || null, lawfulBasis: sourceForm.lawfulBasis || null, privacyNoticeUrl: sourceForm.privacyNoticeUrl || null, retentionDays: sourceForm.retentionDays ? Number(sourceForm.retentionDays) : null, dataOwner: sourceForm.dataOwner || null, legalOwner: sourceForm.legalOwner || null, config: sourceForm.config, approvalNote: sourceForm.approvalNote || null } }) }); })}>{saving && <RefreshCw size={14} className="animate-spin" />} Simpan sumber</button></div>}
       {modal === "campaign" && <div className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><label><FieldLabel label="Sumber data" /><AdminSelect value={campaignForm.sourceId} onChange={(value) => setCampaignForm((form) => ({ ...form, sourceId: value }))} options={activeSources.map((source) => [source.id, source.name])} /></label><AdminInput label="Kode kampanye" value={campaignForm.campaignCode} onChange={(value) => setCampaignForm((form) => ({ ...form, campaignCode: value.toUpperCase() }))} /><AdminInput label="Nama kampanye" value={campaignForm.name} onChange={(value) => setCampaignForm((form) => ({ ...form, name: value }))} /><AdminInput label="Penanggung jawab" type="email" value={campaignForm.owner} onChange={(value) => setCampaignForm((form) => ({ ...form, owner: value }))} /><label><FieldLabel label="Tujuan" /><AdminSelect value={campaignForm.objective} onChange={(value) => setCampaignForm((form) => ({ ...form, objective: value }))} options={[["awareness","Kesadaran merek"],["traffic","Kunjungan"],["assessment","Assessment"],["consultation","Konsultasi"],["lead_generation","Perolehan lead"]]} /></label><label><FieldLabel label="Kanal" /><AdminSelect value={campaignForm.channel} onChange={(value) => setCampaignForm((form) => ({ ...form, channel: value }))} options={["email","google_ads","meta_ads","microsoft_ads","linkedin","referral","organic","other"]} /></label><label><FieldLabel label="Status" /><AdminSelect value={campaignForm.status} onChange={(value) => setCampaignForm((form) => ({ ...form, status: value }))} options={[["draft","Draf"],["approved","Disetujui"],["active","Aktif"],["paused","Dijeda"],["completed","Selesai"],["cancelled","Dibatalkan"]]} /></label><AdminInput label="Anggaran" type="number" value={campaignForm.budgetAmount} onChange={(value) => setCampaignForm((form) => ({ ...form, budgetAmount: value }))} /><AdminInput label="Tanggal mulai" type="date" value={campaignForm.startsOn} onChange={(value) => setCampaignForm((form) => ({ ...form, startsOn: value }))} /><AdminInput label="Tanggal selesai" type="date" value={campaignForm.endsOn} onChange={(value) => setCampaignForm((form) => ({ ...form, endsOn: value }))} /><AdminInput label="Sumber UTM" value={campaignForm.utmSource} onChange={(value) => setCampaignForm((form) => ({ ...form, utmSource: value }))} /><AdminInput label="Media UTM" value={campaignForm.utmMedium} onChange={(value) => setCampaignForm((form) => ({ ...form, utmMedium: value }))} /></div><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={campaignForm.humanApproved} onChange={(event) => setCampaignForm((form) => ({ ...form, humanApproved: event.target.checked }))} /> Disetujui penanggung jawab</label><AdminTextarea label="Catatan persetujuan" value={campaignForm.approvalNote} onChange={(value) => setCampaignForm((form) => ({ ...form, approvalNote: value }))} /><button type="button" className={buttonClass} disabled={saving} onClick={() => execute(async () => { await onAction("/api/admin/acquisition", { method: "POST", body: JSON.stringify({ action: "campaign", payload: { id: campaignForm.id || null, sourceId: campaignForm.sourceId, campaignCode: campaignForm.campaignCode, name: campaignForm.name, objective: campaignForm.objective, channel: campaignForm.channel, status: campaignForm.status, owner: campaignForm.owner, budgetAmount: campaignForm.budgetAmount ? Number(campaignForm.budgetAmount) : null, currency: campaignForm.currency, startsOn: campaignForm.startsOn || null, endsOn: campaignForm.endsOn || null, utmConfig: { source: campaignForm.utmSource, medium: campaignForm.utmMedium, campaign: campaignForm.utmCampaign || campaignForm.campaignCode.toLowerCase() }, targetDefinition: campaignForm.targetDefinition, humanApproved: campaignForm.humanApproved, approvalNote: campaignForm.approvalNote || null } }) }); })}>Simpan kampanye</button></div>}
-      {modal === "batch" && <div className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><label><FieldLabel label="Sumber data aktif" /><AdminSelect value={batchForm.sourceId} onChange={(value) => setBatchForm((form) => ({ ...form, sourceId: value, campaignId: "" }))} options={activeSources.map((source) => [source.id, source.name])} /></label><label><FieldLabel label="Kampanye (opsional)" /><AdminSelect value={batchForm.campaignId} onChange={(value) => setBatchForm((form) => ({ ...form, campaignId: value }))} options={[["","Tanpa kampanye"], ...campaigns.filter((item) => item.source_id === batchForm.sourceId && ["approved","active"].includes(item.status)).map((item) => [item.id,item.name] as [string,string])]} /></label><AdminInput label="Kunci impor unik" value={batchForm.importKey} onChange={(value) => setBatchForm((form) => ({ ...form, importKey: value }))} /><AdminInput label="Nama file / referensi" value={batchForm.fileName} onChange={(value) => setBatchForm((form) => ({ ...form, fileName: value }))} /></div><div className="border border-slate-200 bg-slate-50 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><FieldLabel label="Unggah hasil riset manual" /><p className="mt-1 text-xs text-slate-500">Terima CSV atau JSON, maksimal 500 prospek. File hanya diproses di browser lalu ditampilkan untuk diperiksa.</p></div><a className={secondaryButton} download="template-prospek-binahub.csv" href={'data:text/csv;charset=utf-8,name,email,company,role_title,industry,location,employee_range,website_url,linkedin_url,source_url,consent_status%0A'}>Unduh template CSV</a></div><input type="file" accept=".csv,.json,text/csv,application/json" className="mt-3 block w-full text-xs text-slate-600 file:mr-3 file:border-0 file:bg-[#0B2C6B] file:px-3 file:py-2 file:font-semibold file:text-white" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; void file.text().then((content) => { const parsed = file.name.toLowerCase().endsWith(".json") ? JSON.parse(content) : prospectsFromCsv(content); if (!Array.isArray(parsed)) throw new Error("File harus berisi daftar prospek."); setBatchForm((form) => ({ ...form, fileName: file.name, prospectsJson: JSON.stringify(parsed.slice(0, 500), null, 2) })); setError(""); }).catch((fileError: unknown) => setError(fileError instanceof Error ? fileError.message : "File tidak dapat dibaca.")); }} /></div><AdminTextarea label="Data prospek" help="Periksa hasil impor atau tempel JSON berisi 1–500 data. Prospek tidak akan langsung dihubungi." minHeight="min-h-72" value={batchForm.prospectsJson} onChange={(value) => setBatchForm((form) => ({ ...form, prospectsJson: value }))} /><button type="button" className={buttonClass} disabled={saving} onClick={() => execute(async () => { const parsed = JSON.parse(batchForm.prospectsJson) as unknown; await onAction("/api/admin/acquisition", { method: "POST", body: JSON.stringify({ action: "batch", payload: { sourceId: batchForm.sourceId, campaignId: batchForm.campaignId || null, importKey: batchForm.importKey, fileName: batchForm.fileName || null, fileChecksum: batchForm.fileChecksum || null, prospects: parsed } }) }); })}>Tambah batch</button></div>}
+      {modal === "batch" && <div className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><label><FieldLabel label="Sumber data aktif" /><AdminSelect value={batchForm.sourceId} onChange={(value) => setBatchForm((form) => ({ ...form, sourceId: value, campaignId: "" }))} options={activeSources.map((source) => [source.id, source.name])} /></label><label><FieldLabel label="Kampanye (opsional)" /><AdminSelect value={batchForm.campaignId} onChange={(value) => setBatchForm((form) => ({ ...form, campaignId: value }))} options={[["","Tanpa kampanye"], ...campaigns.filter((item) => item.source_id === batchForm.sourceId && ["approved","active"].includes(item.status)).map((item) => [item.id,item.name] as [string,string])]} /></label><AdminInput label="Kunci impor unik" value={batchForm.importKey} onChange={(value) => setBatchForm((form) => ({ ...form, importKey: value }))} /><AdminInput label="Nama file / referensi" value={batchForm.fileName} onChange={(value) => setBatchForm((form) => ({ ...form, fileName: value }))} /></div><div className="border border-slate-200 bg-slate-50 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><FieldLabel label="Unggah hasil riset manual" /><p className="mt-1 text-xs text-slate-500">Terima CSV atau JSON, maksimal 500 prospek. File hanya diproses di browser lalu ditampilkan untuk diperiksa.</p></div><a className={secondaryButton} download="template-prospek-binahub.csv" href={'data:text/csv;charset=utf-8,name,email,company,role_title,industry,location,employee_range,website_url,linkedin_url,source_url,consent_status%0A'}>Unduh template CSV</a></div><input type="file" accept=".csv,.json,text/csv,application/json" className="mt-3 block w-full text-xs text-slate-600 file:mr-3 file:border-0 file:bg-[#0B2C6B] file:px-3 file:py-2 file:font-semibold file:text-white" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; void file.text().then((content) => { const parsed = file.name.toLowerCase().endsWith(".json") ? validateImportedProspects(JSON.parse(content)) : prospectsFromCsv(content); if (!Array.isArray(parsed)) throw new Error("File harus berisi daftar prospek."); setBatchForm((form) => ({ ...form, fileName: file.name, prospectsJson: JSON.stringify(parsed, null, 2) })); setError(""); }).catch((fileError: unknown) => setError(fileError instanceof Error ? fileError.message : "File tidak dapat dibaca.")); }} /></div><AdminTextarea label="Data prospek" help="Periksa hasil impor atau tempel JSON berisi 1–500 data. Prospek tidak akan langsung dihubungi." minHeight="min-h-72" value={batchForm.prospectsJson} onChange={(value) => setBatchForm((form) => ({ ...form, prospectsJson: value }))} /><button type="button" className={buttonClass} disabled={saving} onClick={() => execute(async () => { const parsed = validateImportedProspects(JSON.parse(batchForm.prospectsJson)); await onAction("/api/admin/acquisition", { method: "POST", body: JSON.stringify({ action: "batch", payload: { sourceId: batchForm.sourceId, campaignId: batchForm.campaignId || null, importKey: batchForm.importKey, fileName: batchForm.fileName || null, fileChecksum: batchForm.fileChecksum || null, prospects: parsed } }) }); })}>Tambah batch</button></div>}
       {modal === "review" && reviewBatch && <div className="space-y-4"><div className="rounded-xl bg-slate-50 p-4 text-sm"><strong>{reviewBatch.import_key}</strong><p className="mt-2 text-slate-600">Valid {reviewBatch.valid_rows}, tidak valid {reviewBatch.invalid_rows}, ganda {reviewBatch.duplicate_rows}, diblokir {reviewBatch.suppressed_rows}. Persetujuan hanya memasukkan batch ke antrean pemrosesan dan tidak mengirim email.</p></div><label><FieldLabel label="Keputusan" /><AdminSelect value={reviewForm.decision} onChange={(value) => setReviewForm((form) => ({ ...form, decision: value }))} options={[["approved","Setujui"],["rejected","Tolak"]]} /></label><AdminTextarea label="Catatan tinjauan" value={reviewForm.note} onChange={(value) => setReviewForm((form) => ({ ...form, note: value }))} /><button type="button" className={buttonClass} disabled={saving || reviewForm.note.length < 5} onClick={() => execute(async () => { await onAction("/api/admin/acquisition", { method: "PATCH", body: JSON.stringify({ batchId: reviewBatch.id, decision: reviewForm.decision, note: reviewForm.note }) }); })}><ShieldCheck size={14} /> Simpan keputusan</button></div>}
     </AdminModal>}
   </div>;

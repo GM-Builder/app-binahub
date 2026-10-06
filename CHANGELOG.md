@@ -3,6 +3,29 @@
 Semua perubahan yang signifikan pada proyek ini akan didokumentasikan di file ini.
 Format yang digunakan berdasarkan [Keep a Changelog](https://keepachangelog.com/id/1.0.0/), dan proyek ini mematuhi aturan [Semantic Versioning](https://semver.org/).
 
+## [0.28.0] - 2026-10-06
+
+### Added
+
+- Workspace outbound terpandu: **Daftar target → Email & pengiriman → Aktivitas**, termasuk email pertama langsung dari aplikasi memakai template yang disetujui, email uji khusus admin, konfirmasi penerima nyata, dan status antrean per alamat.
+- Impor CSV/JSON atau tempel email dengan preview tabel, pemeriksaan awal, persetujuan daftar, pencarian/filter, dan pilihan maksimal 50 penerima. Daftar besar ditolak, bukan dipotong otomatis; izin penerima tidak diasumsikan.
+- Preview outbound lokal memakai data sintetis tanpa akses API, database, atau layanan pengiriman.
+
+### Changed
+
+- Discovery dan uji tautan lanjutan dipisahkan dari alur kirim utama. Pengaturan sumber manual/kampanye Email mempunyai pintasan; kode teknis dibuat otomatis tanpa mengisi persetujuan manusia.
+- Navigasi akuisisi menjadi grid responsif tanpa gulir horizontal pada ponsel. Dialog konfirmasi, spinner, penguncian klik, pemeliharaan request key saat retry, dan polling aktivitas membantu mencegah tindakan ganda.
+- Rincian minat assessment menampilkan kontribusi poin, 4 sinyal minat, dan **Kelengkapan data inti**, bukan confidence AI/peluang closing. Tampilan memakai aturan API v1.2 tanpa anggaran/dukungan pengambil keputusan; versi riwayat lead tetap dijelaskan.
+- Kegagalan refresh setelah penyimpanan berhasil tidak lagi menyarankan pengulangan impor/persetujuan. Persetujuan daftar ditahan bila preview hanya menampilkan sebagian target.
+
+### Verification
+
+- 183 tes lulus; typecheck, lint file yang berubah, dan production build lulus. Alur serta dialog diperiksa pada desktop dan frame ponsel 390 piksel menggunakan skill computer-use. Pengujian tidak mengirim email nyata atau menulis database produksi.
+
+### Deployment
+
+- Deploy bersama API **0.28.0**, setelah SQL **60** dijalankan. Pengiriman memerlukan konfigurasi sender, template/source/campaign/batch yang disetujui, kontrol operasional, serta audience penerima. Panduan terdapat pada `OUTBOUND-EMAIL-RUNBOOK.md` di repo API. Deploy UI sendiri tidak mengaktifkan pengiriman.
+
 ## [0.27.0] - 2026-10-05
 
 ### Changed
