@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.34.1] - 2026-10-14
+
+### Changed
+
+- Redesign halaman pilihan diagnosis `/diagnose`: header merek ringkas, ukuran judul proporsional, dua kartu seimbang dengan ringkasan manfaat serta tombol mulai yang konsisten, dan riwayat individu sebagai navigasi sekunder di luar kartu. Layout responsif satu/dua kolom tanpa overflow pada lebar 320–1440 px, target sentuh minimal 44 px, fokus keyboard dan reduced motion.
+- Label promosi “Lengkap · Gratis” dan “3 Area · Gratis” dihapus dari kartu. Jumlah Area/soal tetap dijelaskan tanpa mengubah entitlement peserta.
+- Skeleton awal mempertahankan struktur halaman. Pemeriksaan ketersediaan menampilkan spinner dan status aksesibel; kondisi dijeda dibedakan dari kesalahan jaringan/respons. Pengguna dapat mencoba ulang pemeriksaan yang gagal tanpa melewati kontrol rilis.
+- Pengujian komponen untuk pemuatan, kesiapan, jeda, retry, timeout, pembatalan dan query; tes browser lokal desktop/ponsel memeriksa layout, keyboard dan navigasi memakai respons ketersediaan sintetis tanpa mengirim email atau membuat data peserta.
+
+### Deployment
+
+- Perubahan app saja, kompatibel dengan API 0.34.0. Tidak membutuhkan SQL/env baru untuk redesign; prasyarat SQL 66 pada fitur individu 0.34.0 tetap berlaku. Website-prod dan AMS tidak berubah.
+- Login individu, soal, scoring, persetujuan, akses hasil dan alur email tidak diubah. Query kampanye organisasi dan pembatasan kanal individu tetap dipertahankan. Diagnosis individu tanpa akun serta pengiriman email individu belum termasuk rilis UI ini.
+
 ## [0.34.0] - 2026-10-13
 
 ### Added

@@ -74,8 +74,8 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
   test('choice works on desktop/mobile and preserves campaign attribution for organization',async({page},info)=>{
     await page.route('**/api/assessment/individual/availability',route=>route.fulfill({json:{success:true,available:true}}));
     await page.goto('/diagnose?utm_source=instagram&utm_campaign=pe-pilot');
-    await expect(page.getByRole('heading',{name:'Mulai dari kebutuhan Anda.'})).toBeVisible();
-    const organization=page.getByRole('link',{name:/Tim \/ Organisasi/});
+    await expect(page.getByRole('heading',{name:'Apa yang ingin Anda kembangkan?'})).toBeVisible();
+    const organization=page.getByRole('link',{name:'Mulai diagnosis tim'});
     await expect(organization).toHaveAttribute('href','/insight?utm_source=instagram&utm_campaign=pe-pilot');
     await expect(page.getByRole('link',{name:'Mulai diagnosis individu'})).toHaveAttribute('href','/insight/individual?source=instagram');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
