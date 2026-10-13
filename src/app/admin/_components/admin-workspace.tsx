@@ -17,6 +17,7 @@ import { ObservabilityPanel } from "./observability-panel";
 import { Overview } from "./overview";
 import { PipelinePanel } from "./pipeline-panel";
 import { SmartCenterPanel } from "./smart-center-panel";
+import { SalesFunnel } from "./sales-funnel";
 import { DashboardSkeleton } from "./shared";
 import { TAB_META } from "../_lib/constants";
 import type { DashboardData } from "../_lib/types";
@@ -157,6 +158,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
       {error && <div role="alert" aria-live="assertive" className="mb-6 border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800"><p className="font-semibold">Data belum dapat dimuat</p><p className="mt-1 text-xs leading-5 text-red-700">{error}</p></div>}
       {loading || !data ? <DashboardSkeleton /> : (
         <div className="admin-workspace-content">
+          {section === "Overview" && <div className="mb-6"><SalesFunnel data={data} /></div>}
           {section !== "Acquisition Control" && <ObservabilityPanel onAction={adminRequest} compact={section !== "Operations Control"} />}
           {section === "Overview" && <Overview data={data} />}
           {section === "Acquisition Control" && <SalesWorkspace data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}

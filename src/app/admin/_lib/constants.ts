@@ -3,8 +3,8 @@ export const tabs = ["Overview", "Acquisition Control", "Sales Pipeline", "Clien
 export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: string; description: string }> = {
   Overview: {
     eyebrow: "Ringkasan eksekutif",
-    title: "Prioritas operasional hari ini",
-    description: "Pantau volume, kualitas lead, kebutuhan tindak lanjut, dan antrean kerja sebelum masuk ke area detail.",
+    title: "Dashboard bisnis",
+    description: "Pantau perjalanan calon klien, perkembangan penjualan, dan prioritas operasional dalam satu tampilan.",
   },
   "Automation Center": {
     eyebrow: "Pusat otomasi",

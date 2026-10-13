@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.31.0] - 2026-10-13
+
+### Added
+
+- Sales funnel interaktif pada area paling atas dashboard admin, sebelum panel operasional. Bentuk funnel mengikuti Awareness → Interest → Interact → Consideration → Decision, dengan Loyal serta Tidak lanjut terpisah.
+- Pemetaan dari status pipeline: identified → Awareness, qualified → Interest, consultation → Interact, proposal/negotiation → Consideration, won → Decision. Loyal memerlukan deal won dengan akun expanded atau peluang repeat/renewal/upsell/cross-sell yang won; akun inactive/churned tidak masuk Loyal dan akun aktif saja tidak cukup. Status tidak dikenal dan akun tanpa lead terhubung ditampilkan terpisah.
+- Klik tahap untuk jumlah peluang, status, nilai tercatat, prioritas/tenggat, pencarian, filter sumber dan perhatian, serta pagination. Klik calon klien untuk detail PIC/sumber, tindakan berikutnya, assessment/proposal, meeting, akun/delivery, peluang lanjutan dan aktivitas pipeline.
+- Hitungan memakai snapshot posisi saat ini dan deduplikasi ID peluang, bukan jumlah perusahaan unik atau conversion rate. Data uji yang dikenali dikecualikan secara default dengan opsi eksplisit untuk meninjaunya. Relasi detail hanya memakai ID, tidak menebak dari email bersama.
+- Tampilan ponsel mengarahkan pengguna ke detail setelah memilih tahap; kontrol keyboard, penutupan Escape, serta state kosong/data gagal/hasil parsial diuji. Preview lokal memakai data sintetis tanpa API/email.
+
+### Deployment
+
+- Pasangan API 0.31.0 menambahkan metadata kelengkapan data pipeline untuk mencegah angka nol palsu dan klaim total saat respons terbatas. Tidak memerlukan SQL, env, atau secret baru.
+- Fitur read-only: tidak memajukan tahap, membuat klien, mengubah otomasi, atau mengirim email. Rilis membutuhkan deployment app dan API; website-prod/AMS tidak berubah.
+
 ## [0.30.0] - 2026-10-10
 
 ### Added

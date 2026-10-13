@@ -6,6 +6,7 @@ export default defineConfig({
   root: path.resolve(__dirname),
   plugins: [react()],
   resolve: { alias: [
+    { find: "next/link", replacement: path.resolve(__dirname, "mock-link.tsx") },
     { find: "@/lib/supabase", replacement: path.resolve(__dirname, "mock-supabase.ts") },
     { find: "@", replacement: path.resolve(__dirname, "../../src") },
   ] },

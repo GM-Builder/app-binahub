@@ -14,6 +14,7 @@ export type Recommendation = {
 
 export type AssessmentRecord = {
   id: string;
+  leadId?: string | null;
   name: string;
   email: string;
   company: string;
@@ -581,6 +582,7 @@ export type DashboardData = {
   smartActions?: SmartActionRecord[];
   calendarBookings?: CalendarBookingRecord[];
   pipelineLeads?: PipelineLeadRecord[];
+  salesFunnelCoverage?: { loaded: number; total: number | null; stageDataAvailable: boolean; loadError: boolean };
   opportunityActivities?: OpportunityActivityRecord[];
   emailDeliverySummary?: EmailDeliverySummary;
   emailDeliveryEvents?: EmailDeliveryEventRecord[];
