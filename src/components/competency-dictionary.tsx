@@ -72,6 +72,7 @@ export function CompetencyDictionary() {
       <Link href="/admin/catalog" className="inline-flex min-h-11 items-center gap-2 rounded-xl text-sm font-medium text-blue-900 focus-visible:outline-2 focus-visible:outline-offset-4">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Produk & modul
       </Link>
+      <Link href="/insight/individual" className="inline-flex min-h-11 items-center rounded-xl border border-blue-200 bg-white px-4 text-sm font-medium text-blue-900 hover:bg-blue-50">Buka diagnosis individu</Link>
       <button type="button" onClick={() => setRevision(value => value + 1)} disabled={loading}
         className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
         <RefreshCw className="h-4 w-4" aria-hidden="true" /> Muat ulang

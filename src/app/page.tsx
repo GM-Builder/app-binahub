@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { safeInternalPath } from '@/lib/safe-navigation';
 
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const destination = safeInternalPath(searchParams.get('next'));
 
   const requestedSignup = searchParams.get('mode') === 'signup' || searchParams.get('mode') === 'register';
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(() => requestedSignup ? 'signup' : 'signin');
@@ -33,10 +35,10 @@ function AuthContent() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
-        router.replace('/home');
+        router.replace(destination);
       }
     });
-  }, [router]);
+  }, [router,destination]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +72,7 @@ function AuthContent() {
       }
 
       if (signInData.user) {
-        router.replace('/home');
+        router.replace(destination);
         router.refresh();
       }
     } catch {
@@ -112,7 +114,7 @@ function AuthContent() {
 
     try {
       const defaultName = fullName.trim() || normalizedEmail.split('@')[0] || 'Peserta BinaHub';
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}` : undefined;
 
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
@@ -150,7 +152,7 @@ function AuthContent() {
           return;
         }
 
-        router.replace('/home');
+        router.replace(destination);
         router.refresh();
       }
     } catch {
@@ -173,7 +175,7 @@ function AuthContent() {
     }
 
     try {
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}` : undefined;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo,
       });
@@ -195,7 +197,7 @@ function AuthContent() {
     setError('');
 
     try {
-      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=/home` : undefined;
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}` : undefined;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },

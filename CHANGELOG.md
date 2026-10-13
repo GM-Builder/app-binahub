@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.33.0] - 2026-10-13
+
+### Added
+
+- Pilihan diagnosis Tim/Organisasi atau Individu di `/diagnose`; jalur organisasi tetap mempertahankan campaign query dan instrumen lama.
+- Diagnosis individu gratis untuk Self-Development, Adaptability, Pressure Management dengan 18 soal dari API privat. Login akun yang ada, konteks/relevansi kerja, consent, penyimpanan setiap pilihan, resume, peninjauan, submit satu kali, hasil privat dua metode, kandidat latihan, solusi katalog terkait tanpa harga, dan penghapusan oleh pemilik.
+- Pengujian React serta Playwright desktop/ponsel dengan soal/sesi/API sintetis. Browser hanya menyimpan ID pengisian per akun; data tampilan dibersihkan saat akun berubah.
+
+### Changed
+
+- Login/signup/OAuth memakai return path internal tervalidasi agar peserta kembali ke diagnosis individu. CSP mengizinkan evaluasi JavaScript Next.js hanya dalam development; produksi tidak diberi unsafe-eval. Hasil individu no-store/noindex.
+- `.gitignore` menutup data privat CEO, seed privat, ekspor/backup/output lokal, screenshot dan laporan tes. Paket review DOCX hasil generasi dikeluarkan dari Git index; salinan lokal tidak dihapus.
+
+### Deployment
+
+- Pasangan API 0.33.0 dan SQL 65 setelah SQL 64 lengkap/privat. Website 0.2.28 mengarahkan pengguna ke pilihan diagnosis. Tidak membutuhkan env/secret baru; belum mengaktifkan pembayaran, proposal individu atau email/PDF individu baru.
+- Rilis berupa pilot pengembangan dengan penelaahan substansi CEO, bukan klaim validasi statistik untuk seleksi/promosi. Asesmen organisasi/hasil historis dan pipeline tidak diubah.
+
 ## [0.32.0] - 2026-10-13
 
 ### Changed
