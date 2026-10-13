@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { useEffect,useRef,useState } from 'react';
 import { ArrowLeft,ArrowRight,Check,CheckCircle2,Loader2,LockKeyhole,ShieldCheck,Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { countAnswered,firstUnanswered,peRequest,PERequestError,personalSignInPath,
-  type PEAnswer,type PEAttempt,type PEContext,type PEDefinition,type PEReport } from '@/lib/individual-assessment';
+import { PEReviewAccessPanel } from './pe-review-access';
+import { countAnswered,firstUnanswered,peRequest,PERequestError,personalSignInPath,peChannel,
+  type PEAnswer,type PEAttempt,type PEContext,type PEDefinition,type PEReport,type PEReviewAccess } from '@/lib/individual-assessment';
 
 const button='inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-5 text-sm font-semibold text-white transition hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-4';
 const secondary='inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-4';
 const input='mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-800 focus:ring-2 focus:ring-blue-100';
-type State={definition:PEDefinition;attempt?:PEAttempt;report?:PEReport|null};
+type State={definition:PEDefinition;attempt?:PEAttempt;report?:PEReport|null;access?:PEReviewAccess};
 
 export function IndividualAssessment() {
   const [state,setState]=useState<State|null>(null),[loading,setLoading]=useState(true),[signedIn,setSignedIn]=useState(false);
@@ -39,13 +40,15 @@ export function IndividualAssessment() {
         if(!data.session){setSignedIn(false);return;}
         userRef.current=data.session.user.id;tokenRef.current=data.session.access_token;setSignedIn(true);
         const {definition}=await peRequest<{definition:PEDefinition}>(tokenRef.current,'');
-        let attempt:PEAttempt|undefined,report:PEReport|null= null;
-        let id:string|null=null;try{id=localStorage.getItem(`binahub.pe.attempt.${data.session.user.id}`);}catch{}
+        let attempt:PEAttempt|undefined,report:PEReport|null= null,access:PEReviewAccess|undefined;
+        const requested=new URLSearchParams(window.location.search).get('attempt');
+        let id:string|null=requested&&/^[a-f0-9-]{36}$/i.test(requested)?requested:null;
+        if(!id)try{id=localStorage.getItem(`binahub.pe.attempt.${data.session.user.id}`);}catch{}
         if(id){
-          try{const result=await peRequest<{attempt:PEAttempt;report:PEReport|null}>(tokenRef.current,`/${encodeURIComponent(id)}`);attempt=result.attempt;report=result.report;}
+          try{const result=await peRequest<{attempt:PEAttempt;report:PEReport|null;access?:PEReviewAccess}>(tokenRef.current,`/${encodeURIComponent(id)}`);attempt=result.attempt;report=result.report;access=result.access;}
           catch(failure){if(failure instanceof PERequestError&&failure.status===404){try{localStorage.removeItem(`binahub.pe.attempt.${data.session.user.id}`);}catch{}}else throw failure;}
         }
-        if(alive){setState({definition,attempt,report});if(attempt){setContext(attempt.context);
+        if(alive&&userRef.current===data.session.user.id){setState({definition,attempt,report,access});if(attempt){setContext(attempt.context);
           setIndex(firstUnanswered([...definition.selfReportItems,...definition.sjtItems],attempt.responses));}}
       }catch(failure){if(alive)setError(failure instanceof Error?failure.message:'Asesmen belum dapat dimuat.');}
       finally{if(alive)setLoading(false);}
@@ -54,7 +57,7 @@ export function IndividualAssessment() {
   },[]);
   useEffect(()=>{
     const listener=supabase.auth.onAuthStateChange?.((_event,session)=>{
-      if(userRef.current&&session?.user.id!==userRef.current){setState(null);setSignedIn(false);}
+      if(userRef.current&&session?.user.id!==userRef.current){userRef.current='';tokenRef.current='';setState(null);setSignedIn(false);}
     });
     return()=>listener?.data.subscription.unsubscribe();
   },[]);
@@ -67,9 +70,11 @@ export function IndividualAssessment() {
   async function start(){await run(async()=>{
     if(!state||!consent)return;
     if(!startRef.current)startRef.current={id:crypto.randomUUID(),context,
-      consentVersion:state.definition.consentVersion,privacyVersion:state.definition.privacyVersion};
+      consentVersion:state.definition.consentVersion,privacyVersion:state.definition.privacyVersion,
+      ...(state.definition.sharingConsentVersion?{sharingConsentVersion:state.definition.sharingConsentVersion,channel:peChannel(window.location.search)}:{})};
     storeId(String(startRef.current.id));
     const result=await peRequest<{attempt:PEAttempt}>(await token(),'','POST',startRef.current);
+    await token();
     setState({...state,attempt:result.attempt});setIndex(0);setSaved('Draft tersimpan');
   });}
   async function answer(value:PEAnswer){
@@ -80,6 +85,7 @@ export function IndividualAssessment() {
     const responses={...state.attempt.responses,[questions[index].id]:value};
     const result=await peRequest<{attempt:PEAttempt}>(await token(),`/${state.attempt.id}`,'PATCH',
       {revision:state.attempt.revision,responses});
+    await token();
     setState({...state,attempt:result.attempt});setSaved('Jawaban tersimpan');
     });
     setPendingChoice(null);
@@ -89,19 +95,22 @@ export function IndividualAssessment() {
     if(!submissionKey.current)submissionKey.current=crypto.randomUUID();
     const result=await peRequest<{attempt:PEAttempt}>(await token(),`/${state.attempt.id}`,'PATCH',
       {revision:state.attempt.revision,responses:state.attempt.responses,submissionKey:submissionKey.current});
+    await token();
     // Keep the submitted state even if loading the report fails; never re-submit with a new key.
     setState({...state,attempt:result.attempt});
     const full=await peRequest<{attempt:PEAttempt;report:PEReport}>(await token(),`/${state.attempt.id}`);
+    await token();
     setState({...state,...full});setSaved('Jawaban berhasil dikirim');
   });}
   async function reload(){await run(async()=>{
     const id=state?.attempt?.id||readId();if(!id)return;
     const full=await peRequest<{attempt:PEAttempt;report:PEReport|null}>(await token(),`/${id}`);
+    await token();
     setState(current=>current?{...current,...full}:current);setSaved('Versi terbaru dimuat');
   });}
   async function erase(){await run(async()=>{
     if(!state?.attempt)return;
-    await peRequest(await token(),`/${state.attempt.id}`,'DELETE');storeId(null);startRef.current=null;submissionKey.current='';
+    await peRequest(await token(),`/${state.attempt.id}`,'DELETE');await token();storeId(null);startRef.current=null;submissionKey.current='';
     setState({...state,attempt:undefined,report:null});setIndex(0);setConsent(false);setDeleteConfirm(false);setSaved('Data pengisian dihapus');
   });}
   const progress=state?.attempt?countAnswered(questions,state.attempt.responses):0;
@@ -124,12 +133,13 @@ export function IndividualAssessment() {
       :!signedIn?<section className="mt-8 rounded-3xl border border-slate-200 bg-white p-7 sm:p-10">
         <LockKeyhole className="text-[#BA8B35]" aria-hidden="true"/><h2 className="mt-5 text-xl font-semibold">Hasil pribadi, akses yang aman.</h2>
         <p className="mt-3 text-sm leading-7 text-slate-600">Masuk atau buat akun untuk menyimpan pengisian dan membuka hasil kapan saja. Akun BinaHub yang sudah ada dapat digunakan.</p>
-        <div className="mt-6 flex flex-wrap gap-3"><Link className={button} href={personalSignInPath()}>Masuk dan mulai<ArrowRight size={17}/></Link>
-          <Link className={secondary} href={personalSignInPath('signup')}>Buat akun</Link></div></section>
+        <div className="mt-6 flex flex-wrap gap-3"><Link className={button} href={personalSignInPath('signin',window.location.search)}>Masuk dan mulai<ArrowRight size={17}/></Link>
+          <Link className={secondary} href={personalSignInPath('signup',window.location.search)}>Buat akun</Link></div></section>
       :state?.report?<PEResult report={state.report} retentionUntil={state.attempt!.retentionUntil}/>
       :state?.attempt?.status==='submitted'?<section className="mt-8 rounded-3xl bg-white p-8"><CheckCircle2 aria-hidden="true"/>
         <h2 className="mt-4 text-xl font-semibold">Jawaban sudah tersimpan.</h2><p className="mt-2 text-sm text-slate-600">Buka hasil Anda tanpa mengirim ulang jawaban.</p>
         <button className={`${button} mt-5`} disabled={busy} onClick={()=>void reload()}>Buka hasil</button></section>
+      :state&&!state.attempt&&state.definition.acceptingNew===false?<section role="status" className="mt-8 rounded-3xl bg-white p-8"><h2 className="text-xl font-semibold">Pengisian baru sedang dijeda.</h2><p className="mt-3 text-sm leading-7 text-slate-600">Draft dan hasil Anda tetap tersedia melalui Riwayat diagnosis.</p></section>
       :state&&!state.attempt?<form className="mt-8 space-y-6 rounded-3xl border border-slate-200 bg-white p-6 sm:p-9" onSubmit={e=>{e.preventDefault();void start();}}>
         <div className="grid gap-3 sm:grid-cols-3">{state.definition.competencies.map(c=><div key={c.code} className="rounded-2xl bg-slate-50 p-4">
           <CheckCircle2 size={18} className="text-emerald-600" aria-hidden="true"/><h2 className="mt-3 text-sm font-semibold">{c.name}</h2><p className="mt-1 text-xs text-slate-500">4 pengalaman kerja · 2 studi kasus</p></div>)}</div>
@@ -139,9 +149,9 @@ export function IndividualAssessment() {
           {c.name}<select aria-label={`Relevansi ${c.name}`} disabled={busy} className="min-h-11 rounded-lg border border-slate-200 px-3 text-sm" value={context.relevance[c.code]}
             onChange={e=>setContext({...context,relevance:{...context.relevance,[c.code]:e.target.value as 'low'|'normal'|'high'}})}>
             <option value="low">Kurang relevan</option><option value="normal">Relevan</option><option value="high">Sangat relevan</option></select></label>)}</div></fieldset>
-        <div className="rounded-2xl bg-blue-50 p-4 text-xs leading-6 text-slate-600"><p>{state.definition.notice}</p><p className="mt-2">{state.definition.privacyNotice}</p></div>
+        <div className="rounded-2xl bg-blue-50 p-4 text-xs leading-6 text-slate-600"><p>{state.definition.notice}</p><p className="mt-2">{state.definition.privacyNotice}</p>{state.definition.sharingNotice&&<p className="mt-2">{state.definition.sharingNotice}</p>}</div>
         <label className="flex cursor-pointer items-start gap-3 text-sm leading-6"><input type="checkbox" checked={consent} required disabled={busy} className="mt-1 h-5 w-5 accent-blue-900" onChange={e=>setConsent(e.target.checked)}/>
-          Saya memahami tujuan asesmen dan menyetujui penggunaan jawaban untuk hasil pengembangan pribadi saya.</label>
+          {state.definition.sharingConsentVersion?'Saya memahami tujuan asesmen dan mengizinkan tim BinaHub meninjau profil, konteks, jawaban, serta hasil untuk rekomendasi pengembangan.':'Saya memahami tujuan asesmen dan menyetujui penggunaan jawaban untuk hasil pengembangan pribadi saya.'}</label>
         <button className={`${button} w-full`} disabled={busy||!consent}>{busy?<Loader2 className="animate-spin motion-reduce:animate-none" size={18}/>:<ArrowRight size={18}/>}Mulai 18 soal</button>
       </form>
       :state?.attempt&&<section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 sm:p-9">
@@ -170,7 +180,9 @@ export function IndividualAssessment() {
           <p className="mt-4 text-xs leading-6 text-slate-500">Jawaban tanpa kesempatan relevan tidak dinilai nol. Bila bukti terlalu sedikit, skor Area tersebut tidak ditampilkan.</p>
           <button className={`${button} mt-6 w-full`} disabled={busy||progress!==questions.length} onClick={()=>void submit()}>{busy?<Loader2 size={18} className="animate-spin motion-reduce:animate-none"/>:<CheckCircle2 size={18}/>}Kirim dan lihat hasil</button></>}
       </section>}
-      {state?.attempt&&<div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+      {signedIn&&state?.definition.features?.history&&<a href="/insight/individual/history" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">Riwayat diagnosis saya</a>}
+      {signedIn&&state?.attempt&&state.report&&state.access&&<PEReviewAccessPanel key={state.attempt.id} id={state.attempt.id} access={state.access} token={token} onChange={access=>setState(current=>current?{...current,access}:current)}/>}
+      {signedIn&&state?.attempt&&<div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
         <span className="flex items-center gap-2"><ShieldCheck size={15}/>Jawaban tersimpan di akun Anda.</span>
         <button className="min-h-11 text-slate-500 underline underline-offset-4" disabled={busy} onClick={()=>setDeleteConfirm(true)}>Hapus data pengisian</button></div>}
       {deleteConfirm&&<section role="alertdialog" aria-modal="false" aria-labelledby="pe-delete-title" className="mt-4 rounded-2xl border border-red-200 bg-white p-5">

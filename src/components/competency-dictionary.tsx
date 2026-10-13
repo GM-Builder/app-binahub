@@ -25,6 +25,7 @@ type Dictionary = {
   framework: { id: string; source_file: string; source_sha256: string; measurement_status: string };
   competencies: Competency[];
   mappings: Mapping[];
+  individualIntegration?:{available:boolean;freeAreas:string[]};
 };
 const contentLabels = { awaiting_ceo: "Menunggu definisi CEO", draft: "Draf definisi", approved: "Definisi tersedia" };
 
@@ -119,9 +120,10 @@ export function CompetencyDictionaryView({ data }: { data: Dictionary }) {
       <dl className="mt-6 grid grid-cols-2 gap-5 border-t border-slate-100 pt-6 sm:grid-cols-3">
         <div><dt className="text-xs text-slate-500">Kompetensi</dt><dd className="mt-1 text-2xl font-semibold text-slate-950">{data.competencies.length}</dd></div>
         <div><dt className="text-xs text-slate-500">Solusi terhubung</dt><dd className="mt-1 text-2xl font-semibold text-slate-950">{solutionCount}</dd></div>
-        <div className="col-span-2 sm:col-span-1"><dt className="text-xs text-slate-500">Penggunaan pada diagnosis</dt><dd className="mt-2 text-sm font-semibold text-amber-800">Belum diaktifkan</dd></div>
+        <div className="col-span-2 sm:col-span-1"><dt className="text-xs text-slate-500">Penggunaan pada diagnosis</dt><dd className="mt-2 text-sm font-semibold text-amber-800">{data.individualIntegration?.available?'Individu: 3 Area tersedia':'Belum diaktifkan'}</dd></div>
       </dl>
       <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">Nama dan hubungan program sudah tersedia. Definisi, indikator perilaku, soal, serta cara penilaian menunggu dokumen CEO. Core berarti kompetensi utama yang ditargetkan; Secondary berarti kompetensi pendukung. Keduanya bukan bobot skor.</p>
+      {data.individualIntegration?.available&&<p className="mt-3 text-sm leading-6 text-blue-900">Personal Effectiveness sudah memakai instrumen individu CEO untuk {data.individualIntegration.freeAreas.join(', ')}. Ini tidak berarti seluruh 26 kompetensi atau diagnosis organisasi sudah diperbarui. <Link href="/admin/assessments/individual" className="font-semibold underline">Buka hasil & evaluasi individu</Link></p>}
     </section>
 
     <section aria-label="Daftar kompetensi" className="space-y-4">

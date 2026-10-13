@@ -18,17 +18,21 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
     await page.route('**/auth/v1/**',route=>route.fulfill({json:user}));
     const codes=['PE-02','PE-04','PE-06'],names=['Self-Development','Adaptability','Pressure Management'];
     const definition={policyId:'fixture',consentVersion:'fixture',privacyVersion:'fixture',notice:'Synthetic browser test.',privacyNotice:'No real data.',
+      features:{pilot:true,history:true},acceptingNew:true,sharingConsentVersion:'pe-consultant-review-v1',sharingNotice:'Synthetic review permission notice.',
       competencies:codes.map((code,n)=>({code,name:names[n],definition:'Synthetic development description for a local test.'})),
       selfReportItems:Array.from({length:12},(_,n)=>({id:'SR'+(n+1),competencyCode:codes[Math.floor(n/4)],type:'behavioral_self_report',prompt:'Synthetic question '+(n+1)})),
       sjtItems:Array.from({length:6},(_,n)=>({id:'SJ'+(n+1),competencyCode:codes[Math.floor(n/2)],type:'situational_judgment',scenario:'Synthetic work scenario used only to check a long paragraph on a small screen. The participant has a deadline, conflicting priorities and a need to coordinate clearly with colleagues.',
         question:'Choose a synthetic action.',options:[{id:'A',text:'Discuss the priorities, clarify the expected outcome and agree on a practical next step with the people involved.'},{id:'B',text:'Another synthetic alternative.'}]})),
       selfReportScale:[{value:4,label:'Sering'},{value:'NA',label:'Tidak ada kesempatan relevan'}]};
     let attempt={id,status:'draft',revision:0,responses:{} as Record<string,unknown>,context:{role:'Manager',goal:'Practice work habits',relevance:{}},retentionUntil:'2027-04-13T00:00:00Z',submittedAt:null as string|null};
+    let access={shared:true,evaluationConsent:false,clarity:null,usefulness:null};
     const report={goal:'Practice work habits',methodology:'Two separate methods on a 0–100 scale; not percent mastery.',priorityExplanation:'Context and completeness come first.',notice:'Synthetic fixture.',
       areas:codes.map((code,n)=>({code,name:names[n],definition:'Synthetic description.',relevance:'normal',
         selfReport:{score:75,validCount:4,naCount:0,status:'scored'},sjt:{score:50,validCount:2,status:'scored'},practice:null})),priorities:[]};
     await page.route('**/api/**',async route=>{
       const req=route.request();const path=new URL(req.url()).pathname;
+      if(path.endsWith('/access')){const body=req.postDataJSON();access={...access,shared:body.share};return route.fulfill({json:{success:true,access}});}
+      if(path==='/api/assessment/individual/history')return route.fulfill({json:{success:true,history:[{id:attempt.id,status:attempt.status,createdAt:'2026-10-13T00:00:00Z',retentionUntil:attempt.retentionUntil,answeredCount:Object.keys(attempt.responses).length}]}});
       if(path==='/api/assessment/individual') {
         if(req.method()==='POST'){const body=req.postDataJSON();attempt={...attempt,id:body.id,context:body.context};return route.fulfill({json:{success:true,attempt}});}
         return route.fulfill({json:{success:true,definition}});
@@ -37,7 +41,7 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
         if(req.method()==='PATCH'){const body=req.postDataJSON();attempt={...attempt,responses:body.responses,revision:attempt.revision+1,
           status:body.submissionKey?'submitted':'draft',submittedAt:body.submissionKey?'2026-10-13T00:00:00Z':null};
           return route.fulfill({json:{success:true,attempt}});}
-        return route.fulfill({json:{success:true,attempt,report:attempt.status==='submitted'?report:null}});
+        return route.fulfill({json:{success:true,attempt,report:attempt.status==='submitted'?report:null,access}});
       }
       return route.fulfill({json:{success:false}});
     });
@@ -60,6 +64,12 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
     await page.screenshot({path:`test-results/pe-result-${info.project.name}.png`,fullPage:true});
     await page.reload();
     await expect(page.getByRole('heading',{name:'Langkah kecil yang lebih terarah.'})).toBeVisible();
+    await page.getByRole('button',{name:'Cabut akses tim BinaHub'}).click();
+    await expect(page.getByRole('button',{name:'Izinkan tim BinaHub meninjau hasil'})).toBeVisible();
+    await page.getByRole('link',{name:'Riwayat diagnosis saya'}).click();
+    await expect(page).toHaveURL(/\/insight\/individual\/history$/, {timeout:15_000});
+    await expect(page.getByRole('heading',{name:'Riwayat diagnosis Anda'})).toBeVisible();
+    await expect(page.getByRole('link',{name:/Hasil pengembangan pribadi/})).toBeVisible();
   });
   test('choice works on desktop/mobile and preserves campaign attribution for organization',async({page},info)=>{
     await page.route('**/api/assessment/individual/availability',route=>route.fulfill({json:{success:true,available:true}}));
@@ -67,7 +77,7 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
     await expect(page.getByRole('heading',{name:'Mulai dari kebutuhan Anda.'})).toBeVisible();
     const organization=page.getByRole('link',{name:/Tim \/ Organisasi/});
     await expect(organization).toHaveAttribute('href','/insight?utm_source=instagram&utm_campaign=pe-pilot');
-    await expect(page.getByRole('link',{name:'Mulai diagnosis individu'})).toHaveAttribute('href','/insight/individual');
+    await expect(page.getByRole('link',{name:'Mulai diagnosis individu'})).toHaveAttribute('href','/insight/individual?source=instagram');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:`test-results/pe-choice-${info.project.name}.png`,fullPage:true});
   });

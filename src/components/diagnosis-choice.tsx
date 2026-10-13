@@ -3,6 +3,7 @@ import { useEffect,useState } from 'react';
 import { ArrowRight,Building2,UserRound,ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { personalEntryPath } from '@/lib/individual-assessment';
 
 export function DiagnosisChoice(){
   const [available,setAvailable]=useState<boolean|null>(null);
@@ -30,8 +31,9 @@ export function DiagnosisChoice(){
           <p className="mt-7 text-xs font-semibold uppercase tracking-wider text-slate-500">Untuk diri sendiri</p><h2 className="mt-2 text-2xl font-semibold">Individu</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">Kenali pengalaman kerja dan respons Anda pada tiga Area Personal Effectiveness.</p>
           <span className="mt-5 inline-block rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">3 Area gratis · 18 soal</span>
-          {available?<Link href="/insight/individual" className="mt-5 flex min-h-12 items-center justify-between rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4">Mulai diagnosis individu<ArrowRight size={18}/></Link>:
-            <p role="status" className="mt-5 text-xs leading-6 text-slate-500">{available===null?'Memeriksa ketersediaan…':'Diagnosis individu sedang disiapkan. Jalur tim tetap dapat digunakan.'}</p>}
+          {available?<Link href={personalEntryPath(search)} className="mt-5 flex min-h-12 items-center justify-between rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4">Mulai diagnosis individu<ArrowRight size={18}/></Link>:
+            <p role="status" className="mt-5 text-xs leading-6 text-slate-500">{available===null?'Memeriksa ketersediaan…':'Pengisian baru belum tersedia. Jalur tim tetap dapat digunakan.'}</p>}
+          <Link href="/insight/individual/history" className="mt-3 inline-flex min-h-11 items-center text-xs font-medium underline underline-offset-4">Buka draft atau hasil sebelumnya</Link>
         </div>
       </div><p className="mt-6 text-xs leading-6 text-slate-500">Hasil digunakan untuk refleksi dan pengembangan, bukan diagnosis klinis.</p>
     </div>

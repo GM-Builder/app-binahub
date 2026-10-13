@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { firstUnanswered,countAnswered,personalSignInPath,type PEQuestion } from './individual-assessment';
+import { firstUnanswered,countAnswered,personalSignInPath,peChannel,personalEntryPath,type PEQuestion } from './individual-assessment';
 describe('PE navigation helpers',()=>{
   const questions:PEQuestion[]=[{id:'SR05',competencyCode:'PE-02',type:'self'},{id:'SJ03',competencyCode:'PE-02',type:'sjt'}];
   it('treats NA as answered and counts only entitled question IDs',()=>{
@@ -10,5 +10,11 @@ describe('PE navigation helpers',()=>{
   it('uses a fixed internal return path for sign in and registration',()=>{
     expect(personalSignInPath('signup')).toBe('/?mode=signup&next=%2Finsight%2Findividual');
     expect(personalSignInPath('//evil')).toBe('/?mode=signin&next=%2Finsight%2Findividual');
+  });
+  it('carries only a recognized source channel through individual entry and sign-in',()=>{
+    expect(peChannel('?utm_source=ig&utm_campaign=launch')).toBe('instagram');
+    expect(personalEntryPath('?utm_source=tiktok&email=private@example.invalid')).toBe('/insight/individual?source=tiktok');
+    expect(personalEntryPath('?utm_source=someone@example.invalid')).toBe('/insight/individual?source=other');
+    expect(decodeURIComponent(personalSignInPath('signin','?utm_source=instagram&next=https://evil.test'))).toContain('next=/insight/individual?source=instagram');
   });
 });

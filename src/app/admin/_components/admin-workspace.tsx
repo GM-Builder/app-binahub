@@ -8,6 +8,7 @@ import { AdminShell } from "@/components/admin-shell";
 import { supabase } from "@/lib/supabase";
 import { SalesWorkspace } from "./sales-workspace";
 import { AssessmentPanel } from "./assessment-panel";
+import { AssessmentAudienceNav } from '@/components/assessment-audience-nav';
 import { ClientDeliveryPanel } from "./client-delivery-panel";
 import { ContactsPanel } from "./contacts-panel";
 import { InquiriesPanel } from "./inquiries-panel";
@@ -159,6 +160,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
 
   return (
     <AdminShell eyebrow={meta.eyebrow} title={meta.title} description={meta.description} actions={refreshAction}>
+      {section === "Assessment" && <AssessmentAudienceNav/>}
       {error && <div role="alert" aria-live="assertive" className="mb-6 border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800"><p className="font-semibold">Data belum dapat dimuat</p><p className="mt-1 text-xs leading-5 text-red-700">{error}</p></div>}
       {loading || !data ? <DashboardSkeleton /> : (
         <div className="admin-workspace-content">

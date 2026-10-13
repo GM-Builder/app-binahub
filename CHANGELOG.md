@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.34.0] - 2026-10-13
+
+### Added
+
+- Assessment memisahkan Tim/Organisasi dan Individu. Ruang individu modern untuk brief, profil, konteks, sumber, jawaban dan laporan yang sama dengan peserta, dibatasi izin review eksplisit.
+- Tab Evaluasi pilot: ringkasan pengisian, statistik/feedback opsional, ekspor agregat tanpa data personal, dan tombol jeda/resume pengisian baru tanpa mengubah env. Draft/hasil existing tetap dapat dibuka.
+- Riwayat pribadi lintas perangkat dan kontrol pemberian/pencabutan akses tim BinaHub. Feedback serta izin evaluasi statistik terpisah, tidak wajib untuk hasil. Hasil lama tidak dibagikan otomatis.
+- Kanal sumber individu diteruskan secara allowlist melalui pilihan/login. Kamus kompetensi membedakan tiga Area individu dari kesiapan seluruh 26 kompetensi. Uji React/SQL/HTTP/browser sintetis menjaga konsistensi dan privasi.
+
+### Deployment
+
+- API 0.34.0 + SQL 66 setelah SQL 64 lengkap/64B dan SQL 65. Website 0.2.28 tetap kompatibel; tanpa env/secret/n8n baru. Tidak mengubah scoring/soal organisasi, menambah narasi AI individu baru, pembayaran atau template final email/PDF/proposal.
+
 ## [0.33.0] - 2026-10-13
 
 ### Added

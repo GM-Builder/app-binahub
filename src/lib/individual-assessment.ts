@@ -3,11 +3,14 @@ export type PEContext={role:string;goal:string;relevance:Record<string,'low'|'no
 export type PEQuestion={id:string;competencyCode:string;type:string;prompt?:string;scenario?:string;question?:string;
   options?:{id:string;text:string}[]};
 export type PEDefinition={policyId:string;consentVersion:string;privacyVersion:string;notice:string;privacyNotice:string;
+  features?:{pilot:boolean;history:boolean};acceptingNew?:boolean;sharingConsentVersion?:string;sharingNotice?:string;
   competencies:{code:string;name:string;definition:string}[];selfReportItems:PEQuestion[];sjtItems:PEQuestion[];
   selfReportScale:{value:number|'NA';label:string}[]};
 export type PEAttempt={id:string;status:'draft'|'submitted';revision:number;responses:Record<string,PEAnswer>;
   context:PEContext;retentionUntil:string;submittedAt:string|null};
 export type PEPractice={focus:string;context:string;successIndicator:string;followUp:string};
+export type PEReviewAccess={shared:boolean;evaluationConsent:boolean;clarity:number|null;usefulness:number|null};
+export type PEHistory={id:string;status:'draft'|'submitted';createdAt:string;retentionUntil:string;answeredCount:number};
 export type PEReport={goal:string;methodology:string;priorityExplanation:string;notice:string;
   solutions?:{status:string;items:{title:string;description:string;url:string;reason:string}[]};
   areas:{code:string;name:string;definition:string;relevance:string;selfReport:{score:number|null;validCount:number;naCount:number;status:string};
@@ -28,6 +31,18 @@ export function firstUnanswered(questions:PEQuestion[],responses:Record<string,P
 export function countAnswered(questions:PEQuestion[],responses:Record<string,PEAnswer>) {
   return questions.filter(q=>Object.hasOwn(responses,q.id)).length;
 }
-export function personalSignInPath(mode='signin') {
-  return `/?mode=${mode==='signup'?'signup':'signin'}&next=${encodeURIComponent('/insight/individual')}`;
+export function peChannel(search:string) {
+  const params=new URLSearchParams(search),value=(params.get('source')||params.get('utm_source')||'direct').toLowerCase();
+  if(['instagram','tiktok','linkedin','google','email','website','direct'].includes(value))return value;
+  if(['ig','instagram_ads'].includes(value))return 'instagram';
+  if(['newsletter','outbound'].includes(value))return 'email';
+  return 'other';
+}
+export function personalEntryPath(search:string) {
+  const channel=peChannel(search);return `/insight/individual${channel==='direct'?'':`?source=${channel}`}`;
+}
+export function personalSignInPath(mode='signin',search='') {
+  const params=new URLSearchParams(search),id=params.get('attempt');
+  const path=id&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(id)?`/insight/individual?attempt=${id}`:personalEntryPath(search);
+  return `/?mode=${mode==='signup'?'signup':'signin'}&next=${encodeURIComponent(path)}`;
 }
