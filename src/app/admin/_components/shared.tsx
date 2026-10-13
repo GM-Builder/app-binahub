@@ -569,18 +569,20 @@ export function AdminDrawer({
   children,
   onClose,
   maxWidth = "max-w-3xl",
+  closeDisabled = false,
 }: {
   title: string;
   eyebrow?: string;
   children: React.ReactNode;
   onClose: () => void;
   maxWidth?: string;
+  closeDisabled?: boolean;
 }) {
-  const dialogRef = useDialogFocus<HTMLDivElement>(onClose);
+  const dialogRef = useDialogFocus<HTMLDivElement>(onClose, closeDisabled);
   const titleId = useId();
   return (
     <div className="fixed inset-0 z-[55] flex justify-end bg-slate-950/35 backdrop-blur-[2px]">
-      <button type="button" className="min-w-0 flex-1 cursor-default" onClick={onClose} aria-label="Tutup panel detail" />
+      <button type="button" disabled={closeDisabled} className="min-w-0 flex-1 cursor-default" onClick={onClose} aria-label="Tutup panel detail" />
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`flex h-full w-[min(100%,48rem)] ${maxWidth} flex-col overflow-hidden border-l border-slate-200 bg-white shadow-[-24px_0_70px_-38px_rgba(7,27,61,0.5)]`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
           <div className="min-w-0">
@@ -593,6 +595,7 @@ export function AdminDrawer({
             onClick={onClose}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
             aria-label="Tutup panel"
+            disabled={closeDisabled}
           >
             <X size={16} />
           </button>

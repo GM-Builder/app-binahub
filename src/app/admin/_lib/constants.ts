@@ -22,9 +22,9 @@ export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: s
     description: "Inbound, outbound, assessment, proposal, dan tindak lanjut dalam satu tempat.",
   },
   "Sales Pipeline": {
-    eyebrow: "Operasional penjualan",
-    title: "Kendalikan setiap peluang dan tindak lanjut",
-    description: "Tetapkan penanggung jawab, tindakan berikutnya, tenggat, nilai peluang, dan persetujuan yang diperlukan.",
+    eyebrow: "Akuisisi & Penjualan",
+    title: "Pipeline penjualan",
+    description: "Lihat setiap peluang, tentukan prioritas, dan dorong percakapan menjadi kerja sama.",
   },
   "Client & Delivery": {
     eyebrow: "Keberhasilan klien",

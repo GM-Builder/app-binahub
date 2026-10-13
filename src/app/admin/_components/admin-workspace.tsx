@@ -73,7 +73,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
   const [assessmentMinScore, setAssessmentMinScore] = useState("0");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const fetchDashboard = useCallback(async (force = false) => {
+  const fetchDashboard = useCallback(async (force = false, rethrow = false) => {
     setError("");
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -102,6 +102,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
         router.replace(status === 401 ? "/login" : "/access-denied");
       }
       setError(fetchError instanceof Error ? fetchError.message : "Gagal memuat data admin.");
+      if (rethrow) throw fetchError;
     } finally {
       setLoading(false);
     }
@@ -111,6 +112,9 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
 
   const refreshDashboard = useCallback(async () => {
     await fetchDashboard(true);
+  }, [fetchDashboard]);
+  const refreshPipelineDashboard = useCallback(async () => {
+    await fetchDashboard(true, true);
   }, [fetchDashboard]);
 
   const filteredAssessments = useMemo(() => {
@@ -159,10 +163,10 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
       {loading || !data ? <DashboardSkeleton /> : (
         <div className="admin-workspace-content">
           {section === "Overview" && <div className="mb-6"><SalesFunnel data={data} /></div>}
-          {section !== "Acquisition Control" && <ObservabilityPanel onAction={adminRequest} compact={section !== "Operations Control"} />}
+          {section !== "Acquisition Control" && section !== "Sales Pipeline" && <ObservabilityPanel onAction={adminRequest} compact={section !== "Operations Control"} />}
           {section === "Overview" && <Overview data={data} />}
           {section === "Acquisition Control" && <SalesWorkspace data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
-          {section === "Sales Pipeline" && <PipelinePanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
+          {section === "Sales Pipeline" && <PipelinePanel data={data} onAction={adminRequest} onRefresh={refreshPipelineDashboard} />}
           {section === "Client & Delivery" && <ClientDeliveryPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Operations Control" && <OperationsControlPanel onAction={adminRequest} />}
           {section === "Automation Center" && <SmartCenterPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
@@ -170,6 +174,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
           {section === "Meeting" && <MeetingsPanel bookings={data.calendarBookings || []} />}
           {section === "Kontak & Leads" && <ContactsPanel contacts={data.contacts} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Inquiry Masuk" && <InquiriesPanel inquiries={data.inquiries} onAction={adminRequest} onRefresh={refreshDashboard} />}
+          {section === "Sales Pipeline" && <details className="mt-6 rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-medium text-slate-500">Status sistem & operasional</summary><div className="mt-4"><ObservabilityPanel onAction={adminRequest} compact /></div></details>}
         </div>
       )}
     </AdminShell>

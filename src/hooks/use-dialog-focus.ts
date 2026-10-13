@@ -19,7 +19,8 @@ export function useDialogFocus<T extends HTMLElement>(onClose: () => void, close
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector));
+    const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+      .filter((element) => !element.matches(":disabled"));
     const preferred = dialog.querySelector<HTMLElement>("[data-autofocus]");
     window.setTimeout(() => (preferred || focusable()[0])?.focus(), 0);
     document.body.style.overflow = "hidden";

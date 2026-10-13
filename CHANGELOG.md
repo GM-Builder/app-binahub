@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.32.0] - 2026-10-13
+
+### Changed
+
+- Redesign Pipeline Penjualan dengan ringkasan prioritas yang dapat diklik, papan tahap berwarna, dan tampilan daftar. Kartu menampilkan perusahaan/kontak, sumber, nilai tercatat, PIC, serta tindakan dan tenggat. Tahap `identified` berlabel Lead baru; nilai/status tersimpan tidak diubah.
+- Pencarian, filter sumber/PIC/tahap, prioritas perhatian/tenggat/PIC/jeda, pengurutan nilai/terbaru, reset filter, serta pemuatan bertahap kartu/daftar. Ponsel dapat menggeser papan, memilih tahap langsung, atau memakai daftar berbentuk kartu.
+- Detail peluang dibuka sebagai ringkasan sebelum mode edit; riwayat dipisahkan dan assessment/konsultasi terhubung hanya melalui ID. Formulir mempertahankan kontrak PATCH dan validasi API, dengan pencegahan klik ganda, indikator simpan, perlindungan perubahan belum disimpan, serta pesan terpisah ketika simpan berhasil tetapi refresh gagal.
+- Status data tidak lengkap/gagal dan tahap yang tidak dikenali ditampilkan eksplisit. Deal selesai tidak lagi ditandai terlambat berdasarkan tenggat lama; tanggal tidak valid ditangani pada prioritas. Data uji internal tetap tersembunyi secara default dan dapat ditinjau lewat filter.
+- Panel teknis operasional dipindahkan ke bagian yang dapat dibuka di bawah halaman agar pekerjaan penjualan terlihat terlebih dahulu. Tidak menambah AI agent, persetujuan, pengiriman email, ataupun perubahan tahap otomatis.
+
+### Deployment
+
+- Termasuk patch keamanan `sharp` 0.35.5 dari 0.31.1 di bawah. Pasangan API 0.31.1 berisi patch dependensi yang sama; UI memakai endpoint pipeline yang sudah tersedia. Tidak membutuhkan SQL/env baru, serta tidak mengubah website-prod atau AMS.
+- Preview lokal `?pipeline` menggunakan data sintetis dan perubahan simulasi tanpa API/email produksi.
+
+## [0.31.1] - 2026-10-13
+
+### Security
+
+- Upgrade `sharp` 0.35.4 → 0.35.5 untuk GHSA-wq5f-xc86-pv6w (CVE-2026-96889) pada dependensi librsvg. Lockfile juga diperbarui untuk paket native/prebuilt lintas platform dan `@img/sharp-libvips` 1.3.4.
+- Minimum dependensi langsung dinaikkan ke `^0.35.5`, termasuk penggunaan `sharp` oleh Next.js. Tidak menonaktifkan dukungan SVG atau mengubah UI/funnel.
+- Audit tooling masih melaporkan lima entri turunan ESLint dari GHSA-vfj7-8cjw-p6xm (`braces` ≤3.0.3), yang belum memiliki patched release saat diperiksa. Tidak melakukan downgrade Next/ESLint atau menyembunyikan advisory.
+
+### Deployment
+
+- Redeploy app dengan package-lock terbaru agar patch masuk ke server Hostinger, kemudian scan ulang. Perubahan lokal tidak memperbaiki artefak deployment lama.
+- Tidak membutuhkan SQL/env baru. Patch dependensi yang sama diterapkan pada API 0.31.1.
+
 ## [0.31.0] - 2026-10-13
 
 ### Added

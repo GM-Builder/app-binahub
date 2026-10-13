@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -31,7 +31,7 @@
     "react-hook-form": "^7.79.0",
     "recharts": "^3.8.1",
     "resend": "^6.12.4",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "uuid": "^14.0.0",
