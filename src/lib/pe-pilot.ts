@@ -5,6 +5,7 @@ export type PEPilotDashboard={status:'collecting'|'paused'|'completed';revision:
   feedback:{count:number;clarityMean:number|null;usefulnessMean:number|null};interpretation:string};
 export type PECase={id:string;status:'draft'|'submitted';createdAt:string;role:string;goal:string;channel:string};
 export type PEDetail={id:string;status:string;createdAt:string;submittedAt:string|null;retentionUntil:string;
+  delivery?:{status:string;sentAt:string|null}|null;
   participant:{name:string|null;email:string|null};context:{role:string;goal:string;relevance:Record<string,string>};channel:string;
   answers:{id:string;areaCode:string;type:string;prompt:string;scenario:string|null;answer:string}[];report:PEReport|null};
 export const peAreaNames:Record<string,string>={'PE-02':'Self-Development','PE-04':'Adaptability','PE-06':'Pressure Management'};

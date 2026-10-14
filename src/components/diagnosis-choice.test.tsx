@@ -24,7 +24,7 @@ describe('diagnosis choice', () => {
     expect(screen.queryByText(/gratis/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/insight');
     expect(await screen.findByRole('link', { name: 'Mulai diagnosis individu' })).toHaveAttribute('href', '/insight/individual');
-    const history = screen.getByRole('link', { name: 'Draft & hasil individu' });
+    const history = screen.getByRole('link', { name: 'Riwayat pengisian akun' });
     expect(history).toHaveAttribute('href', '/insight/individual/history');
     expect(history.closest('article')).toBeNull();
   });
@@ -52,7 +52,7 @@ describe('diagnosis choice', () => {
     expect(await screen.findByText(/Pengisian baru sedang dijeda/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Diagnosis individu belum tersedia' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Coba lagi' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Draft & hasil individu' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Riwayat pengisian akun' })).toBeInTheDocument();
   });
 
   it('allows a failed read to be retried without bypassing readiness', async () => {

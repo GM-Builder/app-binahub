@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.35.0] - 2026-10-14
+
+### Added
+
+- Individu mulai 18 soal tanpa akun/password. Nama/email untuk pengiriman tautan hasil privat; konteks, persetujuan, jawaban dan soal CEO tetap terpisah dari organisasi/lead penjualan. Riwayat akun lama tetap memerlukan autentikasi dan diberi label jelas.
+- Draft pilihan yang belum tersinkron disimpan terenkripsi AES-GCM dalam IndexedDB dengan kunci nonextractable, kedaluwarsa tujuh hari saat dibuka kembali. Tidak ada fallback plaintext; gangguan storage diberi peringatan. Resume menggabungkan pilihan lokal dengan revision server dan tidak menimpa konflik tab secara diam-diam.
+- Submit dikunci terhadap klik ganda; konfirmasi ditampilkan setelah jawaban/laporan/antrean tersimpan. Pengiriman berjalan di backend. Hasil email dibuka lewat tautan sekali pakai, bukan email/UUID saja, dengan cookie HttpOnly melalui API rewrite same-origin. Tautan dihapus dari URL, tidak otomatis dikonsumsi oleh pemindai email, dan dapat diminta ulang.
+- Laporan baru menampilkan ringkasan eksekutif, tanggal/versi, kelengkapan/NA, pola dua metode dan praktik kontekstual dengan indikator perilaku serta tanggal tinjau. Peserta/admin membaca snapshot yang sama, bukan rekomendasi berubah setiap refresh.
+- Izin evaluasi v2 opsional untuk ekspor jawaban/skor berkode, terpisah dari akses konsultasi. Admin mendapat ekspor evaluasi terbatas dengan distribusi pilihan/NA dan durasi termasuk jeda; status email hasil tampil di detail berizin. Izin agregat lama tidak dianggap izin ekspor per orang.
+
+### Deployment
+
+- Pasangan API **0.35.0** dan SQL **67**, setelah SQL 66 (64B/65 sudah dikonfirmasi pengguna). Deploy API dahulu, lalu app. Website 0.2.28 dan AMS tidak perlu perubahan.
+- Tidak ada secret/toggle baru atau perubahan pembayaran. Menggunakan konfigurasi email, `PROPOSAL_LINK_SECRET`, dan worker/scheduler asesmen yang sudah ada. Scheduler tetap harus benar-benar berjalan untuk retry/purge; keberadaan endpoint bukan bukti scheduler aktif.
+- Pengujian memakai data/API/email sintetis; tidak mengirim email nyata, menjalankan SQL produksi, atau mengklaim pilot empiris selesai. Pembayaran/akses tiga Area tambahan, format PDF/proposal final CEO, instrumen organisasi baru dan seluruh 26 kompetensi tetap ditunda.
+
+Panduan deployment dan batas verifikasi: API `docs/PERSONAL-EFFECTIVENESS-GUEST-REPORTS.md`.
+
 ## [0.34.1] - 2026-10-14
 
 ### Changed

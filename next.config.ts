@@ -66,6 +66,7 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
         ],
       },
+      {source:"/insight/individual/result",headers:[{key:"Referrer-Policy",value:"no-referrer"},{key:"X-Robots-Tag",value:"noindex, nofollow, noarchive"}]},
     ];
   },
   turbopack: {

@@ -9,11 +9,14 @@ export type PEDefinition={policyId:string;consentVersion:string;privacyVersion:s
 export type PEAttempt={id:string;status:'draft'|'submitted';revision:number;responses:Record<string,PEAnswer>;
   context:PEContext;retentionUntil:string;submittedAt:string|null};
 export type PEPractice={focus:string;context:string;successIndicator:string;followUp:string};
-export type PEReviewAccess={shared:boolean;evaluationConsent:boolean;clarity:number|null;usefulness:number|null};
+export type PEReviewAccess={shared:boolean;evaluationConsent:boolean;exportConsent?:boolean;clarity:number|null;usefulness:number|null};
 export type PEHistory={id:string;status:'draft'|'submitted';createdAt:string;retentionUntil:string;answeredCount:number};
 export type PEReport={goal:string;methodology:string;priorityExplanation:string;notice:string;
+  metadata?:{instrumentId:string;instrumentVersion:string;scoringVersion:string;reportVersion:string;priorityVersion:string;assessmentDate:string;generatedAt:string;releaseStatus:string};
+  summary?:{role:string;goal:string;expectedCount:number;answeredCount:number;naCount:number;areasWithBothMethods:number;focusNames:string[];description:string};
+  privacy?:{purpose:string;access:string;retentionUntil:string;contact:string;process:string};
   solutions?:{status:string;items:{title:string;description:string;url:string;reason:string}[]};
-  areas:{code:string;name:string;definition:string;relevance:string;selfReport:{score:number|null;validCount:number;naCount:number;status:string};
+  areas:{code:string;name:string;definition:string;relevance:string;interpretation?:string;selfReport:{score:number|null;validCount:number;naCount:number;status:string};
     sjt:{score:number|null;validCount:number;status:string};practice:PEPractice|null}[];
   priorities:{code:string;name:string;reason:string;practice:PEPractice|null}[]};
 export class PERequestError extends Error {constructor(message:string,public readonly code:string,public readonly status:number){super(message);}}

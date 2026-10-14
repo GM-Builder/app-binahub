@@ -38,10 +38,11 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
         </section>
 
         <div className="mt-5 flex flex-col gap-3 border-b border-slate-200 pb-5 min-[720px]:flex-row min-[720px]:items-center min-[720px]:justify-between min-[720px]:gap-6">
-          <p className="text-xs leading-5 text-slate-500">Pilih jalur sesuai kebutuhan. Keduanya dimulai dari memahami konteks Anda.</p>
+          <p className="text-xs leading-5 text-slate-500">Hasil individu dikirim melalui tautan email pribadi. Draft dapat dilanjutkan pada perangkat yang sama.</p>
+          <div className="flex flex-wrap items-center gap-x-5"><Link href="/insight/individual/result" className="inline-flex min-h-11 items-center gap-2 rounded-md text-xs font-medium text-[#0B2C6B] underline-offset-4 hover:underline">Buka hasil individu<ArrowRight size={13} aria-hidden="true"/></Link>
           <Link href="/insight/individual/history" className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-md text-xs font-medium text-[#0B2C6B] underline-offset-4 hover:underline min-[720px]:self-auto">
-            <History size={15} aria-hidden="true" />Draft & hasil individu<ArrowRight size={13} aria-hidden="true" />
-          </Link>
+            <History size={15} aria-hidden="true" />Riwayat pengisian akun<ArrowRight size={13} aria-hidden="true" />
+          </Link></div>
         </div>
         <p className="mt-5 max-w-xl text-[11px] leading-5 text-slate-500">Hasil digunakan untuk refleksi dan pengembangan, bukan diagnosis klinis.</p>
       </div>

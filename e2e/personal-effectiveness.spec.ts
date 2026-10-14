@@ -45,7 +45,7 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
       }
       return route.fulfill({json:{success:false}});
     });
-    await page.goto('/insight/individual');
+    await page.goto('/insight/individual?legacy=1');
     await page.getByLabel('Peran atau pekerjaan Anda').fill('Manager');
     await page.getByLabel('Apa yang ingin Anda kembangkan?').fill('Practice work habits');
     await page.getByRole('checkbox').check();
@@ -81,10 +81,10 @@ test.describe('Personal Effectiveness entry and privacy (synthetic readiness)',(
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:`test-results/pe-choice-${info.project.name}.png`,fullPage:true});
   });
-  test('signed-out individual page shows access options but makes no private question request',async({page},info)=>{
+  test('legacy account history still requires sign-in and makes no private question request',async({page},info)=>{
     let questionRequests=0;
     await page.route('**/api/assessment/individual',route=>{questionRequests++;return route.fulfill({json:{success:false}});});
-    await page.goto('/insight/individual');
+    await page.goto('/insight/individual?legacy=1');
     await expect(page.getByRole('heading',{name:'Hasil pribadi, akses yang aman.'})).toBeVisible();
     await expect(page.getByRole('link',{name:/Masuk dan mulai/})).toHaveAttribute('href','/?mode=signin&next=%2Finsight%2Findividual');
     expect(questionRequests).toBe(0);

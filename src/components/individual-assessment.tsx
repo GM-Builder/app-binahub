@@ -196,6 +196,13 @@ export function PEResult({report,retentionUntil}:{report:PEReport;retentionUntil
   return <section className="mt-8 space-y-5">
     <div className="rounded-3xl bg-[#0B2C6B] p-7 text-white"><p className="text-xs uppercase tracking-widest text-blue-200">Hasil pengembangan pribadi</p>
       <h2 className="mt-3 text-2xl font-semibold">Langkah kecil yang lebih terarah.</h2><p className="mt-3 text-sm leading-7 text-blue-100">Tujuan Anda: {report.goal}</p></div>
+    {report.summary&&<div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-lg font-semibold">Ringkasan diagnosis</h3>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{report.summary.description}</p>
+      <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2"><div><dt className="text-xs text-slate-500">Peran</dt><dd className="mt-1">{report.summary.role}</dd></div>
+        <div><dt className="text-xs text-slate-500">Tanggal diagnosis</dt><dd className="mt-1">{report.metadata?new Date(report.metadata.assessmentDate).toLocaleDateString('id-ID',{timeZone:'Asia/Jakarta'}):'—'}</dd></div>
+        <div><dt className="text-xs text-slate-500">Kelengkapan pengisian</dt><dd className="mt-1">{report.summary.answeredCount} dari {report.summary.expectedCount} soal · {report.summary.naCount} NA</dd></div>
+        <div><dt className="text-xs text-slate-500">Area dengan bukti kedua metode</dt><dd className="mt-1">{report.summary.areasWithBothMethods} dari {report.areas.length} Area</dd></div></dl>
+      <p className="mt-4 text-sm leading-7 text-slate-600">{report.summary.focusNames.length?`Kandidat fokus: ${report.summary.focusNames.join(', ')}.`:'Belum cukup bukti atau relevansi untuk menetapkan fokus latihan.'}</p></div>}
     <div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-lg font-semibold">Cara membaca hasil</h3><p className="mt-3 text-sm leading-7 text-slate-600">{report.methodology}</p></div>
     <div className="grid gap-4">{report.areas.map(a=><article key={a.code} className="rounded-3xl border border-slate-200 bg-white p-6">
       <h3 className="text-xl font-semibold">{a.name}</h3><p className="mt-2 text-sm leading-7 text-slate-600">{a.definition}</p>
@@ -203,6 +210,7 @@ export function PEResult({report,retentionUntil}:{report:PEReport;retentionUntil
         {label:'Studi kasus',score:a.sjt.score,detail:`${a.sjt.validCount} skenario dijawab`}].map(s=><div key={s.label} className="rounded-2xl bg-slate-50 p-4">
           <p className="text-xs text-slate-500">{s.label}</p><p className="mt-2 text-3xl font-semibold">{s.score===null?'—':s.score.toLocaleString('id-ID',{maximumFractionDigits:2})}<span className="ml-1 text-xs font-normal text-slate-400">{s.score===null?'':'/100'}</span></p>
           <p className="mt-2 text-xs leading-5 text-slate-500">{s.score===null?'Bukti belum cukup untuk menampilkan skor.':s.detail}</p></div>)}</div>
+      {a.interpretation&&<p className="mt-4 text-sm leading-7 text-slate-600">{a.interpretation}</p>}
     </article>)}</div>
     <div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-xl font-semibold">Kandidat fokus latihan</h3>
       <p className="mt-3 text-xs leading-6 text-slate-500">{report.priorityExplanation}</p>
@@ -213,6 +221,9 @@ export function PEResult({report,retentionUntil}:{report:PEReport;retentionUntil
     {!!report.solutions?.items.length&&<div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-xl font-semibold">Pilihan pengembangan terkait</h3>
       <div className="mt-5 space-y-3">{report.solutions.items.map(s=><a key={s.title} href={s.url} className="block rounded-2xl border border-slate-200 p-5 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-4">
         <h4 className="font-semibold">{s.title}</h4><p className="mt-2 text-sm leading-6 text-slate-600">{s.reason}</p><span className="mt-3 inline-flex items-center gap-2 text-sm font-medium">Jelajahi katalog<ArrowRight size={15}/></span></a>)}</div></div>}
+    {report.metadata&&<details className="rounded-2xl border border-slate-200 bg-white p-5 text-xs leading-6 text-slate-600"><summary className="min-h-8 cursor-pointer font-medium">Versi dan metodologi laporan</summary>
+      <p className="mt-3">Instrumen: {report.metadata.instrumentId} · {report.metadata.instrumentVersion}</p><p>Skoring: {report.metadata.scoringVersion}</p><p>Laporan: {report.metadata.reportVersion}</p><p>Prioritas: {report.metadata.priorityVersion}</p><p>Instrumen dalam tahap pengembangan/pilot; bukan validasi empiris.</p></details>}
+    {report.privacy&&<div className="rounded-2xl bg-white p-5 text-xs leading-6 text-slate-600"><h3 className="font-semibold">Penggunaan data dan bantuan</h3><p className="mt-2">{report.privacy.purpose}</p><p>{report.privacy.access}</p><p className="mt-2">{report.privacy.process}</p><a className="inline-flex min-h-11 items-center underline" href={`mailto:${report.privacy.contact}`}>{report.privacy.contact}</a></div>}
     <p className="px-2 text-xs leading-6 text-slate-500">{report.notice} Akses data sampai {new Date(retentionUntil).toLocaleDateString('id-ID')}.</p>
   </section>;
 }
