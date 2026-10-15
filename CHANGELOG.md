@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.37.0] - 2026-10-15
+
+### Changed
+
+- Pembuka hasil individu lebih compact: satu aksi utama untuk membuka hasil, penjelasan manfaat singkat, dan pemulihan tautan sebagai bagian sekunder yang dapat dibuka. Status pemeriksaan akses, membuka hasil, dan mengirim tautan dibedakan; tautan kedaluwarsa langsung membuka bantuan pemulihan.
+- Ringkasan laporan mengutamakan grafik SVG dua metode per area dengan nilai langsung, legenda, sumbu 0–100 dan fokus latihan yang mengarah ke langkah praktis. Skor pengalaman kerja dan studi kasus tidak digabung atau dinyatakan sebagai persentase penguasaan. Nilai nol tetap terlihat; bukti tidak cukup memakai garis putus-putus dan tanda kosong, bukan batang nilai nol.
+- Tabel nilai tersedia dalam rincian yang dapat dibuka. Konteks, rekomendasi, keterbatasan bukti, metodologi, privasi, dan kontrol penghapusan tetap tersedia. Tidak ada perubahan soal, rumus skor, atau isi rekomendasi CEO.
+
+### Verification & Deployment
+
+- Pengujian mencakup representasi nol/NA, nilai desimal/batas 100, akses grafik pembaca layar, tautan privat yang tidak dikonsumsi otomatis, penguncian klik ganda, retry setelah pertukaran sesi berhasil, tautan kedaluwarsa, dan sesi hasil yang dipulihkan.
+- App saja. Tanpa dependency, SQL, secret atau perubahan API/website/AMS baru. Tidak ada request AI atau pengiriman email produksi untuk pengujian redesign.
+
 ## [0.36.1] - 2026-10-15
 
 ### Fixed

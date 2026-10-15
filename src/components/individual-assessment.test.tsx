@@ -64,7 +64,9 @@ describe('individual diagnosis UI',()=>{
   });
   it('shows legitimate zero differently from insufficient evidence and does not claim percent mastery',()=>{
     render(<PEResult report={report} retentionUntil="2027-04-13T00:00:00Z"/>);
-    expect(screen.getByText('—')).toBeInTheDocument();expect(screen.getByText('0')).toBeInTheDocument();
-    expect(screen.getByText('Bukti belum cukup untuk menampilkan skor.')).toBeInTheDocument();
+    expect(screen.getByRole('img',{name:'Self-Development, Pengalaman kerja: bukti belum cukup'})).toBeVisible();
+    expect(screen.getByRole('img',{name:'Self-Development, Studi kasus: 0 dari 100'})).toBeVisible();
+    fireEvent.click(screen.getByText('Rincian Self-Development'));
+    expect(screen.getByText('Bukti belum cukup untuk menampilkan skor.')).toBeVisible();
   });
 });
