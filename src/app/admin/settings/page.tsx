@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AdminAuthGate } from "@/components/admin-auth-gate";
 import { AdminShell } from "@/components/admin-shell";
 import { supabase } from "@/lib/supabase";
+import { AIProviderSettings } from "@/components/ai-provider-settings";
 
 type Tab = "commercial" | "owners" | "approvals" | "sla" | "documents";
 type User = { id: string; email: string; full_name: string; role: string };
@@ -92,4 +93,4 @@ function NumberInput({ label, value, onChange }: { label: string; value: number 
 function UserSelect({ label, value, users, onChange }: { label: string; value: string | null; users: User[]; onChange: (value: string | null) => void }) { return <label className="mt-3 block text-xs font-bold text-slate-700">{label}<select value={value || ""} onChange={(event) => onChange(event.target.value || null)} className="mt-2 min-h-11 w-full border border-slate-300 px-3 text-sm font-normal"><option value="">Belum ditetapkan</option>{users.map((user) => <option key={user.id} value={user.id}>{user.full_name || user.email} — {user.email}</option>)}</select></label>; }
 function SaveButton({ saving, onClick }: { saving: boolean; onClick: () => void }) { return <button type="button" disabled={saving} onClick={onClick} className="mt-5 inline-flex min-h-11 items-center gap-2 bg-blue-900 px-5 text-xs font-bold text-white disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Simpan perubahan</button>; }
 
-export default function AdminSettingsPage() { return <AdminAuthGate><AdminShell eyebrow="Tata Kelola" title="Pengaturan Bisnis" description="Ubah kebijakan komersial, owner, approval, SLA, dan template dokumen tanpa deployment; setiap perubahan tetap tervalidasi dan tercatat."><SettingsContent /></AdminShell></AdminAuthGate>; }
+export default function AdminSettingsPage() { return <AdminAuthGate><AdminShell eyebrow="Tata Kelola" title="Pengaturan" description="Kelola provider AI dan kebijakan bisnis dari satu tempat."><div className="mx-auto max-w-[1400px]"><AIProviderSettings /><SettingsContent /></div></AdminShell></AdminAuthGate>; }

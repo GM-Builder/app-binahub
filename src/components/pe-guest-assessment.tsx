@@ -8,7 +8,7 @@ import { guestRequest, makeGuestKey } from '@/lib/pe-guest';
 
 const button = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-5 text-sm font-semibold text-white disabled:opacity-50';
 const secondary = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium disabled:opacity-50';
-const input = 'mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-blue-800';
+const input = 'mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base focus:border-blue-800 sm:text-sm';
 type Reply = { attempt: PEAttempt & { revision: number }; emailStatus?: string | null };
 const defaults: PEContext = { role: '', goal: '', relevance: { 'PE-02': 'normal', 'PE-04': 'normal', 'PE-06': 'normal' } };
 
@@ -127,10 +127,10 @@ export function PEGuestAssessment() {
 
   return <main className="min-h-screen bg-[#F7F8FA] px-4 pb-12 text-[#0B2C6B] sm:px-6">
     <header className="mx-auto flex max-w-4xl items-center justify-between py-6"><Link href="/diagnose" className="inline-flex min-h-11 items-center gap-2 text-sm"><ArrowLeft size={16} />Pilihan diagnosis</Link><span className="font-semibold">BinaInsights</span></header>
-    <div className="mx-auto max-w-2xl"><p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Diagnosis individu</p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight">Kenali kebutuhan pengembangan Anda.</h1>
-      <p className="mt-3 text-sm leading-7 text-slate-600">18 soal untuk tiga Area Personal Effectiveness. Tidak perlu membuat akun; tautan hasil dikirim ke email Anda.</p>
-      <p className="mt-2 text-xs leading-6 text-slate-500">Tidak dibatasi waktu. Anda dapat berhenti sejenak dan melanjutkan draft pada perangkat ini selama tujuh hari.</p>
+    <div className="mx-auto max-w-2xl" aria-label="Diagnosis individu">
+      <h1 className="text-3xl font-semibold tracking-tight">Pahami kebutuhan pengembangan diri Anda.</h1>
+      <p className="mt-3 text-sm leading-7 text-slate-600">Kenali cara Anda mengembangkan diri, beradaptasi, dan menghadapi tekanan melalui 18 pertanyaan. Tautan untuk melihat hasil asesmen akan dikirim ke email Anda.</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">Isi sesuai pengalaman Anda, tanpa batas waktu pengerjaan.</p>
       {error && <div role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{error}
         <button type="button" disabled={busy} className={`${secondary} mt-3`} onClick={() => current.current ? void run(() => sync(current.current!, Boolean(current.current!.submissionKey))) : window.location.reload()}><RefreshCw size={15} />Coba lagi</button>
         {error.includes('tab lain')&&<button type="button" disabled={busy} className={`${secondary} ml-2 mt-3`} onClick={()=>void run(async()=>{
@@ -147,14 +147,18 @@ export function PEGuestAssessment() {
           <Link href={`/insight/individual/result?attempt=${receiptId}`} className={`${secondary} mt-5`}>Bantuan akses hasil</Link></section>
       : definition?.acceptingNew === false && !draft ? <p role="status" className="mt-8 rounded-2xl bg-white p-6">Pengisian baru sedang dijeda. Draft sebelumnya tetap dapat dilanjutkan.</p>
       : definition && !draft ? <form className="mt-7 space-y-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7" onSubmit={event => { event.preventDefault(); void start(); }}>
-        <div className="flex flex-wrap gap-2">{definition.competencies.map(value => <span key={value.code} className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium">{value.name}</span>)}</div>
+        <div><h2 className="text-base font-semibold">Sebelum Anda mulai</h2><p className="mt-1 text-sm leading-6 text-slate-600">Ceritakan sedikit tentang pekerjaan dan tujuan Anda agar rekomendasi lebih sesuai dengan kebutuhan Anda.</p><ul aria-label="Area yang dinilai" className="mt-3 flex flex-wrap gap-2">{definition.competencies.map(value => <li key={value.code} className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium">{value.name}</li>)}</ul></div>
         <label className="block text-sm font-medium">Nama Anda<input required maxLength={100} autoComplete="name" className={input} value={name} disabled={busy} onChange={event => setName(event.target.value)} /></label>
-        <label className="block text-sm font-medium">Email untuk menerima hasil<input required type="email" maxLength={254} autoComplete="email" className={input} value={email} disabled={busy} onChange={event => setEmail(event.target.value)} /></label>
+        <div><label htmlFor="pe-guest-email" className="block text-sm font-medium">Alamat email</label><input id="pe-guest-email" required type="email" maxLength={254} autoComplete="email" aria-describedby="pe-email-help" className={input} value={email} disabled={busy} onChange={event => setEmail(event.target.value)} /><p id="pe-email-help" className="mt-2 text-sm text-slate-600">Pastikan alamat email benar agar tautan hasil sampai kepada Anda.</p></div>
         <label className="block text-sm font-medium">Peran atau pekerjaan Anda<input required maxLength={100} className={input} value={context.role} disabled={busy} onChange={event => setContext({ ...context, role: event.target.value })} /></label>
         <label className="block text-sm font-medium">Apa yang ingin Anda kembangkan?<textarea required maxLength={600} rows={3} className={input} value={context.goal} disabled={busy} onChange={event => setContext({ ...context, goal: event.target.value })} /></label>
-        <fieldset><legend className="text-sm font-medium">Relevansi dengan pekerjaan Anda</legend><div className="mt-3 space-y-3">{definition.competencies.map(value => <label key={value.code} className="flex flex-wrap items-center justify-between gap-3 text-sm">{value.name}<select className="min-h-11 rounded-lg border border-slate-200 px-3" aria-label={`Relevansi ${value.name}`} value={context.relevance[value.code]} disabled={busy} onChange={event => setContext({ ...context, relevance: { ...context.relevance, [value.code]: event.target.value as 'low' | 'normal' | 'high' } })}><option value="low">Kurang relevan</option><option value="normal">Relevan</option><option value="high">Sangat relevan</option></select></label>)}</div></fieldset>
-        <div className="text-xs leading-6 text-slate-600"><p>{definition.notice}</p><p className="mt-2">{definition.privacyNotice}</p><p className="mt-2">{definition.sharingNotice}</p><p className="mt-2">Dengan persetujuan Anda, draft sementara disimpan terenkripsi pada perangkat ini untuk pemulihan koneksi, lalu dihapus setelah pengiriman berhasil atau setelah tujuh hari saat dibuka kembali.</p></div>
-        <label className="flex items-start gap-3 text-sm leading-6"><input type="checkbox" required checked={consent} disabled={busy} onChange={event => setConsent(event.target.checked)} className="mt-1 h-5 w-5 shrink-0" />Saya memahami penggunaan data dan mengizinkan tim BinaHub meninjau jawaban serta hasil untuk rekomendasi pengembangan.</label>
+        <fieldset aria-describedby="pe-relevance-help"><legend className="text-sm font-medium">Kaitannya dengan pekerjaan Anda</legend><p id="pe-relevance-help" className="mt-1 text-sm leading-6 text-slate-600">Seberapa relevan setiap area berikut dengan pekerjaan Anda saat ini?</p><div className="mt-3 space-y-3">{definition.competencies.map(value => <label key={value.code} className="flex flex-wrap items-center justify-between gap-3 text-sm">{value.name}<select className="min-h-11 rounded-lg border border-slate-200 px-3" aria-label={`Relevansi ${value.name}`} value={context.relevance[value.code]} disabled={busy} onChange={event => setContext({ ...context, relevance: { ...context.relevance, [value.code]: event.target.value as 'low' | 'normal' | 'high' } })}><option value="low">Kurang relevan</option><option value="normal">Relevan</option><option value="high">Sangat relevan</option></select></label>)}</div></fieldset>
+        <p className="text-sm leading-6 text-slate-600">Asesmen ini membantu Anda merencanakan pengembangan diri. Hasilnya bukan diagnosis klinis dan tidak dapat menjadi satu-satunya dasar keputusan seleksi atau promosi.</p>
+        <details className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+          <summary className="cursor-pointer font-medium text-[#0B2C6B] focus-visible:outline-2 focus-visible:outline-offset-4">Privasi dan penggunaan data</summary>
+          <div id="pe-data-use" className="mt-3 space-y-3"><p>{definition.privacyNotice}</p><p>{definition.sharingNotice}</p><p>Dengan persetujuan Anda, jawaban sementara disimpan secara terenkripsi di perangkat ini agar Anda dapat melanjutkan pengisian saat koneksi terputus. Simpanan ini dihapus setelah jawaban berhasil dikirim, atau saat halaman dibuka kembali setelah tujuh hari.</p></div>
+        </details>
+        <label className="flex items-start gap-3 text-sm leading-6"><input type="checkbox" required checked={consent} disabled={busy} aria-describedby="pe-data-use" onChange={event => setConsent(event.target.checked)} className="mt-1 h-5 w-5 shrink-0" />Saya menyetujui penggunaan data yang dijelaskan di atas dan mengizinkan tim BinaHub meninjau jawaban serta hasil asesmen untuk memberikan rekomendasi pengembangan.</label>
         <button className={`${button} w-full`} disabled={busy || !consent}>{busy && <Loader2 className="motion-safe:animate-spin" size={17} />}Mulai diagnosis<ArrowRight size={17} /></button>
       </form> : definition && draft ? <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
         <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{progress} dari {questions.length} soal</span><span role="status" aria-live="polite">{busy ? 'Menyimpan…' : status}</span></div>
@@ -168,7 +172,7 @@ export function PEGuestAssessment() {
           <p className="mt-4 text-xs leading-6 text-slate-500">NA tidak dihitung sebagai nol. Bila kesempatan relevan terlalu sedikit, hasil menampilkan keterbatasan bukti.</p>
           <button className={`${button} mt-5 w-full`} disabled={busy || progress !== questions.length} onClick={() => void run(() => sync(current.current!, true))}>{busy ? <Loader2 size={17} className="motion-safe:animate-spin" /> : <CheckCircle2 size={17} />}Kirim jawaban</button></>}
       </section> : null}
-      <p className="mt-5 text-xs leading-6 text-slate-500">Bantuan pengisian dan privasi: <a href="mailto:admin@binahub.id" className="underline">admin@binahub.id</a>. Hasil bukan diagnosis klinis.</p>
+      <p className="mt-5 text-sm leading-6 text-slate-600">Butuh bantuan? Hubungi <a href="mailto:admin@binahub.id" className="underline underline-offset-4">admin@binahub.id</a>.</p>
     </div>
   </main>;
 }

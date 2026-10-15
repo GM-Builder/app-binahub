@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.36.0] - 2026-10-15
+
+### Added
+
+- Pengaturan Provider AI di bagian teratas halaman Pengaturan admin: satu provider utama (LapakVIP, Codecraft, OpenRouter), sakelar cadangan, status ketersediaan API key/model tanpa membuka credential, dan penyimpanan tanpa redeploy.
+- Status menyimpan/berhasil/gagal, pilihan yang tetap ada saat gagal, kontrol keyboard/screen reader, penguncian klik ganda, dan pemulihan konflik antardua admin. Perubahan berlaku bagi permintaan baru, bukan proses yang sedang berjalan.
+
+### Changed
+
+- Halaman awal diagnosis individu memakai bahasa yang lebih profesional dan mudah dibaca: penjelasan singkat tujuan/pengiriman hasil, panduan relevansi pekerjaan, dan rincian privasi yang dapat dibuka. Persetujuan, retensi, serta batas penggunaan hasil tetap dijelaskan; tidak ada label teknis internal atau perubahan soal/skor.
+
+### Deployment
+
+- Pasangan API **0.36.0** dan SQL **68**. Deploy API sebelum app dan AMS **0.11.0**. Panduan: API `docs/AI-PROVIDER-SETTINGS.md`.
+- Tidak ada secret baru. API key tetap pada API Vercel, bukan app Hostinger. Pengujian sintetis tidak memakai token AI berbayar atau mengubah database produksi.
+
 ## [0.35.0] - 2026-10-14
 
 ### Added
