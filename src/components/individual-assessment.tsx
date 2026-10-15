@@ -4,6 +4,7 @@ import { useEffect,useRef,useState } from 'react';
 import { ArrowLeft,ArrowRight,Check,CheckCircle2,Loader2,LockKeyhole,ShieldCheck,Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { PEReviewAccessPanel } from './pe-review-access';
+import { PEResult } from './pe-report';
 import { countAnswered,firstUnanswered,peRequest,PERequestError,personalSignInPath,peChannel,
   type PEAnswer,type PEAttempt,type PEContext,type PEDefinition,type PEReport,type PEReviewAccess } from '@/lib/individual-assessment';
 
@@ -181,8 +182,8 @@ export function IndividualAssessment() {
           <button className={`${button} mt-6 w-full`} disabled={busy||progress!==questions.length} onClick={()=>void submit()}>{busy?<Loader2 size={18} className="animate-spin motion-reduce:animate-none"/>:<CheckCircle2 size={18}/>}Kirim dan lihat hasil</button></>}
       </section>}
       {signedIn&&state?.definition.features?.history&&<a href="/insight/individual/history" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">Riwayat diagnosis saya</a>}
-      {signedIn&&state?.attempt&&state.report&&state.access&&<PEReviewAccessPanel key={state.attempt.id} id={state.attempt.id} access={state.access} token={token} onChange={access=>setState(current=>current?{...current,access}:current)}/>}
-      {signedIn&&state?.attempt&&<div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+      {signedIn&&state?.attempt&&state.report&&state.access&&<PEReviewAccessPanel key={state.attempt.id} id={state.attempt.id} access={state.access} token={token} onChange={access=>setState(current=>current?{...current,access}:current)} onErase={erase}/>}
+      {signedIn&&state?.attempt&&!state.report&&<div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
         <span className="flex items-center gap-2"><ShieldCheck size={15}/>Jawaban tersimpan di akun Anda.</span>
         <button className="min-h-11 text-slate-500 underline underline-offset-4" disabled={busy} onClick={()=>setDeleteConfirm(true)}>Hapus data pengisian</button></div>}
       {deleteConfirm&&<section role="alertdialog" aria-modal="false" aria-labelledby="pe-delete-title" className="mt-4 rounded-2xl border border-red-200 bg-white p-5">
@@ -192,38 +193,4 @@ export function IndividualAssessment() {
   </main>;
 }
 
-export function PEResult({report,retentionUntil}:{report:PEReport;retentionUntil:string}) {
-  return <section className="mt-8 space-y-5">
-    <div className="rounded-3xl bg-[#0B2C6B] p-7 text-white"><p className="text-xs uppercase tracking-widest text-blue-200">Hasil pengembangan pribadi</p>
-      <h2 className="mt-3 text-2xl font-semibold">Langkah kecil yang lebih terarah.</h2><p className="mt-3 text-sm leading-7 text-blue-100">Tujuan Anda: {report.goal}</p></div>
-    {report.summary&&<div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-lg font-semibold">Ringkasan diagnosis</h3>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{report.summary.description}</p>
-      <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2"><div><dt className="text-xs text-slate-500">Peran</dt><dd className="mt-1">{report.summary.role}</dd></div>
-        <div><dt className="text-xs text-slate-500">Tanggal diagnosis</dt><dd className="mt-1">{report.metadata?new Date(report.metadata.assessmentDate).toLocaleDateString('id-ID',{timeZone:'Asia/Jakarta'}):'—'}</dd></div>
-        <div><dt className="text-xs text-slate-500">Kelengkapan pengisian</dt><dd className="mt-1">{report.summary.answeredCount} dari {report.summary.expectedCount} soal · {report.summary.naCount} NA</dd></div>
-        <div><dt className="text-xs text-slate-500">Area dengan bukti kedua metode</dt><dd className="mt-1">{report.summary.areasWithBothMethods} dari {report.areas.length} Area</dd></div></dl>
-      <p className="mt-4 text-sm leading-7 text-slate-600">{report.summary.focusNames.length?`Kandidat fokus: ${report.summary.focusNames.join(', ')}.`:'Belum cukup bukti atau relevansi untuk menetapkan fokus latihan.'}</p></div>}
-    <div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-lg font-semibold">Cara membaca hasil</h3><p className="mt-3 text-sm leading-7 text-slate-600">{report.methodology}</p></div>
-    <div className="grid gap-4">{report.areas.map(a=><article key={a.code} className="rounded-3xl border border-slate-200 bg-white p-6">
-      <h3 className="text-xl font-semibold">{a.name}</h3><p className="mt-2 text-sm leading-7 text-slate-600">{a.definition}</p>
-      <div className="mt-5 grid grid-cols-2 gap-3">{[{label:'Pengalaman kerja',score:a.selfReport.score,detail:`${a.selfReport.validCount} jawaban valid · ${a.selfReport.naCount} NA`},
-        {label:'Studi kasus',score:a.sjt.score,detail:`${a.sjt.validCount} skenario dijawab`}].map(s=><div key={s.label} className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-xs text-slate-500">{s.label}</p><p className="mt-2 text-3xl font-semibold">{s.score===null?'—':s.score.toLocaleString('id-ID',{maximumFractionDigits:2})}<span className="ml-1 text-xs font-normal text-slate-400">{s.score===null?'':'/100'}</span></p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">{s.score===null?'Bukti belum cukup untuk menampilkan skor.':s.detail}</p></div>)}</div>
-      {a.interpretation&&<p className="mt-4 text-sm leading-7 text-slate-600">{a.interpretation}</p>}
-    </article>)}</div>
-    <div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-xl font-semibold">Kandidat fokus latihan</h3>
-      <p className="mt-3 text-xs leading-6 text-slate-500">{report.priorityExplanation}</p>
-      {report.priorities.length===0?<p className="mt-4 text-sm text-slate-600">Belum cukup bukti atau relevansi untuk menentukan fokus. Gunakan hasil sebagai awal percakapan pengembangan.</p>:
-        report.priorities.map(p=><article key={p.code} className="mt-5 rounded-2xl bg-slate-50 p-5"><h4 className="font-semibold">{p.name}</h4><p className="mt-2 text-sm leading-6 text-slate-600">{p.reason}</p>
-          {p.practice&&<div className="mt-3 space-y-2 text-sm leading-6 text-slate-700"><p><span className="font-medium">Latihan: </span>{p.practice.focus}</p><p>{p.practice.context}</p><p>{p.practice.successIndicator}</p><p>{p.practice.followUp}</p></div>}</article>)}
-    </div>
-    {!!report.solutions?.items.length&&<div className="rounded-3xl border border-slate-200 bg-white p-6"><h3 className="text-xl font-semibold">Pilihan pengembangan terkait</h3>
-      <div className="mt-5 space-y-3">{report.solutions.items.map(s=><a key={s.title} href={s.url} className="block rounded-2xl border border-slate-200 p-5 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-4">
-        <h4 className="font-semibold">{s.title}</h4><p className="mt-2 text-sm leading-6 text-slate-600">{s.reason}</p><span className="mt-3 inline-flex items-center gap-2 text-sm font-medium">Jelajahi katalog<ArrowRight size={15}/></span></a>)}</div></div>}
-    {report.metadata&&<details className="rounded-2xl border border-slate-200 bg-white p-5 text-xs leading-6 text-slate-600"><summary className="min-h-8 cursor-pointer font-medium">Versi dan metodologi laporan</summary>
-      <p className="mt-3">Instrumen: {report.metadata.instrumentId} · {report.metadata.instrumentVersion}</p><p>Skoring: {report.metadata.scoringVersion}</p><p>Laporan: {report.metadata.reportVersion}</p><p>Prioritas: {report.metadata.priorityVersion}</p><p>Instrumen dalam tahap pengembangan/pilot; bukan validasi empiris.</p></details>}
-    {report.privacy&&<div className="rounded-2xl bg-white p-5 text-xs leading-6 text-slate-600"><h3 className="font-semibold">Penggunaan data dan bantuan</h3><p className="mt-2">{report.privacy.purpose}</p><p>{report.privacy.access}</p><p className="mt-2">{report.privacy.process}</p><a className="inline-flex min-h-11 items-center underline" href={`mailto:${report.privacy.contact}`}>{report.privacy.contact}</a></div>}
-    <p className="px-2 text-xs leading-6 text-slate-500">{report.notice} Akses data sampai {new Date(retentionUntil).toLocaleDateString('id-ID')}.</p>
-  </section>;
-}
+export { PEResult } from './pe-report';

@@ -1,0 +1,31 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { PEResult } from './pe-report';
+import type { PEReport } from '@/lib/individual-assessment';
+const practice = { focus: 'Synthetic focus', context: 'Synthetic work context', successIndicator: 'Synthetic indicator', followUp: 'Synthetic follow-up' };
+const report: PEReport = { goal: 'Synthetic goal', methodology: 'Synthetic methodology', priorityExplanation: 'Synthetic priority rules', notice: 'Synthetic limitation',
+  privacy: { purpose: 'Synthetic purpose.', access: 'Synthetic access.', process: 'Synthetic data help.', contact: 'privacy@example.invalid', retentionUntil: '2027-04-15T00:00:00Z' },
+  summary: { role: 'Synthetic role', goal: 'Synthetic goal', answeredCount: 18, expectedCount: 18, naCount: 2, areasWithBothMethods: 2, focusNames: ['Adaptability'], description: 'Synthetic summary' },
+  areas: [{ code: 'PE-02', name: 'Self-Development', definition: 'Synthetic area definition', relevance: 'high', interpretation: 'Synthetic interpretation',
+    selfReport: { score: null, validCount: 2, naCount: 2, status: 'insufficient_evidence' }, sjt: { score: 0, validCount: 2, status: 'scored' }, practice: null }],
+  priorities: [{ code: 'PE-04', name: 'Adaptability', reason: 'Synthetic priority reason', practice }] };
+afterEach(cleanup);
+describe('readable individual development report', () => {
+  it('puts summary and practical steps before scores while preserving every practice field', () => {
+    render(<PEResult report={report} retentionUntil="2027-04-15T00:00:00Z" headingLevel={1} />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Hasil asesmen individu');
+    const headings = screen.getAllByRole('heading').map(node => node.textContent);
+    expect(headings.indexOf('Langkah pengembangan')).toBeLessThan(headings.indexOf('Profil per area'));
+    for (const value of Object.values(practice)) expect(screen.getByText(value)).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeVisible(); expect(screen.getByText('—')).toBeVisible();
+    expect(screen.getByText(/bukan persentase penguasaan/)).toBeVisible();
+    const detail = screen.getByText('Rincian Self-Development').closest('details');
+    expect(detail).not.toHaveAttribute('open'); fireEvent.click(screen.getByText('Rincian Self-Development'));
+    expect(screen.getByText('Synthetic interpretation')).toBeInTheDocument();
+    expect(screen.getByText('Synthetic limitation')).toBeVisible();
+    expect(screen.getByText('Synthetic purpose. Synthetic access.')).toBeVisible();
+    expect(screen.getByText('Synthetic data help.')).toBeVisible();
+    expect(screen.getAllByRole('link').every(link => !link.getAttribute('href')?.startsWith('#')
+      || document.getElementById(link.getAttribute('href')!.slice(1)))).toBe(true);
+  });
+});

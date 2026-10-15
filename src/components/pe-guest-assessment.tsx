@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
-import { countAnswered, firstUnanswered, peChannel, PERequestError, type PEAnswer, type PEAttempt, type PEContext, type PEDefinition } from '@/lib/individual-assessment';
+import { countAnswered, firstUnanswered, peChannel, type PEAnswer, type PEAttempt, type PEContext, type PEDefinition } from '@/lib/individual-assessment';
 import { clearPEGuestDraft, readPEGuestDraft, savePEGuestDraft, type PEGuestDraft } from '@/lib/pe-guest-storage';
 import { guestRequest, makeGuestKey } from '@/lib/pe-guest';
+import { PEGuestSyncQueue, hasPendingPEAnswers } from '@/lib/pe-guest-sync';
 
 const button = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-5 text-sm font-semibold text-white disabled:opacity-50';
 const secondary = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium disabled:opacity-50';
@@ -19,13 +20,20 @@ export function PEGuestAssessment() {
   const [index, setIndex] = useState(0), [status, setStatus] = useState(''), [accepted, setAccepted] = useState(false);
   const [receiptId, setReceiptId] = useState(''), [localAvailable, setLocalAvailable] = useState(true);
   const [cleanupWarning,setCleanupWarning]=useState(false);
+  const [syncError, setSyncError] = useState('');
   const lock = useRef(false), current = useRef<PEGuestDraft | null>(null);
+  const localWrites = useRef<Promise<void>>(Promise.resolve());
+  const pendingLocal = useRef(0), storageReady = useRef(true);
+  const syncQueue = useRef<PEGuestSyncQueue | null>(null);
   const questions = definition ? [...definition.selfReportItems, ...definition.sjtItems] : [];
-  function update(value: PEGuestDraft) { current.current = value; setDraft(value); }
-  async function persist(value: PEGuestDraft) {
+  const update = useCallback((value: PEGuestDraft) => { current.current = value; setDraft(value); }, []);
+  const persist = useCallback(async (value: PEGuestDraft) => {
     update(value);
-    try { await savePEGuestDraft(value); } catch { setLocalAvailable(false); }
-  }
+    pendingLocal.current++;
+    const write = localWrites.current.then(() => savePEGuestDraft(value));
+    localWrites.current = write.catch(() => { storageReady.current = false; setLocalAvailable(false); });
+    try { await localWrites.current; } finally { pendingLocal.current--; }
+  }, [update]);
   function payload(value: PEGuestDraft, source: PEDefinition) {
     return { id: value.id, draftKey: value.draftKey, name: value.name, email: value.email, context: value.context,
       consentVersion: source.consentVersion, privacyVersion: source.privacyVersion, sharingConsentVersion: source.sharingConsentVersion,
@@ -38,8 +46,22 @@ export function PEGuestAssessment() {
         const { definition: source } = await guestRequest<{ definition: PEDefinition }>();
         if (!alive) return;
         setDefinition(source);
+        const queue = new PEGuestSyncQueue({ current: () => current.current, persist, request: guestRequest,
+          startPayload: value => payload(value, source), status: message => {
+            if (!alive) return;
+            setStatus(message);
+            if (message === 'Semua jawaban tersimpan.') setSyncError('');
+          },
+          failure: failure => {
+            if (!alive) return;
+            setSyncError(failure instanceof Error && failure.message.includes('tab lain') ? failure.message
+              : 'Jawaban belum tersimpan di server. Anda tetap dapat melanjutkan; kami akan mencoba lagi saat koneksi kembali.');
+            setStatus(storageReady.current ? 'Jawaban disimpan di perangkat.' : 'Jawaban belum tersimpan. Jangan tutup halaman.');
+          },
+        });
+        syncQueue.current = queue;
         let saved: PEGuestDraft | null = null;
-        try { saved = await readPEGuestDraft(); } catch { setLocalAvailable(false); }
+        try { saved = await readPEGuestDraft(); } catch { storageReady.current = false; setLocalAvailable(false); }
         if (!saved || !alive) return;
         setName(saved.name); setEmail(saved.email); setContext(saved.context); setConsent(true);
         update(saved);
@@ -59,6 +81,7 @@ export function PEGuestAssessment() {
           update(restored);
           setIndex(firstUnanswered([...source.selfReportItems, ...source.sjtItems], restored.responses));
           setStatus(Object.keys(dirty).length ? 'Ada jawaban di perangkat yang perlu disinkronkan.' : 'Draft berhasil dilanjutkan.');
+          if (Object.keys(dirty).length) queue.schedule();
         } catch {
           // Keep the encrypted pending choices. Do not delete them just because the network failed.
           setStatus('Draft di perangkat tersedia. Hubungkan kembali untuk menyinkronkan jawaban.');
@@ -67,8 +90,16 @@ export function PEGuestAssessment() {
       } catch (failure) { if (alive) setError(failure instanceof Error ? failure.message : 'Diagnosis belum dapat dimuat.'); }
       finally { if (alive) setLoading(false); }
     })();
-    return () => { alive = false; };
-  }, []);
+    const online = () => { setSyncError(''); syncQueue.current?.schedule(); };
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (pendingLocal.current || (!storageReady.current && current.current && hasPendingPEAnswers(current.current))) {
+        event.preventDefault(); event.returnValue = '';
+      }
+    };
+    window.addEventListener('online', online); window.addEventListener('beforeunload', beforeUnload);
+    return () => { alive = false; syncQueue.current?.dispose();
+      window.removeEventListener('online', online); window.removeEventListener('beforeunload', beforeUnload); };
+  }, [persist, update]);
 
   async function run(action: () => Promise<void>) {
     if (lock.current) return; lock.current = true; setBusy(true); setError('');
@@ -86,42 +117,23 @@ export function PEGuestAssessment() {
     setStatus('Draft tersimpan.'); setIndex(0);
   }); }
   async function sync(value: PEGuestDraft, submit = false) {
-    if (!definition) return;
-    // Idempotent start also repairs a connection loss before the first start response arrived.
-    let server: Reply;
-    try { server = await guestRequest<Reply>(`/${value.id}`, 'GET', undefined, value.draftKey); }
-    catch(failure) {
-      if(!(failure instanceof PERequestError) || failure.status!==404) throw failure;
-      server = await guestRequest<Reply>('', 'POST', payload(value, definition));
-    }
-    const dirty = Object.entries(value.responses).filter(([id, answer]) => value.baseResponses[id] !== answer);
-    for (const [id, answer] of dirty) {
-      const remote = server.attempt.responses[id];
-      if (remote !== value.baseResponses[id] && remote !== answer) {
-        throw new Error('Jawaban berubah di tab lain. Tinjau kembali sebelum menyinkronkan; draft perangkat Anda tetap disimpan.');
-      }
-    }
-    const merged = { ...server.attempt.responses, ...Object.fromEntries(dirty) };
-    const pending = { ...value, responses: merged, revision: server.attempt.revision,
-      ...(submit ? { submissionKey: value.submissionKey || crypto.randomUUID() } : {}) };
-    await persist(pending);
-    const reply = await guestRequest<Reply>(`/${value.id}`, 'PATCH', { revision: pending.revision, responses: merged,
-      ...(submit ? { submissionKey: pending.submissionKey } : {}) }, value.draftKey);
+    if (!definition || !syncQueue.current) return;
+    setSyncError(''); await localWrites.current;
+    await syncQueue.current.flush(submit);
     if (submit) {
       setReceiptId(value.id); setAccepted(true);
+      syncQueue.current.dispose();
+      await localWrites.current;
       await clearPEGuestDraft().catch(() => setCleanupWarning(true));
       current.current = null; setDraft(null);
-    } else { await persist({ ...pending, revision: reply.attempt.revision, baseResponses: merged }); setStatus('Jawaban tersimpan.'); }
-  }
-  async function answer(value: PEAnswer) { await run(async () => {
-    if (!current.current || !questions[index]) return;
-    const pending = { ...current.current, responses: { ...current.current.responses, [questions[index].id]: value } };
-    await persist(pending); setStatus('Menyinkronkan jawaban…');
-    try { await sync(pending); } catch (failure) {
-      setStatus(localAvailable ? 'Jawaban disimpan di perangkat; belum tersimpan di server.' : 'Jawaban belum tersimpan. Jangan tutup halaman ini.');
-      throw failure;
     }
-  }); }
+  }
+  function answer(value: PEAnswer) {
+    if (lock.current || !current.current || current.current.submissionKey || !questions[index]) return;
+    const pending = { ...current.current, responses: { ...current.current.responses, [questions[index].id]: value } };
+    setStatus('Menyimpan di perangkat…'); setSyncError('');
+    void persist(pending).then(() => syncQueue.current?.schedule());
+  }
   const progress = draft ? countAnswered(questions, draft.responses) : 0;
   const question = questions[index], area = definition?.competencies.find(value => value.code === question?.competencyCode);
 
@@ -140,6 +152,11 @@ export function PEGuestAssessment() {
         })}>Gunakan jawaban server</button>}</div>}
       {!localAvailable && !accepted && <p role="status" className="mt-4 text-xs leading-6 text-amber-800">Browser ini belum dapat menyimpan draft pada perangkat. Jangan tutup halaman sebelum selesai mengirim, karena draft mungkin tidak dapat dilanjutkan setelah halaman ditutup.</p>}
       {cleanupWarning && <p role="status" className="mt-4 text-xs leading-6 text-amber-800">Jawaban sudah diterima, tetapi browser belum dapat menghapus draft perangkat. Untuk privasi di perangkat bersama, bersihkan data situs ini setelah selesai.</p>}
+      {syncError && !accepted && <div role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{syncError}<button type="button" disabled={busy} className="ml-2 min-h-11 font-semibold underline underline-offset-4" onClick={() => current.current && void run(() => sync(current.current!))}>Coba simpan lagi</button>{syncError.includes('tab lain') && <button type="button" disabled={busy} className="ml-2 min-h-11 font-semibold underline underline-offset-4" onClick={() => void run(async () => {
+        const value = current.current!; const remote = await guestRequest<Reply>(`/${value.id}`, 'GET', undefined, value.draftKey);
+        await persist({ ...value, revision: remote.attempt.revision, responses: remote.attempt.responses, baseResponses: remote.attempt.responses });
+        setSyncError(''); setStatus('Jawaban server dimuat.'); setIndex(firstUnanswered(questions, remote.attempt.responses));
+      })}>Gunakan jawaban server</button>}</div>}
       {loading ? <p role="status" className="mt-8 flex items-center gap-3"><Loader2 className="motion-safe:animate-spin" />Menyiapkan diagnosis…</p> : accepted ?
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6"><CheckCircle2 className="text-emerald-600" /><h2 className="mt-4 text-xl font-semibold">Jawaban Anda sudah diterima.</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">Tautan hasil akan dikirim ke email yang Anda isi. Anda dapat menutup halaman ini; pengiriman tetap diproses.</p>
@@ -165,7 +182,7 @@ export function PEGuestAssessment() {
         <progress value={progress} max={questions.length} aria-label="Kemajuan pengisian" className="mt-3 h-2 w-full accent-blue-900" />
         {question ? <><p className="mt-6 text-xs text-slate-500">Area {area?.name} · {question.type === 'behavioral_self_report' ? 'Pengalaman kerja dalam tiga bulan terakhir' : 'Studi kasus'}</p>
           {question.scenario && <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-700">{question.scenario}</p>}
-          <fieldset className="mt-5"><legend className="text-lg font-medium leading-7">{question.prompt || question.question}</legend><div className="mt-4 space-y-3">{(question.type === 'behavioral_self_report' ? definition.selfReportScale.map(value => ({ value: value.value, label: value.label })) : question.options!.map(value => ({ value: value.id as PEAnswer, label: value.text }))).map(value => <label key={value.value} className={`flex min-h-14 items-center gap-3 rounded-xl border p-4 text-sm leading-6 ${draft.responses[question.id] === value.value ? 'border-blue-900 bg-blue-50' : 'border-slate-200'}`}><input type="radio" name={question.id} checked={draft.responses[question.id] === value.value} disabled={busy} onChange={() => void answer(value.value)} className="h-5 w-5 shrink-0" /><span>{value.label}</span></label>)}</div></fieldset>
+          <fieldset className="mt-5"><legend className="text-lg font-medium leading-7">{question.prompt || question.question}</legend><div className="mt-4 space-y-3">{(question.type === 'behavioral_self_report' ? definition.selfReportScale.map(value => ({ value: value.value, label: value.label })) : question.options!.map(value => ({ value: value.id as PEAnswer, label: value.text }))).map(value => <label key={value.value} className={`flex min-h-14 items-center gap-3 rounded-xl border p-4 text-sm leading-6 ${draft.responses[question.id] === value.value ? 'border-blue-900 bg-blue-50' : 'border-slate-200'}`}><input type="radio" name={question.id} checked={draft.responses[question.id] === value.value} disabled={busy || Boolean(draft.submissionKey)} onChange={() => void answer(value.value)} className="h-5 w-5 shrink-0" /><span>{value.label}</span></label>)}</div></fieldset>
           <div className="mt-6 flex justify-between gap-3"><button className={secondary} disabled={busy || index === 0} onClick={() => setIndex(value => value - 1)}><ArrowLeft size={16} />Kembali</button><button className={button} disabled={busy || !Object.hasOwn(draft.responses, question.id)} onClick={() => { setIndex(value => value + 1); window.scrollTo({ top: 0, behavior: 'instant' }); }}>{index === questions.length - 1 ? 'Tinjau jawaban' : 'Lanjut'}<ArrowRight size={16} /></button></div>
         </> : <><h2 className="mt-6 text-xl font-semibold">Periksa sebelum mengirim.</h2><p className="mt-3 text-sm leading-7 text-slate-600">Jawaban dikunci setelah diterima. Hasil dan langkah pengembangan dikirim melalui tautan email pribadi.</p>
           <div className="mt-5 space-y-2">{definition.competencies.map(value => <button className="flex min-h-14 w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left text-sm" key={value.code} disabled={busy} onClick={() => setIndex(questions.findIndex(question => question.competencyCode === value.code))}><span>{value.name}</span><span>Tinjau</span></button>)}</div>

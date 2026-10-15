@@ -48,7 +48,7 @@ describe('individual diagnosis UI',()=>{
     await screen.findByText('Synthetic case question');fireEvent.click(screen.getByLabelText('Synthetic action A'));
     await waitFor(()=>expect(screen.getByRole('button',{name:'Tinjau jawaban'})).toBeEnabled());fireEvent.click(screen.getByRole('button',{name:'Tinjau jawaban'}));
     fireEvent.click(screen.getByRole('button',{name:/Kirim dan lihat hasil/}));
-    await screen.findByText('Langkah kecil yang lebih terarah.');
+    await screen.findByText('Hasil asesmen individu');
     expect(mock.fetch.mock.calls.filter(([,args])=>args?.method==='PATCH'&&JSON.parse(args.body).submissionKey)).toHaveLength(1);
     const stored=localStorage.getItem(`binahub.pe.attempt.${userId}`);expect(stored).toBeTruthy();
     expect(stored).not.toMatch(/responses|Manager|Growth/);

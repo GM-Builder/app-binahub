@@ -33,7 +33,9 @@ describe('PE admin, owner access, and history',()=>{
   it('revokes consultant access without deleting data or adding evaluation consent',async()=>{
     const change=vi.fn();deps.fetch.mockResolvedValue(response({access:{shared:false,evaluationConsent:false,clarity:null,usefulness:null}}));
     render(<PEReviewAccessPanel id={id} token={async()=>'verified'} onChange={change} access={{shared:true,evaluationConsent:false,clarity:null,usefulness:null}}/>);
-    fireEvent.click(screen.getByRole('button',{name:'Cabut akses tim BinaHub'}));
+    fireEvent.click(screen.getByText('Privasi & data'));
+    fireEvent.click(screen.getByRole('checkbox',{name:'Izinkan tim BinaHub meninjau hasil saya'}));
+    fireEvent.click(screen.getByRole('button',{name:'Simpan pilihan'}));
     await waitFor(()=>expect(change).toHaveBeenCalled());
     expect(JSON.parse(deps.fetch.mock.calls[0][1].body)).toMatchObject({share:false,consentVersion:null,evaluate:false});
   });

@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.36.1] - 2026-10-15
+
+### Fixed
+
+- Pengisian diagnosis individu publik tidak lagi mengunci pilihan atau tombol Lanjut selama autosave. Pilihan diperbarui langsung, disimpan terenkripsi pada perangkat, lalu dikirim melalui antrean serial dengan debounce; tidak ada GET sebelum setiap penyimpanan normal.
+- Respons penyimpanan lama tidak menimpa pilihan terbaru. Konflik tab tetap ditinjau, jawaban saat offline dipertahankan, dan pengiriman akhir menunggu sinkronisasi serta memakai kunci idempotensi yang sama saat retry.
+
+### Changed
+
+- Laporan individu memakai tata letak dokumen yang lebih ringkas dan responsif: ringkasan dan langkah praktis lebih dahulu, navigasi bagian, skor pengalaman kerja/studi kasus terpisah, serta rincian interpretasi yang dapat dibuka per area. Batas bukti, NA, metodologi, tanggal/versi, retensi, dan bantuan data tetap tersedia; skor nol berbeda dari bukti tidak cukup.
+- Akses tinjauan, izin evaluasi/penilaian opsional, dan penghapusan ditempatkan dalam satu bagian **Privasi & data**. Satu tombol **Simpan pilihan** menyimpan pengaturan, sedangkan penghapusan tetap membutuhkan konfirmasi tersendiri. Mengubah akses tinjauan tidak memberikan izin ekspor evaluasi secara diam-diam.
+
+### Deployment
+
+- App saja; tidak membutuhkan SQL, secret, perubahan API/website/AMS, atau aktivasi layanan AI baru. Soal, rumus skor CEO, dan isi rekomendasi tidak berubah. Rekomendasi individu saat ini berbasis aturan, bukan panggilan model AI.
+- Pengujian lokal memakai data sintetis, tanpa email atau mutasi produksi. Catatan desain, sumber persyaratan CEO, dan batas verifikasi: `docs/individual-assessment-ux.md`.
+
 ## [0.36.0] - 2026-10-15
 
 ### Added
