@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.38.0] - 2026-10-16
+
+### Added
+
+- Ruang **Transaksi & paket** dari asesmen individu: draft paket berbayar dengan
+  harga/ketentuan yang boleh belum ditentukan, penyimpanan terversi, pencarian
+  dan filter transaksi, ringkasan status dan daftar persiapan penjualan.
+- Status menyimpan, error/retry, isian yang tidak hilang saat konflik, proteksi
+  respons sesi berbeda dan peringatan perubahan belum disimpan. Tidak menambah
+  login wajib pada asesmen gratis atau tombol tandai lunas/grant manual.
+
+### Deployment
+
+- API **0.37.0** dan SQL **69** sebelum app. Fondasi internal saja; checkout,
+  passwordless pelanggan berbayar, webhook, paid delivery dan laporan tambahan
+  belum diaktifkan. Gateway, harga dan kebijakan tetap menunggu keputusan CEO.
+- Tidak ada secret, SDK gateway, email/pembayaran nyata atau SQL produksi yang
+  dijalankan untuk pengujian. Runbook API: `docs/INDIVIDUAL-COMMERCE-FOUNDATION.md`.
+
+### Documentation
+
+- Rancangan tahap 1 asesmen individu berbayar: batas paket tiga area tambahan,
+  keputusan komersial pending, identitas email terverifikasi, model pesanan/hak
+  akses, lifecycle pembayaran, kontrak API/UX, pemulihan dan matriks penerimaan.
+- Konteks produk dan panduan dashboard transaksi admin satu tampilan. Belum ada
+  runtime pembayaran, checkout dummy, SDK gateway, SQL, secret, harga, atau
+  perubahan asesmen gratis pada tahap rancangan; runtime persiapan tercatat di atas.
+
 ## [0.37.0] - 2026-10-15
 
 ### Changed

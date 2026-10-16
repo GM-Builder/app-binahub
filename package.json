@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:commerce-ui": "node scripts/test-commerce-ui.mjs"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",

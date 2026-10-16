@@ -6,6 +6,17 @@ Fase 12 menyediakan tab `Pilot Certification` di atas Operational Assurance Fase
 
 Panduan build dan publikasi frontend tersedia di [DEPLOYMENT.md](./DEPLOYMENT.md).
 
+## Rancangan asesmen individu berbayar
+
+App 0.38.0/API 0.37.0 + SQL 69 menyediakan **Transaksi & paket** untuk menyiapkan
+draft paket dan membaca transaksi, **belum mengaktifkan pembayaran**. Gateway,
+harga dan ketentuan komersial masih menunggu keputusan CEO. Alur gratis tidak
+berubah. Runbook API: `docs/INDIVIDUAL-COMMERCE-FOUNDATION.md`.
+
+- [Fondasi dan rencana implementasi](docs/individual-paid-assessment-plan.md)
+- [Kontrak UX peserta dan dashboard transaksi admin](docs/individual-paid-assessment-ux.md)
+- [Konteks produk dan batas yang harus dipertahankan](PRODUCT.md)
+
 ## Stack
 
 - Next.js App Router, React, TypeScript, Tailwind CSS

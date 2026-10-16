@@ -70,7 +70,7 @@ export function PEAdminPilot(){
     <section className="rounded-3xl bg-[#0B2C6B] p-6 text-white sm:p-8"><div className="flex flex-wrap items-start justify-between gap-5"><div>
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-blue-200">Personal Effectiveness</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Pahami orangnya. Arahkan pengembangannya.</h2>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-blue-100">Konteks, jawaban, dan rekomendasi dalam satu ruang tinjau. Terpisah dari assessment organisasi dan skor minat penjualan.</p></div>
-      <button onClick={refresh} disabled={loading||busy} className={button}><RefreshCw size={16}/>Perbarui</button></div>
+      <div className="flex flex-wrap gap-2"><Link href="/admin/assessments/individual/commerce" className={button}>Transaksi & paket<ArrowRight size={16} aria-hidden="true"/></Link><button onClick={refresh} disabled={loading||busy} className={button}><RefreshCw size={16}/>Perbarui</button></div></div>
       {data&&<dl className="mt-7 grid grid-cols-2 gap-4 border-t border-white/15 pt-6 sm:grid-cols-4">{[
         ['Pengisian',data.dashboard.counts.started],['Hasil selesai',data.dashboard.counts.submitted],['Draft',data.dashboard.counts.drafts],['Izin tinjau',data.dashboard.counts.shared]
       ].map(([label,value])=><div key={label}><dt className="text-xs text-blue-200">{label}</dt><dd className="mt-2 text-3xl font-semibold">{value}</dd></div>)}</dl>}
