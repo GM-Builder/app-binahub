@@ -24,10 +24,13 @@ export function PEAdminPilot(){
   const [revision,setRevision]=useState(0),[tab,setTab]=useState<'results'|'pilot'>('results'),[query,setQuery]=useState('');
   const [hasMore,setHasMore]=useState(false);
   const [selected,setSelected]=useState<string|null>(null),[detail,setDetail]=useState<PEDetail|null>(null),[detailError,setDetailError]=useState('');
-  const lock=useRef(false),detailGeneration=useRef(0);
+  const lock=useRef(false),detailGeneration=useRef(0),entryHandled=useRef(false);
   useEffect(()=>{
     let alive=true;
-    void request<Data>().then(value=>{if(alive){setData(value);setHasMore(value.cases.length===20);}}).catch(failure=>{if(alive)setError(failure.message);}).finally(()=>{if(alive)setLoading(false);});
+    void request<Data>().then(value=>{if(alive){setData(value);setHasMore(value.cases.length===20);
+      if(!entryHandled.current){entryHandled.current=true;const id=new URLSearchParams(window.location.search).get('attempt');
+        if(id&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(id))setSelected(id);}
+    }}).catch(failure=>{if(alive)setError(failure.message);}).finally(()=>{if(alive)setLoading(false);});
     const listener=supabase.auth.onAuthStateChange?.((event)=>{if(event==='SIGNED_OUT'||event==='SIGNED_IN'){detailGeneration.current++;setData(null);setDetail(null);setError('Sesi berubah. Muat ulang halaman.');}});
     return()=>{alive=false;listener?.data.subscription.unsubscribe();};
   },[revision]);

@@ -40,6 +40,7 @@ const sessionSensitiveRoutes = [
   "/proposal/:path*",
   "/register",
   "/insight/individual/:path*",
+  "/discovery/:path*",
 ];
 
 const nextConfig: NextConfig = {
@@ -67,6 +68,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {source:"/insight/individual/result",headers:[{key:"Referrer-Policy",value:"no-referrer"},{key:"X-Robots-Tag",value:"noindex, nofollow, noarchive"}]},
+      {source:"/discovery/:path*",headers:[{key:"Referrer-Policy",value:"no-referrer"},{key:"X-Robots-Tag",value:"noindex, nofollow, noarchive"}]},
     ];
   },
   turbopack: {

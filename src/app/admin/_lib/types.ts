@@ -196,6 +196,7 @@ export type InquiryRecord = {
   replySentAt?: string | null;
   replyEmailId?: string | null;
   moduleRequest?: {
+    individualAttemptId?: string;
     requestedAt?: string;
     modules?: Array<{ id?: string; code?: string; name?: string; basePrice?: number; currency?: string; catalogVersion?: string }>;
   };

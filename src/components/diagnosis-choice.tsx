@@ -45,6 +45,7 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
           </Link></div>
         </div>
         <p className="mt-5 max-w-xl text-[11px] leading-5 text-slate-500">Hasil digunakan untuk refleksi dan pengembangan, bukan diagnosis klinis.</p>
+        <div className="mt-5 border-t border-slate-200 pt-4"><p className="text-sm text-slate-600">Sudah memiliki gambaran kebutuhan organisasi?</p><Link href="/discovery" className="inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-semibold text-[#0B2C6B] underline-offset-4 hover:underline">Dapatkan rekomendasi program<ArrowRight size={14} aria-hidden="true"/></Link></div>
       </div>
     </main>
   );

@@ -10,10 +10,16 @@ const dashboard={status:'collecting',revision:0,ready:true,counts:{started:1,sub
   areas:[],feedback:{count:0,clarityMean:null,usefulnessMean:null},interpretation:'development_pilot_not_validated'};
 const cases=[{id,status:'submitted',createdAt:'2026-10-13T00:00:00Z',role:'Synthetic Manager',goal:'Improve teamwork',channel:'instagram'}];
 const response=(body:unknown)=>new Response(JSON.stringify({success:true,...body as object}));
-beforeEach(()=>{vi.clearAllMocks();deps.session.mockResolvedValue({data:{session:{user:{id},access_token:'synthetic'}}});
+beforeEach(()=>{vi.clearAllMocks();window.history.replaceState(null,'','/');deps.session.mockResolvedValue({data:{session:{user:{id},access_token:'synthetic'}}});
   deps.fetch.mockResolvedValue(response({dashboard,cases}));vi.stubGlobal('fetch',deps.fetch);});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 describe('PE admin, owner access, and history',()=>{
+  it('opens a linked result only through an authenticated case request and shows a denied review',async()=>{
+    window.history.replaceState(null,'',`/admin/assessments/individual?attempt=${id}`);
+    deps.fetch.mockImplementation(async(url)=>String(url).includes('?id=')?new Response(JSON.stringify({success:false,error:'Izin tinjau tidak tersedia.'}),{status:403}):response({dashboard,cases}));
+    render(<PEAdminPilot/>);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Izin tinjau tidak tersedia.');expect(deps.fetch).toHaveBeenCalledWith(`/api/admin/assessments/individual?id=${id}`,expect.objectContaining({headers:expect.objectContaining({Authorization:'Bearer synthetic'})}));
+  });
   it('separates audience and shows contextual cases only from authorized response',async()=>{
     render(<PEAdminPilot/>);await screen.findByText('Synthetic Manager');
     expect(screen.getByRole('link',{name:'Tim / Organisasi'})).toHaveAttribute('href','/admin/assessments');

@@ -24,6 +24,12 @@ function inquiry(overrides: Partial<InquiryRecord> = {}): InquiryRecord {
 }
 
 describe("InquiriesPanel", () => {
+  it('links an individual consultation to its authorized assessment without copying answers into the URL',()=>{
+    const id='00000000-0000-4000-8000-000000000001';
+    render(<InquiriesPanel inquiries={[inquiry({source:'individual_consultation',moduleRequest:{individualAttemptId:id}})]} onAction={vi.fn()} onRefresh={vi.fn()}/>);
+    fireEvent.click(screen.getByRole('button',{name:'Buka inquiry Maya Sari'}));
+    expect(screen.getByRole('link',{name:'Tinjau hasil individu'})).toHaveAttribute('href',`/admin/assessments/individual?attempt=${id}`);
+  });
   it("menampilkan prioritas operasional dan membuka alur balasan bertahap", () => {
     render(<InquiriesPanel inquiries={[inquiry()]} onAction={vi.fn()} onRefresh={vi.fn()} />);
 

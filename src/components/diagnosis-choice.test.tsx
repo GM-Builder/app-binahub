@@ -29,12 +29,12 @@ describe('diagnosis choice', () => {
     expect(history.closest('article')).toBeNull();
   });
 
-  it('preserves organization language/campaign and limits individual attribution to its existing channel contract', async () => {
+  it('preserves organization language/campaign and whitelisted individual attribution', async () => {
     mock.search = 'lang=en&utm_source=instagram&utm_campaign=launch';
     mock.fetch.mockResolvedValue(response(true));
     render(<DiagnosisChoice />);
     expect(screen.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/en/insight?lang=en&utm_source=instagram&utm_campaign=launch');
-    expect(await screen.findByRole('link', { name: 'Mulai diagnosis individu' })).toHaveAttribute('href', '/insight/individual?source=instagram');
+    expect(await screen.findByRole('link', { name: 'Mulai diagnosis individu' })).toHaveAttribute('href', '/insight/individual?utm_source=instagram&utm_campaign=launch&source=instagram');
   });
 
   it('shows an announced loading state without a clickable individual entry', () => {

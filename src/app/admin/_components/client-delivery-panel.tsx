@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  Activity,
   AlertTriangle,
   BriefcaseBusiness,
   CalendarCheck,
@@ -24,6 +23,8 @@ import type {
   RetentionOpportunityRecord,
 } from "../_lib/types";
 import { formatDate } from "../_lib/utils";
+import { buildClientJourney } from "../_lib/client-journey";
+import { AssessmentBrief, ClientJourneyContext } from "./client-journey";
 import {
   AdminInput,
   AdminModal,
@@ -85,18 +86,27 @@ export function ClientDeliveryPanel({
   onRefresh: () => Promise<void>;
 }) {
   const accounts = useMemo(() => data.clientAccounts || [], [data.clientAccounts]);
+  // This panel mounts after the authenticated dashboard data has loaded.
+  // Capture the entry once; later refreshes must not reopen a dismissed handoff.
+  const [entry]=useState(()=>{
+    const id=typeof window==='undefined'?null:new URLSearchParams(window.location.search).get('lead');
+    const account=accounts.find(account=>account.sourceLeadId===id);
+    return {account,lead:account?null:(data.pipelineLeads||[]).find(lead=>lead.id===id&&lead.opportunityStage==='won')||null};
+  });
   const [search, setSearch] = useState("");
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(entry.account?.id||null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [modal, setModal] = useState<ModalName>(null);
+  const [modal, setModal] = useState<ModalName>(entry.lead?'handoff':null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [handoffLead, setHandoffLead] = useState<PipelineLeadRecord | null>(null);
+  const [handoffLead, setHandoffLead] = useState<PipelineLeadRecord | null>(entry.lead);
+  const handoffBrief = useMemo(() => handoffLead
+    ? buildClientJourney(data, { leadId: handoffLead.id }).brief : null, [data, handoffLead]);
   const [editStakeholder, setEditStakeholder] = useState<ClientStakeholderRecord | null>(null);
   const [editMilestone, setEditMilestone] = useState<ProjectMilestoneRecord | null>(null);
   const [editRetention, setEditRetention] = useState<RetentionOpportunityRecord | null>(null);
 
-  const [handoffForm, setHandoffForm] = useState({ commercialOwner: "", deliveryOwner: "", projectTitle: "", kickoffDate: "" });
+  const [handoffForm, setHandoffForm] = useState({ commercialOwner: entry.lead?.opportunityOwner||"", deliveryOwner: "", projectTitle: entry.lead?`${entry.lead.company} — Pelaksanaan Awal`:"", kickoffDate: "" });
   const [accountForm, setAccountForm] = useState({ status: "onboarding", commercialOwner: "", deliveryOwner: "", nextReviewAt: "", renewalDate: "", retainStatus: "monitoring", notes: "", changeReason: "" });
   const [stakeholderForm, setStakeholderForm] = useState({ name: "", email: "", phone: "", roleTitle: "", department: "", relationshipRole: "pic", isPrimary: false, active: true, notes: "" });
   const [projectForm, setProjectForm] = useState({ deliveryStage: "handoff", deliveryOwner: "", startDate: "", endDate: "", deliveryGoal: "", successMetrics: "", riskLevel: "low", riskSummary: "", note: "" });
@@ -112,11 +122,12 @@ export function ClientDeliveryPanel({
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) || filteredAccounts[0] || accounts[0] || null;
   const accountProjects = (data.deliveryProjects || []).filter((project) => project.clientAccountId === selectedAccount?.id);
   const selectedProject = accountProjects.find((project) => project.id === selectedProjectId) || accountProjects[0] || null;
+  const projectSuccessMetrics = Array.isArray(selectedProject?.successMetrics)
+    ? selectedProject.successMetrics.filter((metric) => typeof metric === "string" && metric.trim()) : [];
   const stakeholders = (data.clientStakeholders || []).filter((item) => item.clientAccountId === selectedAccount?.id);
   const milestones = (data.projectMilestones || []).filter((item) => item.projectId === selectedProject?.id);
   const healthReviews = (data.accountHealthReviews || []).filter((item) => item.clientAccountId === selectedAccount?.id).slice(0, 5);
   const retentionOpportunities = (data.retentionOpportunities || []).filter((item) => item.clientAccountId === selectedAccount?.id);
-  const activities = (data.clientActivities || []).filter((item) => item.clientAccountId === selectedAccount?.id).slice(0, 20);
   const convertedLeadIds = new Set([
     ...accounts.map((account) => account.sourceLeadId),
     ...(data.deliveryProjects || []).filter((project) => project.initialHandoff).map((project) => project.sourceLeadId),
@@ -193,7 +204,7 @@ export function ClientDeliveryPanel({
       startDate: project.startDate || "",
       endDate: project.endDate || "",
       deliveryGoal: project.deliveryGoal || "",
-      successMetrics: project.successMetrics.join("\n"),
+      successMetrics: Array.isArray(project.successMetrics) ? project.successMetrics.join("\n") : "",
       riskLevel: project.riskLevel,
       riskSummary: project.riskSummary || "",
       note: "",
@@ -250,7 +261,7 @@ export function ClientDeliveryPanel({
 
       {wonAwaitingHandoff.length > 0 && (
         <Panel title="Deal Menunggu Serah Terima" action={`${wonAwaitingHandoff.length} peluang`}>
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
             {wonAwaitingHandoff.map((lead) => (
               <article key={lead.id} className="flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
                 <div className="min-w-0">
@@ -309,6 +320,8 @@ export function ClientDeliveryPanel({
                   </div>
                 </div>
 
+                <ClientJourneyContext key={selectedAccount.id} data={data} accountId={selectedAccount.id} />
+
                 <div className="grid gap-5 lg:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="mb-4 flex items-center justify-between"><div><p className="text-sm font-bold text-[#0B2C6B]">Stakeholder</p><p className="text-xs text-slate-500">PIC, sponsor, champion, dan decision maker</p></div><button type="button" onClick={() => openStakeholder()} className={secondaryButton}><Plus size={13} /> Tambah</button></div>
@@ -340,6 +353,18 @@ export function ClientDeliveryPanel({
                 {selectedProject && (
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-wider text-[#D9A441]">Proyek terpilih</p><h4 className="mt-1 text-lg font-bold text-[#0B2C6B]">{selectedProject.programName}</h4><p className="mt-1 text-xs text-slate-500">{selectedProject.deliveryGoal || "Tujuan proyek belum ditetapkan."}</p></div><div className="flex gap-2"><button type="button" onClick={() => openMilestone()} className={secondaryButton}><Plus size={13} /> Milestone</button><button type="button" onClick={() => openProject(selectedProject)} className={secondaryButton}><Pencil size={13} /> Proyek</button></div></div>
+                    <section aria-label="Indikator keberhasilan proyek" className="mt-4 space-y-2 border-t border-slate-100 pt-4">
+                      <h5 className="text-sm font-semibold text-slate-900">Indikator keberhasilan</h5>
+                      {projectSuccessMetrics.length ? (
+                        <ul className="list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
+                          {projectSuccessMetrics.map((metric, index) => <li key={index} className="break-words [overflow-wrap:anywhere]">{metric}</li>)}
+                        </ul>
+                      ) : <p className="text-sm leading-6 text-slate-600">Belum ada indikator yang dicatat. Sepakati ukuran keberhasilan dan sumber buktinya bersama klien.</p>}
+                      <p className="text-xs leading-5 text-slate-600">Indikator adalah acuan evaluasi, bukan bukti bahwa dampak sudah tercapai.</p>
+                      {(!selectedProject.deliveryGoal || !projectSuccessMetrics.length) && (
+                        <button type="button" onClick={() => openProject(selectedProject)} className="inline-flex min-h-11 items-center text-sm font-medium text-[#0B2C6B] underline-offset-4 hover:underline">Lengkapi tujuan & indikator</button>
+                      )}
+                    </section>
                     <div className="mt-5 space-y-3">
                       {!milestones.length ? <p className="text-xs text-slate-500">Belum ada milestone.</p> : milestones.map((item) => (
                         <button key={item.id} type="button" onClick={() => openMilestone(item)} className="w-full rounded-xl border border-slate-100 bg-slate-50 p-3 text-left hover:border-[#D9A441]">
@@ -352,17 +377,12 @@ export function ClientDeliveryPanel({
                   </div>
                 )}
 
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="mb-4 flex items-center justify-between"><div><p className="text-sm font-bold text-[#0B2C6B]">Peluang Lanjutan</p><p className="text-xs text-slate-500">Perpanjangan, peningkatan layanan, dan pesanan ulang</p></div><button type="button" onClick={() => openRetention()} className={secondaryButton}><Plus size={13} /> Peluang</button></div>
+                    <p className="mb-3 text-xs leading-5 text-slate-600">Peluang lanjutan belum merupakan order atau pembayaran baru. Catat kebutuhan yang sudah dibahas dengan klien.</p>
                     {!retentionOpportunities.length ? <p className="text-xs text-slate-500">Belum ada peluang lanjutan.</p> : <div className="space-y-2">{retentionOpportunities.map((item) => (
                       <button key={item.id} type="button" onClick={() => openRetention(item)} className="w-full rounded-xl border border-slate-100 bg-slate-50 p-3 text-left hover:border-[#D9A441]"><div className="flex items-center justify-between"><p className="text-xs font-bold text-slate-800">{optionLabel(RETENTION_TYPE, item.opportunityType)}</p><Badge tone={item.humanGateStatus === "approved" ? "green" : "gold"}>{optionLabel(RETENTION_STATUS, item.status)}</Badge></div><p className="mt-2 text-xs text-slate-500">{rupiah(item.estimatedValue)} · {item.owner}</p></button>
                     ))}</div>}
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <div className="mb-4 flex items-center gap-2"><Activity size={16} className="text-[#D9A441]" /><div><p className="text-sm font-bold text-[#0B2C6B]">Riwayat Aktivitas</p><p className="text-xs text-slate-500">Catatan perubahan operasional</p></div></div>
-                    {!activities.length ? <p className="text-xs text-slate-500">Belum ada aktivitas.</p> : <div className="space-y-3">{activities.map((item) => <div key={item.id} className="border-l-2 border-slate-200 pl-3"><p className="text-xs font-bold text-slate-800">{item.eventType.replaceAll("_", " ")}</p><p className="mt-1 text-[11px] text-slate-500">{formatDate(item.createdAt)} · {item.actor}</p>{item.note && <p className="mt-1 text-xs text-slate-600">{item.note}</p>}</div>)}</div>}
-                  </div>
                 </div>
               </section>
             )}
@@ -373,7 +393,26 @@ export function ClientDeliveryPanel({
       {modal && (
         <AdminModal title={{ handoff: "Serahkan Deal ke Tim Pelaksana", account: "Kelola Akun Klien", stakeholder: editStakeholder ? "Perbarui Stakeholder" : "Tambah Stakeholder", project: "Kelola Proyek", milestone: editMilestone ? "Perbarui Milestone" : "Tambah Milestone", health: "Tinjauan Kesehatan Akun", retention: editRetention ? "Perbarui Peluang Lanjutan" : "Tambah Peluang Lanjutan" }[modal]} eyebrow="Klien & pelaksanaan" onClose={closeModal} maxWidth="max-w-3xl">
           {error && <div role="alert" aria-live="assertive" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-          {modal === "handoff" && handoffLead && <div className="space-y-4"><div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800"><strong>{handoffLead.company}</strong> akan dibuat sebagai klien beserta proyek pelaksanaan pertamanya.</div><div className="grid gap-4 md:grid-cols-2"><AdminInput label="Penanggung jawab komersial" type="email" value={handoffForm.commercialOwner} onChange={(value) => setHandoffForm((form) => ({ ...form, commercialOwner: value }))} /><AdminInput label="Penanggung jawab pelaksanaan" type="email" value={handoffForm.deliveryOwner} onChange={(value) => setHandoffForm((form) => ({ ...form, deliveryOwner: value }))} /><AdminInput label="Nama proyek awal" value={handoffForm.projectTitle} onChange={(value) => setHandoffForm((form) => ({ ...form, projectTitle: value }))} /><AdminInput label="Target pertemuan awal" type="date" value={handoffForm.kickoffDate} onChange={(value) => setHandoffForm((form) => ({ ...form, kickoffDate: value }))} /></div><button type="button" disabled={saving || !handoffForm.commercialOwner || !handoffForm.deliveryOwner || handoffForm.projectTitle.length < 3} onClick={() => execute(async () => { await onAction("/api/admin/client-delivery", { method: "POST", body: JSON.stringify({ leadId: handoffLead.id, ...handoffForm, kickoffDate: handoffForm.kickoffDate || null }) }); })} className={inputButton}>{saving ? <RefreshCw size={14} className="animate-spin" /> : <HeartHandshake size={14} />} Buat klien & serahkan</button></div>}
+          {modal === "handoff" && handoffLead && (
+            <div className="space-y-5">
+              <p className="rounded-xl bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">
+                <strong>{handoffLead.company}</strong> akan dibuat sebagai klien beserta proyek pelaksanaan pertamanya.
+              </p>
+              <AssessmentBrief assessment={handoffBrief} />
+              <div className="grid gap-4 md:grid-cols-2">
+                <AdminInput label="Penanggung jawab komersial" type="email" value={handoffForm.commercialOwner} onChange={(value) => setHandoffForm((form) => ({ ...form, commercialOwner: value }))} />
+                <AdminInput label="Penanggung jawab pelaksanaan" type="email" value={handoffForm.deliveryOwner} onChange={(value) => setHandoffForm((form) => ({ ...form, deliveryOwner: value }))} />
+                <AdminInput label="Nama proyek awal" value={handoffForm.projectTitle} onChange={(value) => setHandoffForm((form) => ({ ...form, projectTitle: value }))} />
+                <AdminInput label="Target pertemuan awal" type="date" value={handoffForm.kickoffDate} onChange={(value) => setHandoffForm((form) => ({ ...form, kickoffDate: value }))} />
+              </div>
+              <p className="text-xs leading-5 text-slate-600">Setelah serah terima, lengkapi tujuan pelaksanaan dan indikator keberhasilan sesuai kesepakatan klien. Brief assessment tetap menjadi referensi, bukan ukuran hasil yang sudah disepakati.</p>
+              <button type="button" disabled={saving || !handoffForm.commercialOwner || !handoffForm.deliveryOwner || handoffForm.projectTitle.length < 3} onClick={() => execute(async () => {
+                await onAction("/api/admin/client-delivery", { method: "POST", body: JSON.stringify({ leadId: handoffLead.id, ...handoffForm, kickoffDate: handoffForm.kickoffDate || null }) });
+              })} className={inputButton}>
+                {saving ? <RefreshCw size={14} className="animate-spin" aria-hidden="true" /> : <HeartHandshake size={14} aria-hidden="true" />} Buat klien & serahkan
+              </button>
+            </div>
+          )}
 
           {modal === "account" && selectedAccount && <div className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><label><FieldLabel label="Status klien" /><AdminSelect value={accountForm.status} onChange={(value) => setAccountForm((form) => ({ ...form, status: value }))} options={CLIENT_STATUS} /></label><label><FieldLabel label="Status hubungan" /><AdminSelect value={accountForm.retainStatus} onChange={(value) => setAccountForm((form) => ({ ...form, retainStatus: value }))} options={RETAIN_STATUS} /></label><AdminInput label="Penanggung jawab komersial" type="email" value={accountForm.commercialOwner} onChange={(value) => setAccountForm((form) => ({ ...form, commercialOwner: value }))} /><AdminInput label="Penanggung jawab pelaksanaan" type="email" value={accountForm.deliveryOwner} onChange={(value) => setAccountForm((form) => ({ ...form, deliveryOwner: value }))} /><AdminInput label="Tinjauan berikutnya" type="date" value={accountForm.nextReviewAt} onChange={(value) => setAccountForm((form) => ({ ...form, nextReviewAt: value }))} /><AdminInput label="Tanggal perpanjangan" type="date" value={accountForm.renewalDate} onChange={(value) => setAccountForm((form) => ({ ...form, renewalDate: value }))} /></div><AdminTextarea label="Catatan akun" value={accountForm.notes} onChange={(value) => setAccountForm((form) => ({ ...form, notes: value }))} /><AdminTextarea label="Alasan perubahan" help="Wajib ketika akun berisiko, tidak aktif, atau berhenti." value={accountForm.changeReason} onChange={(value) => setAccountForm((form) => ({ ...form, changeReason: value }))} /><button type="button" disabled={saving} onClick={() => execute(async () => { await onAction("/api/admin/client-delivery", { method: "PATCH", body: JSON.stringify({ action: "account", payload: { clientAccountId: selectedAccount.id, ...accountForm, nextReviewAt: accountForm.nextReviewAt || null, renewalDate: accountForm.renewalDate || null, notes: accountForm.notes || null, changeReason: accountForm.changeReason || null } }) }); })} className={inputButton}>Simpan akun</button></div>}
 

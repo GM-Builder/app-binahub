@@ -1,5 +1,75 @@
 # Changelog
 
+## [0.41.0] - 2026-10-23
+
+### Added
+
+- Discovery organisasi lima tahap dari SPIN CEO v3.2, dengan brief terkonfirmasi,
+  percabangan, autosave nonblocking dan submit idempotent.
+- Laporan publik enam bagian dan akses privat tanpa login. Workspace Discovery
+  menggabungkan konteks, jawaban, laporan dan status email pada Klien & proposal.
+- Persetujuan pemrosesan dan pemasaran terpisah. Data SPIN tanpa penghapusan
+  otomatis; masa akses privat terpisah. Retensi asesmen individu tidak diubah.
+
+### Deployment
+
+- Memerlukan SQL **71** dan API SPIN sebelum app. Provider/sender dan scheduler
+  existing digunakan, tanpa secret atau toggle pengiriman harian baru.
+- Pengguna mengonfirmasi SQL 71 sudah dijalankan. Rilis ini menyiapkan push
+  untuk deployment; uji nyata ke admin@binahub.id dilakukan setelah hosting siap.
+  Build app lulus; panduan dan batas verifikasi ada pada rencana SPIN di docs.
+
+## [0.40.0] - 2026-10-19
+
+### Added
+
+- Brief kebutuhan bersumber dari assessment terhubung pada detail peluang,
+  akun klien dan formulir serah terima, dengan nama responden/tanggal sumber.
+- Riwayat lintas peluang, assessment, pengiriman hasil/proposal, konsultasi dan
+  pelaksanaan dari data dashboard yang tersedia. Relasi berdasarkan ID, bukan
+  email/nama; tampilan bertahap dan batas kelengkapan dijelaskan.
+- Indikator keberhasilan proyek existing kini terlihat, dengan pintasan
+  melengkapi tujuan/indikator. Target evaluasi tidak dilabeli sebagai dampak
+  yang sudah tercapai; peluang lanjutan bukan bukti order/pembayaran baru.
+- Rencana kerja diagnosis hingga pengembangan berkelanjutan pada
+  `docs/development-journey-work-plan.md`, termasuk dokumen CEO yang ditunggu.
+
+### Deployment
+
+- Tidak ada SQL, env, aktivasi worker, provider AI, email atau pembayaran baru.
+  Menggunakan kontrak dashboard existing. Ketergantungan hardening sebelumnya
+  (SQL 70/API 0.38) tetap berlaku; ini bukan verifikasi scheduler produksi.
+- Belum memasang paket/template Polar Bear atau mengubah instrumen dan harga
+  CEO. Workspace proposal meeting, outcome report final, pembayaran dan AI
+  agent tetap tahap berikutnya.
+
+## [0.39.0] - 2026-10-18
+
+### Fixed
+
+- Proposal otomatis yang menunggu tinjauan tetap terlihat sebagai prioritas meski
+  belum memiliki draf; tidak lagi ditampilkan sebagai belum diminta.
+- Sumber kampanye/journey diteruskan ke diagnosis individu melalui parameter
+  terbatas, tanpa menyalin email, URL hasil, atau parameter akses pribadi.
+- Peluang berhasil memiliki pintasan ke akun/pelaksanaan dan formulir serah
+  terima terisi. Proyek tetap dibuat melalui konfirmasi yang sudah ada.
+
+### Added
+
+- Permintaan konsultasi dari laporan individu melalui sesi hasil pribadi,
+  pencegahan klik ganda, retry dan izin tinjau yang masih berlaku. Permintaan
+  tampil sebagai inquiry; admin dapat membuka hasil yang diizinkan langsung.
+- Status izin follow-up dipisahkan dari bukti pemanggilan scheduler. Tombol
+  aktivasi bukan klaim bahwa worker sudah berjalan atau email sudah terkirim.
+
+### Deployment
+
+- SQL **70** dan API **0.38.0** sebelum app. Tidak mengubah soal/skor CEO,
+  consent marketing, pembayaran, proposal custom, secret atau aktivasi produksi.
+- Pembersihan data uji disediakan sebagai SQL owner terpisah dengan arsip
+  privat; pengguna kemudian menjalankan cleanup selektif, bukan agen. Panduan:
+  `docs/sales-journey-hardening.md`.
+
 ## [0.38.0] - 2026-10-16
 
 ### Added

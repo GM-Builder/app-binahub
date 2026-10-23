@@ -7,6 +7,7 @@ import { guestRequest } from '@/lib/pe-guest';
 import { PERequestError, type PEReport, type PEReviewAccess } from '@/lib/individual-assessment';
 import { PEResult } from './pe-report';
 import { PEReviewAccessPanel } from './pe-review-access';
+import { PEConsultationRequest } from './pe-consultation-request';
 
 type Result = { report: PEReport; access: PEReviewAccess; retentionUntil: string };
 const validId = (id: string) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(id);
@@ -84,6 +85,7 @@ function PEEmailResultBody({ id }: { id: string }) {
     <div className={hasResult ? 'mx-auto max-w-5xl' : 'mx-auto max-w-lg pt-3 sm:pt-8'}>
       {deleted ? <section className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8"><h1 className="text-2xl font-semibold tracking-tight">Pengisian sudah dihapus.</h1><p className="mt-3 text-sm leading-7 text-slate-600">Jawaban, hasil, dan akses terkait pengisian ini telah dihapus dari sistem aktif.</p></section>
         : result ? <div ref={resultContainer} tabIndex={-1} aria-label="Hasil asesmen Anda"><PEResult report={result.report} retentionUntil={result.retentionUntil} headingLevel={1} />
+          <PEConsultationRequest key={id} id={id} shared={result.access.shared}/>
           <PEReviewAccessPanel id={id} access={result.access} token={async () => ''} onChange={access => setResult({ ...result, access })} update={body => guestRequest(`/${id}/result`, 'PATCH', body)}
             onErase={async () => { await guestRequest(`/${id}/result`, 'DELETE'); setResult(null); setDeleted(true); }} /></div>
         : <section className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8" aria-busy={checking || busy}>

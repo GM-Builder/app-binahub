@@ -4,7 +4,7 @@ export type AssessmentQueue = "all" | "attention" | "processing" | "sent";
 export type AssessmentDetailTab = "summary" | "proposal" | "documents" | "followup";
 
 const resultStops = new Set(["Minta Proposal", "Proposal Terkirim", "Lanjut Diskusi", "Closed"]);
-const resultProposalStops = new Set(["Diminta", "Sedang Disusun", "Gagal Otomatis", "Perlu Rekonsiliasi", "Terkirim", "Revisi", "Lanjut Diskusi", "Deal", "Lost", "Closed"]);
+const resultProposalStops = new Set(["Diminta", "Sedang Disusun", "Gagal Otomatis", "Perlu Rekonsiliasi", "Menunggu Approval", "Terkirim", "Revisi", "Lanjut Diskusi", "Deal", "Lost", "Closed"]);
 const proposalStops = new Set(["Revisi", "Lanjut Diskusi", "Deal", "Lost", "Closed"]);
 
 /** Mirrors the assessment follow-up eligibility rules in the API. */
@@ -25,8 +25,9 @@ export function proposalState(record: AssessmentRecord) {
   const processing = !sent && !manual && record.proposalStatus === "Sedang Disusun";
   const reconcile = !sent && record.proposalStatus === "Perlu Rekonsiliasi";
   const failed = !sent && record.proposalStatus === "Gagal Otomatis";
-  const review = manual && ["pending_approval", "revision_required", "rejected"].includes(record.proposalGateStatus || "");
-  const label = sent ? "Proposal terkirim" : reconcile ? "Periksa pengiriman" : failed ? "Perlu dicoba ulang" : processing ? "Proposal diproses" : review ? "Draf perlu ditinjau" : record.proposalStatus === "Diminta" ? "Proposal diminta" : manual ? "Draf proposal" : "Belum ada proposal";
+  const review = !sent && (record.proposalStatus === "Menunggu Approval"
+    || ["pending_approval", "revision_required", "rejected"].includes(record.proposalGateStatus || "")) && !reconcile && !failed && !processing;
+  const label = sent ? "Proposal terkirim" : reconcile ? "Periksa pengiriman" : failed ? "Perlu dicoba ulang" : processing ? "Proposal diproses" : review ? "Proposal perlu ditinjau" : record.proposalStatus === "Diminta" ? "Proposal diminta" : manual ? "Draf proposal" : "Belum ada proposal";
   return { manual, sent, processing, reconcile, failed, review, label };
 }
 

@@ -41,8 +41,20 @@ export function peChannel(search:string) {
   if(['newsletter','outbound'].includes(value))return 'email';
   return 'other';
 }
+export function individualTrackingParams(search:string) {
+  const input = new URLSearchParams(search), output = new URLSearchParams();
+  // Whitelist campaign fields, excluding obvious contact details and URLs/capabilities.
+  for (const key of ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','fbclid','msclkid','bh_journey']) {
+    const value = input.get(key)?.trim();
+    if (!value || value.length>500 || /@|[\r\n]|https?:\/\/|bearer\s|(?:access_token|api_key|secret)=/i.test(value)) continue;
+    if (key !== 'bh_journey' || /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value)) output.set(key,value);
+  }
+  return output;
+}
 export function personalEntryPath(search:string) {
-  const channel=peChannel(search);return `/insight/individual${channel==='direct'?'':`?source=${channel}`}`;
+  const output=individualTrackingParams(search);
+  const channel=peChannel(search); if(channel!=='direct')output.set('source',channel);
+  return `/insight/individual${output.size?'?'+output.toString():''}`;
 }
 export function personalSignInPath(mode='signin',search='') {
   const params=new URLSearchParams(search),id=params.get('attempt');

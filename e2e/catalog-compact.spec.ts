@@ -3,13 +3,13 @@ test.skip(!process.env.PLAYWRIGHT_CATALOG,'Opt-in website-prod UI verification; 
 
 // Run against website-prod with PLAYWRIGHT_BASE_URL/PORT and reuse enabled.
 // Synthetic API fixtures: no production journey events or contact requests.
-const module=(code:string,name:string)=>({id:code,code,name,description:'Pengembangan yang relevan dengan kebutuhan organisasi.',tagline:'Bangun kebiasaan kerja yang berdampak.',
+const catalogModule=(code:string,name:string)=>({id:code,code,name,description:'Pengembangan yang relevan dengan kebutuhan organisasi.',tagline:'Bangun kebiasaan kerja yang berdampak.',
   learningObjectives:['Tujuan CEO sintetis yang tetap utuh.'],contentOutline:['Cakupan CEO sintetis yang tetap utuh.'],outputs:['Hasil CEO sintetis yang tetap utuh.'],
   bestFor:'Manager dan pemimpin tim',engagementFormat:'Workshop',duration:'1 hari',capacity:'20 orang',serviceBrand:'BinaHub',notes:'Catatan CEO sintetis.',standardScope:null,deliverables:null});
 const products=[
-  {key:'signature-self',name:'Self Transformation',modules:[module('COACH-01','Executive Coaching'),module('SELF-01','Personal Effectiveness')]},
-  {key:'signature-team',name:'Team Transformation',modules:[module('TEAM-01','High Performing Teams'),module('TEAM-02','Team Alignment')]},
-  {key:'signature-organization',name:'Organization Transformation',modules:[module('ORG-01','Culture Transformation'),module('ORG-02','Change Leadership')]},
+  {key:'signature-self',name:'Self Transformation',modules:[catalogModule('COACH-01','Executive Coaching'),catalogModule('SELF-01','Personal Effectiveness')]},
+  {key:'signature-team',name:'Team Transformation',modules:[catalogModule('TEAM-01','High Performing Teams'),catalogModule('TEAM-02','Team Alignment')]},
+  {key:'signature-organization',name:'Organization Transformation',modules:[catalogModule('ORG-01','Culture Transformation'),catalogModule('ORG-02','Change Leadership')]},
 ];
 test.beforeEach(async({page})=>{
   await page.route('https://api.binahub.id/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(
@@ -69,4 +69,59 @@ test('failed catalog request supports retry without fake products',async({page})
   failing=false;
   await page.getByRole('button',{name:'Coba lagi',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Executive Coaching',exact:true})).toBeVisible();
+});
+test('a recommendation deep link opens the matching program, not a fabricated or unavailable item',async({page})=>{
+  await page.goto('/id/pricing/?solution=SELF-01');
+  const dialog=page.getByRole('dialog',{name:'Rincian solusi: Personal Effectiveness'});await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Tujuan CEO sintetis yang tetap utuh.')).toBeVisible();
+  await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();
+  await page.goto('/id/pricing/?solution=UNKNOWN');await expect(page.getByRole('heading',{name:'Katalog solusi BinaHub'})).toBeVisible();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+});
+test('list view groups names by category and keeps details, filters and selection working',async({page},info)=>{
+  await page.goto('/id/pricing/');
+  const views=page.getByRole('group',{name:'Tampilan katalog'});
+  await expect(views.getByRole('button',{name:'Kartu',exact:true})).toHaveAttribute('aria-pressed','true');
+  await views.getByRole('button',{name:'Daftar',exact:true}).click();
+  await expect(views.getByRole('button',{name:'Daftar',exact:true})).toHaveAttribute('aria-pressed','true');
+  const individual=page.getByRole('region',{name:'Pengembangan individu',exact:true});
+  await expect(individual.getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByRole('region',{name:'Pengembangan tim',exact:true}).getByRole('listitem')).toHaveCount(2);
+  await expect(page.locator('main article')).toHaveCount(0);
+  await page.screenshot({path:`.codex_tmp/catalog-list-${info.project.name}.png`,fullPage:true});
+  const details=individual.getByRole('button',{name:'Lihat rincian: Executive Coaching',exact:true});
+  await details.focus(); await page.keyboard.press('Enter');
+  const dialog=page.getByRole('dialog',{name:'Rincian solusi: Executive Coaching'});
+  await expect(dialog.getByText('Tujuan CEO sintetis yang tetap utuh.')).toBeVisible();
+  await page.keyboard.press('Escape'); await expect(details).toBeFocused();
+  await individual.getByRole('button',{name:'Tambahkan ke pilihan: Executive Coaching',exact:true}).click();
+  await page.getByRole('button',{name:'Pilihan saya (1)',exact:true}).click();
+  await expect(individual.getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('region',{name:'Pengembangan tim',exact:true})).toHaveCount(0);
+  await page.getByRole('searchbox',{name:'Cari solusi'}).fill('tidak-ada-solusi-ini');
+  await expect(page.getByText('Belum ada solusi yang cocok.')).toBeVisible();
+  await page.getByRole('button',{name:'Hapus filter',exact:true}).click();
+  await expect(individual.getByRole('listitem')).toHaveCount(2);
+  await views.getByRole('button',{name:'Kartu',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Executive Coaching',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Hapus dari pilihan: Executive Coaching',exact:true})).toBeVisible();
+});
+test('list preference survives reload and locale changes, with long titles on narrow screens',async({page},info)=>{
+  const longTitle='Self-Development & Individual Development Planning';
+  const extended=[{...products[0],modules:[...products[0].modules,catalogModule('SELF-LONG',longTitle),catalogModule('BI-PUBLIC','Personal Reflection Assessment')]},...products.slice(1)];
+  await page.route('**/api/catalog/modules**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,products:extended})}));
+  await page.goto('/id/pricing/');
+  await page.getByRole('group',{name:'Tampilan katalog'}).getByRole('button',{name:'Daftar',exact:true}).click();
+  await page.reload();
+  await expect(page.getByRole('group',{name:'Tampilan katalog'}).getByRole('button',{name:'Daftar',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('button',{name:'Tambahkan ke pilihan: Personal Reflection Assessment',exact:true})).toHaveCount(0);
+  await page.setViewportSize({width:320,height:844});
+  await expect(page.getByRole('button',{name:`Lihat rincian: ${longTitle}`,exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:`.codex_tmp/catalog-list-narrow-${info.project.name}.png`,fullPage:true});
+  await page.goto('/en/pricing/');
+  await expect(page.getByRole('group',{name:'Catalog view'}).getByRole('button',{name:'List',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('region',{name:'Self Transformation',exact:true}).getByRole('button',{name:`View details: ${longTitle}`,exact:true})).toBeVisible();
+  await page.getByRole('group',{name:'Catalog view'}).getByRole('button',{name:'Cards',exact:true}).click();
+  await expect(page.getByRole('heading',{name:longTitle,exact:true})).toBeVisible();
 });

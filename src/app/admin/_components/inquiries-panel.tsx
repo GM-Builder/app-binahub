@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from 'next/link';
 import { ArrowRight, Bot, Check, CheckCircle2, ChevronDown, Mail, MessageSquareText, PauseCircle, Phone, PlayCircle, RotateCcw, Save, Send } from "lucide-react";
 import { FOLLOW_UP_LEVELS, INQUIRY_STATUS_OPTIONS, NOTE_PRESETS } from "../_lib/constants";
 import type { ConfirmAction, InquiryRecord } from "../_lib/types";
@@ -190,6 +191,7 @@ export function InquiriesPanel({ inquiries, onAction, onRefresh, initialSelected
           <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-sm font-semibold text-slate-950">Kebutuhan calon klien</p><p className="mt-1 text-xs text-slate-500">Masuk dari {selected.source || "website"} pada {formatDate(selected.createdAt)}.</p></div><div className="flex gap-1.5"><Badge tone="gold">{readable(getDraft(selected).status)}</Badge><Badge tone={selected.replyStatus === "sent" || selected.replyStatus === "reviewed" ? "green" : "navy"}>{replyStatusLabel(selected.replyStatus)}</Badge></div></div>
             <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{selected.message || "Tidak ada pesan tambahan."}</p>
+            {selected.source==='individual_consultation' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(selected.moduleRequest?.individualAttemptId||'')&&<Link href={`/admin/assessments/individual?attempt=${selected.moduleRequest!.individualAttemptId}`} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#0B2C6B] px-4 text-sm font-semibold text-white">Tinjau hasil individu <ArrowRight size={15} aria-hidden="true"/></Link>}
             <div className="mt-4 flex flex-wrap gap-2">{selected.email && <a href={`mailto:${selected.email}`} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-[#0B2C6B]"><Mail size={14} /> {selected.email}</a>}{selected.whatsapp && <a href={`https://wa.me/${selected.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-[#0B2C6B]"><Phone size={14} /> WhatsApp</a>}</div>
             {(selected.moduleRequest?.modules || []).length > 0 && <div className="mt-4 border-t border-slate-200 pt-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[#80560F]">Modul yang diminati</p><div className="mt-2 flex flex-wrap gap-2">{(selected.moduleRequest?.modules || []).map((module) => <span key={module.id || module.code} className="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-[#0B2C6B]">{module.name || module.code}</span>)}</div></div>}
           </section>

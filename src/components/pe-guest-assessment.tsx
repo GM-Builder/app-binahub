@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
-import { countAnswered, firstUnanswered, peChannel, type PEAnswer, type PEAttempt, type PEContext, type PEDefinition } from '@/lib/individual-assessment';
+import { countAnswered, firstUnanswered, individualTrackingParams, peChannel, type PEAnswer, type PEAttempt, type PEContext, type PEDefinition } from '@/lib/individual-assessment';
 import { clearPEGuestDraft, readPEGuestDraft, savePEGuestDraft, type PEGuestDraft } from '@/lib/pe-guest-storage';
 import { guestRequest, makeGuestKey } from '@/lib/pe-guest';
 import { PEGuestSyncQueue, hasPendingPEAnswers } from '@/lib/pe-guest-sync';
@@ -35,8 +35,13 @@ export function PEGuestAssessment() {
     try { await localWrites.current; } finally { pendingLocal.current--; }
   }, [update]);
   function payload(value: PEGuestDraft, source: PEDefinition) {
+    const params=individualTrackingParams(window.location.search);
+    const attribution=Object.fromEntries([['utm_source','utmSource'],['utm_medium','utmMedium'],['utm_campaign','utmCampaign'],['utm_content','utmContent'],['utm_term','utmTerm'],['gclid','gclid'],['fbclid','fbclid'],['msclkid','msclkid']]
+      .map(([key,target])=>[target,params.get(key)?.trim().slice(0,500)]).filter(([,entry])=>Boolean(entry)));
+    const journey=params.get('bh_journey');
     return { id: value.id, draftKey: value.draftKey, name: value.name, email: value.email, context: value.context,
       consentVersion: source.consentVersion, privacyVersion: source.privacyVersion, sharingConsentVersion: source.sharingConsentVersion,
+      attribution,...(journey&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(journey)?{journeyId:journey}:{}),
       channel: peChannel(window.location.search) };
   }
   useEffect(() => {

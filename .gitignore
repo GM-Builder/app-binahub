@@ -17,6 +17,7 @@
 
 # Codex temporary workspace and generated previews
 /.codex_tmp/
+/.impeccable/review/
 /tmp/
 *.inspect.ndjson
 /audit-session-tail.jsonl

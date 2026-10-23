@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -26,16 +26,9 @@ import {
 } from "../_lib/pipeline-model";
 import { formatDate } from "../_lib/utils";
 import { AdminDrawer, AdminInput, AdminSelect, AdminTextarea } from "./shared";
-
-const ACTIVITY_LABELS: Record<string, string> = {
-  created: "Peluang dibuat",
-  stage_changed: "Tahap diperbarui",
-  owner_assigned: "PIC ditetapkan",
-  next_action_updated: "Tindakan diperbarui",
-  outreach_paused: "Tindak lanjut dijeda",
-  outreach_resumed: "Tindak lanjut dilanjutkan",
-  converted_to_client: "Menjadi klien",
-};
+import { AssessmentBrief, ClientJourneyTimeline } from "./client-journey";
+import { buildClientJourney } from "../_lib/client-journey";
+import { proposalState } from "../_lib/assessment-presentation";
 
 export function PipelineDrawer({
   lead,
@@ -74,15 +67,8 @@ export function PipelineDrawer({
     if (dirty) setDiscard(true);
     else onClose();
   };
-  const activities = (data.opportunityActivities || [])
-    .filter((activity) => activity.leadId === lead.id)
-    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  const assessments = (data.assessments || []).filter(
-    (assessment) => assessment.leadId === lead.id,
-  );
-  const meetings = (data.calendarBookings || []).filter(
-    (meeting) => meeting.leadId === lead.id,
-  );
+  const journey = useMemo(() => buildClientJourney(data, { leadId: lead.id }), [data, lead.id]);
+  const { assessments, meetings } = journey;
   const save = async () => {
     if (busy.current || errors.length || !dirty) return;
     busy.current = true;
@@ -220,45 +206,14 @@ export function PipelineDrawer({
             {label}
             {key === "history" && (
               <span className="text-[10px] text-slate-400">
-                {activities.length}
+                {journey.events.length}
               </span>
             )}
           </button>
         ))}
       </div>
       {tab === "history" ? (
-        <div className="space-y-4">
-          {activities.length ? (
-            activities.map((activity) => (
-              <article
-                key={activity.id}
-                className="relative border-l-2 border-slate-200 py-1 pl-5"
-              >
-                <span className="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-[#0B2C6B]" />
-                <p className="text-xs font-semibold text-slate-800">
-                  {ACTIVITY_LABELS[activity.eventType] ||
-                    activity.eventType.replaceAll("_", " ")}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  {activity.note ||
-                    (activity.fromStage || activity.toStage
-                      ? `${stageLabel(activity.fromStage)} → ${stageLabel(activity.toStage)}`
-                      : "Aktivitas tercatat")}
-                </p>
-                <p className="mt-2 break-all text-[10px] text-slate-500">
-                  {activity.actor} · {formatDate(activity.createdAt)}
-                </p>
-              </article>
-            ))
-          ) : (
-            <p className="rounded-xl bg-slate-50 p-6 text-center text-xs text-slate-500">
-              Belum ada aktivitas tercatat.
-            </p>
-          )}
-          <p className="text-[10px] leading-5 text-slate-500">
-            Riwayat yang tersedia pada data dashboard saat ini.
-          </p>
-        </div>
+        <ClientJourneyTimeline key={lead.id} events={journey.events} />
       ) : (
         <div className="space-y-5">
           {!editing ? (
@@ -340,6 +295,9 @@ export function PipelineDrawer({
                 </p>
               </section>
               <section className="rounded-xl border border-slate-200 p-4">
+                <AssessmentBrief assessment={journey.brief} />
+              </section>
+              <section className="rounded-xl border border-slate-200 p-4">
                 <h3 className="text-xs font-semibold text-slate-800">
                   Assessment & konsultasi
                 </h3>
@@ -352,10 +310,11 @@ export function PipelineDrawer({
                     key={assessment.id}
                     className="mt-2 text-xs text-slate-600"
                   >
-                    Proposal: {assessment.proposalStatus || "Belum diminta"}
+                    {proposalState(assessment).label}
                   </p>
                 ))}
                 <div className="mt-3 flex flex-wrap gap-3">
+                  {lead.opportunityStage==='won'&&<Link href={`/admin/clients?lead=${encodeURIComponent(lead.id)}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white">{data.clientAccounts?.some(account=>account.sourceLeadId===lead.id)?'Buka akun & pelaksanaan':'Siapkan serah terima'}<ArrowUpRight size={13} aria-hidden="true"/></Link>}
                   <Link
                     href="/admin/assessments"
                     className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-[#0B2C6B]"

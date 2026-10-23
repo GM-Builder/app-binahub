@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { OutboundPreview } from "./outbound-preview";
 import { FunnelPreview } from "./funnel-preview";
 import { PipelinePreview } from "./pipeline-preview";
+import { ClientJourneyPreview } from "./client-journey-preview";
+import { SpinPreview } from "./spin-preview";
 import { AssessmentPanel } from "@/app/admin/_components/assessment-panel";
 import { assessmentDashboard, assessmentPreviewRecords } from "@/test/fixtures/assessment-admin";
 import "@/app/globals.css";
@@ -50,4 +52,4 @@ function Preview() {
 const mode = new URLSearchParams(window.location.search);
 createRoot(document.getElementById("root")!).render(mode.has("phone")
   ? <div className="min-h-screen bg-slate-100 p-5"><iframe title="Preview ponsel" src={mode.has("funnel") ? "/?funnel&screen=phone" : mode.has("outbound") ? "/?outbound&screen=phone" : "/?screen=phone"} style={{ width: 390, height: 844, border: "1px solid #cbd5e1", borderRadius: 16, background: "white" }} /></div>
-  : mode.has("pipeline") ? <PipelinePreview /> : mode.has("funnel") ? <FunnelPreview /> : mode.has("outbound") || mode.has("sales") ? <OutboundPreview /> : mode.has("proposal") ? <ProposalBook view={previewView} downloadUrl="#preview-only" /> : <Preview />);
+  : mode.has("spin") ? <SpinPreview /> : mode.has("journey") ? <ClientJourneyPreview /> : mode.has("pipeline") ? <PipelinePreview /> : mode.has("funnel") ? <FunnelPreview /> : mode.has("outbound") || mode.has("sales") ? <OutboundPreview /> : mode.has("proposal") ? <ProposalBook view={previewView} downloadUrl="#preview-only" /> : <Preview />);

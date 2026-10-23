@@ -2,6 +2,19 @@
 
 Tanggal: **16 Oktober 2026**. Status: **rancangan, belum implementasi runtime**.
 
+**Pembaruan penelaahan 21 Oktober:** paket CEO 20 Oktober menyediakan instrumen
+PE V2 dengan 37 soal. Tiga gratis PE-02/04/06 tetap 18 soal; tiga tambahan
+memuat 19 soal karena Integrity mendapat SJT ketiga. Saat implementasi lanjutan,
+jumlah/item diturunkan dari manifest dan entitlement berversi, bukan konstanta
+18 untuk paket tambahan. Definisi 26 kompetensi pada catatan lama telah
+dilengkapi kamus 34, tetapi instrumen yang tersedia tetap enam PE. Harga,
+gateway, merchant, retake dan masa akses belum ditetapkan oleh paket tersebut.
+Laporan individu, template IDP dan email hasil individu dari chat 21 Oktober
+kini tersedia. Template proposal indikatif tercantum pada shared chat; akses
+lampiran dan penyelarasan jalur assessment individu masih perlu diselesaikan.
+Urutan kerja aktif berada di
+[rencana pengembangan](development-journey-work-plan.md).
+
 Pembaruan: app **0.38.0** / API **0.37.0** / SQL **69** mengimplementasikan
 persiapan internal: draft paket terversi, struktur data privat, dan daftar
 transaksi admin. Bagian checkout, identitas pelanggan ber-scope, grant,

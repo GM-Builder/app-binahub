@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, Search, Send } from "lucide-react";
 import { salesTasks, type SalesTask, type SalesView } from "../_lib/sales-workspace";
 import type { AssessmentDetailTab } from "../_lib/assessment-presentation";
@@ -11,6 +11,7 @@ import { InquiriesPanel } from "./inquiries-panel";
 import { PipelinePanel } from "./pipeline-panel";
 import { MeetingsPanel } from "./meetings-panel";
 import { SalesFollowUpControl } from "./sales-follow-up-control";
+const SpinPanel = lazy(() => import('./spin-panel').then(module => ({ default: module.SpinPanel })));
 
 type Action = (url: string, init?: RequestInit) => Promise<unknown>;
 const sections: [SalesView, string][] = [["priorities", "Prioritas"], ["inbound", "Inbound"], ["outbound", "Outbound"], ["clients", "Klien & proposal"], ["followup", "Tindak lanjut"], ["pipeline", "Peluang"], ["meetings", "Konsultasi"]];
@@ -21,7 +22,7 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [limit, setLimit] = useState(12);
-  const [clientType, setClientType] = useState<"assessment" | "inquiry">("assessment");
+  const [clientType, setClientType] = useState<"assessment" | "inquiry" | "discovery">("assessment");
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [inquiryId, setInquiryId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<AssessmentDetailTab>("summary");
@@ -58,8 +59,9 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
     </section>}
     {(view === "inbound" || view === "outbound") && <AcquisitionControlPanel key={view} initialView={view} embedded onAction={onAction} />}
     {view === "clients" && <>
-      <div className="flex gap-2">{(["assessment", "inquiry"] as const).map((type) => <button type="button" key={type} aria-pressed={clientType === type} onClick={() => setClientType(type)} className={`min-h-11 rounded-xl px-4 text-xs font-semibold ${clientType === type ? "bg-[#0B2C6B] text-white" : "bg-white text-slate-600"}`}>{type === "assessment" ? "Assessment & proposal" : "Inquiry masuk"}</button>)}</div>
-      {clientType === "assessment" ? <AssessmentPanel initialDetailTab={detailTab} data={data} records={records} query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employees} setEmployeeRange={setEmployees} minScore={minScore} setMinScore={setMinScore} expandedId={assessmentId} setExpandedId={setAssessmentId} onAction={onAction} onRefresh={onRefresh} /> : <InquiriesPanel key={inquiryId} initialSelectedId={inquiryId} inquiries={data.inquiries} onAction={onAction} onRefresh={onRefresh} />}
+      <div className="flex flex-wrap gap-2">{(["assessment", "inquiry", "discovery"] as const).map((type) => <button type="button" key={type} aria-pressed={clientType === type} onClick={() => setClientType(type)} className={`min-h-11 rounded-xl px-4 text-xs font-semibold ${clientType === type ? "bg-[#0B2C6B] text-white" : "bg-white text-slate-600"}`}>{type === "assessment" ? "Assessment & proposal" : type === "discovery" ? "Discovery organisasi" : "Inquiry masuk"}</button>)}</div>
+      {clientType === "discovery" && <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">Memuat discovery organisasi…</p>}><SpinPanel /></Suspense>}
+      {clientType === "assessment" ? <AssessmentPanel initialDetailTab={detailTab} data={data} records={records} query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employees} setEmployeeRange={setEmployees} minScore={minScore} setMinScore={setMinScore} expandedId={assessmentId} setExpandedId={setAssessmentId} onAction={onAction} onRefresh={onRefresh} /> : clientType === "inquiry" ? <InquiriesPanel key={inquiryId} initialSelectedId={inquiryId} inquiries={data.inquiries} onAction={onAction} onRefresh={onRefresh} /> : null}
     </>}
     {view === "pipeline" && <PipelinePanel data={data} onAction={onAction} onRefresh={onRefresh} />}
     {view === "meetings" && <MeetingsPanel bookings={data.calendarBookings || []} />}

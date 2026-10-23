@@ -11,10 +11,11 @@ describe('PE navigation helpers',()=>{
     expect(personalSignInPath('signup')).toBe('/?mode=signup&next=%2Finsight%2Findividual');
     expect(personalSignInPath('//evil')).toBe('/?mode=signin&next=%2Finsight%2Findividual');
   });
-  it('carries only a recognized source channel through individual entry and sign-in',()=>{
+  it('carries whitelisted campaign context without contact details or arbitrary redirects',()=>{
     expect(peChannel('?utm_source=ig&utm_campaign=launch')).toBe('instagram');
-    expect(personalEntryPath('?utm_source=tiktok&email=private@example.invalid')).toBe('/insight/individual?source=tiktok');
+    expect(personalEntryPath('?utm_source=tiktok&email=private@example.invalid')).toBe('/insight/individual?utm_source=tiktok&source=tiktok');
     expect(personalEntryPath('?utm_source=someone@example.invalid')).toBe('/insight/individual?source=other');
-    expect(decodeURIComponent(personalSignInPath('signin','?utm_source=instagram&next=https://evil.test'))).toContain('next=/insight/individual?source=instagram');
+    const next=new URL(personalSignInPath('signin','?utm_source=instagram&next=https://evil.test'),'https://app.binahub.id').searchParams.get('next');
+    expect(next).toBe('/insight/individual?utm_source=instagram&source=instagram');
   });
 });

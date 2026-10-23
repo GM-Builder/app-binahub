@@ -6,6 +6,12 @@ const now = Date.parse("2026-10-05T03:00:00Z");
 const result = () => assessmentFixture({ assessmentStatus: "Result Otomatis Terkirim", proposalStatus: "Belum Diminta" });
 
 describe("Assessment presentation", () => {
+  it("keeps an automatic proposal held for review visible even without a draft", () => {
+    const record = assessmentFixture({ assessmentStatus: "Minta Proposal", proposalStatus: "Menunggu Approval", proposalDraft: null, proposalGateStatus: "pending_approval" });
+    expect(proposalState(record)).toMatchObject({ review: true, label: "Proposal perlu ditinjau" });
+    expect(needsAttention(record)).toBe(true);
+    expect(matchesQueue(record, "attention")).toBe(true);
+  });
   it("uses the next scheduled result reminder, not just a two-day threshold", () => {
     expect(dueFollowUp(result(), "result", now)).toBe(1);
     expect(dueFollowUp({ ...result(), resultFollowUpLevel: 1 }, "result", now)).toBeNull();
