@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.41.1] - 2026-10-23
+
+### Fixed
+
+- Membatasi worker pengumpulan page data/static generation menjadi dua agar build
+  tidak mengikuti 63 worker dari jumlah CPU yang dilaporkan host. Pemeriksaan
+  TypeScript tetap aktif; tidak memerlukan env tambahan di Hostinger.
+- Memperbarui Next.js dan konfigurasi ESLint ke 16.4.2 serta menaikkan batas minimum
+  Vitest ke 4.1.12 dan Vite ke 8.1.6 untuk advisory Next/Vite/Vitest yang dilaporkan.
+- Menambahkan regresi konfigurasi build dan panduan pemeriksaan log deployment.
+
+### Verification
+
+- Instalasi lockfile, lint, TypeScript dan 334 tes lulus. Build produksi menghasilkan
+  90 halaman menggunakan dua worker. Smoke test server hasil build lulus pada
+  login, Discovery dan hasil individu; belum memverifikasi deployment Hostinger.
+
+### Security notes
+
+- Advisory `braces` GHSA-vfj7-8cjw-p6xm pada rantai tooling ESLint belum memiliki
+  versi perbaikan upstream. Ini berbeda dari sepuluh advisory pada screenshot;
+  jangan menandai audit seluruh dependensi sebagai bersih. Rincian dan batas
+  mitigasi ada di `docs/security-dependencies-2026-10-23.md`.
+
 ## [0.41.0] - 2026-10-23
 
 ### Added

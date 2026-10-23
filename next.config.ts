@@ -75,6 +75,10 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   experimental: {
+    // Shared build hosts may expose many CPUs but allow far fewer processes/threads.
+    // Bound page-data/static-generation workers instead of using CPU count minus one.
+    cpus: 2,
+    workerThreads: false,
     optimizePackageImports: ["lucide-react", "recharts", "framer-motion"],
   },
   compiler: {

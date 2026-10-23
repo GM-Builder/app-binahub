@@ -2,6 +2,19 @@
 
 Frontend memakai Next.js server output agar reverse proxy `/api/*` dan security headers berjalan di origin production.
 
+## Batas resource build Hostinger (v0.41.1)
+
+- Gunakan Node.js 22 dan perintah `npm run build` seperti sebelumnya.
+- `next.config.ts` membatasi page-data/static-generation worker menjadi **2**.
+  Host dapat melaporkan 64 CPU walaupun kuota proses/thread container jauh lebih
+  kecil; default 63 worker pernah menyebabkan `OS can't spawn worker thread`
+  saat pengumpulan page data. Kompilasi dan pemeriksaan TypeScript tetap aktif.
+- Tidak perlu menambahkan env worker privat, mengubah database, atau mengubah
+  konfigurasi pengiriman email. `workerThreads` adalah boolean, bukan jumlah worker.
+- Push harus memuat `package.json` **dan** `package-lock.json`. Pada log build baru,
+  pastikan versi app **0.41.1**, Next.js **16.4.2**, dan jumlah worker **2**.
+  Build lokal yang lulus belum membuktikan deployment Hostinger sudah berhasil.
+
 ## Urutan deployment
 
 1. Ikuti runbook `../binahub-api/supabase/DEPLOYMENT.md` dan terapkan seluruh migration API secara berurutan sampai migration terbaru (saat dokumen ini diperbarui: `0048_tbos_flexible_batch_constraints.sql`), lalu jalankan `supabase/production_readiness.sql`. Semua flag `*_ready` harus `true` dan seluruh counter integritas `*_issues` harus nol.
