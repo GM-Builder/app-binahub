@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.43.0] - 2026-10-26
+
+### Added
+
+- Checklist meeting pada workspace Kebutuhan program: jawaban awal klien,
+  filter bagian kosong, klarifikasi terpisah dan lima kelompok pertanyaan CEO.
+- Penyimpanan otomatis tanpa mengunci input, pemulihan simpan gagal, perlindungan
+  konflik revisi serta peringatan sebelum meninggalkan perubahan belum tersimpan.
+- Sesi dapat dibuka kembali atau ditandai selesai; admin juga dapat memulai
+  checklist untuk klien yang belum mengisi formulir. Pencarian inbox lintas halaman.
+- Pintasan dari detail konsultasi ke kebutuhan berdasarkan email, tanpa memilih
+  otomatis atau menyatukan rekaman klien yang berbeda.
+
+### Deployment
+
+- Memerlukan API 0.40.0 dan SQL **72** setelah SQL 71. Pengisian/laporan lama
+  tetap dapat dibuka jika pembaruan checklist belum diterapkan. Tanpa env baru.
+- Tidak mengubah pengisian asli, laporan klien, skor, harga, follow-up atau email.
+  Ini checklist internal, bukan generator proposal custom. Panduan penggunaan dan
+  batas verifikasi ada di `docs/program-meeting-checklist.md`.
+
 ## [0.42.1] - 2026-10-26
 
 ### Fixed

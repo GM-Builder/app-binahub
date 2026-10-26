@@ -72,7 +72,7 @@ function ConsultationMetric({ label, value, note, icon: Icon, tone = "navy" }: {
   );
 }
 
-export function MeetingsPanel({ bookings }: { bookings: CalendarBookingRecord[] }) {
+export function MeetingsPanel({ bookings, onOpenChecklist }: { bookings: CalendarBookingRecord[]; onOpenChecklist?: (booking: CalendarBookingRecord) => void }) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("Semua");
   const [view, setView] = useState<ConsultationView>("upcoming");
@@ -191,6 +191,7 @@ export function MeetingsPanel({ bookings }: { bookings: CalendarBookingRecord[] 
             <a href={`mailto:${selected.attendeeEmail}`} className="mt-4 flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-[#0B2C6B] transition hover:border-[#0B2C6B]/30"><Mail size={15} /> <span className="min-w-0 flex-1 truncate">{selected.attendeeEmail}</span><ArrowRight size={14} /></a>
           </section>
 
+          {onOpenChecklist && <button type="button" onClick={() => onOpenChecklist(selected)} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-[#0B2C6B]">Buka checklist kebutuhan <ArrowRight size={15} aria-hidden="true" /></button>}
           {selected.meetingUrl ? <a href={selected.meetingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white transition hover:bg-[#071B3D]"><Video size={16} /> Buka ruang konsultasi <ExternalLink size={14} /></a> : <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">Tautan pertemuan belum tersedia. Periksa kembali detail booking di Cal.com.</div>}
         </div>
       </AdminDrawer>}

@@ -1,6 +1,6 @@
 "use client";
 
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Search, Send } from "lucide-react";
 import { salesTasks, type SalesTask, type SalesView } from "../_lib/sales-workspace";
 import type { AssessmentDetailTab } from "../_lib/assessment-presentation";
@@ -23,6 +23,11 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
   const [filter, setFilter] = useState("all");
   const [limit, setLimit] = useState(12);
   const [clientType, setClientType] = useState<"assessment" | "inquiry" | "discovery">("assessment");
+  const [discoverySearch, setDiscoverySearch] = useState("");
+  const pendingMeeting = useRef(false);
+  const onMeetingDirty = useCallback((dirty: boolean) => { pendingMeeting.current = dirty; }, []);
+  const mayLeaveMeeting = () => !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
+  const changeView = (next: SalesView) => { if (next === view || mayLeaveMeeting()) { setView(next); setFilter("all"); setLimit(12); } };
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [inquiryId, setInquiryId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<AssessmentDetailTab>("summary");
@@ -36,6 +41,7 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
   const records = data.assessments.filter((record) => `${record.name} ${record.email} ${record.company}`.toLowerCase().includes(query.toLowerCase())
     && (category === "Semua" || record.category === category) && (employees === "Semua" || record.employees === employees) && record.overallScore >= Number(minScore));
   const open = (task: SalesTask) => {
+    if (!mayLeaveMeeting()) return;
     setView(task.view);
     if (task.kind === "inquiry" || task.kind === "followup" && !task.detail) { setClientType("inquiry"); setInquiryId(task.recordId); }
     else if (task.view === "clients") { setClientType("assessment"); setAssessmentId(task.recordId); setDetailTab(task.detail || "summary"); setQuery(""); setCategory("Semua"); setEmployees("Semua"); setMinScore("0"); }
@@ -44,11 +50,11 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Workspace penjualan</p><h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">Dari percakapan pertama hingga kesepakatan</h2><p className="mt-2 text-sm leading-6 text-slate-500">Lihat prioritas, buka konteks klien, lalu ambil langkah berikutnya dari sini.</p></div>
-        <button type="button" onClick={() => setView("outbound")} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white"><Send size={16} /> Mulai kampanye email</button>
+        <button type="button" onClick={() => changeView("outbound")} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white"><Send size={16} /> Mulai kampanye email</button>
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Perlu ditangani", tasks.length], ["Proposal", tasks.filter((t) => t.kind === "proposal").length], ["Tindak lanjut", tasks.filter((t) => t.kind === "followup").length], ["Kesepakatan", (data.pipelineLeads || []).filter((lead) => lead.opportunityStage === "won").length]].map(([label, count]) => <div key={label} className="rounded-xl bg-slate-50 p-3.5"><p className="text-[11px] font-medium text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold tabular-nums text-slate-900">{count}</p></div>)}</div>
     </section>
-    <nav aria-label="Workspace Akuisisi dan Penjualan" className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-100/70 p-1">{sections.map(([id, label]) => <button type="button" key={id} aria-current={view === id ? "page" : undefined} onClick={() => { setView(id); setFilter("all"); setLimit(12); }} className={`min-h-11 shrink-0 rounded-lg px-4 text-xs font-semibold transition ${view === id ? "bg-white text-[#0B2C6B] shadow-sm" : "text-slate-500 hover:bg-white/60"}`}>{label}</button>)}</nav>
+    <nav aria-label="Workspace Akuisisi dan Penjualan" className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-100/70 p-1">{sections.map(([id, label]) => <button type="button" key={id} aria-current={view === id ? "page" : undefined} onClick={() => changeView(id)} className={`min-h-11 shrink-0 rounded-lg px-4 text-xs font-semibold transition ${view === id ? "bg-white text-[#0B2C6B] shadow-sm" : "text-slate-500 hover:bg-white/60"}`}>{label}</button>)}</nav>
     {view === "followup" && <SalesFollowUpControl onAction={onAction} />}
     {(view === "priorities" || view === "followup") && <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-lg font-semibold text-slate-950">{view === "followup" ? "Percakapan yang perlu dilanjutkan" : "Langkah berikutnya"}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{view === "followup" ? "Tinjau konteks sebelum mengirim. Klien yang dijeda atau sudah ditangani tidak ditawarkan pengingat." : "Diurutkan berdasarkan status dan tenggat yang tercatat, bukan keputusan AI."}</p></div><label className="relative w-full sm:w-64"><Search size={15} className="absolute left-3 top-3.5 text-slate-400" /><input aria-label="Cari prioritas penjualan" type="search" value={search} onChange={(e) => { setSearch(e.target.value); setLimit(12); }} placeholder="Nama, perusahaan, atau sumber" className="h-11 w-full rounded-xl border border-slate-200 pl-9 pr-3 text-xs" /></label></div>
@@ -59,11 +65,11 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
     </section>}
     {(view === "inbound" || view === "outbound") && <AcquisitionControlPanel key={view} initialView={view} embedded onAction={onAction} />}
     {view === "clients" && <>
-      <div className="flex flex-wrap gap-2">{(["assessment", "inquiry", "discovery"] as const).map((type) => <button type="button" key={type} aria-pressed={clientType === type} onClick={() => setClientType(type)} className={`min-h-11 rounded-xl px-4 text-xs font-semibold ${clientType === type ? "bg-[#0B2C6B] text-white" : "bg-white text-slate-600"}`}>{type === "assessment" ? "Assessment & proposal" : type === "discovery" ? "Discovery organisasi" : "Inquiry masuk"}</button>)}</div>
-      {clientType === "discovery" && <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">Memuat discovery organisasi…</p>}><SpinPanel /></Suspense>}
+      <div className="flex flex-wrap gap-2">{(["assessment", "inquiry", "discovery"] as const).map((type) => <button type="button" key={type} aria-pressed={clientType === type} onClick={() => { if (type === clientType || mayLeaveMeeting()) setClientType(type); }} className={`min-h-11 rounded-xl px-4 text-xs font-semibold ${clientType === type ? "bg-[#0B2C6B] text-white" : "bg-white text-slate-600"}`}>{type === "assessment" ? "Assessment & proposal" : type === "discovery" ? "Discovery organisasi" : "Inquiry masuk"}</button>)}</div>
+      {clientType === "discovery" && <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">Memuat kebutuhan program…</p>}><SpinPanel initialSearch={discoverySearch} onUnsavedChange={onMeetingDirty} /></Suspense>}
       {clientType === "assessment" ? <AssessmentPanel initialDetailTab={detailTab} data={data} records={records} query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employees} setEmployeeRange={setEmployees} minScore={minScore} setMinScore={setMinScore} expandedId={assessmentId} setExpandedId={setAssessmentId} onAction={onAction} onRefresh={onRefresh} /> : clientType === "inquiry" ? <InquiriesPanel key={inquiryId} initialSelectedId={inquiryId} inquiries={data.inquiries} onAction={onAction} onRefresh={onRefresh} /> : null}
     </>}
     {view === "pipeline" && <PipelinePanel data={data} onAction={onAction} onRefresh={onRefresh} />}
-    {view === "meetings" && <MeetingsPanel bookings={data.calendarBookings || []} />}
+    {view === "meetings" && <MeetingsPanel bookings={data.calendarBookings || []} onOpenChecklist={booking => { setDiscoverySearch(booking.attendeeEmail); setClientType("discovery"); setView("clients"); }} />}
   </div>;
 }

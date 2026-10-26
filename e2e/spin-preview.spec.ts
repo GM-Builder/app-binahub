@@ -9,10 +9,11 @@ test('five-stage submission is nonblocking, preserves answers, and renders repor
  await page.route('**/api/**',async route=>{
  const req=route.request(),url=new URL(req.url()),body=req.postDataJSON();
  let data:unknown;
- if(url.pathname==='/api/admin/discovery'){
+ if(url.pathname==='/api/admin/discovery'||url.pathname==='/api/admin/discovery/meetings'){
  const record={id,status:'ready',contact:{name:'Contoh Nadia',email:'synthetic@example.invalid',company:'Contoh Organisasi — data sintetis'},submitted_at:'2026-10-22T03:00:00Z',report:spinSyntheticReport,summary:spinSyntheticReport.summary,answers,internal_report:{fitType:'A',leadTemperature:'warm'},marketing_consent:false};
  data=url.searchParams.has('id')?{record,definition,delivery:[{id:'synthetic-mail',status:'sent',attempts:1,sent_at:'2026-10-22T03:01:00Z'}]}:{records:[record],total:1,page:0};
- }else if(req.method()==='GET'&&url.pathname==='/api/discovery/spin')data={definition,available:true};
+ }else if(url.pathname==='/api/admin/discovery/'+id+'/meeting')data={definition,original:answers,checklist:{id,source_id:id,contact:{name:'Contoh Nadia',email:'synthetic@example.invalid',company:'Contoh Organisasi'},answers:{},notes:'',status:'in_progress',revision:0,updated_at:null}};
+ else if(req.method()==='GET'&&url.pathname==='/api/discovery/spin')data={definition,available:true};
  else if(req.method()==='POST'&&url.pathname==='/api/discovery/spin')data={attempt:{id,revision,answers,confirmation,status:'draft'},challenge:'Berapa 3 + 4?'};
  else if(req.method()==='PATCH'){answers=body.answers;confirmation=body.confirmation;revision++;if(body.submit)submitCount++;data={attempt:{id,revision,answers,confirmation,status:body.submit?'queued':'draft'},summaryHash:'a'.repeat(64)};}
  else data={success:true};

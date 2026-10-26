@@ -4,8 +4,10 @@ import path from "node:path";
 
 export default defineConfig({
   root: path.resolve(__dirname),
+  publicDir: path.resolve(__dirname, '../../public'),
   plugins: [react()],
   resolve: { alias: [
+    { find: 'next/image', replacement: path.resolve(__dirname, 'mock-image.tsx') },
     { find: "next/link", replacement: path.resolve(__dirname, "mock-link.tsx") },
     { find: "@/lib/api-fetch", replacement: path.resolve(__dirname, "mock-api-fetch.ts") },
     { find: "@/lib/supabase", replacement: path.resolve(__dirname, "mock-supabase.ts") },
