@@ -54,7 +54,7 @@ test('five-stage submission is nonblocking, preserves answers, and renders repor
  await page.getByLabel('Nama',{exact:true}).fill('Contoh Nadia');
  await page.getByLabel('Email kerja',{exact:true}).fill('synthetic@example.invalid');
  await page.getByLabel('Perusahaan / organisasi',{exact:true}).fill('Contoh Organisasi');
- await page.getByLabel('Jawaban verifikasi singkat').fill('7');
+ await page.getByRole('spinbutton',{name:'Verifikasi singkat: Berapa 3 + 4?'}).fill('7');
  await page.getByRole('checkbox',{name:/Saya memahami penggunaan data/}).check();
  const conflict=page.getByRole('checkbox',{name:/Saya memahami hal tersebut/});if(await conflict.count())await conflict.check();
  await page.getByRole('button',{name:'Kirim permintaan'}).dblclick();

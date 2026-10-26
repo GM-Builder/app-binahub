@@ -2,7 +2,7 @@
 import { useRef,useState } from 'react';
 import { guestRequest } from '@/lib/pe-guest';
 
-export function PEConsultationRequest({id,shared}:{id:string;shared:boolean}) {
+export function PEConsultationRequest({id,shared,className}:{id:string;shared:boolean;className?:string}) {
   const [state,setState]=useState<'idle'|'sending'|'sent'>('idle'),[error,setError]=useState('');
   const lock=useRef(false);
   async function request(){
@@ -12,7 +12,7 @@ export function PEConsultationRequest({id,shared}:{id:string;shared:boolean}) {
     catch{setState('idle');setError('Permintaan belum dapat dikirim. Coba lagi; permintaan yang sama tidak dibuat dua kali.');}
     finally{lock.current=false;}
   }
-  return <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="pe-consultation-title">
+  return <section className={className || 'mt-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6'} aria-labelledby="pe-consultation-title">
     <h2 id="pe-consultation-title" className="text-lg font-semibold">Diskusikan langkah pengembangan Anda</h2>
     <p className="mt-2 text-sm leading-6 text-slate-600">Tim BinaHub dapat membantu memilih program yang sesuai. Dengan meminta konsultasi, Anda meminta tim menghubungi Anda melalui email dengan mempertimbangkan hasil yang Anda izinkan untuk ditinjau. Ini bukan persetujuan berlangganan email marketing.</p>
     {state==='sent'?<p role="status" className="mt-4 text-sm font-medium text-emerald-800">Permintaan konsultasi diterima. Tim BinaHub akan menghubungi Anda melalui email.</p>:<>

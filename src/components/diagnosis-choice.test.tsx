@@ -18,7 +18,7 @@ describe('diagnosis choice', () => {
   it('provides two named choices with consistent actions and separate history', async () => {
     mock.fetch.mockResolvedValue(response(true));
     render(<DiagnosisChoice />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Apa yang ingin Anda kembangkan?');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Mulai perjalanan pengembangan Anda');
     expect(screen.getByRole('article', { name: 'Tim / Organisasi' })).toBeInTheDocument();
     expect(screen.getByRole('article', { name: 'Individu' })).toBeInTheDocument();
     expect(screen.queryByText(/gratis/i)).not.toBeInTheDocument();
@@ -27,6 +27,9 @@ describe('diagnosis choice', () => {
     const history = screen.getByRole('link', { name: 'Riwayat pengisian akun' });
     expect(history).toHaveAttribute('href', '/insight/individual/history');
     expect(history.closest('article')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Lihat hasil individu' })).toHaveAttribute('href', '/insight/individual/result');
+    expect(screen.getByRole('link', { name: 'Lanjutkan draf individu' })).toHaveAttribute('href', '/insight/individual');
+    expect(screen.getByRole('link', { name: 'Dapatkan rekomendasi program' })).toHaveAttribute('href', '/discovery');
   });
 
   it('preserves organization language/campaign and whitelisted individual attribution', async () => {
@@ -97,7 +100,7 @@ describe('diagnosis choice', () => {
 
   it('keeps the same heading and announces the Suspense skeleton without fetching', () => {
     render(<DiagnosisChoiceLoading />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Apa yang ingin Anda kembangkan?');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Mulai perjalanan pengembangan Anda');
     expect(screen.getByRole('status')).toHaveTextContent('Menyiapkan pilihan diagnosis…');
     expect(mock.fetch).not.toHaveBeenCalled();
   });

@@ -15,8 +15,8 @@ test('requests an email result link without an account or remembered attempt num
     expect(route.request().postDataJSON()).toEqual({email:'synthetic@example.invalid'});requests++;
     return route.fulfill({status:202,json:{success:true}});
   });
-  await page.goto('/insight/individual/result');await page.getByLabel('Email yang dipakai saat mengisi').fill('synthetic@example.invalid');
-  await page.getByRole('button',{name:'Kirim tautan baru'}).click();await expect(page.getByRole('status')).toHaveText(/Jika data cocok/);
+  await page.goto('/insight/individual/result');await page.getByText('Butuh tautan baru?',{exact:true}).click();await page.getByLabel('Email pengisian').fill('synthetic@example.invalid');
+  await page.getByRole('button',{name:'Kirim tautan baru'}).click();await expect(page.getByRole('status')).toHaveText(/Jika email sesuai dengan data pengisian/);
   expect(requests).toBe(1);await expect(page.getByRole('heading',{name:'Langkah kecil yang lebih terarah.'})).toHaveCount(0);
 });
 test('guest completes without auth; pending choice survives reload; one final submission and no scores before email',async({page},info)=>{
@@ -35,12 +35,12 @@ test('guest completes without auth; pending choice survives reload; one final su
     return route.fulfill({json:{success:true,attempt,emailStatus:null}});
   });
   await page.goto('/insight/individual');
-  await expect(page.getByRole('heading',{name:'Kenali kebutuhan pengembangan Anda.'})).toBeVisible();
-  await page.getByLabel('Nama Anda',{exact:true}).fill('Synthetic Person');await page.getByLabel('Email untuk menerima hasil').fill('synthetic@example.invalid');
+  await expect(page.getByRole('heading',{name:'Pahami kebutuhan pengembangan diri Anda.'})).toBeVisible();
+  await page.getByLabel('Nama Anda',{exact:true}).fill('Synthetic Person');await page.getByLabel('Alamat email',{exact:true}).fill('synthetic@example.invalid');
   await page.getByLabel('Peran atau pekerjaan Anda').fill('Synthetic role');await page.getByLabel('Apa yang ingin Anda kembangkan?').fill('Synthetic goal');
   await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Mulai diagnosis',exact:true}).click();
   await expect(page.getByText('Synthetic question 1',{exact:true})).toBeVisible();
-  failSave=true;await page.getByRole('radio').first().check();await expect(page.getByRole('alert')).toBeVisible();
+  failSave=true;await page.getByRole('radio').first().check();await expect(page.getByText(/Jawaban belum tersimpan di server/)).toBeVisible();
   expect(attempt.responses).toEqual({});
   const local=await page.evaluate(async()=>{
     const db=await new Promise<IDBDatabase>((resolve,reject)=>{const req=indexedDB.open('binahub-pe-private-draft-v1');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
@@ -71,10 +71,10 @@ test('email result consumes token only on click, clears URL fragment and recover
     return route.fulfill({json:{success:true,report,retentionUntil:'2027-04-13T00:00:00Z',access:{shared:true,evaluationConsent:false,exportConsent:false,clarity:null,usefulness:null}}});
   });
   await page.goto(`/insight/individual/result?attempt=${id}#access=${token}`);
-  const open=page.getByRole('button',{name:'Buka hasil diagnosis',exact:true});await expect(open).toBeEnabled();
+  const open=page.getByRole('button',{name:'Lihat hasil saya',exact:true});await expect(open).toBeEnabled();
   expect(exchangeCalls).toBe(0);expect(page.url()).not.toContain(token);
   await open.click();await expect(page.getByRole('alert')).toBeVisible();await expect(open).toBeEnabled();await open.click();
-  await expect(page.getByRole('heading',{name:'Langkah kecil yang lebih terarah.'})).toBeVisible();expect(exchangeCalls).toBe(1);
+  await expect(page.getByRole('heading',{name:'Hasil asesmen individu'})).toBeVisible();expect(exchangeCalls).toBe(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:`test-results/pe-email-result-${info.project.name}.png`,fullPage:true});
 });

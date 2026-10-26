@@ -3,11 +3,12 @@ import { useRef, useState } from 'react';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { peRequest, type PEReviewAccess } from '@/lib/individual-assessment';
 
-export function PEReviewAccessPanel({ id, access, token, onChange, update, onErase }: {
+export function PEReviewAccessPanel({ id, access, token, onChange, update, onErase, className }: {
   id: string; access: PEReviewAccess; token: () => Promise<string>;
   onChange: (access: PEReviewAccess) => void;
   update?: (body: unknown) => Promise<{ access: PEReviewAccess }>;
   onErase?: () => Promise<void>;
+  className?: string;
 }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState('');
   const [share, setShare] = useState(access.shared);
@@ -47,7 +48,7 @@ export function PEReviewAccessPanel({ id, access, token, onChange, update, onEra
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Data belum terhapus. Silakan coba lagi.'); }
     finally { lock.current = false; setBusy(false); }
   }
-  return <details className="mt-5 rounded-xl border border-slate-200 bg-white text-slate-900" aria-busy={busy} onToggle={event => {
+  return <details className={className || 'mt-5 rounded-xl border border-slate-200 bg-white text-slate-900'} aria-busy={busy} onToggle={event => {
     if (!(event.currentTarget as HTMLDetailsElement).open) setConfirmDelete(false);
   }}>
     <summary className="min-h-12 cursor-pointer px-5 py-4 text-sm font-semibold text-[#0B2C6B] sm:px-6"><span className="ml-1 inline-flex items-center gap-2"><ShieldCheck size={17} aria-hidden="true" />Privasi & data</span></summary>

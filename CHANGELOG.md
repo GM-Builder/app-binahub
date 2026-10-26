@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.42.0] - 2026-10-26
+
+### Changed
+
+- Menyamakan halaman pilihan diagnosis dan seluruh lima tahap Discovery dengan
+  referensi BinaHub: header ringkas, latar biru lembut, panduan konteks dan form
+  responsif. Mengikutsertakan perubahan lokal 25 Oktober yang belum dipush.
+- Redesain alur diagnosis individu: profil awal, soal pengalaman/studi kasus,
+  tinjauan jawaban, konfirmasi pengiriman, akses email dan laporan hasil.
+- Mempertahankan pertanyaan, skor terpisah, autosave, persetujuan privasi,
+  akses pribadi, pengiriman, API dan penyimpanan existing. Tidak ada SQL/env baru.
+
+### Verification
+
+- Bukti dan batas pemeriksaan UI ada pada `docs/diagnosis-reference-redesign.md`
+  serta `docs/individual-reference-redesign.md`. Pengujian browser memakai data
+  sintetis dan API mock; bukan bukti pengiriman email/deployment produksi.
+
 ## [0.41.1] - 2026-10-23
 
 ### Fixed

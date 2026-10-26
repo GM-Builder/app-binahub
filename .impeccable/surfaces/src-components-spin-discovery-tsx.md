@@ -13,7 +13,7 @@ Data has no automatic age-based deletion. Access expiry remains separate.
 THESIS: Make a business conversation legible, one small group at a time; no catalogue-first selection or giant form.
 OWN-WORLD: Existing navy #0B2C6B actions and headings, cool #F7F8FA ground, white task surface, slate text, 12px controls, familiar sans typography.
 STORY: Give context, describe needs, understand impact, state outcomes, confirm a four-part brief, then request recommendations by email.
-FIRST VIEWPORT: Compact brand header; five-stage progress above a 720px working column; one group of labelled fields, status near footer and primary Continue. Admin: records and selected brief, report and next action together.
+FIRST VIEWPORT: Refreshed 25 October 2026 to the user's three supplied diagnosis/discovery screenshots: a real-logo header, pale blue wave ground, five connected numbered steps, and white form with a tinted context sidebar beside labelled fields. Welcome, all question groups, confirmation and contact share this language. Keep saves nonblocking and the existing branching/validation unchanged. Admin and generated reports are outside this visual refresh. See public-diagnosis-reference.md for the current direction contract.
 FORM: Existing questionnaire composition prescribed by CEO and confirmed user; code-led, no independent identity tournament. seed: none (brief-pinned)
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 

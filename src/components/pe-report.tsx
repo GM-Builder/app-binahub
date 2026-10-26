@@ -4,14 +4,16 @@ import { useId } from 'react';
 import { ArrowDown, ArrowRight, CalendarDays, CheckCircle2 } from 'lucide-react';
 import type { PEReport } from '@/lib/individual-assessment';
 import { PEProfileChart, formatPEScore } from './pe-profile-chart';
+import styles from './pe-diagnosis.module.css';
 
 const date = (value: string) => new Intl.DateTimeFormat('id-ID', {
   day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta',
 }).format(new Date(value));
 
-export function PEResult({ report, retentionUntil, headingLevel = 2 }: {
-  report: PEReport; retentionUntil: string; headingLevel?: 1 | 2;
+export function PEResult({ report, retentionUntil, headingLevel = 2, presentation }: {
+  report: PEReport; retentionUntil: string; headingLevel?: 1 | 2; presentation?: 'reference';
 }) {
+  const reference = presentation === 'reference';
   const prefix = useId().replace(/:/g, '');
   const Title = headingLevel === 1 ? 'h1' : 'h2';
   const Heading = headingLevel === 1 ? 'h2' : 'h3';
@@ -19,8 +21,8 @@ export function PEResult({ report, retentionUntil, headingLevel = 2 }: {
   const sections = [{ key: 'summary', title: 'Ringkasan' }, { key: 'plan', title: 'Langkah praktis' },
     { key: 'profile', title: 'Rincian per area' }, { key: 'method', title: 'Panduan membaca' }];
   const target = (key: string) => `${prefix}-${key}`;
-  return <section aria-label="Laporan asesmen individu" className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900">
-    <header className="border-b border-slate-200 px-5 py-5 sm:px-8 sm:py-6">
+  return <section aria-label="Laporan asesmen individu" className={reference ? styles.report : 'mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900'}>
+    <header className={reference ? styles.reportHeader : 'border-b border-slate-200 px-5 py-5 sm:px-8 sm:py-6'}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div><Title className="text-2xl font-semibold tracking-tight text-[#0B2C6B] sm:text-3xl">Hasil asesmen individu</Title>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Profil Anda, fokus latihan, dan langkah berikutnya dalam satu laporan.</p></div>
@@ -31,12 +33,12 @@ export function PEResult({ report, retentionUntil, headingLevel = 2 }: {
       </nav>
     </header>
 
-    <div className="px-5 sm:px-8">
+    <div className={reference ? styles.reportBody : 'px-5 sm:px-8'}>
       <section id={target('summary')} aria-labelledby={target('summary-heading')} className="scroll-mt-6 py-6 sm:py-7">
         <Heading id={target('summary-heading')} className="text-xl font-semibold text-[#0B2C6B]">Ringkasan Anda</Heading>
-        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className={reference ? `mt-5 grid ${styles.reportSummary}` : 'mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]'}>
           <PEProfileChart areas={report.areas} />
-          <aside aria-label="Fokus pengembangan Anda" className="min-w-0 border-t border-slate-200 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <aside aria-label="Fokus pengembangan Anda" className={reference ? styles.focusPanel : 'min-w-0 border-t border-slate-200 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0'}>
             <Subheading className="text-base font-semibold text-[#0B2C6B]">Fokus latihan Anda</Subheading>
             {report.priorities.length ? <><p className="mt-2 text-sm leading-6 text-slate-600">Mulai dari area berikut, sesuai tujuan dan relevansi pekerjaan Anda.</p><ol className="mt-3 divide-y divide-slate-100">{report.priorities.map(item => <li key={item.code}><a href={`#${target(`practice-${item.code}`)}`} className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm font-semibold text-[#0B2C6B] underline-offset-4 hover:underline">{item.name}<ArrowRight size={16} aria-hidden="true" className="shrink-0" /></a></li>)}</ol></>
               : <p className="mt-2 text-sm leading-6 text-slate-600">Belum cukup bukti atau relevansi untuk menetapkan fokus latihan. Gunakan profil sebagai awal refleksi.</p>}
@@ -103,7 +105,7 @@ export function PEResult({ report, retentionUntil, headingLevel = 2 }: {
         </details>}
       </section>
     </div>
-    <footer className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-6 text-slate-600 sm:px-8">
+    <footer className={reference ? styles.reportFooter : 'border-t border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-6 text-slate-600 sm:px-8'}>
       {report.privacy && <div className="mb-3 max-w-3xl space-y-2"><p>{report.privacy.purpose} {report.privacy.access}</p><p>{report.privacy.process}</p></div>}
       <p>Hasil tersimpan sampai {date(retentionUntil)}. Butuh bantuan? <a href={`mailto:${report.privacy?.contact || 'admin@binahub.id'}`} className="font-medium text-[#0B2C6B] underline underline-offset-4">Hubungi BinaHub</a>.</p>
     </footer>

@@ -2,12 +2,15 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, ChartNoAxesCombined, ListChecks, Loader2, LockKeyhole } from 'lucide-react';
+import { ArrowRight, ChartNoAxesCombined, ListChecks, Loader2, LockKeyhole, MailCheck } from 'lucide-react';
 import { guestRequest } from '@/lib/pe-guest';
 import { PERequestError, type PEReport, type PEReviewAccess } from '@/lib/individual-assessment';
 import { PEResult } from './pe-report';
 import { PEReviewAccessPanel } from './pe-review-access';
 import { PEConsultationRequest } from './pe-consultation-request';
+import { DiagnosisShell } from './diagnosis-shell';
+import shared from './diagnosis.module.css';
+import styles from './pe-diagnosis.module.css';
 
 type Result = { report: PEReport; access: PEReviewAccess; retentionUntil: string };
 const validId = (id: string) => /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(id);
@@ -77,55 +80,49 @@ function PEEmailResultBody({ id }: { id: string }) {
       openedByUser.current = true; setResult(value);
     });
   }
-  return <main className="min-h-screen bg-[#F7F8FA] px-4 pb-10 text-[#0B2C6B] sm:px-6">
-    <header className="mx-auto flex max-w-5xl items-center justify-between gap-4 py-5">
-      <Link href="/diagnose" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium"><ArrowLeft size={16} aria-hidden="true" />Pilihan diagnosis</Link>
-      <span className="text-sm font-semibold">BinaInsights</span>
-    </header>
-    <div className={hasResult ? 'mx-auto max-w-5xl' : 'mx-auto max-w-lg pt-3 sm:pt-8'}>
-      {deleted ? <section className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8"><h1 className="text-2xl font-semibold tracking-tight">Pengisian sudah dihapus.</h1><p className="mt-3 text-sm leading-7 text-slate-600">Jawaban, hasil, dan akses terkait pengisian ini telah dihapus dari sistem aktif.</p></section>
-        : result ? <div ref={resultContainer} tabIndex={-1} aria-label="Hasil asesmen Anda"><PEResult report={result.report} retentionUntil={result.retentionUntil} headingLevel={1} />
-          <PEConsultationRequest key={id} id={id} shared={result.access.shared}/>
-          <PEReviewAccessPanel id={id} access={result.access} token={async () => ''} onChange={access => setResult({ ...result, access })} update={body => guestRequest(`/${id}/result`, 'PATCH', body)}
+  return <DiagnosisShell organization>
+    <div className={hasResult ? styles.layout : styles.accessLayout}>
+      {deleted ? <section className={styles.receipt}><h1>Pengisian sudah dihapus.</h1><p>Jawaban, hasil, dan akses terkait pengisian ini telah dihapus dari sistem aktif.</p><Link href="/diagnose" className={`${shared.primaryButton} mt-6`}>Pilihan diagnosis<ArrowRight size={16} aria-hidden="true" /></Link></section>
+        : result ? <div ref={resultContainer} tabIndex={-1} aria-label="Hasil asesmen Anda"><PEResult report={result.report} retentionUntil={result.retentionUntil} headingLevel={1} presentation="reference" />
+          <PEConsultationRequest key={id} id={id} shared={result.access.shared} className={styles.resultExtras}/>
+          <PEReviewAccessPanel id={id} access={result.access} token={async () => ''} className={styles.privacyExtras} onChange={access => setResult({ ...result, access })} update={body => guestRequest(`/${id}/result`, 'PATCH', body)}
             onErase={async () => { await guestRequest(`/${id}/result`, 'DELETE'); setResult(null); setDeleted(true); }} /></div>
-        : <section className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8" aria-busy={checking || busy}>
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50"><LockKeyhole size={21} aria-hidden="true" /></span>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight">Lihat hasil asesmen Anda.</h1>
-          <p className="mt-2 text-sm leading-7 text-slate-600">Kenali profil pengembangan diri dan langkah praktis yang dapat Anda mulai.</p>
-          <ul className="my-5 space-y-3 border-y border-slate-100 py-4 text-sm text-slate-700">
-            <li className="flex items-center gap-3"><ChartNoAxesCombined size={18} aria-hidden="true" className="shrink-0 text-[#0B2C6B]" />Grafik profil per area</li>
-            <li className="flex items-center gap-3"><ListChecks size={18} aria-hidden="true" className="shrink-0 text-[#0B2C6B]" />Fokus latihan dan langkah pengembangan</li>
-          </ul>
+        : <div className={styles.accessGrid}><div className={styles.accessStory}>
+          <span className={`${shared.iconTile} ${shared.iconGold}`}><ChartNoAxesCombined size={26} aria-hidden="true" /></span>
+          <h1>Lihat hasil asesmen Anda.</h1><p>Kenali profil pengembangan diri dan langkah praktis yang dapat Anda mulai.</p>
+          <ul className={styles.accessFeatures}><li><span className={styles.areaIcon}><ChartNoAxesCombined size={19} aria-hidden="true" /></span>Grafik profil per area</li><li><span className={styles.areaIcon}><ListChecks size={19} aria-hidden="true" /></span>Fokus latihan dan langkah pengembangan</li></ul>
+        </div><section className={styles.accessCard} aria-busy={checking || busy} aria-labelledby="pe-access-title">
+          <span className={shared.iconTile}><LockKeyhole size={22} aria-hidden="true" /></span><h2 id="pe-access-title" className="mt-4">Akses laporan pribadi</h2><p>Gunakan tautan dari email untuk membuka hasil Anda. Tidak perlu membuat akun.</p>
           {error && <p id="pe-result-error" role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950">{error}</p>}
           {message && <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm leading-6 text-emerald-900">{message}</p>}
           <button disabled={checking || busy || !validId(id) || (!token && !sessionReady)} onClick={() => void open()} aria-describedby={error ? 'pe-result-error' : 'pe-result-help'}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#0B2C6B] px-5 text-sm font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-50">
+            className={`${shared.primaryButton} ${styles.accessAction}`}>
             {(checking || action === 'open') && <Loader2 className="motion-safe:animate-spin" size={17} aria-hidden="true" />}
             {checking ? 'Memeriksa akses…' : action === 'open' ? 'Membuka hasil…' : 'Lihat hasil saya'}
             {!checking && action !== 'open' && <ArrowRight size={17} aria-hidden="true" />}
           </button>
-          <p id="pe-result-help" className="mt-3 text-center text-xs leading-6 text-slate-600">
+          <p id="pe-result-help" className={styles.hint}>
             {!checking && !token && !sessionReady ? 'Buka tautan pribadi dari email Anda, atau minta tautan baru di bawah.' : 'Akses pribadi. Tidak perlu akun atau password.'}
           </p>
-          <details open={recovery} onToggle={event => setRecovery(event.currentTarget.open)} className="mt-5 border-t border-slate-100 pt-2">
-            <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Butuh tautan baru?</summary>
-            <form className="space-y-3 pb-1" onSubmit={event => {
+          <details open={recovery} onToggle={event => setRecovery(event.currentTarget.open)} className={styles.accessRecovery}>
+            <summary>Butuh tautan baru?</summary>
+            <form onSubmit={event => {
               event.preventDefault(); void run('link', async () => {
                 await guestRequest(validId(id) ? `/${id}/request-link` : '/request-link', 'POST', { email: email.trim().toLowerCase() });
                 setMessage('Jika email sesuai dengan data pengisian, tautan hasil akan dikirim ke alamat tersebut.');
               });
             }}>
-              <label className="block text-sm font-medium">Email pengisian<input required type="email" autoComplete="email" value={email} maxLength={254} disabled={busy || checking} aria-describedby="pe-link-help"
-                onChange={event => setEmail(event.target.value)} className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base font-normal sm:text-sm" /></label>
-              <p id="pe-link-help" className="text-xs leading-6 text-slate-600">Gunakan alamat email yang sama saat mengisi asesmen. Periksa juga folder spam atau promosi.</p>
-              <button disabled={busy || checking} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 px-4 text-sm font-medium hover:bg-slate-50 disabled:opacity-50">
-                {action === 'link' && <Loader2 size={16} className="motion-safe:animate-spin" aria-hidden="true" />}{action === 'link' ? 'Mengirim tautan…' : 'Kirim tautan baru'}
+              <label className={styles.field}>Email pengisian<input required type="email" autoComplete="email" placeholder="Alamat email saat mengisi" value={email} maxLength={254} disabled={busy || checking} aria-describedby="pe-link-help"
+                onChange={event => setEmail(event.target.value)} /></label>
+              <p id="pe-link-help" className={styles.help}>Gunakan alamat email yang sama saat mengisi asesmen. Periksa juga folder spam atau promosi.</p>
+              <button disabled={busy || checking} className={shared.primaryButton}>
+                {action === 'link' ? <Loader2 size={16} className="motion-safe:animate-spin" aria-hidden="true" /> : <MailCheck size={16} aria-hidden="true" />}{action === 'link' ? 'Mengirim tautan…' : 'Kirim tautan baru'}
               </button>
             </form>
           </details>
-          <details className="mt-1 text-xs leading-6 text-slate-600"><summary className="min-h-11 cursor-pointer py-3 font-medium">Tentang keamanan akses</summary><p className="pb-2">Tautan berlaku 48 jam dan hanya dapat digunakan sekali. Sesi hasil berlaku 30 menit. Jangan membagikan tautan hasil Anda kepada orang lain.</p></details>
-        </section>}
-      {!hasResult && <p className="mt-5 text-center text-xs leading-6 text-slate-600">Butuh bantuan? <a className="font-medium text-[#0B2C6B] underline underline-offset-4" href="mailto:admin@binahub.id">Hubungi BinaHub</a></p>}
+          <details className={styles.accessSecurity}><summary>Tentang keamanan akses</summary><p>Tautan berlaku 48 jam dan hanya dapat digunakan sekali. Sesi hasil berlaku 30 menit. Jangan membagikan tautan hasil Anda kepada orang lain.</p></details>
+        </section></div>}
+      {!hasResult && <p className={styles.support}>Butuh bantuan? <a href="mailto:admin@binahub.id">Hubungi BinaHub</a></p>}
     </div>
-  </main>;
+  </DiagnosisShell>;
 }

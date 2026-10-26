@@ -1,15 +1,17 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Brain, ChartNoAxesCombined, CheckCircle2, Info, Loader2, Mail, RefreshCw, ShieldCheck, UserRound, Waypoints } from 'lucide-react';
 import { countAnswered, firstUnanswered, individualTrackingParams, peChannel, type PEAnswer, type PEAttempt, type PEContext, type PEDefinition } from '@/lib/individual-assessment';
 import { clearPEGuestDraft, readPEGuestDraft, savePEGuestDraft, type PEGuestDraft } from '@/lib/pe-guest-storage';
 import { guestRequest, makeGuestKey } from '@/lib/pe-guest';
 import { PEGuestSyncQueue, hasPendingPEAnswers } from '@/lib/pe-guest-sync';
+import { DiagnosisShell } from './diagnosis-shell';
+import shared from './diagnosis.module.css';
+import styles from './pe-diagnosis.module.css';
 
-const button = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-5 text-sm font-semibold text-white disabled:opacity-50';
-const secondary = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium disabled:opacity-50';
-const input = 'mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base focus:border-blue-800 sm:text-sm';
+const button = shared.primaryButton;
+const secondary = shared.secondaryButton;
 type Reply = { attempt: PEAttempt & { revision: number }; emailStatus?: string | null };
 const defaults: PEContext = { role: '', goal: '', relevance: { 'PE-02': 'normal', 'PE-04': 'normal', 'PE-06': 'normal' } };
 
@@ -25,6 +27,8 @@ export function PEGuestAssessment() {
   const localWrites = useRef<Promise<void>>(Promise.resolve());
   const pendingLocal = useRef(0), storageReady = useRef(true);
   const syncQueue = useRef<PEGuestSyncQueue | null>(null);
+  const taskHeading = useRef<HTMLElement | null>(null);
+  const receiptHeading = useRef<HTMLHeadingElement | null>(null);
   const questions = definition ? [...definition.selfReportItems, ...definition.sjtItems] : [];
   const update = useCallback((value: PEGuestDraft) => { current.current = value; setDraft(value); }, []);
   const persist = useCallback(async (value: PEGuestDraft) => {
@@ -141,60 +145,83 @@ export function PEGuestAssessment() {
   }
   const progress = draft ? countAnswered(questions, draft.responses) : 0;
   const question = questions[index], area = definition?.competencies.find(value => value.code === question?.competencyCode);
+  const draftId = draft?.id;
+  useEffect(() => {
+    if (accepted) {
+      receiptHeading.current?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else if (!loading && draftId) taskHeading.current?.focus({ preventScroll: true });
+  }, [index, loading, draftId, accepted]);
 
-  return <main className="min-h-screen bg-[#F7F8FA] px-4 pb-12 text-[#0B2C6B] sm:px-6">
-    <header className="mx-auto flex max-w-4xl items-center justify-between py-6"><Link href="/diagnose" className="inline-flex min-h-11 items-center gap-2 text-sm"><ArrowLeft size={16} />Pilihan diagnosis</Link><span className="font-semibold">BinaInsights</span></header>
-    <div className="mx-auto max-w-2xl" aria-label="Diagnosis individu">
-      <h1 className="text-3xl font-semibold tracking-tight">Pahami kebutuhan pengembangan diri Anda.</h1>
-      <p className="mt-3 text-sm leading-7 text-slate-600">Kenali cara Anda mengembangkan diri, beradaptasi, dan menghadapi tekanan melalui 18 pertanyaan. Tautan untuk melihat hasil asesmen akan dikirim ke email Anda.</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">Isi sesuai pengalaman Anda, tanpa batas waktu pengerjaan.</p>
-      {error && <div role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">{error}
+  const guide = definition && <aside className={`${styles.guide} ${draft ? styles.taskGuide : ''}`} aria-label="Tentang diagnosis ini">
+    <span className={`${shared.iconTile} ${shared.iconGold}`}><UserRound size={25} aria-hidden="true" /></span>
+    <h2>Tentang diagnosis ini</h2>
+    <p>Kenali pengalaman kerja dan respons Anda pada tiga area pengembangan diri.</p>
+    <ul className={styles.areaList}>{definition.competencies.map((value, i) => {
+      const Icon = [Brain, Waypoints, ChartNoAxesCombined][i % 3];
+      const items = questions.filter(item => item.competencyCode === value.code);
+      return <li key={value.code} className={draft && area?.code === value.code ? styles.areaActive : undefined}>
+        <span className={styles.areaIcon}><Icon size={20} aria-hidden="true" /></span>
+        <div><strong>{value.name}</strong><p>{draft ? `${countAnswered(items, draft.responses)} dari ${items.length} terisi` : value.definition}</p></div>
+      </li>;
+    })}</ul>
+    <div className={styles.guideNote}><ShieldCheck size={20} aria-hidden="true" /><div><strong>Hasil pribadi Anda</strong><p>Tautan hasil dikirim ke email Anda. Penggunaan data dan izin tinjauan dijelaskan sebelum Anda mulai.</p></div></div>
+  </aside>;
+
+  return <DiagnosisShell organization><div className={styles.layout} aria-label="Diagnosis individu">
+      {!accepted && <div className={`${styles.intro} ${draft ? styles.taskIntro : ''}`}>
+        <h1>{draft ? 'Diagnosis individu' : 'Pahami kebutuhan pengembangan diri Anda.'}</h1>
+        <p>{draft ? 'Isi sesuai pengalaman Anda. Jawaban disimpan di latar belakang, tanpa perlu menunggu untuk melanjutkan.' : `Kenali cara Anda mengembangkan diri, beradaptasi, dan menghadapi tekanan melalui ${definition ? questions.length : '18'} pertanyaan. Tautan untuk melihat hasil asesmen akan dikirim ke email Anda.`}</p>
+      </div>}
+      {error && <div role="alert" className={styles.alert}>{error}
         <button type="button" disabled={busy} className={`${secondary} mt-3`} onClick={() => current.current ? void run(() => sync(current.current!, Boolean(current.current!.submissionKey))) : window.location.reload()}><RefreshCw size={15} />Coba lagi</button>
         {error.includes('tab lain')&&<button type="button" disabled={busy} className={`${secondary} ml-2 mt-3`} onClick={()=>void run(async()=>{
           const value=current.current!; const remote=await guestRequest<Reply>(`/${value.id}`,'GET',undefined,value.draftKey);
           await persist({...value,revision:remote.attempt.revision,responses:remote.attempt.responses,baseResponses:remote.attempt.responses});
           setIndex(firstUnanswered(questions,remote.attempt.responses));setStatus('Jawaban server dimuat.');
         })}>Gunakan jawaban server</button>}</div>}
-      {!localAvailable && !accepted && <p role="status" className="mt-4 text-xs leading-6 text-amber-800">Browser ini belum dapat menyimpan draft pada perangkat. Jangan tutup halaman sebelum selesai mengirim, karena draft mungkin tidak dapat dilanjutkan setelah halaman ditutup.</p>}
-      {cleanupWarning && <p role="status" className="mt-4 text-xs leading-6 text-amber-800">Jawaban sudah diterima, tetapi browser belum dapat menghapus draft perangkat. Untuk privasi di perangkat bersama, bersihkan data situs ini setelah selesai.</p>}
-      {syncError && !accepted && <div role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{syncError}<button type="button" disabled={busy} className="ml-2 min-h-11 font-semibold underline underline-offset-4" onClick={() => current.current && void run(() => sync(current.current!))}>Coba simpan lagi</button>{syncError.includes('tab lain') && <button type="button" disabled={busy} className="ml-2 min-h-11 font-semibold underline underline-offset-4" onClick={() => void run(async () => {
+      {!localAvailable && !accepted && <p role="status" className={styles.alert}>Browser ini belum dapat menyimpan draft pada perangkat. Jangan tutup halaman sebelum selesai mengirim, karena draft mungkin tidak dapat dilanjutkan setelah halaman ditutup.</p>}
+      {cleanupWarning && <p role="status" className={styles.alert}>Jawaban sudah diterima, tetapi browser belum dapat menghapus draft perangkat. Untuk privasi di perangkat bersama, bersihkan data situs ini setelah selesai.</p>}
+      {syncError && !accepted && <div role="status" className={styles.alert}>{syncError}<button type="button" disabled={busy} className="ml-2 min-h-11 font-semibold underline underline-offset-4" onClick={() => current.current && void run(() => sync(current.current!))}>Coba simpan lagi</button>{syncError.includes('tab lain') && <button type="button" disabled={busy} className="ml-2 min-h-11 font-semibold underline underline-offset-4" onClick={() => void run(async () => {
         const value = current.current!; const remote = await guestRequest<Reply>(`/${value.id}`, 'GET', undefined, value.draftKey);
         await persist({ ...value, revision: remote.attempt.revision, responses: remote.attempt.responses, baseResponses: remote.attempt.responses });
         setSyncError(''); setStatus('Jawaban server dimuat.'); setIndex(firstUnanswered(questions, remote.attempt.responses));
       })}>Gunakan jawaban server</button>}</div>}
-      {loading ? <p role="status" className="mt-8 flex items-center gap-3"><Loader2 className="motion-safe:animate-spin" />Menyiapkan diagnosis…</p> : accepted ?
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6"><CheckCircle2 className="text-emerald-600" /><h2 className="mt-4 text-xl font-semibold">Jawaban Anda sudah diterima.</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600">Tautan hasil akan dikirim ke email yang Anda isi. Anda dapat menutup halaman ini; pengiriman tetap diproses.</p>
-          <p className="mt-2 text-xs leading-6 text-slate-500">Periksa juga folder spam atau promosi. Jangan meneruskan tautan hasil karena berisi akses pribadi.</p>
-          <Link href={`/insight/individual/result?attempt=${receiptId}`} className={`${secondary} mt-5`}>Bantuan akses hasil</Link></section>
-      : definition?.acceptingNew === false && !draft ? <p role="status" className="mt-8 rounded-2xl bg-white p-6">Pengisian baru sedang dijeda. Draft sebelumnya tetap dapat dilanjutkan.</p>
-      : definition && !draft ? <form className="mt-7 space-y-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7" onSubmit={event => { event.preventDefault(); void start(); }}>
-        <div><h2 className="text-base font-semibold">Sebelum Anda mulai</h2><p className="mt-1 text-sm leading-6 text-slate-600">Ceritakan sedikit tentang pekerjaan dan tujuan Anda agar rekomendasi lebih sesuai dengan kebutuhan Anda.</p><ul aria-label="Area yang dinilai" className="mt-3 flex flex-wrap gap-2">{definition.competencies.map(value => <li key={value.code} className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium">{value.name}</li>)}</ul></div>
-        <label className="block text-sm font-medium">Nama Anda<input required maxLength={100} autoComplete="name" className={input} value={name} disabled={busy} onChange={event => setName(event.target.value)} /></label>
-        <div><label htmlFor="pe-guest-email" className="block text-sm font-medium">Alamat email</label><input id="pe-guest-email" required type="email" maxLength={254} autoComplete="email" aria-describedby="pe-email-help" className={input} value={email} disabled={busy} onChange={event => setEmail(event.target.value)} /><p id="pe-email-help" className="mt-2 text-sm text-slate-600">Pastikan alamat email benar agar tautan hasil sampai kepada Anda.</p></div>
-        <label className="block text-sm font-medium">Peran atau pekerjaan Anda<input required maxLength={100} className={input} value={context.role} disabled={busy} onChange={event => setContext({ ...context, role: event.target.value })} /></label>
-        <label className="block text-sm font-medium">Apa yang ingin Anda kembangkan?<textarea required maxLength={600} rows={3} className={input} value={context.goal} disabled={busy} onChange={event => setContext({ ...context, goal: event.target.value })} /></label>
-        <fieldset aria-describedby="pe-relevance-help"><legend className="text-sm font-medium">Kaitannya dengan pekerjaan Anda</legend><p id="pe-relevance-help" className="mt-1 text-sm leading-6 text-slate-600">Seberapa relevan setiap area berikut dengan pekerjaan Anda saat ini?</p><div className="mt-3 space-y-3">{definition.competencies.map(value => <label key={value.code} className="flex flex-wrap items-center justify-between gap-3 text-sm">{value.name}<select className="min-h-11 rounded-lg border border-slate-200 px-3" aria-label={`Relevansi ${value.name}`} value={context.relevance[value.code]} disabled={busy} onChange={event => setContext({ ...context, relevance: { ...context.relevance, [value.code]: event.target.value as 'low' | 'normal' | 'high' } })}><option value="low">Kurang relevan</option><option value="normal">Relevan</option><option value="high">Sangat relevan</option></select></label>)}</div></fieldset>
-        <p className="text-sm leading-6 text-slate-600">Asesmen ini membantu Anda merencanakan pengembangan diri. Hasilnya bukan diagnosis klinis dan tidak dapat menjadi satu-satunya dasar keputusan seleksi atau promosi.</p>
-        <details className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-          <summary className="cursor-pointer font-medium text-[#0B2C6B] focus-visible:outline-2 focus-visible:outline-offset-4">Privasi dan penggunaan data</summary>
-          <div id="pe-data-use" className="mt-3 space-y-3"><p>{definition.privacyNotice}</p><p>{definition.sharingNotice}</p><p>Dengan persetujuan Anda, jawaban sementara disimpan secara terenkripsi di perangkat ini agar Anda dapat melanjutkan pengisian saat koneksi terputus. Simpanan ini dihapus setelah jawaban berhasil dikirim, atau saat halaman dibuka kembali setelah tujuh hari.</p></div>
-        </details>
-        <label className="flex items-start gap-3 text-sm leading-6"><input type="checkbox" required checked={consent} disabled={busy} aria-describedby="pe-data-use" onChange={event => setConsent(event.target.checked)} className="mt-1 h-5 w-5 shrink-0" />Saya menyetujui penggunaan data yang dijelaskan di atas dan mengizinkan tim BinaHub meninjau jawaban serta hasil asesmen untuk memberikan rekomendasi pengembangan.</label>
-        <button className={`${button} w-full`} disabled={busy || !consent}>{busy && <Loader2 className="motion-safe:animate-spin" size={17} />}Mulai diagnosis<ArrowRight size={17} /></button>
-      </form> : definition && draft ? <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
-        <div className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{progress} dari {questions.length} soal</span><span role="status" aria-live="polite">{busy ? 'Menyimpan…' : status}</span></div>
-        <progress value={progress} max={questions.length} aria-label="Kemajuan pengisian" className="mt-3 h-2 w-full accent-blue-900" />
-        {question ? <><p className="mt-6 text-xs text-slate-500">Area {area?.name} · {question.type === 'behavioral_self_report' ? 'Pengalaman kerja dalam tiga bulan terakhir' : 'Studi kasus'}</p>
-          {question.scenario && <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-700">{question.scenario}</p>}
-          <fieldset className="mt-5"><legend className="text-lg font-medium leading-7">{question.prompt || question.question}</legend><div className="mt-4 space-y-3">{(question.type === 'behavioral_self_report' ? definition.selfReportScale.map(value => ({ value: value.value, label: value.label })) : question.options!.map(value => ({ value: value.id as PEAnswer, label: value.text }))).map(value => <label key={value.value} className={`flex min-h-14 items-center gap-3 rounded-xl border p-4 text-sm leading-6 ${draft.responses[question.id] === value.value ? 'border-blue-900 bg-blue-50' : 'border-slate-200'}`}><input type="radio" name={question.id} checked={draft.responses[question.id] === value.value} disabled={busy || Boolean(draft.submissionKey)} onChange={() => void answer(value.value)} className="h-5 w-5 shrink-0" /><span>{value.label}</span></label>)}</div></fieldset>
-          <div className="mt-6 flex justify-between gap-3"><button className={secondary} disabled={busy || index === 0} onClick={() => setIndex(value => value - 1)}><ArrowLeft size={16} />Kembali</button><button className={button} disabled={busy || !Object.hasOwn(draft.responses, question.id)} onClick={() => { setIndex(value => value + 1); window.scrollTo({ top: 0, behavior: 'instant' }); }}>{index === questions.length - 1 ? 'Tinjau jawaban' : 'Lanjut'}<ArrowRight size={16} /></button></div>
-        </> : <><h2 className="mt-6 text-xl font-semibold">Periksa sebelum mengirim.</h2><p className="mt-3 text-sm leading-7 text-slate-600">Jawaban dikunci setelah diterima. Hasil dan langkah pengembangan dikirim melalui tautan email pribadi.</p>
-          <div className="mt-5 space-y-2">{definition.competencies.map(value => <button className="flex min-h-14 w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left text-sm" key={value.code} disabled={busy} onClick={() => setIndex(questions.findIndex(question => question.competencyCode === value.code))}><span>{value.name}</span><span>Tinjau</span></button>)}</div>
-          <p className="mt-4 text-xs leading-6 text-slate-500">NA tidak dihitung sebagai nol. Bila kesempatan relevan terlalu sedikit, hasil menampilkan keterbatasan bukti.</p>
-          <button className={`${button} mt-5 w-full`} disabled={busy || progress !== questions.length} onClick={() => void run(() => sync(current.current!, true))}>{busy ? <Loader2 size={17} className="motion-safe:animate-spin" /> : <CheckCircle2 size={17} />}Kirim jawaban</button></>}
-      </section> : null}
-      <p className="mt-5 text-sm leading-6 text-slate-600">Butuh bantuan? Hubungi <a href="mailto:admin@binahub.id" className="underline underline-offset-4">admin@binahub.id</a>.</p>
-    </div>
-  </main>;
+      {loading ? <section className={`${styles.card} ${shared.loadingPanel}`} aria-busy="true"><p role="status">Menyiapkan diagnosis…</p><span className={`${shared.skeletonLine} ${shared.skeletonHeading}`} aria-hidden="true" /><span className={shared.skeletonLine} aria-hidden="true" /><span className={shared.skeletonLine} aria-hidden="true" /></section> : accepted ?
+        <section className={styles.receipt}><span className={`${shared.iconTile} ${shared.successIcon}`}><CheckCircle2 size={28} aria-hidden="true" /></span><h1 ref={receiptHeading} tabIndex={-1}>Jawaban Anda sudah diterima.</h1>
+          <p>Tautan hasil akan dikirim ke <span className={styles.email}>{email}</span>. Anda dapat menutup halaman ini; pengiriman tetap diproses.</p>
+          <ul className={styles.receiptSteps}><li><Mail size={19} aria-hidden="true" />Periksa email, termasuk folder spam atau promosi.</li><li><ChartNoAxesCombined size={19} aria-hidden="true" />Buka laporan untuk melihat profil area dan langkah pengembangan.</li><li><ShieldCheck size={19} aria-hidden="true" />Jangan meneruskan tautan hasil karena berisi akses pribadi.</li></ul>
+          <div className={styles.receiptActions}><Link href={`/insight/individual/result?attempt=${receiptId}`} className={button}>Bantuan akses hasil<ArrowRight size={16} aria-hidden="true" /></Link><Link href="/diagnose" className={secondary}>Pilihan diagnosis</Link></div></section>
+      : definition?.acceptingNew === false && !draft ? <p role="status" className={styles.card}>Pengisian baru sedang dijeda. Draft sebelumnya tetap dapat dilanjutkan.</p>
+      : definition && <div className={styles.workspace}>{guide}{!draft ? <form className={styles.card} aria-busy={busy} onSubmit={event => { event.preventDefault(); void start(); }}>
+        <h2>Sebelum Anda mulai</h2><p className={styles.lead}>Ceritakan sedikit tentang pekerjaan dan tujuan Anda agar rekomendasi lebih sesuai dengan kebutuhan Anda.</p>
+        <ul aria-label="Area yang dinilai" className={styles.areaChips}>{definition.competencies.map(value => <li key={value.code}>{value.name}</li>)}</ul>
+        <div className={styles.fields}>
+          <label className={styles.field}>Nama Anda<input required maxLength={100} autoComplete="name" placeholder="Masukkan nama Anda" value={name} disabled={busy} onChange={event => setName(event.target.value)} /></label>
+          <div className={styles.field}><label htmlFor="pe-guest-email">Alamat email</label><input id="pe-guest-email" required type="email" maxLength={254} autoComplete="email" placeholder="nama@perusahaan.com" aria-describedby="pe-email-help" value={email} disabled={busy} onChange={event => setEmail(event.target.value)} /><p id="pe-email-help" className={styles.help}>Pastikan alamat email benar agar tautan hasil sampai kepada Anda.</p></div>
+          <label className={styles.field}>Peran atau pekerjaan Anda<input required maxLength={100} autoComplete="organization-title" placeholder="Contoh: Staf pemasaran, HR, pemilik usaha" value={context.role} disabled={busy} onChange={event => setContext({ ...context, role: event.target.value })} /></label>
+          <label className={styles.field}>Apa yang ingin Anda kembangkan?<textarea required maxLength={600} rows={3} placeholder="Ceritakan tujuan pengembangan Anda secara singkat" value={context.goal} disabled={busy} onChange={event => setContext({ ...context, goal: event.target.value })} /></label>
+          <fieldset aria-describedby="pe-relevance-help"><legend className={styles.legend}>Kaitannya dengan pekerjaan Anda</legend><p id="pe-relevance-help" className={styles.help}>Seberapa relevan setiap area berikut dengan pekerjaan Anda saat ini?</p><div className={styles.relevance}>{definition.competencies.map(value => <label key={value.code}>{value.name}<select aria-label={`Relevansi ${value.name}`} value={context.relevance[value.code]} disabled={busy} onChange={event => setContext({ ...context, relevance: { ...context.relevance, [value.code]: event.target.value as 'low' | 'normal' | 'high' } })}><option value="low">Kurang relevan</option><option value="normal">Relevan</option><option value="high">Sangat relevan</option></select></label>)}</div></fieldset>
+        </div>
+        <div className={styles.notice}><Info size={16} aria-hidden="true" /><p>Isi sesuai pengalaman Anda, tanpa batas waktu pengerjaan. Hasilnya bukan diagnosis klinis dan tidak dapat menjadi satu-satunya dasar keputusan seleksi atau promosi.</p></div>
+        <details className={styles.privacy}><summary>Privasi dan penggunaan data</summary><div id="pe-data-use"><p>{definition.privacyNotice}</p><p>{definition.sharingNotice}</p><p>Dengan persetujuan Anda, jawaban sementara disimpan secara terenkripsi di perangkat ini agar Anda dapat melanjutkan pengisian saat koneksi terputus. Simpanan ini dihapus setelah jawaban berhasil dikirim, atau saat halaman dibuka kembali setelah tujuh hari.</p></div></details>
+        <label className={styles.consent}><input type="checkbox" required checked={consent} disabled={busy} aria-describedby="pe-data-use" onChange={event => setConsent(event.target.checked)} />Saya menyetujui penggunaan data yang dijelaskan di atas dan mengizinkan tim BinaHub meninjau jawaban serta hasil asesmen untuk memberikan rekomendasi pengembangan.</label>
+        <button className={`${button} ${styles.start}`} disabled={busy || !consent} aria-describedby={!consent ? 'pe-start-help' : undefined}>{busy && <Loader2 className="motion-safe:animate-spin" size={17} aria-hidden="true" />}{busy ? 'Menyiapkan pengisian…' : 'Mulai diagnosis'}<ArrowRight size={17} aria-hidden="true" /></button>
+        {!consent && <p id="pe-start-help" className={styles.hint}>Baca penggunaan data dan centang persetujuan untuk melanjutkan.</p>}
+      </form> : <section className={styles.card}>
+        <div className={styles.questionMeta}><span>{question ? `Soal ${index + 1} dari ${questions.length}` : 'Tinjauan jawaban'}</span><span>{progress} dari {questions.length} terisi</span></div>
+        <progress value={progress} max={questions.length || 1} aria-label="Kemajuan pengisian" className={styles.progress} />
+        {question ? <><p className={styles.questionKind}><strong>{area?.name}</strong><span>{question.type === 'behavioral_self_report' ? 'Pengalaman kerja dalam tiga bulan terakhir' : 'Studi kasus'}</span></p>
+          {question.scenario && <p className={styles.scenario}>{question.scenario}</p>}
+          <fieldset className={styles.question}><legend ref={node => { taskHeading.current = node; }} tabIndex={-1}>{question.prompt || question.question}</legend><div className={styles.answers}>{(question.type === 'behavioral_self_report' ? definition.selfReportScale.map(value => ({ value: value.value, label: value.label })) : question.options!.map(value => ({ value: value.id as PEAnswer, label: value.text }))).map(value => <label key={value.value} className={`${styles.answer} ${draft.responses[question.id] === value.value ? styles.answerSelected : ''}`}><input type="radio" name={question.id} checked={draft.responses[question.id] === value.value} disabled={busy || Boolean(draft.submissionKey)} onChange={() => void answer(value.value)} /><span>{value.label}</span></label>)}</div></fieldset>
+          <div className={styles.footer}><button className={secondary} disabled={busy || index === 0} onClick={() => setIndex(value => value - 1)}><ArrowLeft size={16} aria-hidden="true" />Kembali</button><button className={button} disabled={busy || !Object.hasOwn(draft.responses, question.id)} aria-describedby={!Object.hasOwn(draft.responses, question.id) ? 'pe-next-help' : undefined} onClick={() => { setIndex(value => value + 1); window.scrollTo({ top: 0, behavior: 'instant' }); }}>{index === questions.length - 1 ? 'Tinjau jawaban' : 'Lanjut'}<ArrowRight size={16} aria-hidden="true" /></button></div>
+          {!Object.hasOwn(draft.responses, question.id) && <p id="pe-next-help" className={styles.hint}>Pilih satu jawaban untuk melanjutkan.</p>}
+        </> : <><h2 ref={node => { taskHeading.current = node; }} tabIndex={-1} className="mt-6">Periksa sebelum mengirim.</h2><p className={styles.lead}>Jawaban dikunci setelah diterima. Hasil dan langkah pengembangan dikirim melalui tautan email pribadi.</p>
+          <div className={styles.review}>{definition.competencies.map(value => { const items = questions.filter(item => item.competencyCode === value.code); return <button key={value.code} disabled={busy} onClick={() => setIndex(questions.findIndex(question => question.competencyCode === value.code))}><span>{value.name}<small>{countAnswered(items, draft.responses)} dari {items.length} jawaban terisi</small></span><span>Tinjau<ArrowRight size={15} aria-hidden="true" /></span></button>; })}</div>
+          <p className={`${styles.help} mt-4`}>NA tidak dihitung sebagai nol. Bila kesempatan relevan terlalu sedikit, hasil menampilkan keterbatasan bukti.</p>
+          <button className={`${button} ${styles.start}`} disabled={busy || progress !== questions.length} aria-busy={busy} onClick={() => void run(() => sync(current.current!, true))}>{busy ? <Loader2 size={17} className="motion-safe:animate-spin" aria-hidden="true" /> : <CheckCircle2 size={17} aria-hidden="true" />}{busy ? 'Mengirim jawaban…' : 'Kirim jawaban'}</button></>}
+        <p className={styles.save} role="status" aria-live="polite">{busy ? 'Menyimpan…' : status}</p>
+      </section>}</div>}
+      <p className={styles.support}>Butuh bantuan? Hubungi <a href="mailto:admin@binahub.id">admin@binahub.id</a>.</p>
+    </div></DiagnosisShell>;
 }
