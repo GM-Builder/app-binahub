@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.42.0",
+  "version": "0.42.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -23,7 +23,6 @@
     "@supabase/supabase-js": "^2.108.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
-    "jimp": "^1.6.1",
     "lucide-react": "^1.18.0",
     "next": "^16.4.2",
     "openai": "^6.42.0",
@@ -37,7 +36,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "uuid": "^14.0.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -64,6 +63,6 @@
     "source-map-js": "1.2.2",
     "minimatch": "^10.2.5",
     "brace-expansion": "^5.0.12",
-    "undici": "^7.29.1"
+    "undici": "^7.30.1"
   }
 }

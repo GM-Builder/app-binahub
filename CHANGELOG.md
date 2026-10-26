@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.42.1] - 2026-10-26
+
+### Fixed
+
+- Memperbarui Zod ke 4.6.7 (batas minimum aman advisory: 4.6.6) dan
+  override Undici ke >=7.30.1 untuk lima temuan dependensi di Hostinger.
+- Menghapus Jimp yang tidak digunakan oleh source aplikasi, termasuk rantai
+  dependensinya yang membawa Zod 3. Tidak memaksa konsumen Zod 3 memakai Zod 4.
+- Tidak mengubah alur diagnosis, skor, pengiriman, SQL atau environment.
+
+### Verification
+
+- `npm install --package-lock-only --ignore-scripts --no-audit --no-fund` dan
+  `npm ci --dry-run --ignore-scripts --no-audit --no-fund` lulus. Selain versi
+  aplikasi, hanya versi Zod dan Undici berubah; 76 entri dependensi tak terpakai
+  dihapus dari lockfile. Dependensi Next.js/build tetap pada versi sebelumnya.
+- Audit lockfile penuh serta `--omit=dev` sama-sama melaporkan **0 kerentanan**
+  berdasarkan advisory registry saat pemeriksaan. Ini pemeriksaan inventaris
+  dependensi, bukan jaminan seluruh aplikasi aman atau bukti exploit tertutup.
+- Build, tes aplikasi dan pentest Strix tidak dijalankan ulang: Docker lokal
+  tidak aktif, sehingga sandbox eksekusi yang diwajibkan skill keamanan tidak
+  tersedia. Versi CLI Strix terverifikasi 1.7.0; tidak ada scan produksi.
+- Setelah deploy, verifikasi build Hostinger dan jalankan ulang scan keamanan.
+  Status deployment/scan Hostinger belum dikonfirmasi dari lingkungan ini.
+
 ## [0.42.0] - 2026-10-26
 
 ### Changed
