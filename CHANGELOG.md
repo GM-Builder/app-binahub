@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.44.0] - 2026-10-27
+
+### Changed
+
+- Laporan rekomendasi organisasi menjadi dashboard kebutuhan, dampak dan sasaran;
+  kecocokan program, kompetensi katalog, keluaran, investasi dan tindak lanjut
+  dapat dibaca tanpa membuka seluruh konteks pengisian.
+- Program yang perlu konsultasi tampil sebagai opsi awal, bukan penawaran pasti.
+  Rincian alasan ditampilkan; tidak ada skor/tingkat kompetensi yang dibuat dari
+  checklist. Laporan lama tanpa field baru tetap bisa dibaca dengan jujur.
+- Renderer yang sama dipakai oleh halaman hasil dan admin; tata letak menyesuaikan
+  lebar panel/ponsel. PDF diselaraskan pada API 0.41.0, bukan dibuat di browser.
+
+### Deployment
+
+- Deploy API 0.41.0 sebelum app 0.44.0. Tidak ada SQL atau env wajib baru.
+- Tampilan web lama mengikuti desain baru; isi laporan/PDF yang sudah diterbitkan
+  tidak ditulis ulang atau dikirim ulang. Opsi dan kompetensi baru masuk ke snapshot
+  laporan yang dibuat setelah pembaruan backend, bukan rekalkulasi diam-diam.
+
+### Verification
+
+- 343 tes unit, enam tes browser desktop/ponsel, typecheck dan build 90 halaman
+  lolos. Review desain terpisah: ship pada cakupan artefak lokal, bukan produksi.
+- Impeccable membentuk hierarki kebutuhan/program dan disclosure konteks;
+  bukti dan batas pemeriksaan ada di `docs/spin-report-design-verification.md`.
+
 ## [0.43.0] - 2026-10-26
 
 ### Added

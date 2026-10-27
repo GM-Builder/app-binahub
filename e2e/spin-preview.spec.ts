@@ -61,7 +61,7 @@ test('five-stage submission is nonblocking, preserves answers, and renders repor
  await page.getByRole('button',{name:'Kirim permintaan'}).dblclick();
  await expect(page.getByRole('heading',{name:'Permintaan Anda telah diterima'})).toBeVisible();expect(submitCount).toBe(1);
  await page.goto('/?spin&view=report');
- await expect(page.getByRole('heading',{name:'Ringkasan eksekutif'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Arah pengembangan, dalam satu pandangan'})).toBeVisible();
  await page.screenshot({path:'.impeccable/review/spin-report-'+(mobile?'mobile':'desktop')+'.png',fullPage:true});
  await page.goto('/?spin&view=admin');
  await page.getByRole('button',{name:/Contoh Organisasi/}).click();

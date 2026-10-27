@@ -58,7 +58,7 @@ test('admin continues client needs, saves/reopens, handles failure and starts a 
   await page.getByRole('button',{name:'Tandai selesai',exact:true}).first().click();
   await expect.poll(()=>sessions[id]?.status).toBe('completed');
   expect(record.answers).toEqual(original);expect(record.report).toEqual(spinSyntheticReport);
-  await page.getByRole('button',{name:'Pengisian & laporan klien'}).click();await expect(page.getByRole('heading',{name:'Ringkasan eksekutif'})).toBeVisible();
+  await page.getByRole('button',{name:'Pengisian & laporan klien'}).click();await expect(page.getByRole('heading',{name:'Arah pengembangan, dalam satu pandangan'})).toBeVisible();
   await page.getByRole('button',{name:'Mulai checklist',exact:true}).click();
   await page.getByLabel('Nama klien',{exact:true}).fill('Kontak contoh');await page.getByLabel('Perusahaan / organisasi',{exact:true}).fill('Meeting baru — data sintetis');await page.getByLabel('Email klien',{exact:true}).fill('meeting@example.invalid');
   await page.getByRole('checkbox',{name:/Klien telah diberi tahu/}).check();

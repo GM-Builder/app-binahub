@@ -41,10 +41,11 @@ describe('SPIN client experience',()=>{
  mock.fetch.mockRejectedValue(new Error('Layanan belum tersedia.'));render(<SpinDiscovery/>);
  expect(await screen.findByRole('button',{name:'Coba lagi'})).toBeVisible();expect(screen.getByRole('link',{name:'Hubungi BinaHub'})).toHaveAttribute('href','mailto:admin@binahub.id');
  });
- it('renders six report sections with no internal statuses or expiry promises',()=>{
+ it('renders the dashboard report with no internal statuses or expiry promises',()=>{
  render(<SpinReport report={spinSyntheticReport}/>);
- expect(screen.getAllByRole('heading',{level:2})).toHaveLength(6);
- expect(screen.getAllByRole('heading',{name:'Meeting Excellence & Facilitation'})).toHaveLength(2);
+ expect(screen.getAllByRole('heading',{level:2})).toHaveLength(4);
+ expect(screen.getByText('Lihat konteks dan rincian kebutuhan').tagName).toBe('SUMMARY');
+ expect(screen.getAllByRole('heading',{name:'Meeting Excellence & Facilitation'})).toHaveLength(1);
  expect(screen.getByText(/Rp.*25/)).toBeVisible();
  expect(document.body.textContent).not.toMatch(/prepared_not_active|fitType|leadTemperature|manual_review|katalog dasar|proposal standar|proposal custom|masa berlaku/i);
  });
