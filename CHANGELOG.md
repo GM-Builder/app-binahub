@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.44.1] - 2026-10-27
+
+- Ringkasan kebutuhan, dampak dan hasil tampil sebagai poin yang dapat dipindai,
+  dengan rincian panjang tetap tersedia melalui disclosure per bagian.
+- Tidak mengubah jawaban atau isi snapshot lama. Memerlukan API 0.41.1 untuk
+  pencocokan program berdasarkan manfaat ketika sasaran diminta dibantu.
+
 ## [0.44.0] - 2026-10-27
 
 ### Changed

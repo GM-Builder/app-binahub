@@ -15,5 +15,12 @@ test('report dashboard keeps recommendation, review and empty states readable ac
  await page.screenshot({path:'.impeccable/review/spin-report-review-'+(mobile?'mobile':'desktop')+'.png',fullPage:true});
  await page.goto('/?spin&view=report&reportCase=empty');await expect(page.getByRole('heading',{name:'Belum ada program yang ditetapkan'})).toBeVisible();
  for(const width of [320,768,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+ await page.setViewportSize({width:mobile?390:1440,height:mobile?844:1000});
+ await page.goto('/?spin&view=report&reportCase=dense');
+ await expect(page.getByText('Lihat 2 poin lainnya')).toBeVisible();
+ await expect(page.getByText('Kebiasaan lama masih berulang.')).toBeHidden();
+ await page.getByText('Lihat 2 poin lainnya').click();
+ await expect(page.getByText('Kebiasaan lama masih berulang.')).toBeVisible();
+ await page.screenshot({path:'.impeccable/review/spin-summary-points-'+(mobile?'mobile':'desktop')+'.png',fullPage:true});
  expect(errors).toEqual([]);
 });

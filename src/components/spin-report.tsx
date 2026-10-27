@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowRight, Check, CircleHelp } from 'lucide-react';
 import { type SpinReport as Report } from '@/lib/spin-client';
 import styles from './spin-report.module.css';
+import { spinSummaryPoints } from '@/lib/spin-summary-points';
 
 const money=(amount:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(amount);
 export function SpinReport({report:r}:{report:Report}){
@@ -21,7 +22,9 @@ export function SpinReport({report:r}:{report:Report}){
    <p className={styles.intro}>Dari tantangan yang Anda sampaikan menuju hasil yang ingin dicapai.</p>
    <div className={styles.path} role="group" aria-label="Hubungan kebutuhan, dampak, dan hasil yang diharapkan">
     {[['Kebutuhan utama',r.summary.problem],['Dampak pada pekerjaan',r.summary.impact],['Hasil yang diharapkan',r.summary.outcome]].map(([label,text],index)=><div className={styles.pathItem} key={label}>
-     <div className={styles.pathLabel}><span>{label}</span>{index<2&&<ArrowRight size={17} aria-hidden="true"/>}</div><p>{text}</p>
+     <div className={styles.pathLabel}><span>{label}</span>{index<2&&<ArrowRight size={17} aria-hidden="true"/>}</div>
+     <ul className={styles.summaryPoints}>{spinSummaryPoints(text).slice(0,3).map(point=><li key={point}>{point}</li>)}</ul>
+     {spinSummaryPoints(text).length>3&&<details className={styles.summaryMore}><summary>Lihat {spinSummaryPoints(text).length-3} poin lainnya</summary><ul className={styles.summaryPoints}>{spinSummaryPoints(text).slice(3).map(point=><li key={point}>{point}</li>)}</ul></details>}
     </div>)}
    </div>
    <div className={styles.advisory}><div className={styles.advisoryHeading}><span className={styles.status}>{review?'Perlu penyelarasan':programs.length?'Rekomendasi awal':'Perlu pembahasan'}</span><h3>{advisory.title}</h3></div><p>{advisory.description}</p>
