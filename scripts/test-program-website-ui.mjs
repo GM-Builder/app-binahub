@@ -33,7 +33,8 @@ try{
   await expect(hero).toHaveAttribute('data-hero-slide','recommendation');
   const heroVisual=hero.locator('[data-program-hero-visual]');
   await expect(heroVisual).toBeVisible();
-  for(const label of ['Kebutuhan','Kompetensi','Program'])await expect(heroVisual.getByText(label,{exact:true})).toBeVisible();
+  for(const label of ['Kebutuhan','Fokus kompetensi','Program yang relevan','Koordinasi lintas tim belum konsisten.','Communication','Collaboration','Team Synergy','Ilustrasi rekomendasi'])await expect(heroVisual.getByText(label,{exact:true})).toBeVisible();
+  await expect(heroVisual.locator('[data-example-card]')).toHaveCount(3);
   const carousel=hero.getByRole('region',{name:'Pilihan utama BinaHub'});
   const controls=hero.getByRole('group',{name:'Kontrol slide utama'});
   await expect(controls.getByRole('button',{name:'Putar slide otomatis'})).toBeDisabled();
@@ -46,13 +47,32 @@ try{
   const inactive=hero.locator('[aria-roledescription="slide"][aria-hidden="true"]');
   await expect(inactive).toHaveAttribute('inert','');
   const boxAfter=await carousel.boundingBox();assert(Math.abs(boxBefore.height-boxAfter.height)<1,'no slide layout shift');
+  await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0);await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
   await capture(page,{path:previewDir+'/program-hero-brand-'+device+'.png',fullPage:false,animations:'disabled'});
   await controls.getByRole('button',{name:'Rekomendasi program',exact:true}).click();
   await expect(hero).toHaveAttribute('data-hero-slide','recommendation');await expect(heroVisual).toBeVisible();
   await expect.poll(()=>hero.locator('[data-hero-reveal]').evaluate(el=>Number(getComputedStyle(el).opacity))).toBe(1);
   await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0);await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'home overflow '+device);
+  if(device==='mobile'){
+   const headerBox=await page.locator('#global-navbar nav').boundingBox();
+   const needsBox=await heroVisual.locator('[data-example-card="needs"]').boundingBox();
+   assert(needsBox.y>=headerBox.y+headerBox.height+8,'needs card clears mobile header');
+  }
   await capture(page,{path:previewDir+'/program-hero-'+device+'.png',fullPage:false,animations:'disabled'});
+  if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await heroVisual.screenshot({path:previewDir+'/program-hero-example-'+device+'.png',animations:'disabled'});
+  for(const homeWidth of device==='desktop'?[768,1024,1280,1440,1600]:[320,390]){
+   await page.setViewportSize({width:homeWidth,height});
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'home overflow '+homeWidth);
+   assert(await heroVisual.locator('[data-example-card="program"]').evaluate(el=>el.scrollHeight<=el.clientHeight),'program card content fits '+homeWidth);
+   if(homeWidth>=1024)assert(await hero.locator(':scope > div').evaluate(el=>parseFloat(getComputedStyle(el).minHeight))<=920,'bounded desktop minimum; intrinsic content may grow '+homeWidth);
+  }
+  await page.setViewportSize({width,height});
+  if(device==='desktop'){
+   await page.emulateMedia({forcedColors:'active'});
+   assert.equal(await heroVisual.locator('[data-example-card="needs"]').evaluate(el=>getComputedStyle(el).backdropFilter),'none','hero forced-color fallback');
+   await page.emulateMedia({forcedColors:'none'});
+  }
   await hero.getByRole('link',{name:'Dapatkan rekomendasi program'}).click();await page.waitForURL(/\/id\/rekomendasi-program/);
   assert.equal(new URL(page.url()).searchParams.get('utm_campaign'),'program-test');
   await page.getByRole('heading',{level:1,name:'Temukan program yang tepat untuk tim Anda.'}).waitFor();
@@ -156,7 +176,7 @@ try{
   assert((await page.locator('link[rel=canonical]').getAttribute('href')).replace(/\/$/,'').endsWith('/en/rekomendasi-program'));
   await page.goto(base+'/en');
   await expect(page.locator('#home-hero')).toHaveAttribute('data-hero-slide','recommendation');
-  for(const label of ['Your needs','Competencies','Your program'])await expect(page.locator('[data-program-hero-visual]').getByText(label,{exact:true})).toBeVisible();
+  for(const label of ['Your needs','Development focus','Relevant program','Team Synergy','Illustrative recommendation'])await expect(page.locator('[data-program-hero-visual]').getByText(label,{exact:true})).toBeVisible();
   assert.deepEqual(errors,[]);await page.close();
  }
  const auto=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
