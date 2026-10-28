@@ -55,17 +55,17 @@ export function PEReviewAccessPanel({ id, access, token, onChange, update, onEra
     <div className="border-t border-slate-200 p-5 sm:p-6">
       <form className="space-y-5" onSubmit={event => { event.preventDefault(); void save(); }}>
         <fieldset disabled={busy} className="space-y-5">
-          <legend className="sr-only">Pengaturan privasi hasil asesmen</legend>
+          <legend className="sr-only">Pengaturan privasi hasil Self Diagnostic</legend>
           <div><label className="flex cursor-pointer items-start gap-3 text-sm font-medium leading-6"><input type="checkbox" checked={share} onChange={event => setShare(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-blue-900" />Izinkan tim BinaHub meninjau hasil saya</label>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">Tim BinaHub dapat melihat identitas, informasi pekerjaan, jawaban, dan hasil untuk memberi rekomendasi pengembangan. Jika izin dimatikan, hasil tetap dapat Anda baca, tetapi tidak lagi dapat ditinjau oleh tim. Hasil tidak dibagikan otomatis kepada perusahaan.</p></div>
-          <div className="border-t border-slate-100 pt-5"><label className="flex cursor-pointer items-start gap-3 text-sm font-medium leading-6"><input type="checkbox" checked={evaluate} onChange={event => setEvaluate(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-blue-900" />Bantu meningkatkan kualitas asesmen (opsional)</label>
+          <div className="border-t border-slate-100 pt-5"><label className="flex cursor-pointer items-start gap-3 text-sm font-medium leading-6"><input type="checkbox" checked={evaluate} onChange={event => setEvaluate(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-blue-900" />Bantu meningkatkan kualitas Self Diagnostic (opsional)</label>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">{legacyEvaluation
               ? 'Izin evaluasi statistik yang Anda berikan sebelumnya masih aktif. Izin ini tidak mencakup ekspor jawaban per orang. Matikan pilihan ini dan simpan untuk menghentikan izin tersebut.'
               : 'Dengan izin ini, tim evaluasi berwenang dapat menggunakan dan mengekspor jawaban, skor, waktu pengisian, serta penilaian Anda dengan kode pengganti, tanpa nama, email, atau informasi pekerjaan. Data berkode tetap perlu dilindungi. Data ini tidak digunakan untuk keputusan seleksi atau promosi.'}</p>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">Izin ini terpisah dari akses rekomendasi. Mematikannya menghentikan penggunaan berikutnya; salinan yang sudah diekspor tidak dapat ditarik kembali secara otomatis.</p>
           </div>
           {evaluate && !legacyEvaluation && <div><p className="text-sm text-slate-600">Anda juga dapat memberi penilaian berikut. Keduanya opsional.</p><div className="mt-3 grid gap-4 sm:grid-cols-2">{[
-            { label: 'Kejelasan pertanyaan', value: clarity, set: setClarity }, { label: 'Manfaat hasil asesmen', value: usefulness, set: setUsefulness },
+            { label: 'Kejelasan pertanyaan', value: clarity, set: setClarity }, { label: 'Manfaat hasil Self Diagnostic', value: usefulness, set: setUsefulness },
           ].map(field => <label key={field.label} className="text-sm font-medium">{field.label}<select value={field.value} onChange={event => field.set(event.target.value)} className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-base font-normal sm:text-sm"><option value="">Tidak memberi penilaian</option>{[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} — {['', 'Sangat kurang', 'Kurang', 'Cukup', 'Baik', 'Sangat baik'][n]}</option>)}</select></label>)}</div></div>}
         </fieldset>
         <button disabled={busy || !dirty} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#0B2C6B] px-4 text-sm font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-50">{busy && <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" />}{busy ? 'Menyimpan…' : 'Simpan pilihan'}</button>

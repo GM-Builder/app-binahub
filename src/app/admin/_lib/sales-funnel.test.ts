@@ -14,7 +14,7 @@ describe("current sales funnel snapshot", () => {
     const funnel = buildSalesFunnel(data);
     expect(funnel.leads).toHaveLength(2); expect(funnel.buckets.awareness).toHaveLength(2);
   });
-  it("does not inflate earlier stages or derive them from minat/assessment status", () => {
+  it("does not inflate earlier stages or derive them from minat/Self Diagnostic status", () => {
     const funnel = buildSalesFunnel(funnelDashboard([funnelLead({ opportunityStage: "won", leadTemperature: "hot" })]));
     expect(funnel.buckets.awareness).toHaveLength(0); expect(funnel.buckets.interest).toHaveLength(0); expect(funnel.buckets.decision).toHaveLength(1);
     expect(funnel.activeCount).toBe(0); expect(funnel.activeValue).toBe(0);

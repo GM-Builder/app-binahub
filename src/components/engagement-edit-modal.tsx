@@ -9,7 +9,7 @@ import { useDialogFocus } from "@/hooks/use-dialog-focus";
 const TYPE_OPTIONS: EngagementType[] = ["assessment", "coaching", "training", "transformation"];
 
 const TYPE_LABELS: Record<EngagementType, string> = {
-  assessment: "Assessment",
+  assessment: "Self Diagnostic",
   coaching: "Coaching",
   training: "Training",
   transformation: "Transformation",

@@ -150,7 +150,7 @@ export interface Insight {
 export const CAPABILITY_NAMES = ["Leadership", "Communication", "Collaboration", "Execution", "Strategic Thinking"] as const;
 
 export const EVIDENCE_TYPE_LABELS: Record<EvidenceType, string> = {
-  assessment: "Assessment Result",
+  assessment: "Self Diagnostic Result",
   reflection: "Reflection Entry",
   observation: "Facilitator Observation",
   feedback: "Feedback",

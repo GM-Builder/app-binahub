@@ -52,7 +52,7 @@ export function sourceLabel(value: string | null) {
   return (
     (
       {
-        assessment: "Assessment",
+        assessment: "Self Diagnostic",
         outbound: "Outbound",
         inquiry: "Pertanyaan masuk",
         contact: "Form kontak",

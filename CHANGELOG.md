@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.45.0] - 2026-10-28
+
+- Rekomendasi program menjadi tindakan utama halaman diagnosis; pilihan individu
+  melewati daftar paket. Harga paket berbayar ditampilkan sebagai Coming soon,
+  tanpa checkout atau aktivasi akses berbayar.
+- Pertanyaan individu tanpa label kompetensi, tinjauan bertahap berisi soal dan
+  jawaban terpilih, grafik gabungan sementara 50:50 serta tabel dua metode.
+- Bahasa publik memakai Diagnosis dan Self Diagnostic. Pembaruan pertanyaan SPIN,
+  industri, ringkasan bersatuan, dan jabatan wajib tanpa izin pemasaran tambahan.
+- Memerlukan API 0.42.0 dan SQL 74 untuk kebijakan hasil gratis baru 48 jam.
+  Tidak mempersingkat hasil lama. Lihat docs/meeting-2026-10-28-release.md.
+
 ## [0.44.1] - 2026-10-27
 
 - Ringkasan kebutuhan, dampak dan hasil tampil sebagai poin yang dapat dipindai,

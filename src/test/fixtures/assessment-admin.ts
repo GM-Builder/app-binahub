@@ -20,7 +20,7 @@ export function assessmentFixture(overrides: Partial<AssessmentRecord> = {}): As
     resultEmailSentAt: "2026-10-01T03:00:00Z", resultEmailId: "demo-result-email",
     proposalStatus: "Diminta", proposalRequestedAt: "2026-10-05T03:00:00Z",
     proposalSentAt: null, proposalEmailId: null, createdAt: "2026-10-01T02:50:00Z",
-    proposalEligibility: { eligible: true, missing: [], summary: "Data assessment lengkap." },
+    proposalEligibility: { eligible: true, missing: [], summary: "Data Self Diagnostic lengkap." },
     leadTemperature: "warm", leadScore: 80, leadScoreConfidence: 1,
     leadScoreRuleVersion: "v1.1-public-diagnostic", lifecycleStage: "lead", opportunityStage: "identified",
     ...overrides,

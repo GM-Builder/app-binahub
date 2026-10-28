@@ -25,7 +25,7 @@ describe("ContactsPanel", () => {
   it("meringkas dan memfilter database kontak tanpa memenuhi layar dengan form", () => {
     render(
       <ContactsPanel
-        contacts={[contact(), contact({ id: "contact-2", recordId: "record-2", name: "Raka Putra", email: "raka@example.com", source: "Assessment" })]}
+        contacts={[contact(), contact({ id: "contact-2", recordId: "record-2", name: "Raka Putra", email: "raka@example.com", source: "Self Diagnostic" })]}
         onAction={vi.fn()}
         onRefresh={vi.fn()}
       />,
@@ -45,7 +45,7 @@ describe("ContactsPanel", () => {
       <ContactsPanel
         contacts={[
           contact(),
-          contact({ name: "Maya Sari", source: "Assessment", sourceType: "assessment", category: "Peserta", email: "maya@example.com" }),
+          contact({ name: "Maya Sari", source: "Self Diagnostic", sourceType: "assessment", category: "Peserta", email: "maya@example.com" }),
         ]}
         onAction={vi.fn()}
         onRefresh={vi.fn()}

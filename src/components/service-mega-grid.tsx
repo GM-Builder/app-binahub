@@ -50,7 +50,7 @@ function ServiceCard({ service }: { service: ServiceModule }) {
           {service.name}
         </h3>
         <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-          {service.slug === "binainsight" && "Asesmen kesiapan transformasi & pemetaan potensi."}
+          {service.slug === "binainsight" && "Self Diagnostic kesiapan transformasi & pemetaan potensi."}
           {service.slug === "binaimpact" && "Pengukuran dampak perubahan & efektivitas program."}
           {service.slug === "binalab" && "Eksperimen strategi & inovasi model operasional."}
           {service.slug === "binacoach" && "Pendampingan intensif & coaching kepemimpinan."}

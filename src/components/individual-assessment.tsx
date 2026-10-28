@@ -18,6 +18,7 @@ export function IndividualAssessment() {
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState('');
   const [pendingChoice,setPendingChoice]=useState<{id:string;value:PEAnswer}|null>(null);
   const [index,setIndex]=useState(0),[consent,setConsent]=useState(false),[deleteConfirm,setDeleteConfirm]=useState(false);
+  const [reviewCount,setReviewCount]=useState(6);
   const [context,setContext]=useState<PEContext>({role:'',goal:'',relevance:{'PE-02':'normal','PE-04':'normal','PE-06':'normal'}});
   const tokenRef=useRef(''),userRef=useRef(''),locked=useRef(false);
   const startRef=useRef<Record<string,unknown>|null>(null),submissionKey=useRef('');
@@ -51,7 +52,7 @@ export function IndividualAssessment() {
         }
         if(alive&&userRef.current===data.session.user.id){setState({definition,attempt,report,access});if(attempt){setContext(attempt.context);
           setIndex(firstUnanswered([...definition.selfReportItems,...definition.sjtItems],attempt.responses));}}
-      }catch(failure){if(alive)setError(failure instanceof Error?failure.message:'Asesmen belum dapat dimuat.');}
+      }catch(failure){if(alive)setError(failure instanceof Error?failure.message:'Self Diagnostic belum dapat dimuat.');}
       finally{if(alive)setLoading(false);}
     }
     void load();return()=>{alive=false;};
@@ -116,7 +117,6 @@ export function IndividualAssessment() {
   });}
   const progress=state?.attempt?countAnswered(questions,state.attempt.responses):0;
   const question=questions[index];
-  const area=state?.definition.competencies.find(c=>c.code===question?.competencyCode);
 
   return <main className="min-h-screen bg-[#F5F7FA] px-4 pb-12 text-[#0B2C6B] sm:px-6">
     <header className="mx-auto flex max-w-5xl items-center justify-between py-6">
@@ -130,7 +130,7 @@ export function IndividualAssessment() {
       {error&&<div role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         {error}<div className="mt-3 flex gap-3">{state?.attempt&&<button className={secondary} disabled={busy} onClick={()=>void reload()}>Muat draft terbaru</button>}
           {!state&&signedIn&&<button className={secondary} onClick={()=>window.location.reload()}>Coba lagi</button>}</div></div>}
-      {loading?<div role="status" className="mt-8 flex min-h-60 items-center justify-center gap-3 rounded-3xl bg-white"><Loader2 className="animate-spin motion-reduce:animate-none"/>Menyiapkan asesmen…</div>
+      {loading?<div role="status" className="mt-8 flex min-h-60 items-center justify-center gap-3 rounded-3xl bg-white"><Loader2 className="animate-spin motion-reduce:animate-none"/>Menyiapkan Self Diagnostic…</div>
       :!signedIn?<section className="mt-8 rounded-3xl border border-slate-200 bg-white p-7 sm:p-10">
         <LockKeyhole className="text-[#BA8B35]" aria-hidden="true"/><h2 className="mt-5 text-xl font-semibold">Hasil pribadi, akses yang aman.</h2>
         <p className="mt-3 text-sm leading-7 text-slate-600">Masuk atau buat akun untuk menyimpan pengisian dan membuka hasil kapan saja. Akun BinaHub yang sudah ada dapat digunakan.</p>
@@ -152,14 +152,15 @@ export function IndividualAssessment() {
             <option value="low">Kurang relevan</option><option value="normal">Relevan</option><option value="high">Sangat relevan</option></select></label>)}</div></fieldset>
         <div className="rounded-2xl bg-blue-50 p-4 text-xs leading-6 text-slate-600"><p>{state.definition.notice}</p><p className="mt-2">{state.definition.privacyNotice}</p>{state.definition.sharingNotice&&<p className="mt-2">{state.definition.sharingNotice}</p>}</div>
         <label className="flex cursor-pointer items-start gap-3 text-sm leading-6"><input type="checkbox" checked={consent} required disabled={busy} className="mt-1 h-5 w-5 accent-blue-900" onChange={e=>setConsent(e.target.checked)}/>
-          {state.definition.sharingConsentVersion?'Saya memahami tujuan asesmen dan mengizinkan tim BinaHub meninjau profil, konteks, jawaban, serta hasil untuk rekomendasi pengembangan.':'Saya memahami tujuan asesmen dan menyetujui penggunaan jawaban untuk hasil pengembangan pribadi saya.'}</label>
+          {state.definition.sharingConsentVersion?'Saya memahami tujuan Self Diagnostic dan mengizinkan tim BinaHub meninjau profil, konteks, jawaban, serta hasil untuk rekomendasi pengembangan.':'Saya memahami tujuan Self Diagnostic dan menyetujui penggunaan jawaban untuk hasil pengembangan pribadi saya.'}</label>
         <button className={`${button} w-full`} disabled={busy||!consent}>{busy?<Loader2 className="animate-spin motion-reduce:animate-none" size={18}/>:<ArrowRight size={18}/>}Mulai 18 soal</button>
       </form>
       :state?.attempt&&<section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 sm:p-9">
         <div className="flex items-center justify-between text-xs text-slate-500"><span>{progress} dari {questions.length} soal terisi</span><span role="status" aria-live="polite">{busy?'Menyimpan…':saved||'Draft tersedia'}</span></div>
         <progress className="mt-3 h-2 w-full accent-blue-900" value={progress} max={questions.length} aria-label="Kemajuan pengisian"/>
         {question?<>
-          <div className="mt-7 flex flex-wrap gap-2 text-xs"><span className="rounded-full bg-blue-50 px-3 py-1.5">Area {area?.name}</span><span className="rounded-full bg-slate-100 px-3 py-1.5">{question.type==='behavioral_self_report'?'Pengalaman kerja · 3 bulan terakhir':'Studi kasus'}</span></div>
+          <p className="mt-7 text-sm text-slate-600">{question.type==='behavioral_self_report'?'Pengalaman nyata dalam tiga bulan terakhir':'Studi kasus'}</p>
+          <p className="mt-3 text-xs leading-6 text-slate-600">Jawablah sesuai pengalaman dan pilihan Anda yang sebenarnya, bukan jawaban yang terasa paling ideal.</p>
           {question.scenario&&<p className="mt-5 rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700">{question.scenario}</p>}
           <fieldset className="mt-6"><legend className="text-xl font-medium leading-8 tracking-tight">{question.prompt||question.question}</legend>
             <div className="mt-5 space-y-3">{(question.type==='behavioral_self_report'?state.definition.selfReportScale.map(o=>({value:o.value,label:o.label})):
@@ -172,13 +173,12 @@ export function IndividualAssessment() {
           <div className="mt-7 flex items-center justify-between gap-3"><button className={secondary} disabled={busy||index===0} onClick={()=>setIndex(i=>i-1)}><ArrowLeft size={16}/>Kembali</button>
             <button className={button} disabled={busy||!Object.hasOwn(state.attempt.responses,question.id)} onClick={()=>{setIndex(i=>i+1);window.scrollTo({top:0,behavior:'smooth'});}}>{index===questions.length-1?'Tinjau jawaban':'Lanjut'}<ArrowRight size={16}/></button></div>
         </>:<><h2 className="mt-7 text-2xl font-semibold">Periksa sebelum mengirim.</h2><p className="mt-2 text-sm leading-7 text-slate-600">Jawaban akan dikunci setelah dikirim. Skor dihitung langsung; Anda tidak perlu menunggu analisis AI.</p>
-          <div className="mt-5 space-y-2">{state.definition.competencies.map(c=>{
-            const items=questions.filter(q=>q.competencyCode===c.code);const answered=countAnswered(items,state.attempt!.responses);
-            const na=items.filter(q=>state.attempt!.responses[q.id]==='NA').length;
-            return <button key={c.code} className="flex min-h-14 w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left text-sm" onClick={()=>setIndex(questions.findIndex(q=>q.competencyCode===c.code))}>
-              <span>{c.name}<span className="mt-1 block text-xs text-slate-500">{na?`${na} jawaban tanpa kesempatan relevan`:'Tidak ada jawaban NA'}</span></span><span>{answered}/6 · Tinjau</span></button>;
-          })}</div>
-          <p className="mt-4 text-xs leading-6 text-slate-500">Jawaban tanpa kesempatan relevan tidak dinilai nol. Bila bukti terlalu sedikit, skor Area tersebut tidak ditampilkan.</p>
+          <ol className="mt-5 divide-y divide-slate-200">{questions.slice(0,reviewCount).map((item,n)=>{
+            const value=state.attempt!.responses[item.id],selected=item.type==='behavioral_self_report'?state.definition.selfReportScale.find(option=>option.value===value)?.label:item.options?.find(option=>option.id===value)?.text;
+            return <li key={item.id} className="py-5 text-sm leading-7"><p className="font-semibold">{n+1}. {item.prompt||item.question}</p>{item.scenario&&<p className="mt-2 text-slate-600">{item.scenario}</p>}<p className="mt-2">{selected||'Belum dijawab'}</p><button type="button" className={`${secondary} mt-3`} onClick={()=>setIndex(n)}>Ubah jawaban {n+1}</button></li>;
+          })}</ol>
+          {reviewCount<questions.length&&<button type="button" className={`${secondary} mt-5`} onClick={()=>setReviewCount(n=>n+6)}>Lihat jawaban berikutnya</button>}
+          <p className="mt-4 text-xs leading-6 text-slate-500">Anda dapat mengubah jawaban dengan memilih Kembali sebelum mengirim.</p>
           <button className={`${button} mt-6 w-full`} disabled={busy||progress!==questions.length} onClick={()=>void submit()}>{busy?<Loader2 size={18} className="animate-spin motion-reduce:animate-none"/>:<CheckCircle2 size={18}/>}Kirim dan lihat hasil</button></>}
       </section>}
       {signedIn&&state?.definition.features?.history&&<a href="/insight/individual/history" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">Riwayat diagnosis saya</a>}

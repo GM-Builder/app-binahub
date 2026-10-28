@@ -4,7 +4,7 @@ import { clientJourneyFixture } from "@/test/fixtures/client-journey";
 import { buildClientJourney, briefFields } from "./client-journey";
 
 describe("read-only client journey", () => {
-  it("joins by explicit lead and assessment IDs, including a booking with no lead ID", () => {
+  it("joins by explicit lead and Self Diagnostic IDs, including a booking with no lead ID", () => {
     const { data, lead } = clientJourneyFixture();
     data.assessments.push(assessmentFixture({ id: "unrelated", leadId: "other", email: lead.email }));
     const journey = buildClientJourney(data, { leadId: lead.id });

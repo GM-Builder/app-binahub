@@ -56,10 +56,13 @@ function DetailList({ title, items }: { title: string; items: string[] }) {
   </section>;
 }
 
-export default async function PublicCatalogPage({ searchParams }: { searchParams: Promise<{ locale?: string }> }) {
-  const locale = (await searchParams).locale === "en" ? "en" : "id";
+export default async function PublicCatalogPage({ searchParams }: { searchParams: Promise<{ locale?: string;solution?:string }> }) {
+  const query=await searchParams;
+  const locale = query.locale === "en" ? "en" : "id";
   const english = locale === "en";
-  const products = await catalog(locale);
+  const allProducts = await catalog(locale);
+  const solution=query.solution&&/^SS-\d{2}$/.test(query.solution)?query.solution:null;
+  const products=solution?allProducts.map(product=>({...product,modules:product.modules.filter(module=>module.code===solution)})).filter(product=>product.modules.length):allProducts;
 
   return (
     <main className="min-h-screen bg-[#F7F8FA] text-slate-900">
@@ -68,7 +71,7 @@ export default async function PublicCatalogPage({ searchParams }: { searchParams
           <Link href="/" className="text-xl font-bold tracking-tight">BinaHub</Link>
           <div className="flex items-center gap-4">
             <nav aria-label="Language" className="flex gap-2 text-xs"><Link href="/catalog?locale=id" aria-current={!english ? "page" : undefined} className={!english ? "font-bold underline underline-offset-4" : "text-white/70"}>ID</Link><span className="text-white/40">/</span><Link href="/catalog?locale=en" aria-current={english ? "page" : undefined} className={english ? "font-bold underline underline-offset-4" : "text-white/70"}>EN</Link></nav>
-            <Link href={english ? "/en/insight" : "/insight"} className="inline-flex min-h-10 items-center bg-white px-4 text-xs font-bold text-[#071B3D]">{english ? "Start Diagnostic" : "Mulai Diagnosa"}</Link>
+            <Link href={english ? "/en/insight" : "/insight"} className="inline-flex min-h-10 items-center bg-white px-4 text-xs font-bold text-[#071B3D]">{english ? "Start Diagnostic" : "Mulai Diagnosis"}</Link>
           </div>
         </div>
       </header>
@@ -82,6 +85,7 @@ export default async function PublicCatalogPage({ searchParams }: { searchParams
       </section>
 
       <div className="mx-auto max-w-7xl space-y-12 px-5 py-12 sm:px-8">
+        {solution && <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><p>{english ? 'Program selected for your development focus.' : 'Program yang terkait dengan fokus pengembangan Anda.'}</p><Link href={english?'/catalog?locale=en':'/catalog'} className="font-semibold text-[#0B2C6B] underline underline-offset-4">{english?'Explore all programs':'Lihat semua program'}</Link></div>}
         {products.length === 0 ? (
           <section className="border border-slate-200 bg-white p-10 text-center">
             <Layers3 className="mx-auto h-8 w-8 text-slate-300" />
@@ -107,7 +111,7 @@ export default async function PublicCatalogPage({ searchParams }: { searchParams
                   [english ? "Capacity" : "Kapasitas", module.capacity],
                   [english ? "Service brand" : "Layanan terkait", module.serviceBrand],
                 ] as const;
-                return <article key={module.id} className="flex flex-col border border-slate-200 bg-white p-6 shadow-[0_16px_45px_-36px_rgba(15,23,42,0.35)]">
+                return <article id={module.code} key={module.id} className="flex flex-col border border-slate-200 bg-white p-6 shadow-[0_16px_45px_-36px_rgba(15,23,42,0.35)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{module.code}</p>

@@ -400,7 +400,7 @@ describe("pipeline workspace interactions", () => {
     expect(onAction).toHaveBeenCalledTimes(2);
   });
 
-  it("joins assessment details only through lead ID, not a shared email", () => {
+  it("joins Self Diagnostic details only through lead ID, not a shared email", () => {
     setup([lead()], {
       assessments: [
         {
@@ -416,7 +416,7 @@ describe("pipeline workspace interactions", () => {
     );
     expect(
       within(screen.getByRole("dialog")).getByText(
-        "0 assessment terhubung · 0 konsultasi terhubung",
+        "0 Self Diagnostic terhubung · 0 konsultasi terhubung",
       ),
     ).toBeVisible();
   });

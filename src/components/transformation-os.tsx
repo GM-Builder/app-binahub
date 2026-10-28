@@ -85,7 +85,7 @@ export function WorkOsSummary({ audience, data }: { audience: "client" | "facili
     {
       label: "Evidence Captured",
       value: String(evidenceCount),
-      detail: "Assessment, reflection, observation, and system signals.",
+      detail: "Self Diagnostic, reflection, observation, and system signals.",
       icon: <FileText size={18} />,
     },
     {

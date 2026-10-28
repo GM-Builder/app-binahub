@@ -1,4 +1,4 @@
-export const tabs = ["Overview", "Acquisition Control", "Sales Pipeline", "Client & Delivery", "Operations Control", "Automation Center", "Assessment", "Meeting", "Kontak & Leads", "Inquiry Masuk"] as const;
+export const tabs = ["Overview", "Acquisition Control", "Sales Pipeline", "Client & Delivery", "Operations Control", "Automation Center", "Self Diagnostic", "Meeting", "Kontak & Leads", "Inquiry Masuk"] as const;
 
 export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: string; description: string }> = {
   Overview: {
@@ -11,15 +11,15 @@ export const TAB_META: Record<(typeof tabs)[number], { eyebrow: string; title: s
     title: "Kelola proyek dan penugasan tim",
     description: "Siapkan proyek, tinjau rekomendasi penugasan, dan pastikan undangan diperiksa sebelum dikirim.",
   },
-  Assessment: {
+  "Self Diagnostic": {
     eyebrow: "Hubungan klien",
-    title: "Assessment klien",
+    title: "Self Diagnostic klien",
     description: "Pahami kebutuhan klien, pantau proposal, dan kelola tindak lanjut dalam satu tempat.",
   },
   "Acquisition Control": {
     eyebrow: "Akuisisi & Penjualan",
     title: "Workspace penjualan",
-    description: "Inbound, outbound, assessment, proposal, dan tindak lanjut dalam satu tempat.",
+    description: "Inbound, outbound, Self Diagnostic, proposal, dan tindak lanjut dalam satu tempat.",
   },
   "Sales Pipeline": {
     eyebrow: "Akuisisi & Penjualan",
@@ -136,7 +136,7 @@ export const NOTE_PRESETS = [
 ];
 
 export const PROJECT_SCOPE_PRESETS = [
-  "Assessment awal, alignment sponsor, workshop prioritas, dan rekomendasi roadmap 90 hari.",
+  "Self Diagnostic awal, alignment sponsor, workshop prioritas, dan rekomendasi roadmap 90 hari.",
   "Program capability building untuk leader dan tim inti dengan sesi praktik dan evaluasi dampak.",
   "Pendampingan implementasi project perubahan sampai adoption, measurement, dan handover internal.",
 ];

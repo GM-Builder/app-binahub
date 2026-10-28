@@ -9,7 +9,7 @@ const roleOptions = [
     role: "client" as const,
     label: "Client",
     icon: <UserRound size={22} />,
-    note: "Assessment dan laporan",
+    note: "Self Diagnostic dan laporan",
   },
   {
     role: "admin" as const,

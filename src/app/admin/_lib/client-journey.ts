@@ -3,7 +3,7 @@ import { stageLabel } from "./pipeline-model";
 
 export type JourneyEvent = {
   id: string;
-  source: "Peluang" | "Assessment" | "Proposal" | "Konsultasi" | "Pelaksanaan";
+  source: "Peluang" | "Self Diagnostic" | "Proposal" | "Konsultasi" | "Pelaksanaan";
   title: string;
   description: string;
   at: string | null;
@@ -90,9 +90,9 @@ export function buildClientJourney(
     });
   }
   for (const assessment of assessments) {
-    add({ id: `assessment:${assessment.id}`, source: "Assessment", title: "Assessment diterima", description: assessment.name, at: assessment.createdAt });
+    add({ id: `Self Diagnostic:${assessment.id}`, source: "Self Diagnostic", title: "Self Diagnostic diterima", description: assessment.name, at: assessment.createdAt });
     if (assessment.resultEmailSentAt) {
-      add({ id: `result:${assessment.id}`, source: "Assessment", title: "Pengiriman hasil dicatat", description: "Status pengiriman tercatat; bukan konfirmasi bahwa email telah dibaca.", at: assessment.resultEmailSentAt });
+      add({ id: `result:${assessment.id}`, source: "Self Diagnostic", title: "Pengiriman hasil dicatat", description: "Status pengiriman tercatat; bukan konfirmasi bahwa email telah dibaca.", at: assessment.resultEmailSentAt });
     }
     if (assessment.proposalRequestedAt) {
       add({ id: `proposal-request:${assessment.id}`, source: "Proposal", title: "Proposal diminta", description: assessment.name, at: assessment.proposalRequestedAt });

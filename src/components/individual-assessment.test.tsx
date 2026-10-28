@@ -48,7 +48,7 @@ describe('individual diagnosis UI',()=>{
     await screen.findByText('Synthetic case question');fireEvent.click(screen.getByLabelText('Synthetic action A'));
     await waitFor(()=>expect(screen.getByRole('button',{name:'Tinjau jawaban'})).toBeEnabled());fireEvent.click(screen.getByRole('button',{name:'Tinjau jawaban'}));
     fireEvent.click(screen.getByRole('button',{name:/Kirim dan lihat hasil/}));
-    await screen.findByText('Hasil asesmen individu');
+    await screen.findByText('Hasil Self Diagnostic individu');
     expect(mock.fetch.mock.calls.filter(([,args])=>args?.method==='PATCH'&&JSON.parse(args.body).submissionKey)).toHaveLength(1);
     const stored=localStorage.getItem(`binahub.pe.attempt.${userId}`);expect(stored).toBeTruthy();
     expect(stored).not.toMatch(/responses|Manager|Growth/);
@@ -64,8 +64,8 @@ describe('individual diagnosis UI',()=>{
   });
   it('shows legitimate zero differently from insufficient evidence and does not claim percent mastery',()=>{
     render(<PEResult report={report} retentionUntil="2027-04-13T00:00:00Z"/>);
-    expect(screen.getByRole('img',{name:'Self-Development, Pengalaman kerja: bukti belum cukup'})).toBeVisible();
-    expect(screen.getByRole('img',{name:'Self-Development, Studi kasus: 0 dari 100'})).toBeVisible();
+    expect(screen.getByRole('img',{name:'Self-Development, Skor gabungan: bukti belum cukup'})).toBeVisible();
+    expect(screen.getByRole('table')).toBeVisible();
     fireEvent.click(screen.getByText('Rincian Self-Development'));
     expect(screen.getByText('Bukti belum cukup untuk menampilkan skor.')).toBeVisible();
   });

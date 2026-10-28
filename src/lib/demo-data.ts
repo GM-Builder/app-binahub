@@ -23,7 +23,7 @@ export const facilitatorReviews = [
   {
     client: "Andini Pratama",
     module: "BinaInsight",
-    model: "Assessment Result",
+    model: "Self Diagnostic Result",
     status: "Reviewed",
   },
 ];
@@ -61,7 +61,7 @@ export const transformationEngagements = [
     id: "eng-culture-health",
     title: "Culture Health Baseline",
     organization: "Demo Organization",
-    type: "Assessment Project",
+    type: "Self Diagnostic Project",
     status: "Review",
     progress: 82,
     participants: 42,
@@ -148,7 +148,7 @@ export const transformationEvidence = [
   },
   {
     id: "ev-003",
-    type: "Assessment Result",
+    type: "Self Diagnostic Result",
     source: "System",
     participant: "Nadia Kusuma",
     engagement: "Culture Health Baseline",

@@ -388,7 +388,7 @@ export function SmartCenterPanel({
             label="3. Ruang Lingkup Proyek"
             value={form.scope}
             onChange={(value) => setField("scope", value)}
-            placeholder="Contoh: Assessment kesiapan, workshop alignment, pendampingan eksekusi, dan pengukuran adoption."
+            placeholder="Contoh: Self Diagnostic kesiapan, workshop alignment, pendampingan eksekusi, dan pengukuran adoption."
             help="Tuliskan ruang lingkup kerja, hasil yang diharapkan, batasan, dan konteks klien. Informasi yang jelas menghasilkan rekomendasi tim yang lebih tepat."
             minHeight="min-h-32"
           />

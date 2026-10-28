@@ -16,7 +16,7 @@ export async function submitAssessment(
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.success !== true || typeof data.assessmentId !== 'string') {
     const details = typeof data?.details === 'string' ? ` (${data.details})` : '';
-    throw new Error((data?.error || 'Assessment could not be saved.') + details);
+    throw new Error((data?.error || 'Self Diagnostic could not be saved.') + details);
   }
   onAccepted();
   const remaining = Math.max(0, ASSESSMENT_LOADING_MS - (Date.now() - started));

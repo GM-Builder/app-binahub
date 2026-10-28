@@ -83,13 +83,13 @@ function PEEmailResultBody({ id }: { id: string }) {
   return <DiagnosisShell organization>
     <div className={hasResult ? styles.layout : styles.accessLayout}>
       {deleted ? <section className={styles.receipt}><h1>Pengisian sudah dihapus.</h1><p>Jawaban, hasil, dan akses terkait pengisian ini telah dihapus dari sistem aktif.</p><Link href="/diagnose" className={`${shared.primaryButton} mt-6`}>Pilihan diagnosis<ArrowRight size={16} aria-hidden="true" /></Link></section>
-        : result ? <div ref={resultContainer} tabIndex={-1} aria-label="Hasil asesmen Anda"><PEResult report={result.report} retentionUntil={result.retentionUntil} headingLevel={1} presentation="reference" />
+        : result ? <div ref={resultContainer} tabIndex={-1} aria-label="Hasil Self Diagnostic Anda"><PEResult report={result.report} retentionUntil={result.retentionUntil} headingLevel={1} presentation="reference" />
           <PEConsultationRequest key={id} id={id} shared={result.access.shared} className={styles.resultExtras}/>
           <PEReviewAccessPanel id={id} access={result.access} token={async () => ''} className={styles.privacyExtras} onChange={access => setResult({ ...result, access })} update={body => guestRequest(`/${id}/result`, 'PATCH', body)}
             onErase={async () => { await guestRequest(`/${id}/result`, 'DELETE'); setResult(null); setDeleted(true); }} /></div>
         : <div className={styles.accessGrid}><div className={styles.accessStory}>
           <span className={`${shared.iconTile} ${shared.iconGold}`}><ChartNoAxesCombined size={26} aria-hidden="true" /></span>
-          <h1>Lihat hasil asesmen Anda.</h1><p>Kenali profil pengembangan diri dan langkah praktis yang dapat Anda mulai.</p>
+          <h1>Lihat hasil Self Diagnostic Anda.</h1><p>Kenali profil pengembangan diri dan langkah praktis yang dapat Anda mulai.</p>
           <ul className={styles.accessFeatures}><li><span className={styles.areaIcon}><ChartNoAxesCombined size={19} aria-hidden="true" /></span>Grafik profil per area</li><li><span className={styles.areaIcon}><ListChecks size={19} aria-hidden="true" /></span>Fokus latihan dan langkah pengembangan</li></ul>
         </div><section className={styles.accessCard} aria-busy={checking || busy} aria-labelledby="pe-access-title">
           <span className={shared.iconTile}><LockKeyhole size={22} aria-hidden="true" /></span><h2 id="pe-access-title" className="mt-4">Akses laporan pribadi</h2><p>Gunakan tautan dari email untuk membuka hasil Anda. Tidak perlu membuat akun.</p>
@@ -114,13 +114,13 @@ function PEEmailResultBody({ id }: { id: string }) {
             }}>
               <label className={styles.field}>Email pengisian<input required type="email" autoComplete="email" placeholder="Alamat email saat mengisi" value={email} maxLength={254} disabled={busy || checking} aria-describedby="pe-link-help"
                 onChange={event => setEmail(event.target.value)} /></label>
-              <p id="pe-link-help" className={styles.help}>Gunakan alamat email yang sama saat mengisi asesmen. Periksa juga folder spam atau promosi.</p>
+              <p id="pe-link-help" className={styles.help}>Gunakan alamat email yang sama saat mengisi Self Diagnostic. Periksa juga folder spam atau promosi.</p>
               <button disabled={busy || checking} className={shared.primaryButton}>
                 {action === 'link' ? <Loader2 size={16} className="motion-safe:animate-spin" aria-hidden="true" /> : <MailCheck size={16} aria-hidden="true" />}{action === 'link' ? 'Mengirim tautan…' : 'Kirim tautan baru'}
               </button>
             </form>
           </details>
-          <details className={styles.accessSecurity}><summary>Tentang keamanan akses</summary><p>Tautan berlaku 48 jam dan hanya dapat digunakan sekali. Sesi hasil berlaku 30 menit. Jangan membagikan tautan hasil Anda kepada orang lain.</p></details>
+          <details className={styles.accessSecurity}><summary>Tentang keamanan akses</summary><p>Gunakan tautan pribadi dari email Anda. Sesi hasil dibatasi selama 30 menit; masa akses hasil dan ketentuan pembukaan ulang tercantum dalam email. Jangan membagikan tautan hasil kepada orang lain.</p></details>
         </section></div>}
       {!hasResult && <p className={styles.support}>Butuh bantuan? <a href="mailto:admin@binahub.id">Hubungi BinaHub</a></p>}
     </div>

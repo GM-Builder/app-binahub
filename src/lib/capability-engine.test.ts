@@ -11,7 +11,7 @@ import type { Evidence, ParticipantCapability } from "./transformation-types";
 
 describe("capability-engine", () => {
   describe("getTypeWeight", () => {
-    it("returns 1.0 for assessment", () => {
+    it("returns 1.0 for Self Diagnostic", () => {
       expect(getTypeWeight("assessment")).toBe(1.0);
     });
 
@@ -47,7 +47,7 @@ describe("capability-engine", () => {
   });
 
   describe("calculateEvidenceScore", () => {
-    it("calculates score correctly for assessment", () => {
+    it("calculates score correctly for Self Diagnostic", () => {
       const evidence: Evidence = {
         id: "1",
         engagement_id: "eng1",

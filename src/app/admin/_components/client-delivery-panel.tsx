@@ -405,7 +405,7 @@ export function ClientDeliveryPanel({
                 <AdminInput label="Nama proyek awal" value={handoffForm.projectTitle} onChange={(value) => setHandoffForm((form) => ({ ...form, projectTitle: value }))} />
                 <AdminInput label="Target pertemuan awal" type="date" value={handoffForm.kickoffDate} onChange={(value) => setHandoffForm((form) => ({ ...form, kickoffDate: value }))} />
               </div>
-              <p className="text-xs leading-5 text-slate-600">Setelah serah terima, lengkapi tujuan pelaksanaan dan indikator keberhasilan sesuai kesepakatan klien. Brief assessment tetap menjadi referensi, bukan ukuran hasil yang sudah disepakati.</p>
+              <p className="text-xs leading-5 text-slate-600">Setelah serah terima, lengkapi tujuan pelaksanaan dan indikator keberhasilan sesuai kesepakatan klien. Brief Self Diagnostic tetap menjadi referensi, bukan ukuran hasil yang sudah disepakati.</p>
               <button type="button" disabled={saving || !handoffForm.commercialOwner || !handoffForm.deliveryOwner || handoffForm.projectTitle.length < 3} onClick={() => execute(async () => {
                 await onAction("/api/admin/client-delivery", { method: "POST", body: JSON.stringify({ leadId: handoffLead.id, ...handoffForm, kickoffDate: handoffForm.kickoffDate || null }) });
               })} className={inputButton}>

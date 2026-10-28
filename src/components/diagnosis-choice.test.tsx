@@ -18,12 +18,12 @@ describe('diagnosis choice', () => {
   it('provides two named choices with consistent actions and separate history', async () => {
     mock.fetch.mockResolvedValue(response(true));
     render(<DiagnosisChoice />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Mulai perjalanan pengembangan Anda');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Temukan program pengembangan yang sesuai');
     expect(screen.getByRole('article', { name: 'Tim / Organisasi' })).toBeInTheDocument();
     expect(screen.getByRole('article', { name: 'Individu' })).toBeInTheDocument();
     expect(screen.queryByText(/gratis/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/insight');
-    expect(await screen.findByRole('link', { name: 'Mulai diagnosis individu' })).toHaveAttribute('href', '/insight/individual');
+    expect(await screen.findByRole('link', { name: 'Lihat paket individu' })).toHaveAttribute('href', '/insight/individual/packages');
     const history = screen.getByRole('link', { name: 'Riwayat pengisian akun' });
     expect(history).toHaveAttribute('href', '/insight/individual/history');
     expect(history.closest('article')).toBeNull();
@@ -37,7 +37,7 @@ describe('diagnosis choice', () => {
     mock.fetch.mockResolvedValue(response(true));
     render(<DiagnosisChoice />);
     expect(screen.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/en/insight?lang=en&utm_source=instagram&utm_campaign=launch');
-    expect(await screen.findByRole('link', { name: 'Mulai diagnosis individu' })).toHaveAttribute('href', '/insight/individual?utm_source=instagram&utm_campaign=launch&source=instagram');
+    expect(await screen.findByRole('link', { name: 'Lihat paket individu' })).toHaveAttribute('href', '/insight/individual/packages?utm_source=instagram&utm_campaign=launch&source=instagram');
   });
 
   it('shows an announced loading state without a clickable individual entry', () => {
@@ -45,7 +45,7 @@ describe('diagnosis choice', () => {
     render(<DiagnosisChoice />);
     expect(screen.getByRole('button', { name: 'Memeriksa ketersediaan…' })).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('Memeriksa ketersediaan diagnosis individu.');
-    expect(screen.queryByRole('link', { name: 'Mulai diagnosis individu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Lihat paket individu' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mulai diagnosis tim' })).toBeInTheDocument();
   });
 
@@ -62,7 +62,7 @@ describe('diagnosis choice', () => {
     mock.fetch.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce(response(true));
     render(<DiagnosisChoice />);
     fireEvent.click(await screen.findByRole('button', { name: 'Coba lagi' }));
-    expect(await screen.findByRole('link', { name: 'Mulai diagnosis individu' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Lihat paket individu' })).toBeInTheDocument();
     expect(mock.fetch).toHaveBeenCalledTimes(2);
     expect(mock.fetch.mock.calls.every(([path]) => path === '/api/assessment/individual/availability')).toBe(true);
   });
@@ -75,7 +75,7 @@ describe('diagnosis choice', () => {
     mock.fetch.mockResolvedValue(result);
     render(<DiagnosisChoice />);
     expect(await screen.findByRole('button', { name: 'Coba lagi' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Mulai diagnosis individu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Lihat paket individu' })).not.toBeInTheDocument();
   });
 
   it('ends a stalled check after eight seconds and ignores a late response', async () => {
@@ -87,7 +87,7 @@ describe('diagnosis choice', () => {
     expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeInTheDocument();
     expect(mock.fetch.mock.calls[0][1].signal.aborted).toBe(true);
     await act(async () => { resolve(response(true)); });
-    expect(screen.queryByRole('link', { name: 'Mulai diagnosis individu' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Lihat paket individu' })).not.toBeInTheDocument();
   });
 
   it('aborts its read when leaving the page', async () => {
@@ -100,7 +100,7 @@ describe('diagnosis choice', () => {
 
   it('keeps the same heading and announces the Suspense skeleton without fetching', () => {
     render(<DiagnosisChoiceLoading />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Mulai perjalanan pengembangan Anda');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Temukan program pengembangan yang sesuai');
     expect(screen.getByRole('status')).toHaveTextContent('Menyiapkan pilihan diagnosis…');
     expect(mock.fetch).not.toHaveBeenCalled();
   });

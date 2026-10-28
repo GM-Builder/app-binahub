@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readAssessmentAttribution } from "./attribution";
 
-describe("assessment attribution", () => {
+describe("Self Diagnostic attribution", () => {
   it("maps campaign parameters and removes query data from fallback URLs", () => {
     expect(readAssessmentAttribution(
       "?utm_source=google&utm_medium=cpc&utm_campaign=ceo&gclid=click-1",

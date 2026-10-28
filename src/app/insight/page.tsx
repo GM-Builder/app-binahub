@@ -204,13 +204,13 @@ export default function InsightPage() {
   const currentContext = step >= 0 && step < 11 ? (locale === "en" ? STEP_CONTEXT_EN : STEP_CONTEXT)[step] : null;
   const copy = locale === "en"
     ? {
-        submitError: "Failed to submit assessment: ",
+        submitError: "Failed to submit Self Diagnostic: ",
         genericError: "An error occurred",
         connectionError: "A connection error occurred while submitting data.",
-        cancelTitle: "Cancel Assessment?",
+        cancelTitle: "Cancel Self Diagnostic?",
         cancelBody: "You will lose all data you have entered.",
         cancelConfirm: "Are you sure you want to stop this process?",
-        continue: "CONTINUE ASSESSMENT",
+        continue: "CONTINUE Self Diagnostic",
         exit: "EXIT & CANCEL",
         done: "DONE",
         step: "STEP",
@@ -220,13 +220,13 @@ export default function InsightPage() {
         nextPage: "NEXT PAGE",
       }
     : {
-        submitError: "Gagal mengirim asesmen: ",
+        submitError: "Gagal mengirim Self Diagnostic: ",
         genericError: "Terjadi kesalahan",
         connectionError: "Terjadi kesalahan koneksi saat mengirim data.",
-        cancelTitle: "Batalkan Asesmen?",
+        cancelTitle: "Batalkan Self Diagnostic?",
         cancelBody: "Anda akan kehilangan semua data yang telah diisi.",
         cancelConfirm: "Apakah Anda yakin ingin menghentikan proses ini?",
-        continue: "LANJUTKAN ASESMEN",
+        continue: "LANJUTKAN Self Diagnostic",
         exit: "KELUAR & BATALKAN",
         done: "SELESAI",
         step: "TAHAP",
@@ -393,10 +393,10 @@ function LoadingOverlay({ locale, accepted }: { locale: "id" | "en"; accepted: b
     return () => clearTimeout(timer);
   }, []);
   const message = accepted
-    ? isEnglish ? "Your assessment has been received." : "Assessment Anda sudah diterima."
+    ? isEnglish ? "Your Self Diagnostic has been received." : "Self Diagnostic Anda sudah diterima."
     : slowSave
       ? isEnglish ? "Still saving. Please wait for confirmation." : "Sedang menyimpan. Tunggu konfirmasi penerimaan."
-      : isEnglish ? "Sending your assessment..." : "Mengirim assessment Anda...";
+      : isEnglish ? "Sending your Self Diagnostic..." : "Mengirim Self Diagnostic Anda...";
 
   return (
     <motion.div

@@ -35,7 +35,7 @@ export function getSmartContactStatus(contact: ContactRecord) {
   const age = daysSince(contact.createdAt);
 
   if (text.includes("client") || text.includes("proposal") || text.includes("qualified")) return "Client";
-  if (text.includes("assessment") || text.includes("insight")) return "Lead Assessment";
+  if (text.includes("assessment") || text.includes("insight")) return "Lead Self Diagnostic";
   if (text.includes("follow up") || age >= 2) return "Perlu Follow Up";
   if (text.includes("archived") || text.includes("diarsipkan")) return "Diarsipkan";
   if (contact.sourceType === "coach" || contact.sourceType === "employee") return "Internal";

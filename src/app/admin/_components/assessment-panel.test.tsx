@@ -25,7 +25,7 @@ beforeEach(() => { action.mockReset(); action.mockResolvedValue({ success: true 
 afterEach(cleanup);
 const tab = (name: string) => fireEvent.click(screen.getByRole("tab", { name }));
 
-describe("Assessment Admin workspace", () => {
+describe("Self Diagnostic Admin workspace", () => {
   it("explains the current score separately from core-data completeness and historic lead records", () => {
     render(<Harness records={[assessmentFixture({ leadScoreRuleVersion: "v1.2-public-diagnostic", recordedLeadScoreRuleVersion: "v1.1-public-diagnostic", leadScoreEvidence: { buyingSignalCount: 3, maximumBuyingSignals: 4, scoreBreakdown: [{ key: "challenge", label: "Tantangan terisi (minimal 20 karakter)", points: 20, maximum: 20 }] } })]} />);
     fireEvent.click(screen.getByText("Rincian penilaian minat"));
@@ -45,8 +45,8 @@ describe("Assessment Admin workspace", () => {
   it("filters the actual client list when a queue is selected", () => {
     render(<Harness records={[assessmentFixture({ proposalStatus: "Gagal Otomatis" }), assessmentFixture({ id: "processing", name: "Dina", proposalStatus: "Sedang Disusun" })]} />);
     fireEvent.click(screen.getByRole("button", { name: /Sedang diproses 1/ }));
-    expect(screen.queryByRole("button", { name: /Buka assessment Nadia/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Buka assessment Dina/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Buka Self Diagnostic Nadia/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Buka Self Diagnostic Dina/ })).toBeInTheDocument();
   });
   it("requires explicit confirmation before requesting a real proposal", async () => {
     render(<Harness records={[assessmentFixture({ proposalStatus: "Gagal Otomatis" })]} />);
@@ -112,7 +112,7 @@ describe("Assessment Admin workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Siapkan draf untuk ditinjau" }));
     await waitFor(() => expect(screen.getByRole("checkbox")).toBeChecked());
     fireEvent.change(screen.getByLabelText("Catatan peninjau"), { target: { value: "Catatan klien pertama" } });
-    fireEvent.click(screen.getByRole("button", { name: /Buka assessment Arif/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Buka Self Diagnostic Arif/ }));
     tab("Proposal"); fireEvent.click(screen.getByText("Draf standar yang perlu peninjauan"));
     fireEvent.click(screen.getByRole("button", { name: "Siapkan draf untuk ditinjau" }));
     expect(screen.getByRole("checkbox")).not.toBeChecked();
@@ -135,6 +135,6 @@ describe("Assessment Admin workspace", () => {
     expect(screen.queryByRole("tab", { name: "Proposal" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Hapus filter" }));
     expect(screen.getByRole("searchbox")).toHaveValue("");
-    expect(screen.getByRole("button", { name: /Buka assessment Nadia/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Buka Self Diagnostic Nadia/ })).toBeInTheDocument();
   });
 });

@@ -144,7 +144,7 @@ export function AdminSelect({
     >
       {options.map((option) => {
         const optionValue = Array.isArray(option) ? option[0] : option;
-        const label = Array.isArray(option) ? option[1] : option;
+        const label = (Array.isArray(option) ? option[1] : option).replace(/\bAssessment\b/g, 'Self Diagnostic');
         return (
           <option key={optionValue} value={optionValue}>
             {label}

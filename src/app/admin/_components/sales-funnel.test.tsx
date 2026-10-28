@@ -46,10 +46,10 @@ describe("interactive sales funnel", () => {
     expect(within(dialog).getByRole("link", { name: /Kelola peluang/ })).toHaveAttribute("href", "/admin/pipeline");
     fireEvent.keyDown(document, { key: "Escape" }); expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
-  it("does not attach an unrelated assessment merely because its email matches", () => {
+  it("does not attach an unrelated Self Diagnostic merely because its email matches", () => {
     const lead = funnelLead(); const data = funnelDashboard([lead]); data.assessments = [assessmentFixture({ email: lead.email, leadId: "another-lead" })];
     render(<SalesFunnel data={data} />); fireEvent.click(screen.getByRole("button", { name: /Lihat detail Nadia/ }));
-    expect(within(screen.getByRole("dialog")).getByText(/Belum ada assessment yang terhubung/)).toBeInTheDocument();
+    expect(within(screen.getByRole("dialog")).getByText(/Belum ada Self Diagnostic yang terhubung/)).toBeInTheDocument();
   });
   it("supports empty stages and deliberately including test records", () => {
     render(<SalesFunnel data={funnelDashboard([funnelLead({ email: "test@example.invalid" })])} />);

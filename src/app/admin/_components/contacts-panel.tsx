@@ -135,7 +135,7 @@ export function ContactsPanel({ contacts, onAction, onRefresh }: {
               </article>
             );
           })}
-        </div> : <EmptyState title="Kontak tidak ditemukan" description={hasFilters ? "Coba ubah kata pencarian atau reset filter yang aktif." : "Kontak dari inquiry, assessment, dan sumber lain akan muncul di sini."} />}
+        </div> : <EmptyState title="Kontak tidak ditemukan" description={hasFilters ? "Coba ubah kata pencarian atau reset filter yang aktif." : "Kontak dari inquiry, Self Diagnostic, dan sumber lain akan muncul di sini."} />}
       </section>
 
       {selected && <AdminDrawer title={selected.name} eyebrow="Detail kontak" onClose={() => setSelectedKey(null)} maxWidth="max-w-2xl">

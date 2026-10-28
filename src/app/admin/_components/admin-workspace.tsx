@@ -51,7 +51,7 @@ export type AdminWorkspaceSection =
   | "Overview"
   | "Acquisition Control"
   | "Sales Pipeline"
-  | "Assessment"
+  | "Self Diagnostic"
   | "Meeting"
   | "Kontak & Leads"
   | "Inquiry Masuk"
@@ -160,7 +160,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
 
   return (
     <AdminShell eyebrow={meta.eyebrow} title={meta.title} description={meta.description} actions={refreshAction}>
-      {section === "Assessment" && <AssessmentAudienceNav/>}
+      {section === "Self Diagnostic" && <AssessmentAudienceNav/>}
       {error && <div role="alert" aria-live="assertive" className="mb-6 border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-800"><p className="font-semibold">Data belum dapat dimuat</p><p className="mt-1 text-xs leading-5 text-red-700">{error}</p></div>}
       {loading || !data ? <DashboardSkeleton /> : (
         <div className="admin-workspace-content">
@@ -172,7 +172,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
           {section === "Client & Delivery" && <ClientDeliveryPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Operations Control" && <OperationsControlPanel onAction={adminRequest} />}
           {section === "Automation Center" && <SmartCenterPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
-          {section === "Assessment" && <AssessmentPanel data={data} records={filteredAssessments} query={query} setQuery={setQuery} category={assessmentCategory} setCategory={setAssessmentCategory} employeeRange={assessmentEmployeeRange} setEmployeeRange={setAssessmentEmployeeRange} minScore={assessmentMinScore} setMinScore={setAssessmentMinScore} expandedId={expandedId} setExpandedId={setExpandedId} onAction={adminRequest} onRefresh={refreshDashboard} />}
+          {section === "Self Diagnostic" && <AssessmentPanel data={data} records={filteredAssessments} query={query} setQuery={setQuery} category={assessmentCategory} setCategory={setAssessmentCategory} employeeRange={assessmentEmployeeRange} setEmployeeRange={setAssessmentEmployeeRange} minScore={assessmentMinScore} setMinScore={setAssessmentMinScore} expandedId={expandedId} setExpandedId={setExpandedId} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Meeting" && <MeetingsPanel bookings={data.calendarBookings || []} />}
           {section === "Kontak & Leads" && <ContactsPanel contacts={data.contacts} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Inquiry Masuk" && <InquiriesPanel inquiries={data.inquiries} onAction={adminRequest} onRefresh={refreshDashboard} />}

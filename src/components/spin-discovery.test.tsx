@@ -24,17 +24,20 @@ describe('SPIN client experience',()=>{
  mock.fetch.mockResolvedValue(json({definition,available:true}));render(<SpinDiscovery/>);
  expect(await screen.findByText('Tentukan arah pengembangan organisasi Anda.')).toBeVisible();
  expect(screen.getByRole('checkbox')).not.toBeChecked();expect(screen.getByRole('button',{name:/Mulai pengisian/})).toBeDisabled();
- expect(screen.queryByText(/enam bulan/)).not.toBeInTheDocument();expect(screen.getByText(/Data disimpan tanpa penghapusan otomatis/)).toBeInTheDocument();
+ expect(screen.queryByText(/enam bulan/)).not.toBeInTheDocument();expect(screen.getByText(/tanpa menyertakan nama, alamat email, atau nomor telepon/)).toBeInTheDocument();
  });
  it('shows the choice immediately without waiting for an answer save',async()=>{
  const attempt={id:'11111111-1111-4111-8111-111111111111',revision:0,answers:{},confirmation:null,status:'draft'};
- mock.fetch.mockImplementation((_url,init)=>Promise.resolve(json(init?.method==='POST'?{attempt,challenge:'Berapa 3 + 4?'}:{definition,available:true})));
+ mock.fetch.mockImplementation((_url,init)=>init?.method==='PATCH'?new Promise(()=>{}):Promise.resolve(json(init?.method==='POST'?{attempt,challenge:'Berapa 3 + 4?'}:{definition,available:true})));
  render(<SpinDiscovery/>);fireEvent.click(await screen.findByRole('checkbox'));fireEvent.click(screen.getByRole('button',{name:/Mulai pengisian/}));
+ const trigger=await screen.findByRole('combobox',{name:/Apa yang paling mendorong/});fireEvent.change(trigger,{target:{value:'T1'}});
+ expect(trigger).toHaveValue('T1');expect(screen.getByRole('button',{name:'Lanjut'})).toBeEnabled();
+ fireEvent.click(screen.getByRole('button',{name:'Lanjut'}));
  const field=await screen.findByLabelText('Peran Anda');fireEvent.change(field,{target:{value:'R1'}});
- expect(field).toHaveAccessibleDescription('Pilih peran Anda dalam organisasi.');
+ expect(screen.getByLabelText('Peran Anda')).toHaveAccessibleDescription('Pilih peran Anda dalam organisasi.');
  expect(screen.getByLabelText('Bidang usaha')).toHaveAccessibleDescription('Pilih bidang usaha utama organisasi Anda.');
  expect(screen.getByLabelText('Jumlah karyawan')).toHaveAccessibleDescription('Pilih rentang jumlah karyawan dalam organisasi Anda.');
- expect(field).toHaveValue('R1');expect(screen.getByRole('button',{name:'Lanjut'})).toBeEnabled();
+ expect(screen.getByLabelText('Peran Anda')).toHaveValue('R1');expect(screen.getByRole('button',{name:'Lanjut'})).toBeEnabled();
  fireEvent.click(screen.getByRole('button',{name:'Lanjut'}));expect(await screen.findByRole('alert')).toHaveTextContent('Lengkapi');
  });
  it('keeps backend failures actionable without exposing configuration details',async()=>{

@@ -11,7 +11,7 @@ interface SuccessStepProps {
 const COPY = {
   id: {
     title: "Terima Kasih",
-    message: "Asesmen untuk",
+    message: "Self Diagnostic untuk",
     messageSuffix:
       "telah berhasil kami terima. Hasil analisa strategis lengkap akan dikirimkan langsung ke",
     messageEnd: "Anda. Anda boleh menutup halaman ini; penyusunan laporan tetap berjalan.",
@@ -20,12 +20,12 @@ const COPY = {
       "Laporan sedang disiapkan. Periksa Inbox atau Spam pada email yang Anda isi.",
     preview: "Preview Area Analisis",
     previewBody:
-      "Berdasarkan struktur assessment, laporan Anda akan membaca pola yang berkaitan dengan:",
+      "Berdasarkan struktur Self Diagnostic, laporan Anda akan membaca pola yang berkaitan dengan:",
     home: "Kembali ke Beranda",
   },
   en: {
     title: "Thank You",
-    message: "The assessment for",
+    message: "The Self Diagnostic for",
     messageSuffix:
       "has been successfully received. The complete strategic analysis will be sent directly to your",
     messageEnd: ". You may close this page; your report will continue to be prepared.",
@@ -34,7 +34,7 @@ const COPY = {
       "Your report is being prepared. Check the Inbox or Spam folder of the email you provided.",
     preview: "Analysis Area Preview",
     previewBody:
-      "Based on the assessment structure, your report will read patterns related to:",
+      "Based on the Self Diagnostic structure, your report will read patterns related to:",
     home: "Back to Home",
   },
 };

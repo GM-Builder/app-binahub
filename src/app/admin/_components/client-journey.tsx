@@ -11,7 +11,7 @@ export function AssessmentBrief({ assessment }: { assessment: AssessmentRecord |
       <h3 className="text-sm font-semibold text-slate-900">Brief kebutuhan</h3>
       {!assessment ? (
         <p className="text-sm leading-6 text-slate-600">
-          Brief assessment belum tersedia pada data yang dimuat. Konfirmasi kebutuhan saat konsultasi.
+          Brief Self Diagnostic belum tersedia pada data yang dimuat. Konfirmasi kebutuhan saat konsultasi.
         </p>
       ) : (
         <>
@@ -83,7 +83,7 @@ export function ClientJourneyContext({ data, accountId }: { data: DashboardData;
           <div className="pt-3"><ClientJourneyTimeline key={accountId} events={journey.events} /></div>
         </details>
         <Link href="/admin/assessments" className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-[#0B2C6B] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B2C6B]">
-          Buka daftar assessment <ArrowUpRight size={15} aria-hidden="true" />
+          Buka daftar Self Diagnostic <ArrowUpRight size={15} aria-hidden="true" />
         </Link>
       </div>
     </section>

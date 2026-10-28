@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { submitAssessment } from './assessment-submit';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
-describe('assessment submission', () => {
+describe('Self Diagnostic submission', () => {
   it('acknowledges durable receipt immediately and finishes loading at five seconds', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true, assessmentId: 'saved', processing: true }), { status: 202 }));

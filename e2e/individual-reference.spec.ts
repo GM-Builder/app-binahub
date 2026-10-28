@@ -71,7 +71,11 @@ test('individual reference: context to answers, review, private result and priva
     if (path.endsWith(attempt.id) && method === 'GET') return route.fulfill({ json: { success: true, attempt } });
     throw new Error(`Unexpected API request: ${method} ${path}`);
   });
-  await page.goto('/insight/individual?utm_source=email&utm_campaign=ui-test');
+  await page.goto('/insight/individual/packages?utm_source=email&utm_campaign=ui-test');
+  await expect(page.getByText('Coming soon',{exact:true})).toHaveCount(5);
+  await expect(page.getByRole('link',{name:'Mulai Self Diagnostic gratis'})).toHaveAttribute('href',/utm_source=email/);
+  await fits(page);await capture('packages');
+  await page.getByRole('link',{name:'Mulai Self Diagnostic gratis'}).click();
   await expect(page.getByRole('heading', { name: 'Sebelum Anda mulai' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Pahami kebutuhan/);
   await expect(page.getByText(/melalui 18 pertanyaan/)).toBeVisible();
@@ -90,6 +94,7 @@ test('individual reference: context to answers, review, private result and priva
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Mulai diagnosis', exact: true }).click();
   await expect(page.getByRole('group', { name: definition.selfReportItems[0].prompt })).toBeVisible();
+  await expect(page.getByText('Self-Development',{exact:true})).toHaveCount(0);
   await capture('question');
   await page.getByRole('radio', { name: 'Sering', exact: true }).check();
   await expect.poll(() => saveStarted).toBe(true);
@@ -106,18 +111,22 @@ test('individual reference: context to answers, review, private result and priva
     await page.getByRole('button', { name: i === 17 ? 'Tinjau jawaban' : 'Lanjut', exact: true }).click();
   }
   await expect(page.getByRole('heading', { name: 'Periksa sebelum mengirim.' })).toBeVisible();
+  await expect(page.getByRole('button',{name:/Ubah jawaban \d/})).toHaveCount(6);
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await page.getByRole('button',{name:'Lihat jawaban berikutnya'}).click();
+  await expect(page.getByRole('button',{name:/Ubah jawaban \d/})).toHaveCount(12);
   await fits(page); await capture('review');
   await page.getByRole('button', { name: 'Kirim jawaban', exact: true }).dblclick();
   await expect(page.getByRole('heading', { name: 'Jawaban Anda sudah diterima.' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Jawaban Anda sudah diterima.' })).toBeFocused();
   expect(submissions).toBe(1); expect(attempt.responses.SR1).toBe(5); expect(Object.keys(attempt.responses)).toHaveLength(18);
-  await expect(page.getByRole('heading', { name: 'Hasil asesmen individu' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Hasil Self Diagnostic individu' })).toHaveCount(0);
   await capture('receipt');
   await page.goto(`/insight/individual/result?attempt=${attempt.id}#access=${'a'.repeat(64)}`);
   const open = page.getByRole('button', { name: 'Lihat hasil saya', exact: true });
   await expect(open).toBeEnabled(); expect(page.url()).not.toContain('#access'); expect(exchanges).toBe(0);
   await capture('access'); await open.dblclick();
-  await expect(page.getByRole('heading', { name: 'Hasil asesmen individu' })).toBeVisible(); expect(exchanges).toBe(1);
+  await expect(page.getByRole('heading', { name: 'Hasil Self Diagnostic individu' })).toBeVisible(); expect(exchanges).toBe(1);
   await expect(page.getByRole('figure')).toBeVisible();
   for (const width of [320, 390, 768, 1280, 1440, 1600]) { await page.setViewportSize({ width, height: 1000 }); await fits(page); }
   await page.setViewportSize(device === 'desktop' ? { width: 1440, height: 1000 } : { width: 390, height: 844 });

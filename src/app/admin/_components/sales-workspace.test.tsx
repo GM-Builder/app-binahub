@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assessmentDashboard, assessmentFixture } from "@/test/fixtures/assessment-admin";
-vi.mock("./assessment-panel", () => ({ AssessmentPanel: (props: { expandedId: string; initialDetailTab: string }) => <p>Assessment {props.expandedId} · {props.initialDetailTab}</p> }));
+vi.mock("./assessment-panel", () => ({ AssessmentPanel: (props: { expandedId: string; initialDetailTab: string }) => <p>Self Diagnostic {props.expandedId} · {props.initialDetailTab}</p> }));
 vi.mock("./inquiries-panel", () => ({ InquiriesPanel: (props: { initialSelectedId: string }) => <p>Inquiry {props.initialSelectedId}</p> }));
 vi.mock("./acquisition-control-panel", () => ({ AcquisitionControlPanel: (props: { initialView: string }) => <p>Kampanye {props.initialView}</p> }));
 vi.mock("./pipeline-panel", () => ({ PipelinePanel: () => <p>Peluang penjualan</p> }));
@@ -15,7 +15,7 @@ describe("unified sales workspace", () => {
     render(<SalesWorkspace data={assessmentDashboard([])} onAction={vi.fn()} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByRole("button",{name:"Klien & proposal"}));fireEvent.click(screen.getByRole("button",{name:"Discovery organisasi"}));
     fireEvent.click(await screen.findByRole("button",{name:"Ubah checklist"}));
-    for(const label of ["Inbound","Inquiry masuk","Assessment & proposal","Mulai kampanye email","Konsultasi"]){
+    for(const label of ["Inbound","Inquiry masuk","Self Diagnostic & proposal","Mulai kampanye email","Konsultasi"]){
       fireEvent.click(screen.getByRole("button",{name:label}));expect(screen.getByText("Checklist aktif")).toBeInTheDocument();
     }
     expect(confirm).toHaveBeenCalledTimes(5);
@@ -26,7 +26,7 @@ describe("unified sales workspace", () => {
     const action = vi.fn();
     render(<SalesWorkspace data={assessmentDashboard([assessmentFixture()])} onAction={action} onRefresh={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Buka proposal" }));
-    expect(screen.getByText("Assessment demo-assessment-1 · proposal")).toBeInTheDocument();
+    expect(screen.getByText("Self Diagnostic demo-assessment-1 · proposal")).toBeInTheDocument();
     expect(action).not.toHaveBeenCalled();
   });
   it("opens the correct inquiry and searches by its traffic source", () => {

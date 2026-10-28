@@ -18,11 +18,14 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
     <DiagnosisShell>
       <div className={styles.choiceLayout}>
         <div>
-          <p className={styles.eyebrow}>BinaInsights · Diagnosis pengembangan</p>
-          <h1 className={styles.choiceTitle}>Mulai perjalanan pengembangan Anda</h1>
-          <p className={styles.subtitle}>Pilih diagnosis yang paling sesuai dengan kebutuhan Anda.</p>
+          <h1 className={styles.choiceTitle}>Temukan program pengembangan yang sesuai</h1>
+          <p className={styles.subtitle}>Ceritakan kebutuhan organisasi Anda atau mulai dari Self Diagnostic untuk mengenali arah pengembangan.</p>
         </div>
-
+        <section className={styles.programCallout} aria-labelledby="program-recommendation-title">
+          <Sparkles size={25} strokeWidth={1.7} className="text-[#ad7415]" aria-hidden="true" />
+          <div><h2 id="program-recommendation-title">Rekomendasi program untuk organisasi Anda</h2><p>Hubungkan tantangan, hasil yang diharapkan, dan pilihan program BinaHub.</p></div>
+          <Link href="/discovery" className={styles.primaryButton}>Dapatkan rekomendasi program<ArrowRight size={17} aria-hidden="true" /></Link>
+        </section>
         <section aria-label="Pilihan diagnosis" className={styles.choiceGrid}>
           {children}
         </section>
@@ -43,11 +46,6 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
             </Link>
           </div>
           <div className={styles.accountHistory}>Memiliki akun BinaHub? <Link href="/insight/individual/history" className={styles.textLink}>Riwayat pengisian akun<ArrowRight size={12} aria-hidden="true" /></Link></div>
-        </section>
-        <section className={styles.programCallout} aria-labelledby="program-recommendation-title">
-          <Sparkles size={25} strokeWidth={1.7} className="text-[#ad7415]" aria-hidden="true" />
-          <div><h2 id="program-recommendation-title">Sudah tahu kebutuhan organisasi Anda?</h2><p>Temukan rekomendasi program pengembangan yang sesuai.</p></div>
-          <Link href="/discovery" className={styles.programLink}>Dapatkan rekomendasi program<ArrowRight size={17} aria-hidden="true" /></Link>
         </section>
         <p className={styles.footnote}>Hasil diagnosis untuk refleksi dan pengembangan, bukan diagnosis klinis.</p>
       </div>
@@ -140,8 +138,8 @@ export function DiagnosisChoice() {
         </ul>
         <div className={styles.cardAction}>
           {availability === 'ready' ? (
-            <Link href={personalEntryPath(search)} className={actionClass}>
-              Mulai diagnosis individu<ArrowRight size={17} aria-hidden="true" className="shrink-0 transition-transform motion-safe:group-hover:translate-x-0.5" />
+            <Link href={personalEntryPath(search).replace('/insight/individual','/insight/individual/packages')} className={actionClass}>
+              Lihat paket individu<ArrowRight size={17} aria-hidden="true" className="shrink-0 transition-transform motion-safe:group-hover:translate-x-0.5" />
             </Link>
           ) : (
             <div>

@@ -16,7 +16,7 @@ describe('compact secure result entry', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Lihat hasil saya' })).toBeDisabled());
     expect(screen.getByText('Butuh tautan baru?').closest('details')).not.toHaveAttribute('open');
     expect(screen.getByText(/Buka tautan pribadi dari email/)).toBeVisible();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Lihat hasil asesmen Anda.');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Lihat hasil Self Diagnostic Anda.');
     expect(deps.request).not.toHaveBeenCalledWith(expect.anything(), 'POST', expect.anything());
   });
   it('exchanges the token only after a click, shows loading and prevents duplicate exchange', async () => {
@@ -31,10 +31,10 @@ describe('compact secure result entry', () => {
     expect(screen.getByRole('button', { name: 'Membuka hasil…' })).toBeDisabled();
     expect(deps.request).toHaveBeenCalledTimes(1);
     await act(async () => { complete({ success: true }); });
-    await screen.findByRole('heading', { name: 'Hasil asesmen individu' });
+    await screen.findByRole('heading', { name: 'Hasil Self Diagnostic individu' });
     expect(deps.request.mock.calls[0]).toEqual([`/${id}/result`, 'POST', { token }]);
     expect(deps.request.mock.calls[1]).toEqual([`/${id}/result`]);
-    expect(screen.getByLabelText('Hasil asesmen Anda')).toHaveFocus();
+    expect(screen.getByLabelText('Hasil Self Diagnostic Anda')).toHaveFocus();
   });
   it('does not consume the token again if session exchange succeeded but the report GET failed', async () => {
     window.history.replaceState(null, '', `/insight/individual/result?attempt=${id}#access=${token}`);
@@ -42,7 +42,7 @@ describe('compact secure result entry', () => {
     render(<PEEmailResult />); const open = await screen.findByRole('button', { name: 'Lihat hasil saya' });
     await waitFor(() => expect(open).toBeEnabled()); fireEvent.click(open); await screen.findByRole('alert');
     fireEvent.click(screen.getByRole('button', { name: 'Lihat hasil saya' }));
-    await screen.findByRole('heading', { name: 'Hasil asesmen individu' });
+    await screen.findByRole('heading', { name: 'Hasil Self Diagnostic individu' });
     expect(deps.request.mock.calls.filter(([, method]) => method === 'POST')).toHaveLength(1);
   });
   it('opens recovery for expired links and preserves privacy in the request-link response', async () => {
@@ -58,7 +58,7 @@ describe('compact secure result entry', () => {
   });
   it('restores an authorized session without requiring another email-link exchange', async () => {
     deps.request.mockResolvedValue(result); render(<PEEmailResult />);
-    await screen.findByRole('heading', { name: 'Hasil asesmen individu' });
+    await screen.findByRole('heading', { name: 'Hasil Self Diagnostic individu' });
     expect(deps.request).toHaveBeenCalledTimes(1);
     expect(deps.request).toHaveBeenCalledWith(`/${id}/result`);
   });

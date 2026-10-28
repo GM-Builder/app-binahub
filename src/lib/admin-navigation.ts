@@ -58,7 +58,7 @@ export const ADMIN_NAVIGATION: AdminNavigationGroup[] = [
     items: [
       { href: "/admin/acquisition", label: "Workspace Penjualan", shortLabel: "Penjualan", description: "Prioritas, inbound, outbound, klien, proposal, dan tindak lanjut.", icon: Sparkles },
       { href: "/admin/pipeline", label: "Pipeline Penjualan", shortLabel: "Pipeline", description: "Peluang, owner, dan next action.", icon: BarChart3 },
-      { href: "/admin/assessments", label: "Assessment", shortLabel: "Assessment", description: "Hasil diagnostik dan tindak lanjut.", icon: ClipboardCheck },
+      { href: "/admin/assessments", label: "Self Diagnostic", shortLabel: "Self Diagnostic", description: "Hasil diagnostik dan tindak lanjut.", icon: ClipboardCheck },
       { href: "/admin/meetings", label: "Konsultasi", shortLabel: "Konsultasi", description: "Booking dan perubahan jadwal.", icon: CalendarDays },
       { href: "/admin/contacts", label: "Kontak & Lead", shortLabel: "Kontak", description: "Data kontak dan status hubungan.", icon: ContactRound },
       { href: "/admin/inquiries", label: "Inquiry Masuk", shortLabel: "Inquiry", description: "Pertanyaan baru dan tindak lanjut.", icon: Inbox },

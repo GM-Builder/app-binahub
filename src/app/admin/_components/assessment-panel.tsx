@@ -411,7 +411,7 @@ export function AssessmentPanel({
       await onRefresh();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Gagal memperbarui status assessment.");
+      setActionError(error instanceof Error ? error.message : "Gagal memperbarui status Self Diagnostic.");
     } finally {
       setActionId(null);
     }
@@ -434,7 +434,7 @@ export function AssessmentPanel({
       await onRefresh();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Gagal mengubah jeda follow up assessment.");
+      setActionError(error instanceof Error ? error.message : "Gagal mengubah jeda follow up Self Diagnostic.");
     } finally {
       setActionId(null);
     }
@@ -487,9 +487,9 @@ export function AssessmentPanel({
       {emailPreview && <EmailPreviewModal preview={emailPreview} onClose={() => setEmailPreview(null)} />}
       {actionError && !confirmAction && <AdminNotice>{actionError}</AdminNotice>}
       {actionSuccess && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{actionSuccess}</p>}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Antrean assessment">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Antrean Self Diagnostic">
         {([
-          { id: "all", label: "Semua assessment", hint: "Dalam hasil filter", icon: FileText },
+          { id: "all", label: "Semua Self Diagnostic", hint: "Dalam hasil filter", icon: FileText },
           { id: "attention", label: "Perlu perhatian", hint: "Permintaan, kendala, atau pengingat", icon: Eye },
           { id: "processing", label: "Sedang diproses", hint: "Proposal standar otomatis", icon: LoaderCircle },
           { id: "sent", label: "Proposal terkirim", hint: "Pengiriman berhasil tercatat", icon: Check },
@@ -507,7 +507,7 @@ export function AssessmentPanel({
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative min-w-0 flex-1">
             <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input type="search" aria-label="Cari assessment" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama, perusahaan, atau email…"
+            <input type="search" aria-label="Cari Self Diagnostic" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama, perusahaan, atau email…"
               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm outline-none focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10" />
           </div>
           <button type="button" onClick={() => exportCsv("binahub-assessments.csv", filtered.map((item) => ({ name: item.name, email: item.email, company: item.company, role: item.role, employees: item.employees, category: item.category, overallScore: item.overallScore, assessmentStatus: item.assessmentStatus, proposalStatus: item.proposalStatus, createdAt: item.createdAt })))}
@@ -516,7 +516,7 @@ export function AssessmentPanel({
         <details className="mt-3">
           <summary className="w-fit cursor-pointer list-none text-xs font-medium text-slate-600"><span className="flex items-center gap-2"><SlidersHorizontal size={14} aria-hidden="true" /> Filter lanjutan{category !== "Semua" || employeeRange !== "Semua" || minScore !== "0" ? " · Aktif" : ""}</span></summary>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <label className="text-xs text-slate-500">Kategori<div className="mt-1"><AdminSelect ariaLabel="Kategori assessment" value={category} onChange={setCategory} options={[["Semua", "Semua kategori"], ...categories.map((item) => [item, item] as [string, string])]} /></div></label>
+            <label className="text-xs text-slate-500">Kategori<div className="mt-1"><AdminSelect ariaLabel="Kategori Self Diagnostic" value={category} onChange={setCategory} options={[["Semua", "Semua kategori"], ...categories.map((item) => [item, item] as [string, string])]} /></div></label>
             <label className="text-xs text-slate-500">Ukuran perusahaan<div className="mt-1"><AdminSelect ariaLabel="Ukuran perusahaan" value={employeeRange} onChange={setEmployeeRange} options={[["Semua", "Semua ukuran"], ...employeeRanges.map((item) => [item, item] as [string, string])]} /></div></label>
             <label className="text-xs text-slate-500">Skor diagnosis minimum<div className="mt-1"><AdminSelect ariaLabel="Skor diagnosis minimum" value={minScore} onChange={setMinScore} options={[["0", "Semua skor"], ["50", "50 atau lebih"], ["70", "70 atau lebih"], ["85", "85 atau lebih"]]} /></div></label>
           </div>
@@ -525,16 +525,16 @@ export function AssessmentPanel({
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <section ref={clientListRef} aria-label="Daftar klien assessment" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white ${showingDetail ? "hidden xl:block" : ""}`}>
+        <section ref={clientListRef} aria-label="Daftar klien Self Diagnostic" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white ${showingDetail ? "hidden xl:block" : ""}`}>
           <div className="border-b border-slate-100 p-4">
             <div className="mb-3 flex items-center justify-between gap-2"><h2 className="text-sm font-semibold text-slate-900">Daftar klien</h2><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs tabular-nums text-slate-600">{filtered.length}</span></div>
-            <AdminSelect ariaLabel="Urutkan assessment" value={sort} onChange={setSort} options={[["latest", "Terbaru dahulu"], ["attention", "Perlu perhatian dahulu"]]} />
+            <AdminSelect ariaLabel="Urutkan Self Diagnostic" value={sort} onChange={setSort} options={[["latest", "Terbaru dahulu"], ["attention", "Perlu perhatian dahulu"]]} />
           </div>
           <div className="max-h-[760px] overflow-y-auto">
             {filtered.slice(0, visibleLimit).map((record) => {
               const state = proposalState(record);
               const active = selected?.id === record.id;
-              return <button type="button" key={record.id} id={`${tabId}-client-${record.id}`} aria-pressed={active} aria-label={`Buka assessment ${record.name}, ${record.company}`} onClick={() => selectClient(record.id)}
+              return <button type="button" key={record.id} id={`${tabId}-client-${record.id}`} aria-pressed={active} aria-label={`Buka Self Diagnostic ${record.name}, ${record.company}`} onClick={() => selectClient(record.id)}
                 className={`block w-full border-b border-slate-100 border-l-[3px] p-4 text-left transition last:border-b-0 ${active ? "border-l-[#0B2C6B] bg-[#F1F5FB]" : "border-l-transparent hover:bg-slate-50"}`}>
                 <div className="flex items-start gap-3">
                   <span aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white text-xs font-semibold text-[#0B2C6B] ring-1 ring-slate-200">{record.name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "K"}</span>
@@ -544,14 +544,14 @@ export function AssessmentPanel({
                 <span className="mt-2 flex flex-wrap justify-between gap-1 text-[10px] text-slate-500"><span>{formatDate(record.createdAt)}</span><span>Skor diagnosis {record.overallScore}</span></span>
               </button>;
             })}
-            {!filtered.length && <div className="p-5"><EmptyState title="Tidak ada assessment yang cocok" description="Coba kata kunci atau filter lain." action={{ label: "Hapus filter", onClick: resetFilters }} /></div>}
+            {!filtered.length && <div className="p-5"><EmptyState title="Tidak ada Self Diagnostic yang cocok" description="Coba kata kunci atau filter lain." action={{ label: "Hapus filter", onClick: resetFilters }} /></div>}
           </div>
           {filtered.length > visibleLimit && <button type="button" onClick={() => setVisibleLimit((value) => value + 20)} className="w-full border-t border-slate-100 p-4 text-xs font-semibold text-[#0B2C6B]">Tampilkan lebih banyak</button>}
-          <p className="border-t border-slate-100 p-4 text-[11px] leading-5 text-slate-500">Menampilkan data assessment yang dimuat, bukan total historis.</p>
+          <p className="border-t border-slate-100 p-4 text-[11px] leading-5 text-slate-500">Menampilkan data Self Diagnostic yang dimuat, bukan total historis.</p>
         </section>
 
-        <section aria-label="Detail assessment" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${!showingDetail ? "hidden xl:block" : ""}`}>
-          {!record ? <div className="p-8"><EmptyState title="Belum ada klien untuk ditampilkan" description="Hapus filter untuk melihat assessment yang tersedia." /></div> : <>
+        <section aria-label="Detail Self Diagnostic" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${!showingDetail ? "hidden xl:block" : ""}`}>
+          {!record ? <div className="p-8"><EmptyState title="Belum ada klien untuk ditampilkan" description="Hapus filter untuk melihat Self Diagnostic yang tersedia." /></div> : <>
               <header className="p-5 sm:p-6">
                 <button type="button" onClick={() => returnToClientList(record.id)} className="mb-4 flex min-h-10 items-center gap-2 text-xs font-medium text-slate-600 xl:hidden"><ArrowLeft size={16} /> Kembali ke daftar klien</button>
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -561,10 +561,10 @@ export function AssessmentPanel({
                 <p className="mt-3 break-all text-sm text-slate-600">{record.email}</p>
                 {record.whatsapp && <p className="mt-1 text-xs text-slate-500">WhatsApp: {record.whatsapp}</p>}
                 <div className="mt-5 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3">
-                  {[["Assessment", record.createdAt], ["Hasil dikirim", record.resultEmailSentAt], ["Proposal dikirim", record.proposalSentAt]].map(([label, date]) => <div key={label} className="min-w-0"><p className="flex items-center gap-1.5 text-[11px] font-medium text-slate-700"><span className={`h-1.5 w-1.5 shrink-0 rounded-full ${date ? "bg-emerald-500" : "bg-slate-300"}`} />{label}</p><p className="mt-1.5 text-[10px] leading-4 text-slate-500">{date ? formatDate(date) : "Belum tercatat"}</p></div>)}
+                  {[["Self Diagnostic", record.createdAt], ["Hasil dikirim", record.resultEmailSentAt], ["Proposal dikirim", record.proposalSentAt]].map(([label, date]) => <div key={label} className="min-w-0"><p className="flex items-center gap-1.5 text-[11px] font-medium text-slate-700"><span className={`h-1.5 w-1.5 shrink-0 rounded-full ${date ? "bg-emerald-500" : "bg-slate-300"}`} />{label}</p><p className="mt-1.5 text-[10px] leading-4 text-slate-500">{date ? formatDate(date) : "Belum tercatat"}</p></div>)}
                 </div>
               </header>
-              <div role="tablist" aria-label="Bagian assessment" className="grid grid-cols-4 gap-1 border-y border-slate-100 px-2 sm:flex sm:overflow-x-auto sm:px-4">
+              <div role="tablist" aria-label="Bagian Self Diagnostic" className="grid grid-cols-4 gap-1 border-y border-slate-100 px-2 sm:flex sm:overflow-x-auto sm:px-4">
                 {tabs.map((tab, index) => <button type="button" role="tab" key={tab.id} id={`${tabId}-${tab.id}`} aria-controls={`${tabId}-panel`} aria-selected={detailTab === tab.id} tabIndex={detailTab === tab.id ? 0 : -1}
                   onClick={() => setDetailTab(tab.id)} onKeyDown={(event) => {
                     const next = event.key === "ArrowRight" ? (index + 1) % tabs.length : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
@@ -581,7 +581,7 @@ export function AssessmentPanel({
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-xs"><div><p className="text-slate-500">Industri</p><p className="mt-1 font-medium text-slate-800">{record.industry || "Belum diisi"}</p></div><div><p className="text-slate-500">Lokasi</p><p className="mt-1 font-medium text-slate-800">{record.location || "Belum diisi"}</p></div><div><p className="text-slate-500">Rencana mulai</p><p className="mt-1 font-medium text-slate-800">{profileLabel(record.timeline)}</p></div><div><p className="text-slate-500">Langkah yang diminati</p><p className="mt-1 font-medium text-slate-800">{profileLabel(record.nextStepIntent || "explore")}</p></div></div>
                   <div className="space-y-4 rounded-xl bg-slate-50 p-4 text-sm leading-6">
-                    <h3 className="text-sm font-semibold text-slate-900">Brief assessment</h3>
+                    <h3 className="text-sm font-semibold text-slate-900">Brief Self Diagnostic</h3>
                     <div><p className="text-xs font-medium text-slate-500">Tantangan utama</p><p className="mt-1 whitespace-pre-wrap text-slate-800">{record.challenge || "Belum diisi"}</p></div>
                     <div><p className="text-xs font-medium text-slate-500">Target 3–6 bulan</p><p className="mt-1 whitespace-pre-wrap text-slate-800">{record.target || "Belum diisi"}</p></div>
                     {record.businessConsequence && <div><p className="text-xs font-medium text-slate-500">Dampak bagi bisnis</p><p className="mt-1 whitespace-pre-wrap text-slate-800">{record.businessConsequence}</p></div>}
@@ -620,13 +620,13 @@ export function AssessmentPanel({
                       {record.leadScoreEvidence?.exclusionReasons?.map((reason, index) => <p key={index}>{reason}</p>)}
                       <p>Penilaian berbasis aturan, bukan AI. Pemeriksaan teks menggunakan minimal 20 karakter, bukan penilaian kualitas jawaban.</p>
                       <p>Versi aturan: {record.leadScoreRuleVersion || "Belum tersedia"}. Anggaran dan dukungan pengambil keputusan tidak digunakan pada aturan v1.2.</p>
-                      {record.recordedLeadScoreRuleVersion && record.recordedLeadScoreRuleVersion !== record.leadScoreRuleVersion && <p>Ditampilkan berdasarkan aturan terbaru untuk assessment ini. Riwayat skor lead ({record.recordedLeadScoreRuleVersion}) tetap tersimpan.</p>}
+                      {record.recordedLeadScoreRuleVersion && record.recordedLeadScoreRuleVersion !== record.leadScoreRuleVersion && <p>Ditampilkan berdasarkan aturan terbaru untuk Self Diagnostic ini. Riwayat skor lead ({record.recordedLeadScoreRuleVersion}) tetap tersimpan.</p>}
                     </div>
                   </details>
                   <button type="button" onClick={() => setDetailTab("proposal")} className="flex min-h-11 w-full items-center justify-between rounded-xl bg-[#0B2C6B] px-4 text-sm font-medium text-white">Lihat status proposal <ArrowRight size={17} /></button>
                 </>}
                 {detailTab === "proposal" && <>
-                  <div><h3 className="text-base font-semibold text-slate-900">Proposal</h3><p className="mt-2 text-sm leading-6 text-slate-500">Disusun berdasarkan hasil assessment dan solusi BinaHub. Pengiriman otomatis dapat dipantau di sini.</p></div>
+                  <div><h3 className="text-base font-semibold text-slate-900">Proposal</h3><p className="mt-2 text-sm leading-6 text-slate-500">Disusun berdasarkan hasil Self Diagnostic dan solusi BinaHub. Pengiriman otomatis dapat dipantau di sini.</p></div>
                                         <div className="mt-4 rounded-[12px] border border-black/[0.07] bg-[#F8FAFC] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
@@ -691,7 +691,7 @@ export function AssessmentPanel({
                   {state.reconcile && <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">Status pengiriman belum dapat dipastikan. Periksa arsip pengiriman sebelum mencoba lagi agar klien tidak menerima proposal ganda.</p>}
                   {record.proposalEligibility?.eligible === false && !state.sent && <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">{record.proposalEligibility.summary}</p>}
                   {!state.sent && !hasManualDraft && <button type="button" disabled={busy || proposalProcessing || state.reconcile || record.proposalEligibility?.eligible === false}
-                    onClick={() => setConfirmAction({ title: state.failed ? "Coba ulang proposal standar?" : "Buat dan kirim proposal standar?", description: "Proposal berdasarkan hasil assessment dan katalog akan disusun, lalu dikirim ke email klien.", confirmLabel: state.failed ? "Coba lagi" : "Buat & kirim", details: [`Klien: ${record.name}`, `Email: ${record.email}`, `Perusahaan: ${record.company}`], onConfirm: () => runAssessmentAction(record, "request_proposal") })}
+                    onClick={() => setConfirmAction({ title: state.failed ? "Coba ulang proposal standar?" : "Buat dan kirim proposal standar?", description: "Proposal berdasarkan hasil Self Diagnostic dan katalog akan disusun, lalu dikirim ke email klien.", confirmLabel: state.failed ? "Coba lagi" : "Buat & kirim", details: [`Klien: ${record.name}`, `Email: ${record.email}`, `Perusahaan: ${record.company}`], onConfirm: () => runAssessmentAction(record, "request_proposal") })}
                     className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{proposalProcessing ? <><LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" />Sedang diproses</> : state.failed ? "Coba ulang proposal" : "Buat & kirim proposal standar"}</button>}
                   {hasManualDraft && !state.sent && <button type="button" disabled={busy || !proposalCanSend} onClick={() => setConfirmAction({ title: "Kirim draf proposal yang disetujui?", description: "Draf ini akan dikirim langsung ke email klien.", confirmLabel: "Kirim proposal", details: [`Email: ${record.email}`, `Persetujuan: ${proposalGateLabel(record.proposalGateStatus)}`], onConfirm: () => runAssessmentAction(record, "send_proposal") })} className="min-h-11 w-full rounded-xl bg-[#0B2C6B] px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">Kirim draf yang disetujui</button>}
                   {!state.sent && <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Draf standar yang perlu peninjauan</summary><p className="mt-3 text-xs leading-5 text-slate-500">Gunakan bila proposal standar perlu disiapkan dan ditinjau terlebih dahulu.</p><button type="button" onClick={() => void openProposalBuilder(record)} disabled={busy || catalogLoading || deliveryProtected || record.proposalEligibility?.eligible === false} className="mt-3 min-h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">{builderId === record.id ? "Tutup penyusun draf" : "Siapkan draf untuk ditinjau"}</button>                      {builderId === record.id && (
@@ -766,7 +766,7 @@ export function AssessmentPanel({
                         </div>
                       )}
 </details>}
-                  <p className="rounded-xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">Butuh proposal khusus? CEO menyiapkannya secara manual setelah diskusi dengan klien. Gunakan hasil assessment dan arsip di tab Dokumen sebagai acuan.</p>
+                  <p className="rounded-xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">Butuh proposal khusus? CEO menyiapkannya secara manual setelah diskusi dengan klien. Gunakan hasil Self Diagnostic dan arsip di tab Dokumen sebagai acuan.</p>
                 </>}
                 {detailTab === "documents" && <>
                                       <div className="rounded-[12px] border border-black/[0.05] bg-white p-5">
@@ -823,15 +823,15 @@ export function AssessmentPanel({
                       )}
                     </div>
 
-                  <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Kirim ulang hasil assessment</summary><p className="mt-3 text-xs leading-5 text-slate-500">Gunakan jika klien meminta hasil dikirim kembali. Tindakan ini mengirim email baru, bukan sekadar membuka arsip.</p><button type="button" disabled={busy} onClick={() => setConfirmAction({ title: "Kirim ulang hasil assessment?", description: "Salinan hasil akan dikirim kembali ke email klien.", confirmLabel: "Kirim ulang hasil", details: [`Klien: ${record.name}`, `Email: ${record.email}`], onConfirm: () => runAssessmentAction(record, "resend_result") })} className="mt-3 min-h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">Kirim ulang hasil</button></details>
+                  <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Kirim ulang hasil Self Diagnostic</summary><p className="mt-3 text-xs leading-5 text-slate-500">Gunakan jika klien meminta hasil dikirim kembali. Tindakan ini mengirim email baru, bukan sekadar membuka arsip.</p><button type="button" disabled={busy} onClick={() => setConfirmAction({ title: "Kirim ulang hasil Self Diagnostic?", description: "Salinan hasil akan dikirim kembali ke email klien.", confirmLabel: "Kirim ulang hasil", details: [`Klien: ${record.name}`, `Email: ${record.email}`], onConfirm: () => runAssessmentAction(record, "resend_result") })} className="mt-3 min-h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">Kirim ulang hasil</button></details>
                 </>}
                 {detailTab === "followup" && <>
                   <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-base font-semibold text-slate-900">Tindak lanjut klien</h3><p className="mt-1 text-xs leading-5 text-slate-500">Kirim pengingat sesuai jadwal, atau jeda saat percakapan sedang berlangsung.</p></div><button type="button" disabled={busy} onClick={() => void toggleAssessmentFollowUp(record)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-[#0B2C6B] disabled:opacity-40">{record.followUpPaused ? <PlayCircle size={15} /> : <PauseCircle size={15} />}{record.followUpPaused ? "Lanjutkan pengingat" : "Jeda pengingat"}</button></div>
                   {record.followUpPaused && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Pengingat untuk klien ini sedang dijeda.</p>}
-                  <AssessmentFollowUpBox title="Pengingat hasil assessment" description="Hari ke-2, ke-7, dan ke-14 setelah hasil dikirim. Pengingat hasil berhenti ketika klien meminta proposal atau melanjutkan diskusi." record={record} channel="result" actionId={actionId} disabled={Boolean(record.followUpPaused)} onSend={(target, channel, level) => setConfirmAction({ title: `Kirim pengingat hasil ke-${level}?`, description: "Email pengingat akan dikirim kepada klien.", confirmLabel: "Kirim pengingat", details: [`Klien: ${target.name}`, `Email: ${target.email}`], onConfirm: () => sendAssessmentFollowUp(target, channel, level) })} />
+                  <AssessmentFollowUpBox title="Pengingat hasil Self Diagnostic" description="Hari ke-2, ke-7, dan ke-14 setelah hasil dikirim. Pengingat hasil berhenti ketika klien meminta proposal atau melanjutkan diskusi." record={record} channel="result" actionId={actionId} disabled={Boolean(record.followUpPaused)} onSend={(target, channel, level) => setConfirmAction({ title: `Kirim pengingat hasil ke-${level}?`, description: "Email pengingat akan dikirim kepada klien.", confirmLabel: "Kirim pengingat", details: [`Klien: ${target.name}`, `Email: ${target.email}`], onConfirm: () => sendAssessmentFollowUp(target, channel, level) })} />
                   <AssessmentFollowUpBox title="Pengingat proposal" description="Satu pengingat pada hari ke-2 setelah proposal dikirim. Tidak dikirim jika klien sudah melanjutkan diskusi atau peluang ditutup." record={record} channel="proposal" actionId={actionId} disabled={Boolean(record.followUpPaused) || !record.proposalSentAt} onSend={(target, channel, level) => setConfirmAction({ title: "Kirim pengingat proposal?", description: "Email pengingat proposal akan dikirim kepada klien.", confirmLabel: "Kirim pengingat", details: [`Klien: ${target.name}`, `Email: ${target.email}`], onConfirm: () => sendAssessmentFollowUp(target, channel, level) })} />
                   <details className="rounded-xl border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-medium text-slate-600">Perbarui status secara manual</summary><p className="mt-3 text-xs leading-5 text-slate-500">Perubahan status tidak membuat proposal atau mengirim email. Status pengiriman diperbarui oleh proses otomatis.</p><div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <label className="text-xs text-slate-500">Assessment<div className="mt-1"><AdminSelect ariaLabel="Status assessment" disabled={busy || deliveryProtected} value={record.assessmentStatus} onChange={(value) => void saveAssessmentStatus(record, value, record.proposalStatus)} options={Array.from(new Set([record.assessmentStatus, "Follow Up", "Lanjut Diskusi", "Closed"])).map((value) => [value, assessmentLabel(value)] as [string, string])} /></div></label>
+                    <label className="text-xs text-slate-500">Self Diagnostic<div className="mt-1"><AdminSelect ariaLabel="Status Self Diagnostic" disabled={busy || deliveryProtected} value={record.assessmentStatus} onChange={(value) => void saveAssessmentStatus(record, value, record.proposalStatus)} options={Array.from(new Set([record.assessmentStatus, "Follow Up", "Lanjut Diskusi", "Closed"])).map((value) => [value, assessmentLabel(value)] as [string, string])} /></div></label>
                     <label className="text-xs text-slate-500">Proposal<div className="mt-1"><AdminSelect ariaLabel="Status proposal" disabled={busy || deliveryProtected} value={record.proposalStatus} onChange={(value) => void saveAssessmentStatus(record, record.assessmentStatus, value)} options={Array.from(new Set([record.proposalStatus, "Revisi", "Lanjut Diskusi", "Deal", "Lost", "Closed"])).map((value) => [value, assessmentLabel(value)] as [string, string])} /></div></label>
                   </div></details>
                 </>}
@@ -839,9 +839,9 @@ export function AssessmentPanel({
             </>}
         </section>
       </div>
-      <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-800">Pola jawaban seluruh assessment</summary><p className="mt-2 text-xs leading-5 text-slate-500">Ringkasan data yang dimuat. Grafik ini tidak mengikuti filter daftar klien.</p><div className="mt-4">      <Panel title="Distribusi jawaban" action="Persentase jawaban 4–5">
+      <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-800">Pola jawaban seluruh Self Diagnostic</summary><p className="mt-2 text-xs leading-5 text-slate-500">Ringkasan data yang dimuat. Grafik ini tidak mengikuti filter daftar klien.</p><div className="mt-4">      <Panel title="Distribusi jawaban" action="Persentase jawaban 4–5">
         {data.answerDistribution.length === 0 ? (
-          <EmptyState title="Belum ada distribusi jawaban" description="Grafik akan muncul setelah assessment pertama berhasil disubmit." />
+          <EmptyState title="Belum ada distribusi jawaban" description="Grafik akan muncul setelah Self Diagnostic pertama berhasil disubmit." />
         ) : (
           <>
             <div className="overflow-x-auto pb-2" aria-label="Distribusi jawaban per pertanyaan">

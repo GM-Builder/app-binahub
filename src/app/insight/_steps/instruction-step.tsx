@@ -19,7 +19,7 @@ const COPY = {
     start: "Saya Mengerti, Mulai",
   },
   en: {
-    title: "Assessment Instructions",
+    title: "Self Diagnostic Instructions",
     body: "Rate each statement based on your current workplace reality.",
     bodyStrong: "Your honesty is essential for report accuracy.",
     back: "Back",

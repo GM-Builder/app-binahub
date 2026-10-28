@@ -21,7 +21,7 @@ export const SITE_KEYWORDS = [
   "pengembangan SDM",
   "executive coaching",
   "leadership development",
-  "talent assessment",
+  "talent Self Diagnostic",
   "future capability",
   "people development Indonesia",
 ];
@@ -32,7 +32,7 @@ export const SITE_KEYWORDS_EN = [
   "people development",
   "executive coaching",
   "leadership development",
-  "talent assessment",
+  "talent Self Diagnostic",
   "future capability",
   "human transformation partner",
 ];

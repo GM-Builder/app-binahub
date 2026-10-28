@@ -49,7 +49,7 @@ test('reference design preserves all five stages, nonblocking saves, navigation 
 
   try {
     await page.goto('/diagnose?utm_source=instagram&utm_campaign=reference-test');
-    await expect(page.getByRole('link', { name: 'Mulai diagnosis individu' })).toHaveAttribute('href', '/insight/individual?utm_source=instagram&utm_campaign=reference-test&source=instagram');
+    await expect(page.getByRole('link', { name: 'Lihat paket individu' })).toHaveAttribute('href', '/insight/individual/packages?utm_source=instagram&utm_campaign=reference-test&source=instagram');
     await expect(page.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/insight?utm_source=instagram&utm_campaign=reference-test');
     await expect.poll(() => page.getByRole('img', { name: 'BinaHub', exact: true }).evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
     await expect(page.getByText(/gratis/i)).toHaveCount(0);
@@ -58,27 +58,25 @@ test('reference design preserves all five stages, nonblocking saves, navigation 
     await checkWidths(); await capture('choice');
     await page.getByRole('link', { name: 'Mulai diagnosis tim' }).focus();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Mulai diagnosis individu' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Lihat paket individu' })).toBeFocused();
     await page.getByRole('link', { name: 'Dapatkan rekomendasi program' }).click();
     await expect(page).toHaveURL(/\/discovery$/);
     await expect(page.getByRole('button', { name: 'Mulai pengisian' })).toBeDisabled();
     await expect(page.getByRole('checkbox')).not.toBeChecked();
     await page.getByText('Penggunaan dan penyimpanan data', { exact: true }).click();
-    await expect(page.getByText(/Data disimpan tanpa penghapusan otomatis/)).toBeVisible();
+    await expect(page.getByText(/tanpa menyertakan nama, alamat email/)).toBeVisible();
     await page.getByText('Penggunaan dan penyimpanan data', { exact: true }).click();
     await capture('onboarding');
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: 'Mulai pengisian' }).click();
-    await expect(page.getByRole('group', { name: 'Peran Anda', exact: true })).toBeVisible();
-    await checkWidths(); await capture('form');
-    await page.getByLabel('Peran Anda', { exact: true }).selectOption('R1');
-    await page.getByLabel('Bidang usaha', { exact: true }).selectOption({ index: 1 });
-    await page.getByLabel('Jumlah karyawan', { exact: true }).selectOption({ index: 1 });
-    await page.getByRole('button', { name: 'Lanjut', exact: true }).click();
     await expect(page.getByRole('combobox', { name: /Apa yang paling mendorong/ })).toBeVisible();
+    await checkWidths(); await capture('form');
+    await page.getByRole('combobox', { name: /Apa yang paling mendorong/ }).selectOption({ index: 1 });
+    await page.getByRole('button', { name: 'Lanjut', exact: true }).click();
+    await expect(page.getByRole('group', { name: 'Peran Anda', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Lanjut', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'Kembali', exact: true }).click();
-    await expect(page.getByLabel('Peran Anda', { exact: true })).toHaveValue('R1');
+    await expect(page.getByRole('combobox', { name: /Apa yang paling mendorong/ })).not.toHaveValue('');
     releaseFirstSave!();
 
     const seenStages = new Set<string>();
@@ -110,9 +108,10 @@ test('reference design preserves all five stages, nonblocking saves, navigation 
     await page.getByLabel('Nama', { exact: true }).fill('Contoh Nadia');
     await page.getByLabel('Email kerja', { exact: true }).fill('synthetic@example.invalid');
     await page.getByLabel('Perusahaan / organisasi', { exact: true }).fill('Organisasi Contoh — data sintetis');
+    await page.getByLabel('Jabatan atau fungsi', { exact: true }).fill('HR');
     await page.getByRole('spinbutton', { name: 'Verifikasi singkat: Berapa 3 + 4?' }).fill('7');
     await page.getByRole('checkbox', { name: /Saya memahami penggunaan data/ }).check();
-    await expect(page.getByRole('checkbox', { name: /Saya bersedia menerima informasi/ })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: /Saya bersedia menerima informasi/ })).toHaveCount(0);
     const acknowledge = page.getByRole('checkbox', { name: /Saya memahami hal tersebut/ });
     if (await acknowledge.count()) await acknowledge.check();
     await page.getByRole('button', { name: 'Kirim permintaan' }).dblclick();

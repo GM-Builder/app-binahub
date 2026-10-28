@@ -299,10 +299,10 @@ export function PipelineDrawer({
               </section>
               <section className="rounded-xl border border-slate-200 p-4">
                 <h3 className="text-xs font-semibold text-slate-800">
-                  Assessment & konsultasi
+                  Self Diagnostic & konsultasi
                 </h3>
                 <p className="mt-2 text-xs leading-5 text-slate-500">
-                  {assessments.length} assessment terhubung · {meetings.length}{" "}
+                  {assessments.length} Self Diagnostic terhubung · {meetings.length}{" "}
                   konsultasi terhubung
                 </p>
                 {assessments.map((assessment) => (
@@ -319,7 +319,7 @@ export function PipelineDrawer({
                     href="/admin/assessments"
                     className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-[#0B2C6B]"
                   >
-                    Buka assessment
+                    Buka Self Diagnostic
                     <ArrowUpRight size={12} />
                   </Link>
                   <Link

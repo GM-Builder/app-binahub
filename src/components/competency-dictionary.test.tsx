@@ -24,7 +24,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("read-only competency dictionary", () => {
-  it("shows pending definitions without implying assessment is active", () => {
+  it("shows pending definitions without implying Self Diagnostic is active", () => {
     render(<CompetencyDictionaryView data={data} />);
     expect(screen.getByText("Belum diaktifkan")).toBeInTheDocument();
     expect(screen.getAllByText("Menunggu definisi CEO")).toHaveLength(3); // filter + two badges

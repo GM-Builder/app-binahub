@@ -581,7 +581,7 @@ export function PipelinePanel({
               description={
                 hasFilters
                   ? "Coba kata kunci lain atau reset filter untuk melihat peluang lainnya."
-                  : "Peluang dari assessment dan akuisisi akan tampil di sini. Pilih status lain untuk melihat hasil penjualan."
+                  : "Peluang dari Self Diagnostic dan akuisisi akan tampil di sini. Pilih status lain untuk melihat hasil penjualan."
               }
             />
             {hasFilters && (

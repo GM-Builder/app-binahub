@@ -19,7 +19,7 @@ describe('individual commerce preparation UI',()=>{
   });
   it('saves unknown decisions as null, retains revision and does not invent prices',async()=>{
     render(<PECommerceAdmin/>);await screen.findByText('Belum ada transaksi yang sesuai.');
-    fireEvent.click(screen.getByRole('button',{name:'Paket asesmen'}));
+    fireEvent.click(screen.getByRole('button',{name:'Paket Self Diagnostic'}));
     expect(screen.getByLabelText('Harga total yang dibayar (Rp)')).toHaveValue(null);
     fireEvent.change(screen.getByLabelText('Nama paket'),{target:{value:'Synthetic draft'}});
     fireEvent.click(screen.getByRole('button',{name:'Simpan draft paket'}));
@@ -30,7 +30,7 @@ describe('individual commerce preparation UI',()=>{
   it('keeps user input after failure and explains stale draft replacement',async()=>{
     deps.fetch.mockImplementation(async(_url,init)=>init.method==='PUT'?new Response(JSON.stringify({success:false,error:'Draft berubah di tab lain.'}),{status:409}):response());
     render(<PECommerceAdmin/>);await screen.findByText('Belum ada transaksi yang sesuai.');
-    fireEvent.click(screen.getByRole('button',{name:'Paket asesmen'}));fireEvent.change(screen.getByLabelText('Nama paket'),{target:{value:'Keep this'}});
+    fireEvent.click(screen.getByRole('button',{name:'Paket Self Diagnostic'}));fireEvent.change(screen.getByLabelText('Nama paket'),{target:{value:'Keep this'}});
     fireEvent.click(screen.getByRole('button',{name:'Simpan draft paket'}));
     await screen.findByRole('alert');expect(screen.getByLabelText('Nama paket')).toHaveValue('Keep this');
     expect(screen.getByRole('button',{name:'Muat versi terbaru'})).toBeVisible();

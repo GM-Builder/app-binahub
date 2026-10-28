@@ -12,7 +12,7 @@ beforeEach(() => {
     selfReportItems: [], sjtItems: [], selfReportScale: [] } });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
-describe("public individual assessment introduction", () => {
+describe("public individual Self Diagnostic introduction", () => {
   it("uses plain professional copy while preserving informed consent and privacy access", async () => {
     render(<PEGuestAssessment />);
     await screen.findByRole("heading", { name: "Sebelum Anda mulai" });

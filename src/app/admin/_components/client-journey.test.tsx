@@ -43,6 +43,6 @@ describe("client journey presentation", () => {
     fireEvent.click(summary);
     expect(summary.closest("details")).toHaveAttribute("open");
     expect(screen.getByText("Pengiriman hasil dicatat")).toBeVisible();
-    expect(screen.getByRole("link", { name: "Buka daftar assessment" })).toHaveAttribute("href", "/admin/assessments");
+    expect(screen.getByRole("link", { name: "Buka daftar Self Diagnostic" })).toHaveAttribute("href", "/admin/assessments");
   });
 });

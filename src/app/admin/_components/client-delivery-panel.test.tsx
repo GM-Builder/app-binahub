@@ -17,7 +17,7 @@ describe('won opportunity handoff entry',()=>{
     expect(screen.getByRole('textbox',{name:/^Indikator keberhasilan/})).toHaveValue('');
     expect(action).not.toHaveBeenCalled();
   });
-  it('shows the exact linked assessment brief at handoff without changing its fields or sending it',()=>{
+  it('shows the exact linked Self Diagnostic brief at handoff without changing its fields or sending it',()=>{
     const {data,lead}=clientJourneyFixture();data.clientAccounts=[];data.deliveryProjects=[];
     window.history.replaceState(null,'',`/admin/clients?lead=${lead.id}`);
     const action=vi.fn();render(<ClientDeliveryPanel data={data} onAction={action} onRefresh={vi.fn()}/>);

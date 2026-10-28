@@ -23,6 +23,7 @@ export function PEGuestAssessment() {
   const [receiptId, setReceiptId] = useState(''), [localAvailable, setLocalAvailable] = useState(true);
   const [cleanupWarning,setCleanupWarning]=useState(false);
   const [syncError, setSyncError] = useState('');
+  const [reviewCount,setReviewCount]=useState(6);
   const lock = useRef(false), current = useRef<PEGuestDraft | null>(null);
   const localWrites = useRef<Promise<void>>(Promise.resolve());
   const pendingLocal = useRef(0), storageReady = useRef(true);
@@ -144,7 +145,7 @@ export function PEGuestAssessment() {
     void persist(pending).then(() => syncQueue.current?.schedule());
   }
   const progress = draft ? countAnswered(questions, draft.responses) : 0;
-  const question = questions[index], area = definition?.competencies.find(value => value.code === question?.competencyCode);
+  const question = questions[index];
   const draftId = draft?.id;
   useEffect(() => {
     if (accepted) {
@@ -153,16 +154,15 @@ export function PEGuestAssessment() {
     } else if (!loading && draftId) taskHeading.current?.focus({ preventScroll: true });
   }, [index, loading, draftId, accepted]);
 
-  const guide = definition && <aside className={`${styles.guide} ${draft ? styles.taskGuide : ''}`} aria-label="Tentang diagnosis ini">
+  const guide = definition && !draft && <aside className={styles.guide} aria-label="Tentang Self Diagnostic ini">
     <span className={`${shared.iconTile} ${shared.iconGold}`}><UserRound size={25} aria-hidden="true" /></span>
     <h2>Tentang diagnosis ini</h2>
     <p>Kenali pengalaman kerja dan respons Anda pada tiga area pengembangan diri.</p>
     <ul className={styles.areaList}>{definition.competencies.map((value, i) => {
       const Icon = [Brain, Waypoints, ChartNoAxesCombined][i % 3];
-      const items = questions.filter(item => item.competencyCode === value.code);
-      return <li key={value.code} className={draft && area?.code === value.code ? styles.areaActive : undefined}>
+      return <li key={value.code}>
         <span className={styles.areaIcon}><Icon size={20} aria-hidden="true" /></span>
-        <div><strong>{value.name}</strong><p>{draft ? `${countAnswered(items, draft.responses)} dari ${items.length} terisi` : value.definition}</p></div>
+        <div><strong>{value.name}</strong><p>{value.definition}</p></div>
       </li>;
     })}</ul>
     <div className={styles.guideNote}><ShieldCheck size={20} aria-hidden="true" /><div><strong>Hasil pribadi Anda</strong><p>Tautan hasil dikirim ke email Anda. Penggunaan data dan izin tinjauan dijelaskan sebelum Anda mulai.</p></div></div>
@@ -171,7 +171,7 @@ export function PEGuestAssessment() {
   return <DiagnosisShell organization><div className={styles.layout} aria-label="Diagnosis individu">
       {!accepted && <div className={`${styles.intro} ${draft ? styles.taskIntro : ''}`}>
         <h1>{draft ? 'Diagnosis individu' : 'Pahami kebutuhan pengembangan diri Anda.'}</h1>
-        <p>{draft ? 'Isi sesuai pengalaman Anda. Jawaban disimpan di latar belakang, tanpa perlu menunggu untuk melanjutkan.' : `Kenali cara Anda mengembangkan diri, beradaptasi, dan menghadapi tekanan melalui ${definition ? questions.length : '18'} pertanyaan. Tautan untuk melihat hasil asesmen akan dikirim ke email Anda.`}</p>
+        <p>{draft ? 'Isi sesuai pengalaman Anda. Jawaban disimpan di latar belakang, tanpa perlu menunggu untuk melanjutkan.' : `Kenali cara Anda mengembangkan diri, beradaptasi, dan menghadapi tekanan melalui ${definition ? questions.length : '18'} pertanyaan. Tautan untuk melihat hasil Self Diagnostic akan dikirim ke email Anda.`}</p>
       </div>}
       {error && <div role="alert" className={styles.alert}>{error}
         <button type="button" disabled={busy} className={`${secondary} mt-3`} onClick={() => current.current ? void run(() => sync(current.current!, Boolean(current.current!.submissionKey))) : window.location.reload()}><RefreshCw size={15} />Coba lagi</button>
@@ -193,8 +193,9 @@ export function PEGuestAssessment() {
           <ul className={styles.receiptSteps}><li><Mail size={19} aria-hidden="true" />Periksa email, termasuk folder spam atau promosi.</li><li><ChartNoAxesCombined size={19} aria-hidden="true" />Buka laporan untuk melihat profil area dan langkah pengembangan.</li><li><ShieldCheck size={19} aria-hidden="true" />Jangan meneruskan tautan hasil karena berisi akses pribadi.</li></ul>
           <div className={styles.receiptActions}><Link href={`/insight/individual/result?attempt=${receiptId}`} className={button}>Bantuan akses hasil<ArrowRight size={16} aria-hidden="true" /></Link><Link href="/diagnose" className={secondary}>Pilihan diagnosis</Link></div></section>
       : definition?.acceptingNew === false && !draft ? <p role="status" className={styles.card}>Pengisian baru sedang dijeda. Draft sebelumnya tetap dapat dilanjutkan.</p>
-      : definition && <div className={styles.workspace}>{guide}{!draft ? <form className={styles.card} aria-busy={busy} onSubmit={event => { event.preventDefault(); void start(); }}>
+      : definition && <div className={draft?styles.answerWorkspace:styles.workspace}>{guide}{!draft ? <form className={styles.card} aria-busy={busy} onSubmit={event => { event.preventDefault(); void start(); }}>
         <h2>Sebelum Anda mulai</h2><p className={styles.lead}>Ceritakan sedikit tentang pekerjaan dan tujuan Anda agar rekomendasi lebih sesuai dengan kebutuhan Anda.</p>
+        <Link href="/insight/individual/packages" className={`${shared.textLink} my-3`}>Lihat pilihan paket Self Diagnostic<ArrowRight size={16} aria-hidden="true"/></Link>
         <ul aria-label="Area yang dinilai" className={styles.areaChips}>{definition.competencies.map(value => <li key={value.code}>{value.name}</li>)}</ul>
         <div className={styles.fields}>
           <label className={styles.field}>Nama Anda<input required maxLength={100} autoComplete="name" placeholder="Masukkan nama Anda" value={name} disabled={busy} onChange={event => setName(event.target.value)} /></label>
@@ -205,20 +206,26 @@ export function PEGuestAssessment() {
         </div>
         <div className={styles.notice}><Info size={16} aria-hidden="true" /><p>Isi sesuai pengalaman Anda, tanpa batas waktu pengerjaan. Hasilnya bukan diagnosis klinis dan tidak dapat menjadi satu-satunya dasar keputusan seleksi atau promosi.</p></div>
         <details className={styles.privacy}><summary>Privasi dan penggunaan data</summary><div id="pe-data-use"><p>{definition.privacyNotice}</p><p>{definition.sharingNotice}</p><p>Dengan persetujuan Anda, jawaban sementara disimpan secara terenkripsi di perangkat ini agar Anda dapat melanjutkan pengisian saat koneksi terputus. Simpanan ini dihapus setelah jawaban berhasil dikirim, atau saat halaman dibuka kembali setelah tujuh hari.</p></div></details>
-        <label className={styles.consent}><input type="checkbox" required checked={consent} disabled={busy} aria-describedby="pe-data-use" onChange={event => setConsent(event.target.checked)} />Saya menyetujui penggunaan data yang dijelaskan di atas dan mengizinkan tim BinaHub meninjau jawaban serta hasil asesmen untuk memberikan rekomendasi pengembangan.</label>
+        <label className={styles.consent}><input type="checkbox" required checked={consent} disabled={busy} aria-describedby="pe-data-use" onChange={event => setConsent(event.target.checked)} />Saya menyetujui penggunaan data yang dijelaskan di atas dan mengizinkan tim BinaHub meninjau jawaban serta hasil Self Diagnostic untuk memberikan rekomendasi pengembangan.</label>
         <button className={`${button} ${styles.start}`} disabled={busy || !consent} aria-describedby={!consent ? 'pe-start-help' : undefined}>{busy && <Loader2 className="motion-safe:animate-spin" size={17} aria-hidden="true" />}{busy ? 'Menyiapkan pengisian…' : 'Mulai diagnosis'}<ArrowRight size={17} aria-hidden="true" /></button>
         {!consent && <p id="pe-start-help" className={styles.hint}>Baca penggunaan data dan centang persetujuan untuk melanjutkan.</p>}
       </form> : <section className={styles.card}>
-        <div className={styles.questionMeta}><span>{question ? `Soal ${index + 1} dari ${questions.length}` : 'Tinjauan jawaban'}</span><span>{progress} dari {questions.length} terisi</span></div>
+        <div className={styles.questionMeta}><span>{question ? `Pertanyaan ${index + 1} dari ${questions.length}` : 'Tinjauan jawaban'}</span></div>
         <progress value={progress} max={questions.length || 1} aria-label="Kemajuan pengisian" className={styles.progress} />
-        {question ? <><p className={styles.questionKind}><strong>{area?.name}</strong><span>{question.type === 'behavioral_self_report' ? 'Pengalaman kerja dalam tiga bulan terakhir' : 'Studi kasus'}</span></p>
+        {question ? <><p className={styles.questionKind}>{question.type === 'behavioral_self_report' ? 'Pengalaman nyata dalam tiga bulan terakhir' : 'Studi kasus'}</p>
+          <p className={`${styles.help} mb-4`}>Jawablah sesuai pengalaman dan pilihan Anda yang sebenarnya, bukan jawaban yang terasa paling ideal.</p>
           {question.scenario && <p className={styles.scenario}>{question.scenario}</p>}
           <fieldset className={styles.question}><legend ref={node => { taskHeading.current = node; }} tabIndex={-1}>{question.prompt || question.question}</legend><div className={styles.answers}>{(question.type === 'behavioral_self_report' ? definition.selfReportScale.map(value => ({ value: value.value, label: value.label })) : question.options!.map(value => ({ value: value.id as PEAnswer, label: value.text }))).map(value => <label key={value.value} className={`${styles.answer} ${draft.responses[question.id] === value.value ? styles.answerSelected : ''}`}><input type="radio" name={question.id} checked={draft.responses[question.id] === value.value} disabled={busy || Boolean(draft.submissionKey)} onChange={() => void answer(value.value)} /><span>{value.label}</span></label>)}</div></fieldset>
           <div className={styles.footer}><button className={secondary} disabled={busy || index === 0} onClick={() => setIndex(value => value - 1)}><ArrowLeft size={16} aria-hidden="true" />Kembali</button><button className={button} disabled={busy || !Object.hasOwn(draft.responses, question.id)} aria-describedby={!Object.hasOwn(draft.responses, question.id) ? 'pe-next-help' : undefined} onClick={() => { setIndex(value => value + 1); window.scrollTo({ top: 0, behavior: 'instant' }); }}>{index === questions.length - 1 ? 'Tinjau jawaban' : 'Lanjut'}<ArrowRight size={16} aria-hidden="true" /></button></div>
           {!Object.hasOwn(draft.responses, question.id) && <p id="pe-next-help" className={styles.hint}>Pilih satu jawaban untuk melanjutkan.</p>}
+          <p className={styles.help}>Anda dapat mengubah jawaban dengan memilih Kembali sebelum mengirim.</p>
         </> : <><h2 ref={node => { taskHeading.current = node; }} tabIndex={-1} className="mt-6">Periksa sebelum mengirim.</h2><p className={styles.lead}>Jawaban dikunci setelah diterima. Hasil dan langkah pengembangan dikirim melalui tautan email pribadi.</p>
-          <div className={styles.review}>{definition.competencies.map(value => { const items = questions.filter(item => item.competencyCode === value.code); return <button key={value.code} disabled={busy} onClick={() => setIndex(questions.findIndex(question => question.competencyCode === value.code))}><span>{value.name}<small>{countAnswered(items, draft.responses)} dari {items.length} jawaban terisi</small></span><span>Tinjau<ArrowRight size={15} aria-hidden="true" /></span></button>; })}</div>
-          <p className={`${styles.help} mt-4`}>NA tidak dihitung sebagai nol. Bila kesempatan relevan terlalu sedikit, hasil menampilkan keterbatasan bukti.</p>
+          <ol className={styles.answerReview}>{questions.slice(0,reviewCount).map((item,number)=>{
+            const value=draft.responses[item.id];
+            const selected=item.type==='behavioral_self_report'?definition.selfReportScale.find(option=>option.value===value)?.label:item.options?.find(option=>option.id===value)?.text;
+            return <li key={item.id}><p className="font-semibold">{number+1}. {item.prompt||item.question}</p>{item.scenario&&<p className={styles.help}>{item.scenario}</p>}<p className="mt-2">{selected||'Belum dijawab'}</p><button type="button" className={`${secondary} mt-3`} disabled={busy} aria-label={`Ubah jawaban ${number+1}`} onClick={()=>setIndex(number)}>Ubah jawaban<ArrowRight size={15} aria-hidden="true"/></button></li>;
+          })}</ol>
+          {reviewCount<questions.length&&<div className={styles.reviewMore}><button type="button" className={secondary} onClick={()=>setReviewCount(count=>count+6)}>Lihat jawaban berikutnya<ArrowRight size={16} aria-hidden="true"/></button><p className={styles.help}>{questions.length-reviewCount} jawaban lainnya</p></div>}
           <button className={`${button} ${styles.start}`} disabled={busy || progress !== questions.length} aria-busy={busy} onClick={() => void run(() => sync(current.current!, true))}>{busy ? <Loader2 size={17} className="motion-safe:animate-spin" aria-hidden="true" /> : <CheckCircle2 size={17} aria-hidden="true" />}{busy ? 'Mengirim jawaban…' : 'Kirim jawaban'}</button></>}
         <p className={styles.save} role="status" aria-live="polite">{busy ? 'Menyimpan…' : status}</p>
       </section>}</div>}

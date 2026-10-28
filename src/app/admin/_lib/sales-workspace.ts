@@ -31,13 +31,13 @@ export function salesTasks(data: Pick<DashboardData, "assessments" | "inquiries"
   for (const record of data.assessments) {
     if (isClosed(record.assessmentStatus) || isClosed(record.proposalStatus)) continue;
     const state = proposalState(record);
-    const base = { recordId: record.id, name: record.name, company: record.company, email: record.email, source: record.attribution?.utmSource || record.attribution?.utm_source || "Assessment website", at: record.proposalRequestedAt || record.createdAt };
+    const base = { recordId: record.id, name: record.name, company: record.company, email: record.email, source: record.attribution?.utmSource || record.attribution?.utm_source || "Self Diagnostic website", at: record.proposalRequestedAt || record.createdAt };
     if (!state.sent && (state.failed || state.reconcile || state.review || record.proposalStatus === "Diminta")) {
       tasks.push({ ...base, id: `proposal:${record.id}`, kind: "proposal", note: state.label, action: state.reconcile ? "Periksa pengiriman" : "Buka proposal", view: "clients", detail: "proposal", priority: 0 });
     } else if (!record.resultEmailSentAt) {
-      tasks.push({ ...base, id: `assessment:${record.id}`, kind: "assessment", note: "Pengiriman hasil belum tercatat", action: "Periksa hasil", view: "clients", detail: "summary", priority: 2 });
+      tasks.push({ ...base, id: `Self Diagnostic:${record.id}`, kind: "assessment", note: "Pengiriman hasil belum tercatat", action: "Periksa hasil", view: "clients", detail: "summary", priority: 2 });
     } else if (!stopped(record.email) && (dueFollowUp(record, "result", now) || dueFollowUp(record, "proposal", now))) {
-      tasks.push({ ...base, id: `followup:assessment:${record.id}`, kind: "followup", note: "Pengingat hasil atau proposal siap ditinjau", action: "Tinjau tindak lanjut", view: "clients", detail: "followup", priority: 3 });
+      tasks.push({ ...base, id: `followup:Self Diagnostic:${record.id}`, kind: "followup", note: "Pengingat hasil atau proposal siap ditinjau", action: "Tinjau tindak lanjut", view: "clients", detail: "followup", priority: 3 });
     }
   }
   for (const record of data.pipelineLeads || []) {

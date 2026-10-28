@@ -54,10 +54,10 @@ export function OpenQuestionsStep({
   const selectClass = "h-12 w-full rounded-[12px] border border-black/10 bg-white px-4 text-sm font-medium text-[#0B2C6B] outline-none focus:border-[#0B2C6B]";
   const choices = locale === "en" ? {
     timeline: [["unknown", "Not determined"], ["0_3", "Within 3 months"], ["3_6", "3-6 months"], ["6_12", "6-12 months"], ["12_plus", "More than 12 months"]],
-    nextStep: [["result_review", "Review the assessment result"], ["consultation", "Schedule a consultation"], ["proposal", "Discuss a proposal"]],
+    nextStep: [["result_review", "Review the Self Diagnostic result"], ["consultation", "Schedule a consultation"], ["proposal", "Discuss a proposal"]],
   } : {
     timeline: [["unknown", "Belum ditentukan"], ["0_3", "Dalam 3 bulan"], ["3_6", "3-6 bulan"], ["6_12", "6-12 bulan"], ["12_plus", "Lebih dari 12 bulan"]],
-    nextStep: [["result_review", "Review hasil assessment"], ["consultation", "Jadwalkan konsultasi"], ["proposal", "Bahas proposal"]],
+    nextStep: [["result_review", "Review hasil Self Diagnostic"], ["consultation", "Jadwalkan konsultasi"], ["proposal", "Bahas proposal"]],
   };
 
   return (

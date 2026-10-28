@@ -22,7 +22,7 @@ describe("sales work queue", () => {
     expect(salesTasks({ ...data(), assessments: [record], inquiries: [{ ...inquiry, status: "Closed" }] }, now)).toEqual([]);
     expect(salesTasks({ ...data(), assessments: [], inquiries: [{ ...inquiry, replySentAt: "2026-10-01T00:00:00Z" }], pipelineLeads: [{ email: inquiry.email, opportunityStage: "consultation" } as PipelineLeadRecord] }, now)).toEqual([]);
   });
-  it("uses due follow-up levels and produces just one action per assessment", () => {
+  it("uses due follow-up levels and produces just one action per Self Diagnostic", () => {
     const record = assessmentFixture({ proposalStatus: "Terkirim", assessmentStatus: "Proposal Terkirim", proposalSentAt: "2026-10-01T00:00:00Z" });
     expect(salesTasks({ ...data(), assessments: [record], inquiries: [] }, now)).toHaveLength(1);
     expect(salesTasks({ ...data(), assessments: [{ ...record, proposalFollowUpLevel: 1 }], inquiries: [] }, now)).toEqual([]);

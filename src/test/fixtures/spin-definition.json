@@ -75,6 +75,42 @@
         {
           "value": "IND8",
           "label": "Bidang lain."
+        },
+        {
+          "value": "IND9",
+          "label": "Perkebunan"
+        },
+        {
+          "value": "IND10",
+          "label": "Pertanian"
+        },
+        {
+          "value": "IND11",
+          "label": "Perikanan"
+        },
+        {
+          "value": "IND12",
+          "label": "Transportasi dan logistik"
+        },
+        {
+          "value": "IND13",
+          "label": "Perhotelan"
+        },
+        {
+          "value": "IND14",
+          "label": "Pariwisata"
+        },
+        {
+          "value": "IND15",
+          "label": "Konstruksi dan properti"
+        },
+        {
+          "value": "IND16",
+          "label": "Pemerintahan dan layanan publik"
+        },
+        {
+          "value": "IND17",
+          "label": "Media dan industri kreatif"
         }
       ]
     },
@@ -124,7 +160,7 @@
     {
       "key": "trigger",
       "questionId": "Q02",
-      "label": "Apa yang paling mendorong perusahaan Anda mencari dukungan saat ini?",
+      "label": "Apa yang paling mendorong perusahaan Anda mencari dukungan pengembangan saat ini?",
       "type": "select",
       "required": true,
       "options": [
@@ -142,7 +178,7 @@
         },
         {
           "value": "T4",
-          "label": "Menindaklanjuti hasil asesmen, evaluasi, audit, atau program sebelumnya."
+          "label": "Menindaklanjuti hasil Self Diagnostic, evaluasi, audit, atau program sebelumnya."
         },
         {
           "value": "T5",
@@ -171,7 +207,7 @@
     {
       "key": "audienceGroups",
       "questionId": "Q03",
-      "label": "Kelompok utama",
+      "label": "Target kelompok utama yang akan dikembangkan",
       "type": "multi",
       "required": true,
       "options": [
@@ -605,7 +641,7 @@
     {
       "key": "effects",
       "questionId": "Q07",
-      "label": "Di bagian mana kondisi tersebut sudah terasa dampaknya?",
+      "label": "Di bagian mana kondisi tersebut sudah paling terasa dampaknya?",
       "type": "multi",
       "required": true,
       "options": [
@@ -653,7 +689,7 @@
     {
       "key": "priorEfforts",
       "questionId": "Q08",
-      "label": "Apa yang sudah dicoba perusahaan?",
+      "label": "Apa yang sudah dicoba dilakukan perusahaan?",
       "type": "multi",
       "required": true,
       "options": [
@@ -1181,7 +1217,7 @@
     {
       "key": "spiritualOptIn",
       "questionId": "QS01",
-      "label": "Jika relevan dengan kebutuhan Anda, apakah Anda ingin mengeksplorasi program pengembangan yang mengintegrasikan pengalaman spiritual atau Umrah?",
+      "label": "Jika relevan dengan kebutuhan Anda, apakah Anda ingin mengeksplorasi program pengembangan yang mengintegrasikan pengalaman spiritual (Umrah) dengan transformasi diri/tim?",
       "type": "select",
       "required": false,
       "options": [
@@ -1633,10 +1669,10 @@
   ],
   "screens": [
     [
-      "Q01"
+      "Q02"
     ],
     [
-      "Q02"
+      "Q01"
     ],
     [
       "Q03"

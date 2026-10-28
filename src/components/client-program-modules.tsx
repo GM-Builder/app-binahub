@@ -82,7 +82,7 @@ export function ClientProgramModules({ modules }: { modules: ClientProgramModule
               <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#80560F]">Diagnostik Performa 7 Dimensi</p>
               <h3 className="mt-1 text-lg font-bold text-[#0B2C6B]">BinaInsight</h3>
               <p className="mt-2 text-sm leading-6 text-[#4A4C54]/68">Isi diagnostik yang disusun khusus untuk program ini. Hasil tetap terhubung ke identitas peserta dan program.</p>
-              <span className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-blue-900 px-4 text-xs font-bold text-white">{module.completed ? "Isi ulang assessment" : "Mulai assessment"} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              <span className="mt-5 inline-flex min-h-10 items-center gap-2 rounded-xl bg-blue-900 px-4 text-xs font-bold text-white">{module.completed ? "Isi ulang Self Diagnostic" : "Mulai Self Diagnostic"} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
             </div>
           </Link>
         ) : module.key === "pre_test" || module.key === "post_test" ? (
