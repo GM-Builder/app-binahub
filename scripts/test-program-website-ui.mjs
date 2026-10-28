@@ -54,7 +54,11 @@ try{
   const canonical=await page.locator('link[rel=canonical]').getAttribute('href');assert(canonical.replace(/\/$/,'').endsWith('/id/rekomendasi-program'),canonical);
   assert.equal(await page.locator('link[hreflang]').count(),2);
   const demo=page.getByRole('tablist',{name:'Ilustrasi alur rekomendasi'});
-  assert.notEqual(await demo.evaluate(el=>getComputedStyle(el).backdropFilter),'none','tab rail uses static backdrop blur');
+  assert.equal(await demo.evaluate(el=>getComputedStyle(el).backdropFilter),'none','tab rail must remain flat');
+  assert.equal(await demo.evaluate(el=>getComputedStyle(el).backgroundImage),'none','no gradient on tab rail');
+  assert.equal(await demo.locator('svg').count(),0,'tabs have no icons');
+  assert.equal(await page.locator('#recommendation-preview').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(247, 248, 250)','original canvas ground');
+  assert.equal(await page.locator('#recommendation-preview').evaluate(el=>getComputedStyle(el).backgroundImage),'none','no gradient on outer showcase');
   const needs=demo.getByRole('tab',{name:'Kebutuhan',exact:true});
   const competency=demo.getByRole('tab',{name:'Kompetensi',exact:true});
   const program=demo.getByRole('tab',{name:'Program',exact:true});
@@ -73,12 +77,13 @@ try{
   const programPreview=await preview.boundingBox();
   assert(Math.abs(originalPreview.height-programPreview.height)<1,'no demo layout shift '+device+': '+originalPreview.height+' -> '+programPreview.height);
   await program.press('Home');await expect(needs).toBeFocused();
-  assert.equal(await needs.evaluate(el=>getComputedStyle(el,'::before').opacity),'1','selected tab gradient visible');
+  assert.equal(await needs.evaluate(el=>getComputedStyle(el,'::before').opacity),'0.75','selected tab gradient is softer');
   if(device==='desktop'){
    await competency.hover();await page.waitForTimeout(200);
-   assert(Number(await competency.evaluate(el=>getComputedStyle(el,'::before').opacity))>0,'hover gradient visible');
+   assert.equal(await competency.evaluate(el=>getComputedStyle(el,'::before').opacity),'0.4','hover gradient is softer');
    await capture(page,{path:previewDir+'/program-glass-tabs-hover.png',fullPage:false,animations:'disabled'});
   }
+  if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await demo.screenshot({path:previewDir+'/program-glass-tabs-'+device+'.png',animations:'disabled'});
   await competency.click();await expect(competency).toHaveAttribute('aria-selected','true');
   await needs.click();await expect(needs).toHaveAttribute('aria-selected','true');
   await page.getByText('Apakah saya perlu membuat akun?',{exact:true}).click();
@@ -94,6 +99,10 @@ try{
   const reportDocument=page.getByRole('heading',{name:'Arah pengembangan organisasi',exact:true}).locator('..');
   assert.notEqual(await reportDocument.evaluate(el=>getComputedStyle(el).backdropFilter),'none','report document uses static backdrop blur');
   const reportFrame=reportDocument.locator('..');
+  assert.equal(await reportDocument.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(255, 255, 255, 0.2)','only inner document is transparent glass');
+  assert.equal(await reportFrame.evaluate(el=>getComputedStyle(el,'::before').backgroundImage),'none','no ribbon behind report frame');
+  assert.equal(await reportFrame.evaluate(el=>getComputedStyle(el).backdropFilter),'none','outer report frame is not glass');
+  assert(await reportFrame.evaluate(el=>{const sample=document.createElement('span');sample.style.backgroundImage=getComputedStyle(el).getPropertyValue('--program-gradient-daylight');el.append(sample);const same=getComputedStyle(sample).backgroundImage===getComputedStyle(el).backgroundImage;sample.remove();return same;}),'original Daylight frame');
   if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await reportFrame.screenshot({path:previewDir+'/program-glass-report-'+device+'.png',animations:'disabled'});
   if(device==='desktop'){
    await page.emulateMedia({forcedColors:'active'});
