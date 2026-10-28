@@ -124,8 +124,8 @@ try{
   const artCopy=artPanel.locator(':scope > p');
   assert.equal(await artPanel.locator(':scope > div').count(),0,'no inset card over artwork');
   const sceneChecks=[
-   ['needs','direction-ribbon.webp','Dari tantangan,menuju arah.'],
-   ['competencies','competency-lenses.webp','Temukan fokus.Bangun kemampuan.'],
+   ['needs','direction-ribbon.webp','Dari tantanganmenuju hasil yang nyata.'],
+   ['competencies','competency-lenses.webp','Kenali kemampuanyang perlu dikembangkan.'],
    ['program','program-layers.webp','Program yang tepat.Langkah yang jelas.'],
   ];
   await expect(artPanel.locator('img')).toHaveCount(3);
@@ -188,16 +188,40 @@ try{
   assert.equal(await reportFrame.evaluate(el=>getComputedStyle(el).backdropFilter),'none','outer report frame is not glass');
   assert(await reportFrame.evaluate(el=>{const sample=document.createElement('span');sample.style.backgroundImage=getComputedStyle(el).getPropertyValue('--program-gradient-daylight');el.append(sample);const same=getComputedStyle(sample).backgroundImage===getComputedStyle(el).backgroundImage;sample.remove();return same;}),'original Daylight frame');
   if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await reportFrame.screenshot({path:previewDir+'/program-glass-report-'+device+'.png',animations:'disabled'});
+  const processSection=page.locator('#program-process');
+  const processCards=processSection.locator('[data-process-card]');
+  await expect(processCards).toHaveCount(3);
+  for(const card of await processCards.all()){
+   assert.notEqual(await card.evaluate(el=>getComputedStyle(el).backdropFilter),'none','process cards use static glass');
+   assert.equal(await card.evaluate(el=>getComputedStyle(el).transitionDuration),'0s','process glass does not animate');
+  }
+  assert.equal(await processSection.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(240, 241, 248)','calm lavender-blue process ground');
+  assert.equal(await processSection.locator('p').first().evaluate(el=>getComputedStyle(el).color),'rgb(64, 86, 117)','dark readable process copy outside cards');
+  const closing=page.locator('#program-closing');
+  await closing.scrollIntoViewIfNeeded();
+  const ctaArt=closing.locator('img');
+  assert((await ctaArt.getAttribute('src')).includes('cta-glass-path.webp'),'dedicated generated CTA background');
+  await expect.poll(()=>ctaArt.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  await expect(closing.getByRole('link',{name:'Dapatkan rekomendasi program'})).toHaveAttribute('href',/\/discovery/);
+  if(process.env.PROGRAM_UI_NO_CAPTURE!=='1'){
+   await processSection.screenshot({path:previewDir+'/program-process-'+device+'.png',animations:'disabled'});
+   await closing.screenshot({path:previewDir+'/program-closing-'+device+'.png',animations:'disabled'});
+  }
   if(device==='desktop'){
    await page.emulateMedia({forcedColors:'active'});
    assert.equal(await reportDocument.evaluate(el=>getComputedStyle(el).backdropFilter),'none','opaque forced-color fallback');
    assert.equal(await artPanel.locator('img[data-active="true"]').evaluate(el=>getComputedStyle(el).display),'none','art forced-color fallback');
+   assert.equal(await processCards.first().evaluate(el=>getComputedStyle(el).backdropFilter),'none','process forced-color fallback');
+   assert.equal(await ctaArt.evaluate(el=>getComputedStyle(el).display),'none','CTA image hidden in forced colors');
    await page.emulateMedia({forcedColors:'none'});
   }
   await page.route('**/discovery?**',r=>r.fulfill({body:'Synthetic handoff only',contentType:'text/html'}));
   await page.getByRole('link',{name:'Dapatkan rekomendasi program',exact:true}).first().click();await page.waitForURL(/\/discovery\?/);
   assert.equal(new URL(page.url()).searchParams.get('utm_campaign'),'program-test');
   await page.goto(base+'/en/rekomendasi-program');await page.getByRole('heading',{level:1,name:'Find the right program for your team.'}).waitFor();
+  assert.equal(await page.locator('[data-tone="needs"] > p').textContent(),'From challengesto tangible results.');
+  await page.getByRole('tab',{name:'Competencies',exact:true}).click();
+  assert.equal(await page.locator('[data-tone="competencies"] > p').textContent(),'Identify the capabilitiesyour team needs to develop.');
   await page.getByRole('tab',{name:'Program',exact:true}).click();
   assert.equal(await page.locator('[data-tone="program"] p').textContent(),'The right program.A clear next step.');
   await expect(page.getByRole('link',{name:'View this program in the catalog'})).toHaveAttribute('href','/en/pricing/?solution=SS-13');
