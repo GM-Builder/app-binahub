@@ -64,6 +64,32 @@ try{
   const program=demo.getByRole('tab',{name:'Program',exact:true});
   await expect(needs).toHaveAttribute('aria-selected','true');
   const preview=page.locator('#recommendation-preview');
+  const artPanel=preview.locator('[data-tone]');
+  const artGlass=artPanel.locator('div');
+  const sceneChecks=[
+   ['needs','direction-ribbon.webp','Dari tantangan,menuju arah.'],
+   ['competencies','competency-lenses.webp','Temukan fokus.Bangun kemampuan.'],
+   ['program','program-layers.webp','Program yang tepat.Langkah yang jelas.'],
+  ];
+  await expect(artPanel.locator('img')).toHaveCount(3);
+  const tones=new Set();
+  for(const [index,[tone,file,copy]] of sceneChecks.entries()){
+   await demo.getByRole('tab').nth(index).click();
+   await expect(artPanel).toHaveAttribute('data-tone',tone);
+   assert.equal(await artGlass.locator('p').textContent(),copy);
+   const activeArt=artPanel.locator('img[data-active="true"]');
+   assert((await activeArt.getAttribute('src')).includes(file),'unique image '+tone);
+   await expect.poll(()=>activeArt.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+   tones.add(await artPanel.evaluate(el=>getComputedStyle(el).backgroundColor));
+   assert.equal(await artGlass.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(255, 255, 255, 0.2)','transparent art sheet');
+   assert.notEqual(await artGlass.evaluate(el=>getComputedStyle(el).backdropFilter),'none','static art glass');
+   assert.equal(await artGlass.locator('p').evaluate(el=>getComputedStyle(el).filter),'none','copy remains sharp');
+   for(const sceneWidth of [320,768,width]){await page.setViewportSize({width:sceneWidth,height});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'scene overflow '+tone+' '+sceneWidth);}
+   await page.setViewportSize({width,height});
+   if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await preview.screenshot({path:previewDir+'/program-scene-'+tone+'-'+device+'.png',animations:'disabled'});
+  }
+  assert.equal(tones.size,3,'three distinct image-panel tones');
+  await needs.click();
   await page.evaluate(()=>document.fonts.ready);
   const originalPreview=await preview.boundingBox();
   await needs.focus();await needs.press('ArrowRight');
@@ -89,7 +115,7 @@ try{
   await page.getByText('Apakah saya perlu membuat akun?',{exact:true}).click();
   await expect(page.getByText('Tidak. Anda dapat langsung memulai pengisian kebutuhan.',{exact:false})).toBeVisible();
   await page.getByText('Apakah saya perlu membuat akun?',{exact:true}).click();
-  const art=preview.locator('img');assert(await art.evaluate(image=>image.complete&&image.naturalWidth>0),'generated artwork loaded');
+  const art=preview.locator('img[data-active="true"]');assert(await art.evaluate(image=>image.complete&&image.naturalWidth>0),'generated artwork loaded');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'landing overflow '+device);
   for(const checkWidth of device==='desktop'?[768,1280,1600]:[320,390]){await page.setViewportSize({width:checkWidth,height});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow at '+checkWidth);}
   await page.setViewportSize({width,height});
@@ -107,6 +133,7 @@ try{
   if(device==='desktop'){
    await page.emulateMedia({forcedColors:'active'});
    assert.equal(await reportDocument.evaluate(el=>getComputedStyle(el).backdropFilter),'none','opaque forced-color fallback');
+   assert.equal(await artGlass.evaluate(el=>getComputedStyle(el).backdropFilter),'none','art forced-color fallback');
    await page.emulateMedia({forcedColors:'none'});
   }
   await page.route('**/discovery?**',r=>r.fulfill({body:'Synthetic handoff only',contentType:'text/html'}));
@@ -114,6 +141,7 @@ try{
   assert.equal(new URL(page.url()).searchParams.get('utm_campaign'),'program-test');
   await page.goto(base+'/en/rekomendasi-program');await page.getByRole('heading',{level:1,name:'Find the right program for your team.'}).waitFor();
   await page.getByRole('tab',{name:'Program',exact:true}).click();
+  assert.equal(await page.locator('[data-tone="program"] p').textContent(),'The right program.A clear next step.');
   await expect(page.getByRole('link',{name:'View this program in the catalog'})).toHaveAttribute('href','/en/pricing/?solution=SS-13');
   assert((await page.locator('link[rel=canonical]').getAttribute('href')).replace(/\/$/,'').endsWith('/en/rekomendasi-program'));
   assert.deepEqual(errors,[]);await page.close();
