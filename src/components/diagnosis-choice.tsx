@@ -19,7 +19,7 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
       <div className={styles.choiceLayout}>
         <div>
           <h1 className={styles.choiceTitle}>Temukan program pengembangan yang sesuai</h1>
-          <p className={styles.subtitle}>Ceritakan kebutuhan organisasi Anda atau mulai dari Self Diagnostic untuk mengenali arah pengembangan.</p>
+          <p className={styles.subtitle}>Dapatkan rekomendasi program, petakan kebutuhan tim, atau kenali pengembangan diri melalui Self Diagnostic individu.</p>
         </div>
         <section className={styles.programCallout} aria-labelledby="program-recommendation-title">
           <Sparkles size={25} strokeWidth={1.7} className="text-[#ad7415]" aria-hidden="true" />
@@ -28,6 +28,11 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
         </section>
         <section aria-label="Pilihan diagnosis" className={styles.choiceGrid}>
           {children}
+        </section>
+
+        <section aria-label="Katalog dan inquiry" className="flex flex-wrap items-center gap-x-8 gap-y-2 border-y border-[#dce4ef] py-3 text-sm">
+          <Link href="/catalog" className={styles.textLink}>Jelajahi katalog program<ArrowRight size={16} aria-hidden="true"/></Link>
+          <a href="https://binahub.id/id/contact" className={styles.textLink}>Inquiry / konsultasi<ArrowRight size={16} aria-hidden="true"/></a>
         </section>
 
         <section className={styles.returning} aria-labelledby="returning-diagnosis-title">

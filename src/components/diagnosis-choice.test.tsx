@@ -30,6 +30,8 @@ describe('diagnosis choice', () => {
     expect(screen.getByRole('link', { name: 'Lihat hasil individu' })).toHaveAttribute('href', '/insight/individual/result');
     expect(screen.getByRole('link', { name: 'Lanjutkan draf individu' })).toHaveAttribute('href', '/insight/individual');
     expect(screen.getByRole('link', { name: 'Dapatkan rekomendasi program' })).toHaveAttribute('href', '/discovery');
+    expect(screen.getByRole('link', { name: 'Jelajahi katalog program' })).toHaveAttribute('href', '/catalog');
+    expect(screen.getByRole('link', { name: 'Inquiry / konsultasi' })).toHaveAttribute('href', 'https://binahub.id/id/contact');
   });
 
   it('preserves organization language/campaign and whitelisted individual attribution', async () => {

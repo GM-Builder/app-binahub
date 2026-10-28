@@ -17,7 +17,8 @@ describe('readable individual development report', () => {
     const headings = screen.getAllByRole('heading').map(node => node.textContent);
     expect(headings.indexOf('Langkah pengembangan')).toBeLessThan(headings.indexOf('Area Pengembangan'));
     for (const value of [practice.focus,practice.context,practice.successIndicator]) expect(screen.getByText(value)).toBeInTheDocument();
-    expect(screen.getByText(/Tinjau kembali kompetensi Anda dalam satu bulan/)).toBeVisible();
+    expect(screen.queryByText(/Tinjau kembali kompetensi Anda dalam satu bulan/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Pilih satu saran berikut untuk diterapkan/)).toBeVisible();
     expect(screen.getByRole('img', { name: 'Self-Development, Skor gabungan: bukti belum cukup' })).toBeVisible();
     expect(screen.getByRole('table')).toBeVisible();
     expect(screen.queryByText('Bagaimana fokus ini ditentukan?')).not.toBeInTheDocument();

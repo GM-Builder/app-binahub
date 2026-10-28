@@ -49,14 +49,14 @@ export function PEResult({ report, retentionUntil, headingLevel = 2, presentatio
 
       <section id={target('plan')} aria-labelledby={target('plan-heading')} className="scroll-mt-6 border-t border-slate-200 py-7 sm:py-8">
         <Heading id={target('plan-heading')} className="text-xl font-semibold text-[#0B2C6B]">Langkah pengembangan</Heading>
-        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">Gunakan fokus berikut sebagai arah latihan, bukan label kemampuan yang menetap.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">Pilih satu saran berikut untuk diterapkan dalam aktivitas sehari-hari, lalu amati perubahan yang Anda rasakan.</p>
         {report.priorities.length === 0 ? <p className="mt-5 text-sm leading-7 text-slate-600">Belum cukup bukti atau relevansi untuk menentukan fokus. Gunakan hasil sebagai awal percakapan pengembangan.</p>
           : <ol className="mt-6 divide-y divide-slate-200">{report.priorities.map((priority, index) => <li id={target(`practice-${priority.code}`)} key={priority.code} className="scroll-mt-6 py-6 first:pt-0 last:pb-0">
             <div className="flex items-start gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-semibold text-[#0B2C6B]" aria-hidden="true">{index + 1}</span>
               <div className="min-w-0"><Subheading className="text-lg font-semibold text-[#0B2C6B]">{priority.name}</Subheading><p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">{priority.reason}</p></div></div>
             {priority.practice && <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
               {[{ title: 'Mulai dari sini', value: priority.practice.focus }, { title: 'Terapkan dalam pekerjaan', value: priority.practice.context },
-                { title: 'Amati perkembangannya', value: priority.practice.successIndicator }, { title: 'Latihan dan refleksi', value: 'Latih kemampuan ini mulai sekarang. Tinjau kembali kompetensi Anda dalam satu bulan ke depan.' }]
+                { title: 'Amati perkembangannya', value: priority.practice.successIndicator }]
                 .map(item => <div key={item.title}><dt className="text-sm font-semibold text-slate-900">{item.title}</dt><dd className="mt-1.5 break-words text-sm leading-7 text-slate-600">{item.value}</dd></div>)}
             </dl>}
           </li>)}</ol>}

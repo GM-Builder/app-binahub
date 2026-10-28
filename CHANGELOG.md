@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.45.1] - 2026-10-28
+
+- Lima pintu masuk tetap terpisah: rekomendasi program, diagnosis tim/organisasi,
+  Self Diagnostic individu, katalog, dan inquiry. Tidak menghapus diagnosis tim.
+- Laporan gratis memberi langkah praktik saat ini tanpa ajakan kembali setelah
+  satu bulan, yang tidak sesuai dengan kebijakan akses hasil gratis 48 jam.
+- Catat syarat rilis delivery AI berbayar; checkout tetap Coming soon. Bukan
+  aktivasi pembayaran, retake, penyimpanan berbayar atau janji AI tanpa gangguan.
+
 ## [0.45.0] - 2026-10-28
 
 - Rekomendasi program menjadi tindakan utama halaman diagnosis; pilihan individu
