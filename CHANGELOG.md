@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.45.2] - 2026-10-28
+
+### Changed
+
+- Halaman pilihan paket Self Diagnostic menjadi pricing page editorial: paket
+  gratis dan paket lengkap di bagian atas, lalu empat kategori pengembangan.
+  Identitas BinaHub, kelima harga dan alur gratis tetap dipertahankan.
+- Paket berbayar tetap Coming soon; tidak ada checkout, aktivasi pembayaran,
+  perubahan soal, perhitungan skor, laporan atau kebijakan akses.
+- Panduan desain Impeccable membentuk hierarki harga dan komposisi responsif;
+  dokumentasi dibatasi pada route, tanpa mengganti DESIGN.md arsitektur aplikasi.
+
+### Verification
+
+- Seluruh 348 tes unit, lint terarah dan production build 91 route lulus. Uji pricing
+  desktop/ponsel memeriksa harga, lima kunci paket, atribusi CTA dan lebar
+  320–1600 px. Dua alur browser individu sintetis tetap lulus.
+- Uji landing rekomendasi lintas-repo mencakup glass card/tab, keyboard, hover,
+  forced colors dan regresi carousel homepage. Seluruh uji memakai fixture;
+  tidak mengirim email nyata atau membuktikan deployment produksi.
+
 ## [0.45.1] - 2026-10-28
 
 - Lima pintu masuk tetap terpisah: rekomendasi program, diagnosis tim/organisasi,

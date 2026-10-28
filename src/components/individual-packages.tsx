@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import {ArrowRight,LockKeyhole} from 'lucide-react';
+import {ArrowRight,Check,LockKeyhole} from 'lucide-react';
 import {DiagnosisShell} from './diagnosis-shell';
-import styles from './diagnosis.module.css';
+import styles from './individual-packages.module.css';
 
 export const individualPackages=[
  {name:'Personal Effectiveness',price:59000},
@@ -11,20 +11,47 @@ export const individualPackages=[
  {name:'Paket lengkap',price:299000},
 ];
 export function IndividualPackages({freeHref='/insight/individual'}:{freeHref?:string}){
- return <DiagnosisShell organization><div className="mx-auto max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
-  <h1 className="text-balance text-3xl font-semibold text-[#0b2c6b]">Pilih Self Diagnostic Anda</h1>
-  <p className="mt-4 max-w-2xl text-pretty text-sm leading-7 text-slate-600">Mulai dengan tiga kompetensi Personal Effectiveness, atau lihat paket pengembangan yang sedang kami siapkan.</p>
-  <section aria-labelledby="free-diagnostic" className="mt-8 rounded-xl border border-[#dce4ef] bg-white p-6 sm:p-8">
-   <div className="flex flex-wrap justify-between gap-4"><h2 id="free-diagnostic" className="text-xl font-semibold">Self Diagnostic gratis</h2><p className="font-semibold">Rp0</p></div>
-   <p className="mt-3 text-sm leading-7 text-slate-600">Self-Development, Adaptability, dan Pressure Management.</p>
-   <Link href={freeHref} className={`${styles.primaryButton} mt-5`}>Mulai Self Diagnostic gratis<ArrowRight size={17} aria-hidden="true"/></Link>
-  </section>
-  <section aria-labelledby="paid-diagnostics" className="mt-10">
-   <h2 id="paid-diagnostics" className="text-xl font-semibold">Paket Self Diagnostic</h2>
-   <p className="mt-2 text-sm leading-7 text-slate-600">Paket berbayar belum dapat dibeli. Pembayaran belum dibuka.</p>
-   <ul className="mt-5 divide-y divide-[#dce4ef] rounded-xl border border-[#dce4ef] bg-white px-5 sm:px-7">
-    {individualPackages.map(pack=><li key={pack.name} className="flex flex-wrap items-center justify-between gap-4 py-5"><div><h3 className="font-semibold">{pack.name}</h3><p className="mt-1 text-sm tabular-nums">{new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(pack.price)}</p></div><span className="inline-flex items-center gap-2 text-xs text-slate-600"><LockKeyhole size={15} aria-hidden="true"/>Coming soon</span></li>)}
+ const complete=individualPackages[individualPackages.length-1];
+ const categories=individualPackages.slice(0,-1);
+ const money=(price:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(price);
+ return <DiagnosisShell organization><div className={styles.page}><div className={styles.container}>
+  <header className={styles.intro}>
+   <h1>Pilih Self Diagnostic Anda.</h1>
+   <div><p>Mulai mengenali kebutuhan pengembangan diri, lalu pilih fokus yang sesuai dengan tujuan Anda.</p>
+    <p className={styles.availability} id="package-availability">Paket gratis tersedia sekarang. Paket berbayar belum dapat dibeli.</p>
+   </div>
+  </header>
+
+  <div className={styles.featuredPlans}>
+   <section aria-labelledby="free-diagnostic" className={styles.freePlan}>
+    <div className={styles.planHeading}><h2 id="free-diagnostic">Self Diagnostic gratis</h2><span className={styles.available}>Tersedia</span></div>
+    <p className={styles.description}>Langkah awal untuk mengenali tiga Area Personal Effectiveness.</p>
+    <p className={styles.price}><span className={styles.currency}>Rp</span><span>0</span></p>
+    <p className={styles.scopeLabel}>Area yang dapat Anda jelajahi</p>
+    <ul className={styles.freeAreas}>{['Self-Development','Adaptability','Pressure Management'].map(name=><li key={name}><Check size={16} aria-hidden="true"/>{name}</li>)}</ul>
+    <div className={styles.freeAction}><Link href={freeHref} className={styles.primary}>Mulai Self Diagnostic gratis<ArrowRight size={17} aria-hidden="true"/></Link><p>Tanpa membuat akun.</p></div>
+   </section>
+
+   <section aria-labelledby="complete-diagnostic" className={styles.completePlan}>
+    <h2 id="complete-diagnostic">{complete.name}</h2>
+    <p className={styles.description}>Pilihan pengembangan lintas Area dalam satu paket.</p>
+    <p className={styles.price}>{money(complete.price)}</p>
+    <p className={styles.scopeLabel}>Kategori pengembangan</p>
+    <ul className={styles.completeAreas}>{categories.map(pack=><li key={pack.name}><Check size={16} aria-hidden="true"/>{pack.name}</li>)}</ul>
+    <button type="button" disabled className={styles.locked} aria-describedby="package-availability" aria-label={'Coming soon: '+complete.name}><LockKeyhole size={15} aria-hidden="true"/>Coming soon</button>
+   </section>
+  </div>
+
+  <section className={styles.categories} aria-labelledby="paid-diagnostics" aria-describedby="package-availability">
+   <div className={styles.categoryIntro}><h2 id="paid-diagnostics">Pilih fokus pengembangan Anda.</h2><p>Jelajahi pilihan paket berdasarkan Area yang ingin Anda kembangkan.</p></div>
+   <ul className={styles.categoryGrid}>
+    {categories.map((pack,index)=><li key={pack.name} className={styles.categoryPlan}>
+     <h3 id={'category-'+index}>{pack.name}</h3>
+     <p className={styles.categoryPrice}>{money(pack.price)}</p>
+     <button type="button" disabled className={styles.locked} aria-describedby="package-availability" aria-label={'Coming soon: '+pack.name}><LockKeyhole size={15} aria-hidden="true"/>Coming soon</button>
+    </li>)}
    </ul>
   </section>
- </div></DiagnosisShell>;
+  <footer className={styles.footer}><p>Self Diagnostic membantu refleksi dan pengembangan diri, bukan diagnosis klinis.</p><p>Butuh bantuan? <a href="mailto:admin@binahub.id">Hubungi tim BinaHub<ArrowRight size={14} aria-hidden="true"/></a></p></footer>
+ </div></div></DiagnosisShell>;
 }

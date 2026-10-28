@@ -10,4 +10,17 @@ describe('locked individual packages',()=>{
   expect(screen.getByRole('link',{name:'Mulai Self Diagnostic gratis'})).toHaveAttribute('href','/insight/individual?utm_source=email');
   expect(screen.queryByRole('button',{name:/beli|bayar/i})).not.toBeInTheDocument();
  });
+ it('presents four focused plans and a complete plan with explicit locked availability',()=>{
+  render(<IndividualPackages/>);
+  expect(screen.getByRole('heading',{level:1,name:'Pilih Self Diagnostic Anda.'})).toBeVisible();
+  expect(screen.getByRole('region',{name:'Paket lengkap'})).toBeVisible();
+  expect(screen.getAllByRole('heading',{level:3})).toHaveLength(4);
+  for(const button of screen.getAllByRole('button',{name:/Coming soon:/})){
+   expect(button).toBeDisabled();
+   expect(button).toHaveAttribute('aria-describedby','package-availability');
+  }
+  expect(screen.getAllByRole('button')).toHaveLength(5);
+  expect(screen.getByText('Paket gratis tersedia sekarang. Paket berbayar belum dapat dibeli.')).toBeVisible();
+  expect(screen.getByRole('link',{name:'Mulai Self Diagnostic gratis'})).toHaveAttribute('href','/insight/individual');
+ });
 });

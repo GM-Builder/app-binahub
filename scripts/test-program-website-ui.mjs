@@ -54,6 +54,7 @@ try{
   const canonical=await page.locator('link[rel=canonical]').getAttribute('href');assert(canonical.replace(/\/$/,'').endsWith('/id/rekomendasi-program'),canonical);
   assert.equal(await page.locator('link[hreflang]').count(),2);
   const demo=page.getByRole('tablist',{name:'Ilustrasi alur rekomendasi'});
+  assert.notEqual(await demo.evaluate(el=>getComputedStyle(el).backdropFilter),'none','tab rail uses static backdrop blur');
   const needs=demo.getByRole('tab',{name:'Kebutuhan',exact:true});
   const competency=demo.getByRole('tab',{name:'Kompetensi',exact:true});
   const program=demo.getByRole('tab',{name:'Program',exact:true});
@@ -72,6 +73,12 @@ try{
   const programPreview=await preview.boundingBox();
   assert(Math.abs(originalPreview.height-programPreview.height)<1,'no demo layout shift '+device+': '+originalPreview.height+' -> '+programPreview.height);
   await program.press('Home');await expect(needs).toBeFocused();
+  assert.equal(await needs.evaluate(el=>getComputedStyle(el,'::before').opacity),'1','selected tab gradient visible');
+  if(device==='desktop'){
+   await competency.hover();await page.waitForTimeout(200);
+   assert(Number(await competency.evaluate(el=>getComputedStyle(el,'::before').opacity))>0,'hover gradient visible');
+   await capture(page,{path:previewDir+'/program-glass-tabs-hover.png',fullPage:false,animations:'disabled'});
+  }
   await competency.click();await expect(competency).toHaveAttribute('aria-selected','true');
   await needs.click();await expect(needs).toHaveAttribute('aria-selected','true');
   await page.getByText('Apakah saya perlu membuat akun?',{exact:true}).click();
@@ -84,6 +91,15 @@ try{
   await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0);await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
   await capture(page,{path:previewDir+'/program-landing-'+device+'.png',fullPage:true,animations:'disabled'});
   await capture(page,{path:previewDir+'/program-landing-'+device+'-viewport.png',fullPage:false,animations:'disabled'});
+  const reportDocument=page.getByRole('heading',{name:'Arah pengembangan organisasi',exact:true}).locator('..');
+  assert.notEqual(await reportDocument.evaluate(el=>getComputedStyle(el).backdropFilter),'none','report document uses static backdrop blur');
+  const reportFrame=reportDocument.locator('..');
+  if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await reportFrame.screenshot({path:previewDir+'/program-glass-report-'+device+'.png',animations:'disabled'});
+  if(device==='desktop'){
+   await page.emulateMedia({forcedColors:'active'});
+   assert.equal(await reportDocument.evaluate(el=>getComputedStyle(el).backdropFilter),'none','opaque forced-color fallback');
+   await page.emulateMedia({forcedColors:'none'});
+  }
   await page.route('**/discovery?**',r=>r.fulfill({body:'Synthetic handoff only',contentType:'text/html'}));
   await page.getByRole('link',{name:'Dapatkan rekomendasi program',exact:true}).first().click();await page.waitForURL(/\/discovery\?/);
   assert.equal(new URL(page.url()).searchParams.get('utm_campaign'),'program-test');
