@@ -178,7 +178,7 @@ export function IndividualAssessment() {
             return <li key={item.id} className="py-5 text-sm leading-7"><p className="font-semibold">{n+1}. {item.prompt||item.question}</p>{item.scenario&&<p className="mt-2 text-slate-600">{item.scenario}</p>}<p className="mt-2">{selected||'Belum dijawab'}</p><button type="button" className={`${secondary} mt-3`} onClick={()=>setIndex(n)}>Ubah jawaban {n+1}</button></li>;
           })}</ol>
           {reviewCount<questions.length&&<button type="button" className={`${secondary} mt-5`} onClick={()=>setReviewCount(n=>n+6)}>Lihat jawaban berikutnya</button>}
-          <p className="mt-4 text-xs leading-6 text-slate-500">Anda dapat mengubah jawaban dengan memilih Kembali sebelum mengirim.</p>
+          <p className="mt-4 text-xs leading-6 text-slate-500">Anda dapat mengubah jawaban dengan menekan tombol Kembali sebelum mengirim.</p>
           <button className={`${button} mt-6 w-full`} disabled={busy||progress!==questions.length} onClick={()=>void submit()}>{busy?<Loader2 size={18} className="animate-spin motion-reduce:animate-none"/>:<CheckCircle2 size={18}/>}Kirim dan lihat hasil</button></>}
       </section>}
       {signedIn&&state?.definition.features?.history&&<a href="/insight/individual/history" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4">Riwayat diagnosis saya</a>}
