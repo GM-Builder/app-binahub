@@ -30,11 +30,17 @@ try{
   await page.route('**/api/**',r=>r.fulfill({status:503,json:{success:false}}));
   await page.goto(base+'/id?utm_source=email&utm_campaign=program-test');
   const hero=page.locator('#home-hero');await hero.getByRole('link',{name:'Dapatkan rekomendasi program'}).waitFor();
+  await expect(hero).toHaveAttribute('data-hero-slide','recommendation');
+  const heroVisual=hero.locator('[data-program-hero-visual]');
+  await expect(heroVisual).toBeVisible();
+  for(const label of ['Kebutuhan','Kompetensi','Program'])await expect(heroVisual.getByText(label,{exact:true})).toBeVisible();
   const carousel=hero.getByRole('region',{name:'Pilihan utama BinaHub'});
   const controls=hero.getByRole('group',{name:'Kontrol slide utama'});
   await expect(controls.getByRole('button',{name:'Putar slide otomatis'})).toBeDisabled();
   const boxBefore=await carousel.boundingBox();
   await controls.getByRole('button',{name:'Tentang BinaHub',exact:true}).click();
+  await expect(hero).toHaveAttribute('data-hero-slide','brand');await expect(heroVisual).not.toBeVisible();
+  await expect(hero.locator('.hero-orbit-stage')).toBeVisible();
   await expect(hero.getByRole('link',{name:'Mulai diagnosis',exact:true})).toHaveAttribute('href','/id/insight');
   await expect(hero.getByRole('heading',{level:1})).toHaveCount(1);
   const inactive=hero.locator('[aria-roledescription="slide"][aria-hidden="true"]');
@@ -42,6 +48,8 @@ try{
   const boxAfter=await carousel.boundingBox();assert(Math.abs(boxBefore.height-boxAfter.height)<1,'no slide layout shift');
   await capture(page,{path:previewDir+'/program-hero-brand-'+device+'.png',fullPage:false,animations:'disabled'});
   await controls.getByRole('button',{name:'Rekomendasi program',exact:true}).click();
+  await expect(hero).toHaveAttribute('data-hero-slide','recommendation');await expect(heroVisual).toBeVisible();
+  await expect.poll(()=>hero.locator('[data-hero-reveal]').evaluate(el=>Number(getComputedStyle(el).opacity))).toBe(1);
   await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0);await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'home overflow '+device);
   await capture(page,{path:previewDir+'/program-hero-'+device+'.png',fullPage:false,animations:'disabled'});
@@ -65,7 +73,8 @@ try{
   await expect(needs).toHaveAttribute('aria-selected','true');
   const preview=page.locator('#recommendation-preview');
   const artPanel=preview.locator('[data-tone]');
-  const artGlass=artPanel.locator('div');
+  const artCopy=artPanel.locator(':scope > p');
+  assert.equal(await artPanel.locator(':scope > div').count(),0,'no inset card over artwork');
   const sceneChecks=[
    ['needs','direction-ribbon.webp','Dari tantangan,menuju arah.'],
    ['competencies','competency-lenses.webp','Temukan fokus.Bangun kemampuan.'],
@@ -76,14 +85,15 @@ try{
   for(const [index,[tone,file,copy]] of sceneChecks.entries()){
    await demo.getByRole('tab').nth(index).click();
    await expect(artPanel).toHaveAttribute('data-tone',tone);
-   assert.equal(await artGlass.locator('p').textContent(),copy);
+   assert.equal(await artCopy.textContent(),copy);
    const activeArt=artPanel.locator('img[data-active="true"]');
    assert((await activeArt.getAttribute('src')).includes(file),'unique image '+tone);
    await expect.poll(()=>activeArt.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
    tones.add(await artPanel.evaluate(el=>getComputedStyle(el).backgroundColor));
-   assert.equal(await artGlass.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(255, 255, 255, 0.2)','transparent art sheet');
-   assert.notEqual(await artGlass.evaluate(el=>getComputedStyle(el).backdropFilter),'none','static art glass');
-   assert.equal(await artGlass.locator('p').evaluate(el=>getComputedStyle(el).filter),'none','copy remains sharp');
+   assert.equal(await activeArt.evaluate(el=>getComputedStyle(el).filter),'blur(20px)','direct static image blur');
+   assert.equal(await activeArt.evaluate(el=>getComputedStyle(el).transitionDuration),'0s','blur must not animate');
+   assert.equal(await artPanel.evaluate(el=>getComputedStyle(el).backdropFilter),'none','no extra glass sheet');
+   assert.equal(await artCopy.evaluate(el=>getComputedStyle(el).filter),'none','copy remains sharp');
    for(const sceneWidth of [320,768,width]){await page.setViewportSize({width:sceneWidth,height});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'scene overflow '+tone+' '+sceneWidth);}
    await page.setViewportSize({width,height});
    if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await preview.screenshot({path:previewDir+'/program-scene-'+tone+'-'+device+'.png',animations:'disabled'});
@@ -133,7 +143,7 @@ try{
   if(device==='desktop'){
    await page.emulateMedia({forcedColors:'active'});
    assert.equal(await reportDocument.evaluate(el=>getComputedStyle(el).backdropFilter),'none','opaque forced-color fallback');
-   assert.equal(await artGlass.evaluate(el=>getComputedStyle(el).backdropFilter),'none','art forced-color fallback');
+   assert.equal(await artPanel.locator('img[data-active="true"]').evaluate(el=>getComputedStyle(el).display),'none','art forced-color fallback');
    await page.emulateMedia({forcedColors:'none'});
   }
   await page.route('**/discovery?**',r=>r.fulfill({body:'Synthetic handoff only',contentType:'text/html'}));
@@ -144,6 +154,9 @@ try{
   assert.equal(await page.locator('[data-tone="program"] p').textContent(),'The right program.A clear next step.');
   await expect(page.getByRole('link',{name:'View this program in the catalog'})).toHaveAttribute('href','/en/pricing/?solution=SS-13');
   assert((await page.locator('link[rel=canonical]').getAttribute('href')).replace(/\/$/,'').endsWith('/en/rekomendasi-program'));
+  await page.goto(base+'/en');
+  await expect(page.locator('#home-hero')).toHaveAttribute('data-hero-slide','recommendation');
+  for(const label of ['Your needs','Competencies','Your program'])await expect(page.locator('[data-program-hero-visual]').getByText(label,{exact:true})).toBeVisible();
   assert.deepEqual(errors,[]);await page.close();
  }
  const auto=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
@@ -154,11 +167,13 @@ try{
  await expect(controls.getByRole('button',{name:'Jeda pergantian otomatis'})).toBeVisible();
   await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','true');
   await expect(controls.getByRole('button',{name:'Tentang BinaHub',exact:true})).toHaveAttribute('aria-pressed','true',{timeout:11000});
+ await expect(hero).toHaveAttribute('data-hero-slide','brand');
  await controls.getByRole('button',{name:'Jeda pergantian otomatis'}).click();await auto.mouse.move(20,20);
   await auto.waitForTimeout(8500);await expect(controls.getByRole('button',{name:'Tentang BinaHub',exact:true})).toHaveAttribute('aria-pressed','true');
  await controls.getByRole('button',{name:'Putar slide otomatis'}).click();await auto.mouse.move(20,20);
   await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','true');
   await expect(controls.getByRole('button',{name:'Rekomendasi program',exact:true})).toHaveAttribute('aria-pressed','true',{timeout:11000});
+ await expect(hero).toHaveAttribute('data-hero-slide','recommendation');
   await hero.getByRole('link',{name:'Dapatkan rekomendasi program',exact:true}).hover();await auto.waitForTimeout(8500);
  await expect(controls.getByRole('button',{name:'Rekomendasi program',exact:true})).toHaveAttribute('aria-pressed','true');
   await auto.mouse.move(20,20);await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','true');await expect(controls.getByRole('button',{name:'Tentang BinaHub',exact:true})).toHaveAttribute('aria-pressed','true',{timeout:11000});
