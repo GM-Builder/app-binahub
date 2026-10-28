@@ -22,6 +22,7 @@ const base='http://127.0.0.1:'+port;
 const server=spawn(process.execPath,[websiteRequire.resolve('next/dist/bin/next'),'start','--hostname','127.0.0.1','--port',String(port)],{cwd:root,stdio:['ignore','pipe','pipe'],windowsHide:true});
 let log='';server.stdout.on('data',s=>log+=s);server.stderr.on('data',s=>log+=s);
 const stopped=new Promise(resolve=>server.once('exit',resolve));let browser;
+const layoutIssues=[];
 try{
  let ready=false;for(let i=0;i<100;i++){if(server.exitCode!==null)throw new Error(log);try{ready=(await fetch(base+'/id/rekomendasi-program',{signal:AbortSignal.timeout(1500)})).ok;}catch{}if(ready)break;await new Promise(r=>setTimeout(r,200));}assert(ready,'preview ready');
  browser=await chromium.launch({headless:true});
@@ -33,8 +34,19 @@ try{
   await expect(hero).toHaveAttribute('data-hero-slide','recommendation');
   const heroVisual=hero.locator('[data-program-hero-visual]');
   await expect(heroVisual).toBeVisible();
-  for(const label of ['Kebutuhan','Fokus kompetensi','Program yang relevan','Koordinasi lintas tim belum konsisten.','Communication','Collaboration','Team Synergy','Ilustrasi rekomendasi'])await expect(heroVisual.getByText(label,{exact:true})).toBeVisible();
-  await expect(heroVisual.locator('[data-example-card]')).toHaveCount(3);
+  for(const label of ['Kebutuhan','Kompetensi','Program','Tantangan dan tujuan tim Anda.','Fokus pengembangan yang relevan.','Pilihan untuk dibahas bersama.'])await expect(heroVisual.getByText(label,{exact:true})).toBeVisible();
+  await expect(heroVisual.locator('[data-journey-layer]')).toHaveCount(3);
+  await expect(heroVisual.getByText('Team Synergy',{exact:true})).toHaveCount(0);
+  const sculpturePaths=new Set();
+  for(const panel of await heroVisual.locator('img').all()){
+   const path=await panel.getAttribute('src');sculpturePaths.add(path);
+   assert(/hero-(needs|competencies|program)\.webp/.test(path),'semantic imagegen illustration');
+   await expect.poll(()=>panel.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  }
+  assert.equal(sculpturePaths.size,3,'each card has its own illustration');
+  const cardTones=await heroVisual.locator('[data-hero-tone]').evaluateAll(cards=>cards.map(card=>getComputedStyle(card).backgroundImage));
+  assert.equal(new Set(cardTones).size,3,'each card has its own color palette');
+  assert.equal(await heroVisual.locator('[data-program-orbit]').evaluate(el=>getComputedStyle(el).animationName),'none','static orbit in reduced motion');
   const carousel=hero.getByRole('region',{name:'Pilihan utama BinaHub'});
   const controls=hero.getByRole('group',{name:'Kontrol slide utama'});
   await expect(controls.getByRole('button',{name:'Putar slide otomatis'})).toBeDisabled();
@@ -56,23 +68,39 @@ try{
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'home overflow '+device);
   if(device==='mobile'){
    const headerBox=await page.locator('#global-navbar nav').boundingBox();
-   const needsBox=await heroVisual.locator('[data-example-card="needs"]').boundingBox();
+   const needsBox=await heroVisual.locator('[data-journey-layer="0"]').boundingBox();
    assert(needsBox.y>=headerBox.y+headerBox.height+8,'needs card clears mobile header');
   }
   await capture(page,{path:previewDir+'/program-hero-'+device+'.png',fullPage:false,animations:'disabled'});
+  const controlsBox=await controls.boundingBox(),heroBox=await hero.boundingBox();
+  assert(Math.abs(controlsBox.x+controlsBox.width/2-width/2)<2,'controls centered across hero '+device);
+  assert(heroBox.y+heroBox.height-controlsBox.y-controlsBox.height>=80,'controls leave space for Scroll '+device);
+  assert(heroBox.y+heroBox.height-controlsBox.y-controlsBox.height<=95,'controls at hero bottom '+device);
+  const scroll=hero.getByRole('link',{name:'Scroll ke bagian berikutnya'});await expect(scroll).toHaveAttribute('href','#platform');
+  const scrollBox=await scroll.boundingBox();
+  assert(Math.abs(scrollBox.x+scrollBox.width/2-width/2)<2,'Scroll centered '+device);
+  assert(scrollBox.y>=controlsBox.y+controlsBox.height+12,'Scroll separated from controls '+device);
+  assert(scrollBox.height>=44,'Scroll touch target');
+  if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await controls.screenshot({path:previewDir+'/program-hero-controls-'+device+'.png',animations:'disabled'});
   if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await heroVisual.screenshot({path:previewDir+'/program-hero-example-'+device+'.png',animations:'disabled'});
+  if(device==='mobile'&&process.env.PROGRAM_UI_NO_CAPTURE!=='1'){
+   await page.evaluate(()=>window.scrollTo(0,0));await hero.screenshot({path:previewDir+'/program-hero-full-mobile.png',animations:'disabled'});
+  }
   for(const homeWidth of device==='desktop'?[768,1024,1280,1440,1600]:[320,390]){
    await page.setViewportSize({width:homeWidth,height});
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'home overflow '+homeWidth);
-   assert(await heroVisual.locator('[data-example-card="program"]').evaluate(el=>el.scrollHeight<=el.clientHeight),'program card content fits '+homeWidth);
-   if(homeWidth>=1024)assert(await hero.locator(':scope > div').evaluate(el=>parseFloat(getComputedStyle(el).minHeight))<=920,'bounded desktop minimum; intrinsic content may grow '+homeWidth);
+   for(const layer of await heroVisual.locator('[data-journey-layer]').all())if(!await layer.evaluate(el=>{const copy=el.querySelector('[data-card-copy]'),style=getComputedStyle(el);return copy.offsetHeight+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)<=el.clientHeight+1;}))layoutIssues.push('journey copy overflows at '+homeWidth+' layer '+await layer.getAttribute('data-journey-layer'));
+   if([320,1280].includes(homeWidth)&&process.env.PROGRAM_UI_NO_CAPTURE!=='1')await heroVisual.screenshot({path:previewDir+'/program-hero-fit-'+homeWidth+'.png',animations:'disabled',style:'#global-navbar {visibility:hidden}'});
+   if(homeWidth>=1024)assert(await hero.locator(':scope > div').evaluate(el=>parseFloat(getComputedStyle(el).minHeight))<=1010,'bounded desktop minimum; intrinsic content may grow '+homeWidth);
   }
   await page.setViewportSize({width,height});
   if(device==='desktop'){
    await page.emulateMedia({forcedColors:'active'});
-   assert.equal(await heroVisual.locator('[data-example-card="needs"]').evaluate(el=>getComputedStyle(el).backdropFilter),'none','hero forced-color fallback');
+   assert.equal(await heroVisual.locator('[data-journey-layer="0"]').evaluate(el=>getComputedStyle(el).backdropFilter),'none','hero forced-color fallback');
+   assert.equal(await heroVisual.locator('img').first().locator('..').evaluate(el=>getComputedStyle(el).display),'none','hide sculpture raster in forced colors');
    await page.emulateMedia({forcedColors:'none'});
   }
+  await scroll.click();await expect(page).toHaveURL(/#platform$/);await expect(page.locator('#platform')).toBeInViewport();
   await hero.getByRole('link',{name:'Dapatkan rekomendasi program'}).click();await page.waitForURL(/\/id\/rekomendasi-program/);
   assert.equal(new URL(page.url()).searchParams.get('utm_campaign'),'program-test');
   await page.getByRole('heading',{level:1,name:'Temukan program yang tepat untuk tim Anda.'}).waitFor();
@@ -176,7 +204,7 @@ try{
   assert((await page.locator('link[rel=canonical]').getAttribute('href')).replace(/\/$/,'').endsWith('/en/rekomendasi-program'));
   await page.goto(base+'/en');
   await expect(page.locator('#home-hero')).toHaveAttribute('data-hero-slide','recommendation');
-  for(const label of ['Your needs','Development focus','Relevant program','Team Synergy','Illustrative recommendation'])await expect(page.locator('[data-program-hero-visual]').getByText(label,{exact:true})).toBeVisible();
+  for(const label of ['Your needs','Competencies','Your program'])await expect(page.locator('[data-program-hero-visual]').getByText(label,{exact:true})).toBeVisible();
   assert.deepEqual(errors,[]);await page.close();
  }
  const auto=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'no-preference'});
@@ -184,10 +212,17 @@ try{
  await auto.route('**/api/**',r=>r.fulfill({status:503,json:{success:false}}));
   await auto.goto(base+'/id');
  const hero=auto.locator('#home-hero'),controls=hero.getByRole('group',{name:'Kontrol slide utama'});
+ const programVisual=hero.locator('[data-program-hero-visual]');
  await expect(controls.getByRole('button',{name:'Jeda pergantian otomatis'})).toBeVisible();
   await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','true');
+  await expect(programVisual).toHaveAttribute('data-orbit-running','true');
+  assert.equal(await programVisual.locator('[data-program-orbit]').evaluate(el=>getComputedStyle(el).animationPlayState),'running','orbit rotates with playback');
+  const orbitBefore=await programVisual.locator('[data-program-orbit]').evaluate(el=>getComputedStyle(el).transform);
+  await auto.waitForTimeout(150);
+  assert.notEqual(await programVisual.locator('[data-program-orbit]').evaluate(el=>getComputedStyle(el).transform),orbitBefore,'orbit transform advances');
   await expect(controls.getByRole('button',{name:'Tentang BinaHub',exact:true})).toHaveAttribute('aria-pressed','true',{timeout:11000});
  await expect(hero).toHaveAttribute('data-hero-slide','brand');
+ await expect(programVisual).toHaveAttribute('data-orbit-running','false');
  await controls.getByRole('button',{name:'Jeda pergantian otomatis'}).click();await auto.mouse.move(20,20);
   await auto.waitForTimeout(8500);await expect(controls.getByRole('button',{name:'Tentang BinaHub',exact:true})).toHaveAttribute('aria-pressed','true');
  await controls.getByRole('button',{name:'Putar slide otomatis'}).click();await auto.mouse.move(20,20);
@@ -203,8 +238,18 @@ try{
  await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','true');
  await auto.evaluate(()=>window.scrollTo(0,innerHeight*2));
  await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','false');
+  await expect(programVisual).toHaveAttribute('data-orbit-running','false');
  await auto.evaluate(()=>window.scrollTo(0,0));
  await expect(hero.getByRole('region',{name:'Pilihan utama BinaHub'})).toHaveAttribute('data-auto-rotating','true');
+ await auto.setViewportSize({width:390,height:844});await auto.goto(base+'/id');
+ await auto.mouse.move(20,20);
+ await expect(programVisual).toHaveAttribute('data-orbit-running','true');
+ const visualTop=await programVisual.evaluate(el=>el.getBoundingClientRect().top+window.scrollY);
+ await auto.evaluate(top=>window.scrollTo(0,top-30),visualTop);
+ await expect(programVisual).toBeInViewport();
+ await expect(programVisual).toHaveAttribute('data-orbit-running','true');
+ assert.equal(await programVisual.locator('[data-program-orbit]').evaluate(el=>getComputedStyle(el).animationPlayState),'running','orbit runs while mobile art is visible');
  await auto.close();
+ assert.deepEqual(layoutIssues,[],'responsive journey content must fit');
  console.log('PASS: existing carousel regression; landing demo keyboard/touch, stable height, catalog link, FAQ, image; reduced motion, desktop/mobile, five paths, ID/EN metadata and tracked handoff; no API writes.');
 }finally{await browser?.close();if(server.exitCode===null)server.kill();await stopped;}
