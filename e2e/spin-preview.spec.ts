@@ -24,7 +24,7 @@ test('five-stage submission is nonblocking, preserves answers, and renders repor
  await expect(page.getByRole('heading',{name:/Tentukan arah/})).toBeVisible();
  await page.screenshot({path:'.impeccable/review/spin-entry-'+(mobile?'mobile':'desktop')+'.png',fullPage:true});
  await page.getByRole('checkbox').check();await page.getByRole('button',{name:/Mulai pengisian/}).click();
- await expect(page.getByRole('group',{name:'Peran Anda',exact:true})).toBeVisible();
+ await expect(page.getByRole('group',{name:'Apa yang paling mendorong perusahaan Anda mencari dukungan pengembangan saat ini?',exact:true})).toBeVisible();
  for(let step=0;step<25;step++){
  if(await page.getByRole('heading',{name:'Ke mana laporan Anda dikirim?'}).count())break;
  for(let round=0;round<3;round++){
@@ -55,6 +55,7 @@ test('five-stage submission is nonblocking, preserves answers, and renders repor
  await page.getByLabel('Nama',{exact:true}).fill('Contoh Nadia');
  await page.getByLabel('Email kerja',{exact:true}).fill('synthetic@example.invalid');
  await page.getByLabel('Perusahaan / organisasi',{exact:true}).fill('Contoh Organisasi');
+ await page.getByLabel('Jabatan atau fungsi',{exact:true}).fill('Manajer pengembangan');
  await page.getByRole('spinbutton',{name:'Verifikasi singkat: Berapa 3 + 4?'}).fill('7');
  await page.getByRole('checkbox',{name:/Saya memahami penggunaan data/}).check();
  const conflict=page.getByRole('checkbox',{name:/Saya memahami hal tersebut/});if(await conflict.count())await conflict.check();

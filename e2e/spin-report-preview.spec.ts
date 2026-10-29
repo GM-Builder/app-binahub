@@ -22,5 +22,8 @@ test('report dashboard keeps recommendation, review and empty states readable ac
  await page.getByText('Lihat 2 poin lainnya').click();
  await expect(page.getByText('Kebiasaan lama masih berulang.')).toBeVisible();
  await page.screenshot({path:'.impeccable/review/spin-summary-points-'+(mobile?'mobile':'desktop')+'.png',fullPage:true});
+ const context=page.getByText('Lihat konteks dan rincian kebutuhan',{exact:true});await context.click();
+ await expect(context.locator('..').locator('li').first()).toBeVisible();
+ await context.locator('..').screenshot({path:'.impeccable/review/spin-context-'+(mobile?'mobile':'desktop')+'.png'});
  expect(errors).toEqual([]);
 });

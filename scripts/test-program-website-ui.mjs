@@ -27,7 +27,7 @@ try{
  let ready=false;for(let i=0;i<100;i++){if(server.exitCode!==null)throw new Error(log);try{ready=(await fetch(base+'/id/rekomendasi-program',{signal:AbortSignal.timeout(1500)})).ok;}catch{}if(ready)break;await new Promise(r=>setTimeout(r,200));}assert(ready,'preview ready');
  browser=await chromium.launch({headless:true});
  for(const [device,width,height] of [['desktop',1440,1000],['mobile',390,844]]){
-  const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await browser.newPage({viewport:{width,height},hasTouch:device==='mobile',isMobile:device==='mobile',reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',r=>r.fulfill({status:503,json:{success:false}}));
   await page.goto(base+'/id?utm_source=email&utm_campaign=program-test');
   const hero=page.locator('#home-hero');await hero.getByRole('link',{name:'Dapatkan rekomendasi program'}).waitFor();
@@ -190,6 +190,27 @@ try{
   if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await reportFrame.screenshot({path:previewDir+'/program-glass-report-'+device+'.png',animations:'disabled'});
   const processSection=page.locator('#program-process');
   const processCards=processSection.locator('[data-process-card]');
+  const openingArt=page.locator('[data-program-opening] figure img');
+  await expect.poll(()=>openingArt.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  const processRail=processSection.getByRole('list');
+  if(device==='mobile'){
+   assert.equal(await preview.locator('[data-tone]').evaluate(el=>Math.round(el.getBoundingClientRect().width)),64,'mobile demo art is a side accent, not another stacked section');
+   assert(await processRail.evaluate(el=>el.scrollWidth>el.clientWidth),'mobile steps are a horizontal reading rail');
+   await processRail.evaluate(el=>window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-160,behavior:'instant'}));
+   await expect(processRail).toBeInViewport();
+   const box=await processRail.boundingBox();const touchSession=await page.context().newCDPSession(page);
+   const gestureY=Math.round(Math.max(120,Math.min(height-100,box.y+box.height/2)));
+   const gestureX=Math.round(box.x+box.width*.8);
+   await touchSession.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:gestureX,y:gestureY}]});
+   for(let step=1;step<=8;step++){
+    await touchSession.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:gestureX-28*step,y:gestureY}]});
+    await page.waitForTimeout(30);
+   }
+   await touchSession.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   await expect.poll(()=>processRail.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+   await touchSession.detach();
+   await processRail.evaluate(el=>el.scrollLeft=0);
+  }
   await expect(processCards).toHaveCount(3);
   for(const card of await processCards.all()){
    assert.notEqual(await card.evaluate(el=>getComputedStyle(el).backdropFilter),'none','process cards use static glass');

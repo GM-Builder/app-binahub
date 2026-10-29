@@ -47,7 +47,9 @@ verification evidence are in `docs/individual-reference-redesign.md`. Root
 
 Context, questions and review share the observed 1024 px container, 264 px
 desktop guide and fluid white task surface. At 767 px and below, guidance stacks
-and the active-task guide reduces to area names/counts. At 479 px and below,
+and the question/review guide reduces to static area names without active-area
+highlighting or per-area completion counts. At 768–1099 px the sidebar is 210 px;
+through 767 px the task guide is a narrow three-column strip. At 479 px and below,
 fields use 16 px text and relevance selects stack. Receipt, private access and
 the opt-in public report use the same inherited navy/gold identity, Jakarta
 typography, header and pale curved ground. Report headings remain configurable
@@ -67,3 +69,12 @@ ESLint, 17 PE tests and 2/2 browser tests (35.9 s) passed again. All 14 same-pat
 captures were refreshed and opened. Bounded reviewer verdict: the sole fix is
 resolved; disposition ship. The scoped design record is complete. This does not
 claim deployment or backend/security certification.
+
+29 October composition refinement: the guide stays visible throughout questions
+and review. Overall question progress is retained; question instructions no
+longer expose the active competency. Review shows six question/selected-answer
+entries at a time with per-answer editing and explicit reveal of the next six.
+This changes display only, preserving all required answers and existing save,
+consent, submission and private-access boundaries. See the refreshed scoped
+design record and `docs/individual-reference-redesign.md`; earlier finish
+evidence above predates this refinement.

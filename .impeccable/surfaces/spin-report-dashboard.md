@@ -2,7 +2,7 @@
 version: 1
 slug: spin-report-dashboard
 primary_target: src/components/spin-report.tsx
-related_targets: [src/components/spin-result.tsx]
+related_targets: [src/components/spin-result.tsx, src/components/spin-report.module.css, src/lib/spin-summary-points.ts]
 ---
 # Organization recommendation report
 
@@ -17,9 +17,10 @@ OWN-WORLD: Existing navy, white, cool slate ground, inherited sans; thin rules,
 compact readable type and restrained blue information surfaces, no new brand.
 STORY: Understand the need and review status; inspect evidence-linked program
 options, scope/investment and the next discussion; expand background only as needed.
-FIRST VIEWPORT: Navy report masthead; three-column need/impact/outcome diagram;
-honest recommendation status; program section immediately follows. Sidebar-free
-on mobile. Next action is consultation/email after the proposal details.
+FIRST VIEWPORT: Navy report masthead; need/impact/outcome points in three desktop
+columns and a native horizontal reading rail on mobile; honest recommendation
+status; program section immediately follows. Sidebar-free on mobile. Next action
+is consultation/email after the proposal details.
 FORM: Brief-pinned dashboard with semantic sections and native details, code-led.
 seed: none (brief-pinned)
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
@@ -33,3 +34,12 @@ artifact scope, after the first reviewer exceeded its usage limit. Six browser
 tests,343 unit tests and app build passed; PDF checked separately. Evidence and
 preexisting documentation drift are recorded in docs/spin-report-design-verification.md.
 No shipping raster assets, production writes, email resend, or deployment claim.
+
+29 October reading refinement: summaries expose the first three source-derived
+bullets and a native disclosure for the remainder. Expanded situation context
+and snapshot values also use bullets; all content remains available. The helper
+splits existing delimiters and removes exact duplicates for presentation, without
+generating an AI summary or changing the immutable snapshot. At a report width
+through 680px, the named summary group is keyboard-focusable and scrolls natively
+through three snapped columns; expanded context retains a two-column grid.
+Current checks and finish evidence are distinct from the earlier verdict above.

@@ -94,7 +94,13 @@ test('individual reference: context to answers, review, private result and priva
   await page.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Mulai diagnosis', exact: true }).click();
   await expect(page.getByRole('group', { name: definition.selfReportItems[0].prompt })).toBeVisible();
-  await expect(page.getByText('Self-Development',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('complementary',{name:'Tentang Self Diagnostic ini'})).toBeVisible();
+  await expect(page.getByText('Self-Development',{exact:true})).toBeVisible();
+  await expect(page.locator('[aria-current]')).toHaveCount(0);
+  await expect(page.getByText(/^[0-4] dari 4$/)).toHaveCount(0);
+  const originalWidth=page.viewportSize()!.width;
+  for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});await fits(page);}
+  await page.setViewportSize({width:originalWidth,height:device==='desktop'?1000:844});
   await capture('question');
   await page.getByRole('radio', { name: 'Sering', exact: true }).check();
   await expect.poll(() => saveStarted).toBe(true);

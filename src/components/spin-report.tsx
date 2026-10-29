@@ -20,7 +20,7 @@ export function SpinReport({report:r}:{report:Report}){
   <section className={styles.overview} aria-labelledby="spin-direction-title">
    <h2 id="spin-direction-title">Arah pengembangan, dalam satu pandangan</h2>
    <p className={styles.intro}>Dari tantangan yang Anda sampaikan menuju hasil yang ingin dicapai.</p>
-   <div className={styles.path} role="group" aria-label="Hubungan kebutuhan, dampak, dan hasil yang diharapkan">
+   <div className={styles.path} role="group" tabIndex={0} aria-label="Hubungan kebutuhan, dampak, dan hasil yang diharapkan">
     {[['Kebutuhan utama',r.summary.problem],['Dampak pada pekerjaan',r.summary.impact],['Hasil yang diharapkan',r.summary.outcome]].map(([label,text],index)=><div className={styles.pathItem} key={label}>
      <div className={styles.pathLabel}><span>{label}</span>{index<2&&<ArrowRight size={17} aria-hidden="true"/>}</div>
      <ul className={styles.summaryPoints}>{spinSummaryPoints(text).slice(0,3).map(point=><li key={point}>{point}</li>)}</ul>
@@ -54,7 +54,7 @@ export function SpinReport({report:r}:{report:Report}){
    <div><h2 id="spin-planning-title">Sebelum pelaksanaan</h2><p className={styles.intro}>Hal yang perlu dipastikan bersama agar program sesuai kebutuhan.</p><ul className={styles.checklist}>{r.confirmations.map(text=><li key={text}><span className={styles.checkBox} aria-hidden="true"/><span>{text}</span></li>)}</ul><p className={styles.note}>{r.taxNote}</p></div>
    <aside className={styles.next}><h2>Langkah berikutnya</h2><ol><li>Selaraskan sasaran dan prioritas.</li><li>Tentukan peserta, ruang lingkup, dan jadwal.</li><li>Finalisasi proposal dan pelaksanaan.</li></ol><p>Preferensi Anda: {r.nextStep}</p><a className={styles.action} href={r.bookingUrl||'mailto:admin@binahub.id'} {...(r.bookingUrl?{target:'_blank',rel:'noopener noreferrer'}:{})}>{r.bookingUrl?'Jadwalkan konsultasi':'Hubungi tim BinaHub'}<ArrowRight size={17} aria-hidden="true"/></a></aside>
   </div></section>
-  <details className={styles.context}><summary>Lihat konteks dan rincian kebutuhan</summary><p>{r.summary.situation}</p><dl>{r.snapshot.map(row=><div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><p className={styles.note}>Dampak dan konsekuensi berdasarkan informasi responden, belum diverifikasi secara independen.</p></details>
+  <details className={styles.context}><summary>Lihat konteks dan rincian kebutuhan</summary><ul className={styles.summaryPoints}>{spinSummaryPoints(r.summary.situation).map(point=><li key={point}>{point}</li>)}</ul><dl>{r.snapshot.map(row=><div key={row.label}><dt>{row.label}</dt><dd><ul className={styles.summaryPoints}>{spinSummaryPoints(row.value).map(point=><li key={point}>{point}</li>)}</ul></dd></div>)}</dl><p className={styles.note}>Dampak dan konsekuensi berdasarkan informasi responden, belum diverifikasi secara independen.</p></details>
   <footer className={styles.footer}><p>{r.disclaimer}</p><a href="mailto:admin@binahub.id">admin@binahub.id</a><span>BinaHub · People. Learning. Elevated.</span></footer>
  </article>;
 }

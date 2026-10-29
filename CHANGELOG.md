@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.46.0] - 2026-10-29
+
+- Mengembalikan sidebar informasi individu saat pengisian/tinjauan tanpa
+  penanda kompetensi aktif atau hitungan per kompetensi. Tablet dua kolom,
+  ponsel memakai strip area yang ringkas. Autosave dan skor PE tidak diubah.
+- Konteks dan rincian kebutuhan laporan rekomendasi menjadi bullet point.
+  Ringkasan mobile memakai rail mendatar; PDF mengikuti rincian bullet API.
+- Menambahkan ruang review Relationship Management khusus admin, sumber privat
+  27 soal pengalaman nyata/13 studi kasus/9 kompetensi, serta pratinjau sementara
+  tanpa menyimpan jawaban atau mengirim email. SJT, skor gabungan, penjualan,
+  dan akses publik RM tetap tidak aktif karena bobot belum disahkan.
+- Unit test komponen, build dan uji browser sintetis desktop/mobile lulus;
+  pengujian lokal bukan bukti deployment atau pemasangan sumber SQL75 produksi.
+
+
 ## [0.45.2] - 2026-10-28
 
 ### Changed

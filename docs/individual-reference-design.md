@@ -1,6 +1,6 @@
 # Individual diagnosis — scoped design record
 
-Observed on 26 October 2026 for the public guest journey at
+Observed on 26 October 2026 and refreshed on 29 October 2026 for the public guest journey at
 `/insight/individual` and its private email-result route. This extends the public
 diagnosis visual system recorded in
 [`diagnosis-reference-design.md`](diagnosis-reference-design.md). It does not
@@ -19,8 +19,9 @@ typography in `src/app/globals.css`, and the 14 desktop/mobile review captures.
 The individual journey carries the reference's guided composition through
 context entry, questions, review, submission receipt, private access and report.
 A narrow area guide accompanies the active task on desktop. The guide becomes a
-compact three-area overview on small screens, keeping the form or current
-question central. The report begins with the existing separate-method profile
+compact three-area strip on small screens, keeping the form or current
+question central. All area names stay static during questions and review, without
+active-area highlighting or per-area completion counts. The report begins with the existing separate-method profile
 chart and practical priorities, then exposes supporting detail progressively.
 
 The shared public shell supplies the real BinaHub logo, white header, pale blue
@@ -37,8 +38,8 @@ task surfaces and the shell's cool ground (`#f8faff`). Gold (`#b77811`) on cream
 (`#fff5df`) identifies the individual journey through the inherited icon tile.
 These are observed route values, not changes to global tokens.
 
-Area icons use blue (`#174c9f`) on pale blue (`#eef5ff`); the current area's icon
-reverses to white on navy. Selected answer rows use pale blue (`#eff5ff`) with a
+Area icons use blue (`#174c9f`) on pale blue (`#eef5ff`); the guest guide does not
+reverse an icon or identify the active competency. Selected answer rows use pale blue (`#eff5ff`) with a
 stronger border (`#4772b0`). Context notices, case scenarios and report priorities
 use related pale blue fills to distinguish supporting material from the task.
 The profile chart retains its existing distinct colors for the two methods.
@@ -70,13 +71,16 @@ desktop and 16 px at 479 px and below. Supporting copy generally ranges from
 The inherited white header is at least 64 px high, with a logo at 126 px wide
 and a return-to-diagnosis link. The individual container is capped at 1024 px,
 with 28 px horizontal padding. Context entry, questions and review use a 264 px
-guide beside a fluid task surface, separated by an 18 px gap. The guide is sticky
+guide beside a fluid task surface, separated by an 18 px gap. At 768–1099 px the
+guide is 210 px, the gap is 16 px and page padding is 24 px. The guide is sticky
 at a 24 px top offset on desktop. The introduction sits above both columns.
 
 At 767 px and below, the guide and access layout stack in one column. Guidance
-loses sticky positioning; the three areas form equal columns. The active-task
-guide retains area names and completion counts while hiding its repeated
-introduction and privacy reminder. Context entry retains the guide introduction;
+loses sticky positioning; the three areas form equal columns. The question/review
+guide retains all area names without a current-area state or per-area counts,
+while hiding descriptions, icons, its repeated introduction and privacy reminder.
+It uses a narrow 12 px-radius strip, 12 px 16 px padding and dividing rules
+between areas; the task workspace gap is 12 px. Context entry retains the guide introduction;
 its area descriptions hide at 479 px and below. The repeated area chips hide
 at 767 px and below. This compression does not remove the form's privacy
 disclosure or required consent.
@@ -112,21 +116,26 @@ image optimization. This existing repository asset is the only shipping raster;
 the user-supplied reference is visual evidence and is not bundled. Icons are
 existing Lucide SVG components.
 
-The area guide uses the active definition for area names, descriptions and
-completion counts. Context entry pairs labelled native fields with helper copy,
+The area guide uses the active definition for static area names and descriptions.
+It remains present during questions and review but exposes neither an active
+competency label nor per-area answer counts. The unused active-icon CSS is not
+a current public component state. Context entry pairs labelled native fields with helper copy,
 work-relevance selects, an expandable data-use explanation and required consent.
 Fields are at least 44 px high. Primary actions inherit a 48 px minimum height,
 navy gradient, clear disabled state and the shared hover treatment.
 
-Questions place a count and native progress indicator above the area/method
-label. A case scenario receives a tinted inset before the question. Full-row
+Questions place an overall count and native progress indicator above the method
+instructions; the active competency is not displayed. A case scenario receives a tinted inset before the question. Full-row
 radio labels are at least 53 px high; selected rows change border and fill while
 retaining the native radio indicator. Back/next actions remain in a divided
 footer, followed by an announced background-save status. Focus moves to the
 current question or review heading when navigation changes the task.
 
-Review groups completion by area and provides an explicit return to each area's
-questions before final submission. Receipt content distinguishes acceptance from
+Review presents the existing question, scenario when present and selected answer,
+with an explicit edit action for that answer. It initially shows six entries;
+a native button reveals the next six until every answer is available. This is
+progressive display only: final submission still checks all required responses.
+Receipt content distinguishes acceptance from
 email delivery, then provides email guidance and access help. Successful
 submission moves focus to the receipt heading and the viewport to the document
 top. Private access

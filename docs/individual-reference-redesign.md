@@ -95,3 +95,31 @@ The same reviewer scored the sole fix **resolved**, disposition **ship**. This
 bounded verdict covers the submission-focus fix; it is not a security or backend
 certification. This is local release evidence only; deployment is not verified
 by these checks.
+
+## 29 October refinement
+
+Questions and review again retain the area guide. Every area name is static;
+neither the active competency nor per-area completion counts are exposed. The
+existing 264 px desktop guide becomes 210 px at 768–1099 px and a narrow
+three-area strip through 767 px. Overall question progress remains available.
+Review displays six existing answers at a time with a per-answer edit action and
+a button to reveal the next six. All answers remain part of the submission.
+
+These are local composition/presentation changes; CEO text, scoring, privacy,
+autosave, retries, receipt and private email access retain their existing roles.
+The active instrument remains the free PE journey; the separate internal RM
+preparation page does not replace it or activate public RM delivery.
+
+Structural evidence supplied by the main implementation session: Codebase Memory
+was ready for the selected app root at generation `2026-10-28T15:49:55Z`.
+The original four scoped files had `metadata_match` and `no_recorded_issue`;
+new RM and sibling sources were checked by direct reads. This is bounded
+evidence and does not claim graph completeness. Current browser/capture and
+finish-review outcomes are recorded separately from the earlier 26 October run.
+
+Current verification (29 October): nine app unit tests and two full individual
+browser journeys passed on Chromium desktop/mobile with mocked services. The
+static guide remains visible; active competency and per-area counts are absent.
+Widths320/768/1024 were checked for overflow. Fresh question desktop/mobile
+captures were opened by the parent and finish reviewer; disposition `ship`.
+No real participant write, email or live access test was performed.

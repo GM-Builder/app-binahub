@@ -4,6 +4,10 @@ import { SpinReport } from './spin-report';
 import { spinSyntheticReport } from '@/test/fixtures/spin-report';
 
 describe('consulting report dashboard',()=>{
+ it('also renders context and snapshot details as complete bullet lists',()=>{
+  render(<SpinReport report={{...spinSyntheticReport,summary:{...spinSyntheticReport.summary,situation:'Konteks satu · Konteks dua'},snapshot:[{label:'Kebutuhan',value:'Kebutuhan A; Kebutuhan B'}]}}/>);
+  for(const text of ['Konteks satu','Konteks dua','Kebutuhan A','Kebutuhan B']) expect(screen.getByText(text).tagName).toBe('LI');
+ });
  it('breaks dense summaries into readable points while keeping every detail available',()=>{
   render(<SpinReport report={{...spinSyntheticReport,summary:{...spinSyntheticReport.summary,problem:'Koordinasi belum lancar. · Informasi berbeda.; Proses berubah. · Dukungan terbatas. · Hambatan lainnya.'}}}/>);
   expect(screen.getByText('Koordinasi belum lancar.').tagName).toBe('LI');

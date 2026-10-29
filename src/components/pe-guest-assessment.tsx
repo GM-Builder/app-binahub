@@ -154,7 +154,7 @@ export function PEGuestAssessment() {
     } else if (!loading && draftId) taskHeading.current?.focus({ preventScroll: true });
   }, [index, loading, draftId, accepted]);
 
-  const guide = definition && !draft && <aside className={styles.guide} aria-label="Tentang Self Diagnostic ini">
+  const guide = definition && <aside className={`${styles.guide} ${draft ? styles.taskGuide : ''}`} aria-label="Tentang Self Diagnostic ini">
     <span className={`${shared.iconTile} ${shared.iconGold}`}><UserRound size={25} aria-hidden="true" /></span>
     <h2>Tentang diagnosis ini</h2>
     <p>Kenali pengalaman kerja dan respons Anda pada tiga area pengembangan diri.</p>
@@ -193,7 +193,7 @@ export function PEGuestAssessment() {
           <ul className={styles.receiptSteps}><li><Mail size={19} aria-hidden="true" />Periksa email, termasuk folder spam atau promosi.</li><li><ChartNoAxesCombined size={19} aria-hidden="true" />Buka laporan untuk melihat profil area dan langkah pengembangan.</li><li><ShieldCheck size={19} aria-hidden="true" />Jangan meneruskan tautan hasil karena berisi akses pribadi.</li></ul>
           <div className={styles.receiptActions}><Link href={`/insight/individual/result?attempt=${receiptId}`} className={button}>Bantuan akses hasil<ArrowRight size={16} aria-hidden="true" /></Link><Link href="/diagnose" className={secondary}>Pilihan diagnosis</Link></div></section>
       : definition?.acceptingNew === false && !draft ? <p role="status" className={styles.card}>Pengisian baru sedang dijeda. Draft sebelumnya tetap dapat dilanjutkan.</p>
-      : definition && <div className={draft?styles.answerWorkspace:styles.workspace}>{guide}{!draft ? <form className={styles.card} aria-busy={busy} onSubmit={event => { event.preventDefault(); void start(); }}>
+      : definition && <div className={`${styles.workspace} ${draft ? styles.answerWorkspace : ''}`}>{guide}{!draft ? <form className={styles.card} aria-busy={busy} onSubmit={event => { event.preventDefault(); void start(); }}>
         <h2>Sebelum Anda mulai</h2><p className={styles.lead}>Ceritakan sedikit tentang pekerjaan dan tujuan Anda agar rekomendasi lebih sesuai dengan kebutuhan Anda.</p>
         <Link href="/insight/individual/packages" className={`${shared.textLink} my-3`}>Lihat pilihan paket Self Diagnostic<ArrowRight size={16} aria-hidden="true"/></Link>
         <ul aria-label="Area yang dinilai" className={styles.areaChips}>{definition.competencies.map(value => <li key={value.code}>{value.name}</li>)}</ul>

@@ -45,6 +45,9 @@ describe("public individual Self Diagnostic introduction", () => {
       return { attempt: { ...pendingDraft, revision: 2, responses: body.responses, status: 'draft' } };
     });
     render(<PEGuestAssessment />); await screen.findByText('Synthetic question one');
+    expect(screen.getByRole('complementary',{name:'Tentang Self Diagnostic ini'})).toBeInTheDocument();
+    expect(screen.getByText('Self-Development')).toBeVisible();
+    expect(screen.queryByText(/1 dari 4|0 dari 4/)).not.toBeInTheDocument();
     vi.useFakeTimers();
     fireEvent.click(screen.getByRole('radio', { name: 'Sering' }));
     expect(screen.getByRole('button', { name: 'Lanjut' })).toBeEnabled();

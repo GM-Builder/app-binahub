@@ -1,6 +1,6 @@
 # Organization recommendation report: design verification
 
-Recorded 27 October 2026. This is an existing-brand surface extension, governed by
+Recorded 27 October 2026; reading layout refreshed 29 October 2026. This is an existing-brand surface extension, governed by
 `PRODUCT.md` and `.impeccable/surfaces/spin-report-dashboard.md`.
 
 ## Implemented surface
@@ -24,15 +24,27 @@ backend snapshot. This documentation does not establish production PDF parity.
 | --- | --- |
 | Palette | Navy `#0b2c6b`, white surface, muted text `#526479`, rules `#dce4ef`, cool wash `#f3f6fb`; pale blue highlights |
 | Typography | Inherited Plus Jakarta Sans / Inter / system sans stack; report body 14px at 1.65 line height; section headings 20px; program titles 21px; heading weight 650 |
-| Structure | Navy masthead, three-part need/impact/outcome row, recommendation status, program evidence beside scope/investment, preparation and next steps, expandable context |
+| Structure | Navy masthead; three-part need/impact/outcome row using source-derived bullets, recommendation status, program evidence beside scope/investment, preparation and next steps, expandable context with bullet lists |
 | Spacing and shapes | Desktop section padding 28px 32px; masthead 32px; internal panels 20px; 12px panel corners; thin dividing rules; no report shadows |
 | Interaction | Native `details`/`summary` for program components and background; links and summaries receive a 2px navy focus outline with 5px offset; summaries and primary action have minimum 44px height |
 
-At a report container width of 680px or less, the three-part row and program,
-planning, and context grids stack into one column. Section padding becomes 24px,
+At a report container width of 680px or less, the three-part summary becomes a
+native horizontal reading rail with three `minmax(240px, 82cqi)` columns, start
+snap and a scrollbar. Its named group is keyboard-focusable and receives a 2px
+navy focus outline at this size. Program and planning grids stack; expanded
+context retains two columns with a 20px gap. Section padding becomes 24px,
 the masthead stacks, and section headings become 18px. The next-step divider moves
 from the left edge to the top. The result shell uses a cool ground and a centered
 `max-w-6xl` white report container. The layout has no sidebar.
+
+Need, impact and outcome each show the first three existing text points, with a
+native disclosure for additional points. Situation context and snapshot values
+use bullet lists without that three-point cap. `src/lib/spin-summary-points.ts`
+splits existing middle-dot, semicolon and newline delimiters, trims surrounding
+whitespace/punctuation and omits duplicate identical points. It does not infer an
+AI summary or alter the submitted backend snapshot. Bullets use 14px/1.65 body
+type, 10px gaps and an 18px indent; small-container context lists use 13px type
+and 7px gaps. All existing context remains available.
 
 Print styles reduce report typography, retain the navy masthead color, hide the
 consultation action, and discourage splitting individual program blocks. Actual
@@ -92,3 +104,20 @@ specification. `.impeccable/design.json` is absent. Both are preexisting drift;
 this surface-scoped documentation preserves that file and does not create a new
 global visual system or alter global tokens. The surface contract remains the
 authority for this report's composition.
+
+## 29 October evidence boundary
+
+The bullet/rail refinement preserves the report palette, immutable payload,
+recommendation states, program content, uncertainty wording and download access.
+Its source was read directly alongside the existing app graph evidence. Earlier
+test counts and reviewer verdict above apply to the earlier dashboard build;
+current cross-surface regression and fresh finish evidence are recorded separately.
+No new raster, score, live report regeneration, delivery or deployment claim is
+introduced by this presentation change.
+
+Current verification (29 October): all eight synthetic SPIN/RM browser cases passed
+on desktop/mobile, including meeting continuation and the five-stage form. Two
+stale test expectations were aligned with the already-shipped first prompt and
+required position/function field. Context/snapshot bullet captures were opened
+by the parent and finish reviewer; disposition `ship`. Root architecture, payload
+and scoring were not migrated. Physical devices/Safari remain untested.
