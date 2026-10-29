@@ -18,6 +18,11 @@ export async function verifyMobileHeroDeck(page,previewDir,capture) {
   await expect(deck).toHaveAttribute('data-active-card',String(index));
   const front=deck.locator(`[data-deck-card="${index}"]`);
   await expect(front).toHaveAttribute('data-position','0');
+  if(index===3){
+   assert.equal(await front.evaluate(el=>getComputedStyle(el).backgroundImage),'none','fourth state is an unboxed logo');
+   assert.equal(await front.evaluate(el=>getComputedStyle(el).boxShadow),'none');
+   assert.equal(await front.locator('div').first().evaluate(el=>getComputedStyle(el).display),'none','no brand-card label');
+  }
   for(const card of await deck.locator('[data-deck-card]').all()) {
    const size=await card.evaluate(el=>({w:el.clientWidth,h:el.clientHeight}));
    assert(Math.abs(size.w-size.h)<2,'mobile cards are square');
@@ -36,6 +41,7 @@ export async function verifyMobileHeroDeck(page,previewDir,capture) {
  assert.equal(new Set(backgrounds).size,4,'four distinct card tones');
  const header=await page.locator('#global-navbar nav').boundingBox();
  const deckBox=await deck.boundingBox();
+ assert(deckBox.width>280,'mobile square size increased at390px');
  assert(deckBox.y>=header.y+header.height+8,'deck clears navigation');
  assert((await hero.getByRole('heading',{level:1}).boundingBox()).y>deckBox.y+deckBox.height,'deck is above the offer copy');
  for(const button of await controls.getByRole('button').all())assert((await button.boundingBox()).height>=44,'44px controls');

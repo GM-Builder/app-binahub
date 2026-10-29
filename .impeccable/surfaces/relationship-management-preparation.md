@@ -7,6 +7,16 @@ related_targets: [src/app/admin/assessments/individual/relationship-management/p
 
 # Relationship Management — internal preparation
 
+29 October owner update: bank27SR/13SJTis the count authority; module composite
+50:50is explicitly authorized, with both method scores retained. This updates
+the prior no-composite boundary at module level only. No scenario-to-competency
+weights or bands are invented. Admin can run all40questions one at a time,
+review/edit selected answers and complete a required-all transient report.
+Source text/option credits remain private/immutable; no participant storage,
+checkout, publicRMroute or email is enabled. Error recovery preserves trial
+answers while the page stays open. Completion is also checked server-side.
+Root DESIGN.md remains architecture.
+
 Mode Read/Operate inside the existing BinaHub admin shell. Recorded 29 October
 2026 from the authorized source-review and transient-preview implementation.
 

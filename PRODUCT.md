@@ -42,11 +42,12 @@ the participant journey and daily admin operations simple.
   is not a score of zero. Do not claim empirical validation from content review.
 - Submitted reports are snapshots. Do not overwrite them when content changes
   or when a participant purchases another service.
-- Relationship Management v4 has an internal admin-only source review and
-  transient report preview (29 October 2026). The bank has27self-report and13SJT
-  items; the report still says24self-report. Missing SJT competency weights and
-  interpretation rules block public delivery and sales; PE's temporary50:50
-  display weight must not be reused for RM.
+- Relationship Management v4 has an admin-only40question trial and transient
+  report preview. The owner confirms the bank's27self-report/13SJTcount and
+  authorizes a provisional50:50combined MODULE score (29 October2026). Separate
+  method totals remain visible. This does not authorize spreading scenario
+  credits across tagged competencies: competency SJT weights and interpretation
+  remain pending; public/paid RM delivery remains disabled.
 - Consultant review, optional evaluation/export, and deletion are distinct
   purposes even when presented through one privacy entry.
 - Paid preparation is internal only (app 0.38.0/API 0.37.0 + SQL 69): draft

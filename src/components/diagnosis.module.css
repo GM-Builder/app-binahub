@@ -9,6 +9,29 @@
   color: var(--diagnosis-ink);
   caret-color: var(--diagnosis-ink);
 }
+.editorial{background:radial-gradient(ellipse at 85% 15%,#e2edfba6,transparent 44%),radial-gradient(ellipse at 20% 30%,#f7ecd175,transparent 45%),#fff}
+.editorial .ambient{display:none}
+.editorial .header{background:#ffffffb8}
+.editorial .headerInner{max-width:1144px}
+.editorial .choiceLayout{max-width:1144px;padding:48px 28px 32px}
+.choiceIntro{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:48px;align-items:center}
+.choiceArt{position:relative;height:210px}
+.choiceArt img{object-fit:contain;filter:drop-shadow(0 16px 16px #10234b12)}
+.editorial .choiceTitle{font-size:clamp(32px,3.5vw,44px);line-height:1.15;font-weight:500;max-width:24ch;margin-top:0}
+.editorial .subtitle{margin-top:16px;max-width:61ch;font-size:14px}
+.editorial .programCallout{margin-top:28px;padding:24px 28px;background:linear-gradient(110deg,#e8f0fc99,#f7ecd199);border:1px solid #ffffffc9;border-radius:16px;gap:28px}
+.editorial .programCallout>div{flex:1}
+.editorial .programCallout h2{font-size:18px;line-height:1.5}
+.editorial .programCallout p{margin-top:5px;font-size:13px}
+.editorial .primaryButton{background:#0b2c6b;border-radius:999px;font-size:13px;flex-shrink:0}
+.editorial .choiceGrid{margin-top:24px;gap:24px}
+.editorial .choiceCard{padding:28px;border-radius:16px;border-color:#dfe4ed;background:#ffffffab}
+.editorial .choiceCard h2{font-weight:600}
+.editorial .choiceCard .textLink{margin-top:9px;font-size:11px}
+@supports(backdrop-filter:blur(1px)){.editorial .choiceCard,.editorial .programCallout{backdrop-filter:blur(16px)}}
+@media(max-width:767px){.editorial .choiceLayout{padding:32px 20px 24px}.choiceIntro{grid-template-columns:minmax(0,1fr) 76px;gap:12px}.choiceArt{height:100px}.editorial .choiceTitle{font-size:28px;line-height:1.2}.editorial .subtitle{font-size:13px;max-width:none}.editorial .programCallout{display:block;padding:22px;margin-top:24px}.editorial .programCallout .primaryButton{margin-top:17px;width:100%;font-size:12px}.editorial .choiceGrid{gap:16px}.editorial .choiceCard{padding:22px}.editorial .choiceCard h2{font-size:20px}}
+@media(prefers-reduced-transparency:reduce){.editorial .choiceCard,.editorial .programCallout{backdrop-filter:none;background:#f8faff}.editorial .header{background:#fff}}
+@media(forced-colors:active){.editorial{background:Canvas}.choiceArt{display:none}.editorial .choiceCard,.editorial .programCallout{background:Canvas;border-color:CanvasText;backdrop-filter:none}.editorial .primaryButton{background:ButtonFace;color:ButtonText;border:1px solid ButtonText}}
 
 .shell ::selection { background: #dce9ff; color: #0b2c6b; }
 .shell :where(a, button, input, select, textarea, summary):focus-visible {

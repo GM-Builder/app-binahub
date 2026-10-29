@@ -1,0 +1,21 @@
+{
+  "asset": "hero-needs.webp",
+  "generator": "OpenAI built-in image_gen",
+  "mode": "generate",
+  "created": "2026-10-28",
+  "use": "Decorative 3D sculpture for needs glass card; all labels remain HTML.",
+  "sourceFile": "exec-9b5f561d-f0cc-498d-99aa-0a9fa83cd45f.png",
+  "sourceSize": {
+    "width": 1280,
+    "height": 1280
+  },
+  "output": {
+    "width": 768,
+    "height": 768,
+    "format": "webp",
+    "hasAlpha": true,
+    "bytes": 64892
+  },
+  "processing": "Proportional resize and WebP conversion only; original alpha preserved.",
+  "prompt": "Use case: stylized-concept. Production 3D illustration cutout for the RIGHT HALF of a BinaHub glass hero card. Square composition. Truly transparent background, no card or frame, no UI, NO text, letters, symbols, icons, logos or watermark. Premium abstract sculptural visual, smooth satin optical-glass surfaces with luminous ivory edges, softly frosted pale ice blue #D6E5FC, restrained navy #0B2C6B reflections, hints of champagne #F6E7C5. Soft daylight, architectural calm, gentle realistic shadows restricted to the object; no floor or colored background, no noisy texture. Gentle three-quarter view, strong simple recognizable silhouette, three-dimensional softly curved folded glass layers, not a photograph. All subject inside canvas with 8 percent breathing room. The intended style is the abstract layered blue flowing forms of a consulting company's competency card, not mountains, flags or people. Represent understanding an organization's needs and finding direction: THREE gently curving pale-blue translucent ribbon channels coming from distinct origins and converging naturally into ONE clear central path. Elegant architectural glass sculpture, simple broad flowing planes with airy openings. Unification and clarity, not a knot, compass, arrow sign or chart. Cool ice-blue dominant."
+}

@@ -7,6 +7,13 @@ related_targets: ["src/components/pe-email-result.tsx", "src/components/pe-repor
 
 # Individual diagnosis — reference extension, 26 October 2026
 
+29 October editorial extension: use the recommendation landing's white/ice/
+champagne shell and navy editorial display on onboarding. Keep the area guide
+and native form; questions, consent, encrypted drafts, autosave, submission and
+private access remain unchanged. The owner confirms combined50:50and separate
+method scores for both PE tiers; the shared PE report supports this, now with an
+explicit weight label. Payment and a paid PE attempt are not activated here.
+
 Mode: Operate for entry/answers/access; Read for the report. User confirmed the
 entire public guest journey. Visual authority: supplied BinaHub Personal
 Development Diagnosis Interface.png and the existing public diagnosis shell.

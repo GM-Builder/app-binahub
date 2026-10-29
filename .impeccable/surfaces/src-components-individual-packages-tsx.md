@@ -7,6 +7,16 @@ related_targets: ["src/components/individual-packages.module.css"]
 
 # Individual Self Diagnostic pricing · 28 October 2026
 
+## 29 October extension
+
+User requests the recommendation landing's visual standard on desktop/mobile and
+returning-participant tools inside individual, not outside on the choice page.
+Keep the pricing contract below and all paid controls locked. Add existing
+transparent competency artwork beside the introduction, then a compact returning
+section. Mobile category plans use two columns, with readable prices and touch
+targets; the free plan retains the only active start link. No commercial report,
+payment, source questions, scores or private result access changes.
+
 Scope: `/insight/individual/packages`. The user confirms direct implementation as
 an elegant pricing page using the approach of the program-recommendation landing.
 Retain the existing BinaHub logo, Jakarta, navy/gold, free journey and all five

@@ -1,0 +1,23 @@
+{
+  "asset": "hero-competencies.webp",
+  "generator": "OpenAI built-in image_gen",
+  "mode": "generate + color-only edit",
+  "created": "2026-10-28",
+  "use": "Decorative 3D sculpture for competencies glass card; all labels remain HTML.",
+  "sourceFile": "exec-e83484ea-80bc-4340-8b8d-336708a256e2.png",
+  "sourceSize": {
+    "width": 1280,
+    "height": 1280
+  },
+  "output": {
+    "width": 768,
+    "height": 768,
+    "format": "webp",
+    "hasAlpha": true,
+    "bytes": 52304
+  },
+  "processing": "Proportional resize and WebP conversion only; original alpha preserved.",
+  "prompt": "Use case: precise-object-edit. Change ONLY the color palette of the supplied three-layer flowing glass capability sculpture. Preserve its exact shape, composition, camera, proportions, texture, lighting, highlights and genuine transparent background. Replace the dominant blues with soft seafoam and pale mint-teal (#D6EEE5, #A9D7CA, #4E908C in deepest reflections). Keep luminous ivory edges, very faint warm highlights, no saturated green. The result should harmonize with a pale seafoam glass competency card and remain visually distinct from ice-blue needs and champagne-gold program illustrations. No text, no frame, no UI card, no new objects, no background. Preserve alpha transparency.",
+  "originalPrompt": "Use case: stylized-concept. Production 3D illustration cutout for the RIGHT HALF of a BinaHub glass hero card. Square composition. Truly transparent background, no card or frame, no UI, NO text, letters, symbols, icons, logos or watermark. Premium abstract sculptural visual, smooth satin optical-glass surfaces with luminous ivory edges, softly frosted pale ice blue #D6E5FC, restrained navy #0B2C6B reflections, hints of champagne #F6E7C5. Soft daylight, architectural calm, gentle realistic shadows restricted to the object; no floor or colored background, no noisy texture. Gentle three-quarter view, strong simple recognizable silhouette, three-dimensional softly curved folded glass layers, not a photograph. All subject inside canvas with 8 percent breathing room. The intended style is the abstract layered blue flowing forms of a consulting company's competency card, not mountains, flags or people. Represent growing capabilities: THREE nested gently curved blue satin-glass layers rising in parallel, like an airy folded wave with softly rounded stepped contours and clear layered depth. A refined flowing capability sculpture, similar to abstract blue folded ribbons. Distinct broad open layers, not a knotted torus, not stairs or columns. Cool ice-blue with soft blue gradients dominant.",
+  "editSource": "exec-44ff5eff-f9b6-476b-a46b-e1d285662c92.png"
+}

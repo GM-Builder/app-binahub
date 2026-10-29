@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import {ArrowRight,Check,LockKeyhole} from 'lucide-react';
 import {DiagnosisShell} from './diagnosis-shell';
+import {IndividualReturningAccess} from './individual-returning-access';
 import styles from './individual-packages.module.css';
 
 export const individualPackages=[
@@ -14,13 +16,15 @@ export function IndividualPackages({freeHref='/insight/individual'}:{freeHref?:s
  const complete=individualPackages[individualPackages.length-1];
  const categories=individualPackages.slice(0,-1);
  const money=(price:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(price);
- return <DiagnosisShell organization><div className={styles.page}><div className={styles.container}>
+ return <DiagnosisShell organization editorial><div className={styles.page}><div className={styles.container}>
   <header className={styles.intro}>
    <h1>Pilih Self Diagnostic Anda.</h1>
    <div><p>Mulai mengenali kebutuhan pengembangan diri, lalu pilih fokus yang sesuai dengan tujuan Anda.</p>
     <p className={styles.availability} id="package-availability">Paket gratis tersedia sekarang. Paket berbayar belum dapat dibeli.</p>
    </div>
+   <figure className={styles.introArt} aria-hidden="true"><Image src="/diagnosis/hero-competencies.webp" alt="" fill priority sizes="(max-width:767px) 90px, 220px"/></figure>
   </header>
+  <IndividualReturningAccess/>
 
   <div className={styles.featuredPlans}>
    <section aria-labelledby="free-diagnostic" className={styles.freePlan}>

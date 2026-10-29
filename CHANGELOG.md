@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.47.0] - 2026-10-29
+
+- Pilihan diagnosis dan paket individu mengikuti komposisi editorial navy,
+  mesh ice/champagne, pill CTA dan ilustrasi transparan yang sudah digunakan
+  di landing rekomendasi. Kartu kategori mobile memakai dua kolom.
+- Akses hasil/draf/riwayat individu berpindah ke halaman paket individu;
+  pilihan utama hanya menyimpan tautan kontekstual dalam pilihan Individu.
+- Onboarding individu tetap menjaga sidebar, pertanyaan, izin dan autosave.
+  Label ringkasan PE menjelaskan gabungan50:50; rincian metode tetap terpisah.
+- Admin RM dapat mencoba alur27self-report+13SJT, kembali, meninjau dan
+  menyelesaikan seluruh40jawaban. Laporan internal memuat dua skor modul dan
+  gabungan50:50. Bobot SJT per kompetensi, kategori dan penjualan belum aktif.
+- Tidak ada integrasi pembayaran atau pengiriman RM publik yang diaktifkan.
+
+
 ## [0.46.0] - 2026-10-29
 
 - Mengembalikan sidebar informasi individu saat pengisian/tinjauan tanpa

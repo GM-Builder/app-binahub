@@ -53,8 +53,8 @@ test('reference design preserves all five stages, nonblocking saves, navigation 
     await expect(page.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/insight?utm_source=instagram&utm_campaign=reference-test');
     await expect.poll(() => page.getByRole('img', { name: 'BinaHub', exact: true }).evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
     await expect(page.getByText(/gratis/i)).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Lanjutkan draf individu' })).toHaveAttribute('href', '/insight/individual');
-    await expect(page.getByRole('link', { name: 'Riwayat pengisian akun' })).toHaveAttribute('href', '/insight/individual/history');
+    await expect(page.getByRole('heading', { name: 'Sudah pernah melakukan diagnosis?' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Buka hasil atau draf individu' })).toHaveAttribute('href', '/insight/individual/packages#hasil-sebelumnya');
     await checkWidths(); await capture('choice');
     await page.getByRole('link', { name: 'Mulai diagnosis tim' }).focus();
     await page.keyboard.press('Tab');

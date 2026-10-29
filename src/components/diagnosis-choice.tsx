@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { ArrowRight, Building2, Check, ChevronRight, FileText, History, LoaderCircle, RefreshCw, Sparkles, UserRound } from 'lucide-react';
+import { ArrowRight, Building2, Check, LoaderCircle, RefreshCw, UserRound } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { personalEntryPath } from '@/lib/individual-assessment';
@@ -15,14 +16,16 @@ const actionClass = styles.primaryButton + ' ' + styles.fullButton;
 
 function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
   return (
-    <DiagnosisShell>
+    <DiagnosisShell editorial>
       <div className={styles.choiceLayout}>
+        <header className={styles.choiceIntro}>
         <div>
           <h1 className={styles.choiceTitle}>Temukan program pengembangan yang sesuai</h1>
           <p className={styles.subtitle}>Dapatkan rekomendasi program, petakan kebutuhan tim, atau kenali pengembangan diri melalui Self Diagnostic individu.</p>
         </div>
+        <figure className={styles.choiceArt} aria-hidden="true"><Image src="/diagnosis/hero-needs.webp" alt="" fill priority sizes="(max-width:767px) 90px, 260px"/></figure>
+        </header>
         <section className={styles.programCallout} aria-labelledby="program-recommendation-title">
-          <Sparkles size={25} strokeWidth={1.7} className="text-[#ad7415]" aria-hidden="true" />
           <div><h2 id="program-recommendation-title">Rekomendasi program untuk organisasi Anda</h2><p>Hubungkan tantangan, hasil yang diharapkan, dan pilihan program BinaHub.</p></div>
           <Link href="/discovery" className={styles.primaryButton}>Dapatkan rekomendasi program<ArrowRight size={17} aria-hidden="true" /></Link>
         </section>
@@ -35,23 +38,6 @@ function DiagnosisChoiceFrame({ children }: { children: ReactNode }) {
           <a href="https://binahub.id/id/contact" className={styles.textLink}>Inquiry / konsultasi<ArrowRight size={16} aria-hidden="true"/></a>
         </section>
 
-        <section className={styles.returning} aria-labelledby="returning-diagnosis-title">
-          <h2 id="returning-diagnosis-title">Sudah pernah melakukan diagnosis?</h2>
-          <p>Akses hasil atau lanjutkan pengisian diagnosis individu Anda.</p>
-          <div className={styles.returningPanel}>
-            <Link href="/insight/individual/result" className={styles.returningRow} aria-labelledby="individual-result-link">
-              <span className={styles.iconTile + ' ' + styles.rowIcon}><FileText size={20} aria-hidden="true" /></span>
-              <span className={styles.rowContent}><span id="individual-result-link" className={styles.rowTitle}>Lihat hasil individu</span><span className={styles.rowDescription}>Buka ringkasan hasil dan rekomendasi Anda.</span></span>
-              <ChevronRight size={19} aria-hidden="true" />
-            </Link>
-            <Link href="/insight/individual" className={styles.returningRow} aria-labelledby="individual-draft-link">
-              <span className={styles.iconTile + ' ' + styles.rowIcon}><History size={20} aria-hidden="true" /></span>
-              <span className={styles.rowContent}><span id="individual-draft-link" className={styles.rowTitle}>Lanjutkan draf individu</span><span className={styles.rowDescription}>Lanjutkan pengisian pada perangkat ini.</span></span>
-              <ChevronRight size={19} aria-hidden="true" />
-            </Link>
-          </div>
-          <div className={styles.accountHistory}>Memiliki akun BinaHub? <Link href="/insight/individual/history" className={styles.textLink}>Riwayat pengisian akun<ArrowRight size={12} aria-hidden="true" /></Link></div>
-        </section>
         <p className={styles.footnote}>Hasil diagnosis untuk refleksi dan pengembangan, bukan diagnosis klinis.</p>
       </div>
     </DiagnosisShell>
@@ -161,6 +147,7 @@ export function DiagnosisChoice() {
               </div>
             </div>
           )}
+          <Link href="/insight/individual/packages#hasil-sebelumnya" className={styles.textLink}>Buka hasil atau draf individu<ArrowRight size={14} aria-hidden="true"/></Link>
         </div>
       </article>
     </DiagnosisChoiceFrame>

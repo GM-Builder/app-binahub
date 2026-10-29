@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import styles from './diagnosis.module.css';
 
-export function DiagnosisShell({ children, organization = false }: { children: ReactNode; organization?: boolean }) {
+export function DiagnosisShell({ children, organization = false, editorial = false }: { children: ReactNode; organization?: boolean; editorial?:boolean }) {
   return (
-    <main className={styles.shell}>
+    <main className={`${styles.shell} ${editorial ? styles.editorial : ''}`}>
       <div className={styles.ambient} aria-hidden="true">
         <span className={styles.waveLeft} />
         <span className={styles.waveRight} />

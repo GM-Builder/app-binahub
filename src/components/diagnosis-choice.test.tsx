@@ -24,11 +24,8 @@ describe('diagnosis choice', () => {
     expect(screen.queryByText(/gratis/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mulai diagnosis tim' })).toHaveAttribute('href', '/insight');
     expect(await screen.findByRole('link', { name: 'Lihat paket individu' })).toHaveAttribute('href', '/insight/individual/packages');
-    const history = screen.getByRole('link', { name: 'Riwayat pengisian akun' });
-    expect(history).toHaveAttribute('href', '/insight/individual/history');
-    expect(history.closest('article')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Lihat hasil individu' })).toHaveAttribute('href', '/insight/individual/result');
-    expect(screen.getByRole('link', { name: 'Lanjutkan draf individu' })).toHaveAttribute('href', '/insight/individual');
+    expect(screen.queryByRole('heading',{name:'Sudah pernah melakukan diagnosis?'})).not.toBeInTheDocument();
+    expect(screen.getByRole('link',{name:'Buka hasil atau draf individu'}).closest('article')).toHaveAttribute('aria-labelledby','individual-diagnosis-title');
     expect(screen.getByRole('link', { name: 'Dapatkan rekomendasi program' })).toHaveAttribute('href', '/discovery');
     expect(screen.getByRole('link', { name: 'Jelajahi katalog program' })).toHaveAttribute('href', '/catalog');
     expect(screen.getByRole('link', { name: 'Inquiry / konsultasi' })).toHaveAttribute('href', 'https://binahub.id/id/contact');
@@ -57,7 +54,7 @@ describe('diagnosis choice', () => {
     expect(await screen.findByText(/Pengisian baru sedang dijeda/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Diagnosis individu belum tersedia' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Coba lagi' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Riwayat pengisian akun' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Buka hasil atau draf individu' })).toBeInTheDocument();
   });
 
   it('allows a failed read to be retried without bypassing readiness', async () => {

@@ -168,7 +168,7 @@ export function PEGuestAssessment() {
     <div className={styles.guideNote}><ShieldCheck size={20} aria-hidden="true" /><div><strong>Hasil pribadi Anda</strong><p>Tautan hasil dikirim ke email Anda. Penggunaan data dan izin tinjauan dijelaskan sebelum Anda mulai.</p></div></div>
   </aside>;
 
-  return <DiagnosisShell organization><div className={styles.layout} aria-label="Diagnosis individu">
+  return <DiagnosisShell organization editorial><div className={`${styles.layout} ${!draft ? styles.entryLayout : ''}`} aria-label="Diagnosis individu">
       {!accepted && <div className={`${styles.intro} ${draft ? styles.taskIntro : ''}`}>
         <h1>{draft ? 'Diagnosis individu' : 'Pahami kebutuhan pengembangan diri Anda.'}</h1>
         <p>{draft ? 'Isi sesuai pengalaman Anda. Jawaban disimpan di latar belakang, tanpa perlu menunggu untuk melanjutkan.' : `Kenali cara Anda mengembangkan diri, beradaptasi, dan menghadapi tekanan melalui ${definition ? questions.length : '18'} pertanyaan. Tautan untuk melihat hasil Self Diagnostic akan dikirim ke email Anda.`}</p>

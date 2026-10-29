@@ -1,19 +1,24 @@
 "use client";
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {ArrowLeft,Loader2,RefreshCw} from 'lucide-react';
 import Link from 'next/link';
 import {supabase} from '@/lib/supabase';
+import {RMQuestionTrial} from './rm-question-trial';
 
 type Definition={competencies:{code:string;name:string;definition:string}[];selfReportScale:{value:number;label:string}[];
  selfReportItems:{id:string;prompt:string}[];sjtItems:{id:string;scenario:string;question:string;options:{id:string;text:string}[]}[]};
 type Readiness={version:string;sourceLoaded:boolean;canSell:false;counts:{competencies:number;selfReport:number;sjt:number};missing:string[];reportSections:string[]};
-type Preview={notice:string;areas:{code:string;name:string;selfReport:{score:number|null;validCount:number};sjt:{score:null;status:string}}[];actionPlan:{days:number;stages:string[]}};
+type Preview={notice:string;moduleProfile?:{selfReport:number|null;sjt:number|null;combined:number|null};areas:{code:string;name:string;selfReport:{score:number|null;validCount:number};sjt:{score:null;status:string}}[];actionPlan:{days:number;stages:string[]}};
 const button='inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 text-sm font-medium text-[#0B2C6B] hover:bg-slate-50 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4';
-async function request(responses?:Record<string,number|string>){
+function ModuleScores({profile}:{profile:NonNullable<Preview['moduleProfile']>}){
+ const series=[{key:'combined',label:'Gabungan modul (50:50)',color:'#0B2C6B'},{key:'selfReport',label:'Pengalaman nyata',color:'#174c9f'},{key:'sjt',label:'Studi kasus',color:'#0f766e'}] as const;
+ return <div className="mt-6 max-w-2xl space-y-5" aria-label="Skor modul dan rincian metode">{series.map(item=>{const score=profile[item.key];return <div key={item.key}><div className="mb-2 flex justify-between gap-4 text-sm"><span>{item.label}</span><strong>{score===null?'Data belum cukup':`${score.toLocaleString('id-ID')} / 100`}</strong></div>{score===null?<div aria-hidden="true" className="h-2 rounded bg-slate-100"/>:<progress className="h-2 w-full" style={{accentColor:item.color}} max={100} value={score} aria-label={`${item.label}: ${score}`}/>}</div>;})}<p className="text-xs leading-6 text-slate-600">Ringkasan ini mencakup seluruh modul, bukan nilai studi kasus untuk masing-masing kompetensi.</p></div>;
+}
+async function request(responses?:Record<string,number|string>,complete=false){
  const {data}=await supabase.auth.getSession();if(!data.session)throw new Error('Sesi berakhir. Silakan masuk kembali.');
  const result=await fetch('/api/admin/assessments/individual/relationship-management',{method:responses?'POST':'GET',cache:'no-store',
   headers:{Authorization:`Bearer ${data.session.access_token}`,...(responses?{'Content-Type':'application/json'}:{})},
-  ...(responses?{body:JSON.stringify({responses})}:{}),signal:AbortSignal.timeout(20000)});
+  ...(responses?{body:JSON.stringify({responses,...(complete?{complete:true}:{})})}:{}),signal:AbortSignal.timeout(20000)});
  const payload=await result.json();if(!result.ok||payload.success!==true)throw new Error(payload.error||'Sumber RM belum dapat dimuat.');
  return payload;
 }
@@ -21,6 +26,9 @@ export function RMPreparation(){
  const [readiness,setReadiness]=useState<Readiness|null>(null),[definition,setDefinition]=useState<Definition|null>(null);
  const [responses,setResponses]=useState<Record<string,number|string>>({}),[report,setReport]=useState<Preview|null>(null);
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [trial,setTrial]=useState(false);
+ const reportHeading=useRef<HTMLHeadingElement>(null);
+ useEffect(()=>{if(report)reportHeading.current?.focus();},[report]);
  const load=useCallback(async()=>{try{const result=await request();setReadiness(result.readiness);setDefinition(result.definition);setError('');}catch(e){setError(e instanceof Error?e.message:'Belum dapat dimuat.');}finally{setLoading(false);}},[]);
  useEffect(()=>{let alive=true;void request().then(result=>{if(alive){setReadiness(result.readiness);setDefinition(result.definition);}}).catch(e=>{if(alive)setError(e instanceof Error?e.message:'Belum dapat dimuat.');}).finally(()=>{if(alive)setLoading(false);});return()=>{alive=false;};},[]);
  async function preview(){setBusy(true);setError('');try{setReport((await request(responses)).report);}catch(e){setError(e instanceof Error?e.message:'Belum dapat dihitung.');}finally{setBusy(false);}}
@@ -33,13 +41,17 @@ export function RMPreparation(){
    <section className="rounded-xl border border-slate-200 bg-white p-6"><h2 className="text-xl font-semibold">Kesiapan Relationship Management</h2><p className="mt-2 text-sm text-slate-600">{readiness.sourceLoaded?`${readiness.counts.competencies} kompetensi · ${readiness.counts.selfReport} soal pengalaman nyata · ${readiness.counts.sjt} studi kasus`:'Sumber privat belum dipasang.'} · {readiness.version}</p>
     <p className="mt-4 text-sm font-semibold">Paket belum dijual. Yang masih perlu diselesaikan:</p><ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-700">{readiness.missing.map(item=><li key={item}>{item}</li>)}</ul>
    </section>
-   {definition&&<><details className="rounded-xl border border-slate-200 bg-white p-6"><summary className="min-h-11 cursor-pointer font-semibold">Tinjau bank soal dan coba laporan</summary>
-    <p className="mt-2 text-sm leading-7 text-slate-600">Isi sebagian atau semua soal untuk mengecek kelengkapan. Belum ada skor studi kasus karena bobot per kompetensi belum disahkan.</p>
+   {definition&&<><div className="flex flex-wrap items-center gap-4"><button className={button} onClick={()=>setTrial(true)}>Uji alur pengisian 40 soal</button><p className="text-xs text-slate-600">27 pengalaman nyata + 13 studi kasus, sesuai urutan bank.</p></div>
+   {trial&&<RMQuestionTrial definition={definition} onClose={()=>setTrial(false)} onComplete={async answers=>{setError('');try{setReport((await request(answers,true)).report);return true;}catch(e){setError(e instanceof Error?e.message:'Uji belum dapat diselesaikan.');return false;}}}/>}
+   <details className="rounded-xl border border-slate-200 bg-white p-6"><summary className="min-h-11 cursor-pointer font-semibold">Tinjau bank soal dan coba laporan</summary>
+    <p className="mt-2 text-sm leading-7 text-slate-600">Isi sebagian atau semua soal untuk mengecek kelengkapan. Ringkasan modul dapat menampilkan kedua metode dan gabungan 50:50; nilai studi kasus per kompetensi belum tersedia.</p>
     <div className="mt-5 space-y-6">{definition.selfReportItems.map((item,index)=><fieldset key={item.id}><legend className="text-sm font-medium leading-7">{index+1}. {item.prompt}</legend><select aria-label={`Jawaban ${index+1}`} className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm" value={responses[item.id]??''} onChange={e=>{if(e.target.value)choose(item.id,Number(e.target.value));}}><option value="">Pilih jawaban</option>{definition.selfReportScale.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</select></fieldset>)}
     {definition.sjtItems.map((item,index)=><fieldset key={item.id}><legend className="text-sm font-medium leading-7">{index+28}. {item.scenario}</legend><p className="mt-2 text-sm">{item.question}</p><div className="mt-3 grid gap-2">{item.options.map(o=><label key={o.id} className="flex min-h-11 items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm leading-7"><input type="radio" className="mt-1.5" name={item.id} checked={responses[item.id]===o.id} onChange={()=>choose(item.id,o.id)}/>{o.text}</label>)}</div></fieldset>)}</div>
     <button className={`${button} mt-6`} disabled={busy} onClick={()=>void preview()}>{busy&&<Loader2 size={16} className="animate-spin"/>}Lihat pratinjau laporan</button>
    </details>
-   {report&&<section className="rounded-xl border border-slate-200 bg-white p-6" aria-label="Pratinjau laporan RM"><h2 className="text-xl font-semibold">Profil sembilan kompetensi</h2><p className="mt-3 text-sm leading-7 text-slate-600">{report.notice}</p><p className="mt-3 text-xs text-slate-600" id="rm-table-help">Pada layar kecil, geser tabel ke samping untuk melihat kedua metode.</p><div className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-4" tabIndex={0} role="region" aria-label="Nilai per kompetensi" aria-describedby="rm-table-help"><table className="w-full min-w-[560px] text-left text-sm"><thead><tr className="border-b border-slate-300"><th scope="col" className="py-3 pr-4">Kompetensi</th><th scope="col">Pengalaman nyata (0–100)</th><th scope="col">Studi kasus</th></tr></thead><tbody>{report.areas.map(a=><tr key={a.code} className="border-b border-slate-200"><th scope="row" className="py-4 pr-4 font-medium">{a.name}</th><td>{a.selfReport.score??'Data belum cukup'}</td><td>Menunggu bobot</td></tr>)}</tbody></table></div><h3 className="mt-6 font-semibold">Rencana aksi 30 hari</h3><ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">{report.actionPlan.stages.map(s=><li key={s}>{s}</li>)}</ol></section>}
+   {report&&<section className="rounded-xl border border-slate-200 bg-white p-6" aria-label="Pratinjau laporan RM"><h2 ref={reportHeading} tabIndex={-1} className="text-xl font-semibold focus:outline-none">Ringkasan hasil Relationship Management</h2><p className="mt-3 text-sm leading-7 text-slate-600">{report.notice}</p>
+    {report.moduleProfile&&<ModuleScores profile={report.moduleProfile}/>}
+    <h3 className="mt-8 text-lg font-semibold">Profil sembilan kompetensi</h3><p className="mt-3 text-xs text-slate-600" id="rm-table-help">Pada layar kecil, geser tabel ke samping untuk melihat kedua metode.</p><div className="mt-3 overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-4" tabIndex={0} role="region" aria-label="Nilai per kompetensi" aria-describedby="rm-table-help"><table className="w-full min-w-[560px] text-left text-sm"><thead><tr className="border-b border-slate-300"><th scope="col" className="py-3 pr-4">Kompetensi</th><th scope="col">Pengalaman nyata (0–100)</th><th scope="col">Studi kasus</th></tr></thead><tbody>{report.areas.map(a=><tr key={a.code} className="border-b border-slate-200"><th scope="row" className="py-4 pr-4 font-medium">{a.name}</th><td>{a.selfReport.score??'Data belum cukup'}</td><td>Menunggu bobot</td></tr>)}</tbody></table></div><h3 className="mt-6 font-semibold">Rencana aksi 30 hari</h3><ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">{report.actionPlan.stages.map(s=><li key={s}>{s}</li>)}</ol></section>}
    <section><h2 className="font-semibold">Susunan laporan dari CEO</h2><ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">{readiness.reportSections.map(s=><li key={s}>{s}</li>)}</ol></section></>}
   </>}
  </div>;

@@ -9,9 +9,22 @@
   background: linear-gradient(180deg, #f5f8ff 0, #fff 440px);
   color: var(--pricing-ink);
 }
+.introArt{position:relative;height:170px;grid-column:2;grid-row:1/3}
+.introArt img{object-fit:contain;object-position:center right;filter:drop-shadow(0 16px 16px #10234b12)}
+.intro{position:relative}
+.intro>div{grid-column:1}
+.returning{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px 36px;margin-top:32px;padding-block:20px;border-block:1px solid var(--pricing-line)}
+.returning h2{font-size:16px;font-weight:600;line-height:1.5;letter-spacing:-.02em}
+.returning p{margin-top:6px;font-size:12px;line-height:1.7;color:var(--pricing-text)}
+.returningActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:center}
+.returningActions>a{display:flex;min-height:48px;align-items:center;gap:9px;font-size:12px;font-weight:500;line-height:1.5}
+.returningActions>a>svg{flex-shrink:0}
+.returningActions>a:hover span{text-decoration:underline;text-underline-offset:4px}
+.returning .accountHistory{grid-column:1/-1;margin:0;font-size:11px}
+.accountHistory a{text-decoration:underline;text-underline-offset:4px;display:inline-flex;align-items:center;min-height:36px}
 .page ::selection { background: var(--pricing-champagne); color: var(--pricing-ink); }
 .container { max-width: 1144px; margin-inline: auto; padding: 56px 28px 28px; }
-.intro { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 72px; }
+.intro { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 16px 56px; }
 .intro h1 { max-width: 17ch; font-size: 42px; line-height: 1.15; letter-spacing: -.035em; font-weight: 500; text-wrap: balance; }
 .intro p { max-width: 50ch; font-size: 14px; line-height: 1.8; color: var(--pricing-text); }
 .intro .availability { margin-top: 14px; font-size: 12px; }
@@ -56,7 +69,7 @@
 .footer a { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; font-weight: 500; color: var(--pricing-ink); text-decoration: underline; text-underline-offset: 4px; }
 .page :is(a, button):focus-visible { outline: 3px solid #2f5eab; outline-offset: 5px; }
 @media (min-width: 768px) and (max-width: 1023px) {
-  .intro { gap: 40px; }
+  .intro { gap: 16px 40px; }
   .intro h1 { font-size: 36px; }
   .freePlan, .completePlan { padding: 28px; }
   .categoryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -64,7 +77,10 @@
 }
 @media (max-width: 767px) {
   .container { padding: 36px 20px 20px; }
-  .intro, .featuredPlans { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .intro {grid-template-columns:minmax(0,1fr) 76px;gap:12px}
+  .introArt{height:100px;grid-row:1}
+  .intro>div{grid-column:1/-1}
+  .featuredPlans { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .intro h1 { max-width: 19ch; font-size: 32px; }
   .intro p { font-size: 13px; }
   .intro .availability { margin-top: 10px; }
@@ -75,12 +91,17 @@
   .categoryIntro { display: block; }
   .categoryIntro h2 { font-size: 23px; }
   .categoryIntro p { margin-top: 10px; }
-  .categoryGrid { grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 20px; }
-  .categoryPlan { padding: 24px; }
-  .categoryPlan h3 { min-height: 0; max-width: none; }
-  .categoryPrice { margin-top: 18px; }
+  .categoryGrid { grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:20px }
+  .categoryPlan { padding:18px 14px }
+  .categoryPlan h3 { min-height:72px;max-width:none;font-size:14px }
+  .categoryPrice {margin-top:14px;font-size:23px}
   .categoryPlan .locked { margin-top: 18px; }
   .categories { margin-top: 36px; }
   .footer { margin-top: 32px; }
+  .returning{grid-template-columns:minmax(0,1fr);gap:10px;margin-top:24px;padding-block:18px}
+  .returningActions{gap:12px}
+  .returningActions>a{font-size:11px;flex-wrap:wrap;gap:6px}
+  .returningActions>a>svg:last-child{display:none}
+  .completeAreas{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
 }
 @media (prefers-reduced-motion: reduce) { .primary { transition: none; } }

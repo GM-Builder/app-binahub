@@ -20,6 +20,9 @@ describe('locked individual packages',()=>{
    expect(button).toHaveAttribute('aria-describedby','package-availability');
   }
   expect(screen.getAllByRole('button')).toHaveLength(5);
+  expect(screen.getByRole('heading',{name:'Sudah pernah melakukan diagnosis?'})).toBeVisible();
+  expect(screen.getByRole('link',{name:'Lihat hasil individu'})).toHaveAttribute('href','/insight/individual/result');
+  expect(screen.getByRole('link',{name:'Lanjutkan draf individu'})).toHaveAttribute('href','/insight/individual');
   expect(screen.getByText('Paket gratis tersedia sekarang. Paket berbayar belum dapat dibeli.')).toBeVisible();
   expect(screen.getByRole('link',{name:'Mulai Self Diagnostic gratis'})).toHaveAttribute('href','/insight/individual');
  });

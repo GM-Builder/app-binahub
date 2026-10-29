@@ -14,7 +14,7 @@ test('balanced responsive choices retain navigation and keyboard access', async 
   const individual = page.getByRole('link', { name: 'Mulai diagnosis individu' });
   await expect(team).toHaveAttribute('href', '/en/insight?lang=en&utm_source=instagram&utm_campaign=ui-test');
   await expect(individual).toHaveAttribute('href', '/insight/individual?source=instagram');
-  await expect(page.getByRole('link', { name: 'Riwayat pengisian akun' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Buka hasil atau draf individu' })).toBeVisible();
   await expect(page.getByText(/gratis/i)).toHaveCount(0);
 
   const widths = info.project.name === 'chromium' ? [1440, 768] : [390, 320];

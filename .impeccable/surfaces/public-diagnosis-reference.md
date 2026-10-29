@@ -7,6 +7,23 @@ related_targets: ["src/components/diagnosis-shell.tsx", "src/components/diagnosi
 
 # Public diagnosis — supplied-reference refresh, 25 October 2026
 
+## 29 October editorial extension
+
+THESIS: Match the recommendation landing's calm editorial offer without changing
+the available journeys. OWN-WORLD: Jakarta/navy, white/ice/champagne mesh, native
+copy and the existing transparent needs sculpture. STORY: Choose recommendations,
+team diagnosis or the individual package journey. FIRST VIEWPORT: Left heading
+and lead beside decorative art, recommendation callout and two restrained choice
+surfaces. Mobile uses a small side illustration and concise stacked choices.
+FORM: User-pinned code-led local extension; seed: none (brief-pinned).
+Returning individual result/draft/history access moves to the individual package
+page, with a contextual entry link inside the individual choice only.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+
+Current extension supersedes old returning-participant placement. Preserve
+availability/retry, campaign attribution, destination paths and consent meaning.
+Root DESIGN.md remains architecture. The discovery form is not restyled.
+
 Mode: Operate. Audience: individual participants and organizational contacts on
 desktop and phone. The user confirmed the supplied three screenshots as the
 design direction. Preserve routes, attribution, availability gates, CEO questions,

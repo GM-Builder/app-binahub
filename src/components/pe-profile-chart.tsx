@@ -5,7 +5,7 @@ import { peCombinedScore } from '@/lib/pe-combined-score';
 export const formatPEScore = (value: number | null) => value === null ? '—'
   : value.toLocaleString('id-ID', { maximumFractionDigits: 2 });
 
-/** Two separate score series, not a composite or a mastery percentage. */
+/** Existing method evidence plus owner-approved 50:50 display; not a mastery percentage. */
 export function PEProfileChart({ areas,combined=false }: { areas: PEReport['areas'];combined?:boolean }) {
   const id = useId();
   const series = [
@@ -15,7 +15,7 @@ export function PEProfileChart({ areas,combined=false }: { areas: PEReport['area
   return <figure aria-labelledby={`${id}-title`} aria-describedby={`${id}-help`}>
     <figcaption id={`${id}-title`} className="sr-only">Grafik profil per area</figcaption>
     <div className="mb-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-700">
-      {combined?<span>Skor gabungan</span>:series.map(item => <span key={item.key} className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />{item.name}</span>)}
+      {combined?<span>Skor gabungan · pengalaman nyata 50% dan studi kasus 50%</span>:series.map(item => <span key={item.key} className="inline-flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.color }} />{item.name}</span>)}
     </div>
     {areas.length === 0 ? <p className="py-4 text-sm leading-6 text-slate-600">Belum ada profil area yang dapat ditampilkan.</p>
       : <div className="space-y-6">{areas.map(area => <div key={area.code}>

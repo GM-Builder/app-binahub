@@ -1,4 +1,12 @@
 .layout { max-width: 1024px; margin: 0 auto; padding: 32px 28px 24px; }
+.entryLayout{max-width:1144px;padding-top:48px}
+.entryLayout .intro{margin:0 0 32px}
+.entryLayout .intro h1{max-width:24ch;font-size:40px;line-height:1.2;font-weight:500;letter-spacing:-.03em}
+.entryLayout .intro p{max-width:70ch;margin-top:16px}
+.entryLayout .workspace{grid-template-columns:264px minmax(0,1fr);gap:24px}
+.entryLayout .guide{border-radius:16px;background:#ffffffa3;border-color:#dfe4ed}
+.entryLayout .card{border:1px solid #dfe4ed;border-radius:16px;box-shadow:none;background:#ffffffd9}
+@media(max-width:767px){.entryLayout{padding-top:32px}.entryLayout .intro{margin-bottom:24px}.entryLayout .intro h1{font-size:30px}.entryLayout .workspace{grid-template-columns:minmax(0,1fr);gap:16px}}
 .intro { margin: 0 16px 24px; }
 .intro h1 { font-size: 32px; line-height: 1.35; font-weight: 700; letter-spacing: -.035em; text-wrap: balance; }
 .intro p { max-width: 76ch; margin-top: 8px; font-size: 14px; line-height: 1.8; color: #516783; }
