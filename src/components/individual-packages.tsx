@@ -25,6 +25,7 @@ export function IndividualPackages({freeHref='/insight/individual'}:{freeHref?:s
    <figure className={styles.introArt} aria-hidden="true"><Image src="/diagnosis/hero-competencies.webp" alt="" fill priority sizes="(max-width:767px) 90px, 220px"/></figure>
   </header>
   <IndividualReturningAccess/>
+  <section className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#dce4ef] bg-white p-5" aria-labelledby="peta-individual-entry"><div><h2 id="peta-individual-entry" className="text-lg font-semibold text-[#0B2C6B]">PETA — Pemetaan Tabiat</h2><p className="mt-2 text-sm leading-6 text-[#405779]">Kenali preferensi perilaku kerja melalui 24 situasi. Terpisah dari paket kompetensi; tersedia melalui undangan.</p></div><Link href="/peta" className={styles.secondary}>Pelajari PETA<ArrowRight size={16} aria-hidden="true"/></Link></section>
 
   <div className={styles.featuredPlans}>
    <section aria-labelledby="free-diagnostic" className={styles.freePlan}>

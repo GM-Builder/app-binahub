@@ -1,0 +1,10 @@
+import {createServer} from 'vite';
+import {createRequire} from 'node:module';
+import {spawn} from 'node:child_process';
+import path from 'node:path';
+const require=createRequire(import.meta.url);
+const server=await createServer({configFile:path.resolve('scripts/assessment-preview/vite.config.ts'),server:{host:'127.0.0.1',port:0,strictPort:true}});
+try{await server.listen();const address=server.httpServer.address();if(!address||typeof address==='string')throw Error('Loopback unavailable');
+ const runner=spawn(process.execPath,[require.resolve('@playwright/test/cli'),'test','e2e/peta.spec.ts','--workers=1','--reporter=line'],{stdio:'inherit',windowsHide:true,env:{...process.env,PLAYWRIGHT_BASE_URL:'http://127.0.0.1:'+address.port,PLAYWRIGHT_REUSE_SERVER:'true',PLAYWRIGHT_PETA_PREVIEW:'1'}});
+ process.exitCode=await new Promise((resolve,reject)=>{runner.once('exit',code=>resolve(code??1));runner.once('error',reject);});
+}finally{await server.close();}

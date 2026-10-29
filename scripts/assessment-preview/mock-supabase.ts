@@ -1,1 +1,1 @@
-export const supabase = { auth: { getSession: async () => ({ data: { session: new URLSearchParams(location.search).has('rm-review')?{access_token:'synthetic-preview-not-a-credential'}:null } }) } };
+export const supabase = { auth: { getSession: async () => ({ data: { session: ['rm-review','peta-admin'].some(mode=>new URLSearchParams(location.search).has(mode))?{access_token:'synthetic-preview-not-a-credential'}:null } }) } };

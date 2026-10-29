@@ -50,6 +50,13 @@ the participant journey and daily admin operations simple.
   remain pending; public/paid RM delivery remains disabled.
 - Consultant review, optional evaluation/export, and deletion are distinct
   purposes even when presented through one privacy entry.
+- PETA is a separate invitation-only behavioral-preference pilot at `/peta`,
+  managed by workspace owners at `/admin/peta`. Participant results are private;
+  an assigned consultant needs separate participant permission. The owner sets
+  storage to one year from initial consent (29 October 2026). It uses private
+  immutable source, deterministic MOST/LEAST/NET counts and no AI/PE50:50 formula.
+  Production source/key, retention worker, privacy/content rights and security
+  gates are required before real invitations; see `docs/peta-implementation.md`.
 - Paid preparation is internal only (app 0.38.0/API 0.37.0 + SQL 69): draft
   configuration and a transaction reader, not an activated payment journey.
   Gateway/merchant integration, scoped passwordless customer identity, checkout,

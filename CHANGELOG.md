@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.48.0] - 2026-10-29
+
+- Modul PETA terpisah: undangan privat, persetujuan, latihan,24situasi,
+  autosave bertahap, tinjauan dan hasil pribadi dengan dua grafik serta tabel.
+- Admin mengelola ruang miliknya, undangan, progres, versi instrumen/persetujuan,
+  log akses, pemulihan terverifikasi, pencabutan dan penghapusan PETA.
+- Hasil konsultan hanya dengan izin terpisah; retensi satu tahun sejak awal sesi.
+  Tidak mengubah soal/skor PE/RM, membuka pembayaran atau memakai AI.
+- Akses informasi PETA tersedia terpisah pada halaman paket individu. Sumber
+  privat, SQL76/76B, runtime key dan worker mengikuti panduan aktivasi API.
+- Pengujian komponen/browser sintetis desktop/mobile dan build lokal lulus;
+  deployment, sumber produksi, privasi/lisensi dan review keamanan tetap gerbang
+  sebelum undangan nyata. Pilot bukan klaim validitas psikometrik.
+
 ## [0.47.0] - 2026-10-29
 
 - Pilihan diagnosis dan paket individu mengikuti komposisi editorial navy,
