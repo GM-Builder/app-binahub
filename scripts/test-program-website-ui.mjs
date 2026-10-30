@@ -198,7 +198,7 @@ try{
   if(process.env.PROGRAM_UI_NO_CAPTURE!=='1')await reportFrame.screenshot({path:previewDir+'/program-glass-report-'+device+'.png',animations:'disabled'});
   const processSection=page.locator('#program-process');
   const processCards=processSection.locator('[data-process-card]');
-  const openingArt=page.locator('[data-program-opening] figure img');
+  const openingArt=page.locator('[data-program-opening] [data-tone] img').first();
   await expect.poll(()=>openingArt.evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
   const processRail=processSection.getByRole('list');
   if(device==='mobile'){
