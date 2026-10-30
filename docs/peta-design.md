@@ -88,10 +88,11 @@ Current visual evidence is the eight synthetic program captures in
 `.impeccable/review/`, named
 `peta-program-{consent,privacy,question,admin}-{desktop,mobile}.png`. They cover
 the instructions, open privacy disclosure, question state, and program setup/QR.
-The twelve earlier captures named
-`peta-{welcome,consent,question,review,result,admin}-{desktop,mobile}.png` remain
-historical evidence for the original pilot and unchanged review/report patterns;
-their consent/admin screens do not describe the current program entry.
+The report captures `peta-result-desktop.png` and `peta-result-mobile.png` were
+refreshed on 30 October 2026 after the requested report-copy removal. Other
+original-pilot captures named
+`peta-{welcome,consent,question,review,admin}-{desktop,mobile}.png` remain historical
+evidence; their consent/admin screens do not describe the current program entry.
 Participant captures show the inherited shell. Admin captures show isolated
 preview content; actual `AdminShell` inheritance is evidenced by the route source.
 The finish review passed after the privacy disclosure gained a visible chevron.
@@ -219,8 +220,12 @@ The review shows all 24 situations, completion state, and an explicit confirmati
 before final submission. It reveals no provisional dimension or type. The report
 opens with the pilot limitation, preserves ties in prose, and shows fixed axes
 of (−24 to +24) for NET and (0 to 24) for MOST/LEAST. Both charts are named SVG
-figures and point to the same accessible table. Reflection prompts and the actual
-retention date follow the counts.
+figures and point to the same accessible table. Reflection prompts follow the
+counts. The report's storage-until/contact sentence was explicitly removed on
+30 October 2026 from
+the shared participant/admin report. The pre-start privacy disclosure, one-year
+retention policy, separate consultant permission, and journey help footer remain
+unchanged. This copy change adds no group reporting or wider result access.
 
 **The Exact Zero Rule.** A zero stays empty on the axis and readable as a number;
 never add a minimum-width bar to make it visible.

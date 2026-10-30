@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.49.1] - 2026-10-30
+
+- Hapus kalimat batas simpan/kontak dari komponen laporan PETA sesuai permintaan.
+  Grafik, angka, refleksi, izin peninjauan dan kebijakan retensi tetap sama;
+  penghapusan tampilan bukan penghapusan data atau perubahan masa simpan.
+- Catat status akses admin saat ini serta rancangan fasilitator/laporan kelompok
+  sebagai rencana, bukan fitur yang telah aktif. Tidak ada SQL/env/API baru.
+
 ## [0.49.0] - 2026-10-30
 
 - PETA menjadi modul program: gunakan QR/kode program, pendaftaran dan kode

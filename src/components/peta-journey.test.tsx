@@ -7,6 +7,13 @@ const response=(body:unknown,status=200)=>Promise.resolve(new Response(JSON.stri
 beforeEach(()=>{window.history.replaceState(null,'','/peta');vi.stubGlobal('fetch',vi.fn());});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 describe('PETA participant UX',()=>{
+ it.each([1,2] as const)('omits the storage/contact footer from reports at heading level %s without changing the report',headingLevel=>{
+  const before=JSON.stringify(petaSyntheticReport);render(<PetaReport report={petaSyntheticReport} headingLevel={headingLevel}/>);
+  expect(screen.queryByText(/Hasil tersimpan sampai|Untuk permintaan terkait data atau pendampingan/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('link',{name:'admin@binahub.id'})).not.toBeInTheDocument();
+  expect(screen.getByRole('heading',{name:'Bawa hasil ini ke situasi nyata'})).toBeVisible();expect(screen.getAllByRole('img')).toHaveLength(2);
+  expect(JSON.stringify(petaSyntheticReport)).toBe(before);
+ });
  it('offers no uninvited start and no participant login form',async()=>{vi.mocked(fetch).mockImplementation(()=>response({success:false,code:'PETA_SESSION_REQUIRED',error:'Sesi berakhir'},401));render(<PetaJourney/>);expect(await screen.findByRole('heading',{name:'PETA tersedia melalui undangan.'})).toBeVisible();expect(screen.queryByRole('button',{name:'Mulai PETA'})).not.toBeInTheDocument();expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();});
  it('removes invitation from address, requires consent and never preselects consultant access',async()=>{
   window.history.replaceState(null,'','/peta#invite='+'a'.repeat(64));vi.mocked(fetch).mockImplementation(()=>response({success:true,invitation:{workspaceName:'Synthetic',privacyReference:'Synthetic policy',retentionMonths:12,consultantAccess:true,consentVersion:'peta-privacy-v1',purpose:'start',expiresAt:'2026-12-01T00:00:00Z'}}));render(<PetaJourney/>);await screen.findByRole('heading',{name:'Sebelum memulai'});expect(window.location.hash).toBe('');expect(screen.getByRole('button',{name:/Saya setuju dan lanjutkan/})).toBeDisabled();expect(screen.getAllByRole('checkbox').every(box=>!(box as HTMLInputElement).checked)).toBe(true);expect(document.body.textContent).not.toMatch(/Synthetic policy|peta-privacy-v1|Acuan pemberitahuan/);expect(screen.getByText('Penggunaan data dan hasil Anda')).toBeVisible();fireEvent.click(screen.getByLabelText(/Saya telah membaca/));expect(screen.getByRole('button',{name:/Saya setuju dan lanjutkan/})).toBeEnabled();

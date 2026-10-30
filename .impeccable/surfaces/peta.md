@@ -6,6 +6,20 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Report copy revision · 30 October 2026
+
+User explicitly requests removal of the report's storage-until/contact sentence.
+Keep both charts, exact figures, reflection questions, retained consent disclosure,
+one-year retention and consultant permissions unchanged. This is a code-led Read
+surface deletion, not a new design or authority to build group reporting. Existing
+report composition remains the reference; verify participant and admin variants.
+
+Implemented: the shared participant/admin report no longer renders that sentence.
+Both charts, exact counts and reflection prompts remain. Consent/privacy copy,
+one-year retention, consultant permissions and the journey help footer are unchanged.
+Current report evidence: `.impeccable/review/peta-result-{desktop,mobile}.png`,
+refreshed on 30 October 2026; the scoped detector reports no findings.
+
 ## Current direction contract · 30 October 2026
 
 THESIS: PETA belongs to an existing program; participants enter through its
