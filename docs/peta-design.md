@@ -192,6 +192,16 @@ placeholders use the same secondary text color at full opacity.
 
 ### Consent and situations
 
+Review copy (30 October 2026, app0.49.2) uses “tim pendamping yang ditugaskan”
+for participants and “admin pendamping” in the dashboard. Permission remains
+optional and unchecked. The dashboard action is “Lihat hasil peserta”, rendered
+under the unchanged result-permission gate; unavailable results distinguish
+missing participant permission from another assigned reviewer. This wording
+adds no facilitator access or changes to prior consent snapshots. No visual
+tokens, layout or interaction mechanics changed. Four refreshed privacy/admin
+desktop/mobile captures and an inline fallback review support this narrow copy
+change; the separate reviewer was unavailable due to a service quota.
+
 The pre-start panel leads with four numbered instructions and a short,
 participant-facing disclaimer. Internal privacy references and version IDs are
 not rendered in that panel. A native `details` disclosure, “Penggunaan data dan

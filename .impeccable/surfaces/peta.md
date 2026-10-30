@@ -6,6 +6,22 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Review wording revision · 30 October 2026
+
+User confirms review remains optional and only the assigned admin (currently the
+CEO as program companion) can review. Use the approved “tim pendamping” wording
+on participant screens and “admin pendamping” in the dashboard; label the action
+“Lihat hasil peserta”. Keep initial checkboxes unchecked, existing ownership/
+permission gates and legacy snapshots intact; no facilitator permission is added.
+Distinguish absent participant permission from a different assigned reviewer.
+This is a code-led Operate copy refinement, not a new consent policy or redesign.
+
+Implemented and verified with18unit tests,10synthetic browser cases and build.
+The four privacy/admin desktop/mobile captures were opened and remain readable;
+the mechanical detector found no findings. A separate review hit its service
+quota, so the scoped fallback review was recorded inline; no independent review
+or production authorization claim is made. Existing design tokens remain intact.
+
 ## Report copy revision · 30 October 2026
 
 User explicitly requests removal of the report's storage-until/contact sentence.

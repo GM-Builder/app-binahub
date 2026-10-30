@@ -8,7 +8,7 @@ permission change, group analysis, report builder or PDF export.
 
 - Open Admin → PETA (`/admin/peta`), choose the configured program and inspect
   participant progress. The list is owner-scoped and bounded to100recent sessions.
-- A completed participant result offers **Buka hasil berizin** only when that
+- A completed participant result offers **Lihat hasil peserta** only when that
   participant granted separate review permission and the current account is the
   snapshotted reviewing consultant. Creating/selecting a program does not itself
   grant private-result access. Changing setup does not retroactively rewrite it.

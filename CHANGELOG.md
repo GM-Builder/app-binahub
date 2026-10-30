@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.49.2] - 2026-10-30
+
+- Perjelas izin peninjauan PETA sebagai pendampingan program oleh admin yang
+  ditetapkan; izin tetap opsional dan tidak dicentang otomatis.
+- Ganti “Buka hasil berizin” menjadi “Lihat hasil peserta”; bedakan keterangan
+  peserta belum memberi izin dan akun admin yang bukan peninjau yang ditetapkan.
+- Tidak membuka akses fasilitator/admin lain atau mengubah izin lama, aturan API,
+  perhitungan, masa simpan, SQL maupun environment variable.
+
 ## [0.49.1] - 2026-10-30
 
 - Hapus kalimat batas simpan/kontak dari komponen laporan PETA sesuai permintaan.
