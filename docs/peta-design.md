@@ -61,6 +61,47 @@ components:
 
 ## Overview
 
+### Current admin workspace · v0.50.0
+
+The current `/admin/peta` content supersedes the earlier admin composition below.
+Participant/report layouts outside administration remain unchanged. One program
+picker scopes three task views: **Peserta**, **Akses peserta**, **Pengaturan**.
+Participant management opens first. The sidebar label is simply PETA, with its
+full meaning retained in the page title and help description.
+
+- Peserta: search name/code, filter status, review completion and result access.
+  A desktop list has three aligned columns; mobile keeps identity and progress
+  side by side and places available actions beneath. Summary counts reflect the
+  loaded sessions (API limit 100), not every registered program participant.
+- Hasil: a separate in-workspace view names the participant, reuses PetaReport,
+  and provides Back without clearing program/search/status. The existing server
+  permission flag controls whether the result action is offered. Errors keep
+  the list/filter context. Declined permission and another assigned reviewer are
+  explained separately, without changing optional consent.
+- Akses peserta: existing ProgramShareCard QR/link/code, with scoped min-width
+  fixes at small widths. Requires selected program and ready configuration.
+  Program activation warnings remain owned by ProgramShareCard.
+- Pengaturan: privacy reference, existing rights/pilot confirmation, assignment
+  as admin companion, plus collapsed audit/old invitations/storage detail.
+  Edited settings require confirmation before being discarded on program change.
+  Session revoke and erase are beneath Kelola peserta, retaining verification,
+  confirmation and participant-code confirmation for permanent deletion.
+
+The local admin module is `src/components/peta-admin.module.css`: inherited navy,
+white, ice and status green; fixed 20px titles, 13–14px UI copy, 12px metadata;
+8px control corners, 14px content-panel corners and 44px actions. It is deliberately
+not a marketing/glass surface. No global token or report-style change is made.
+The existing share component is the sole card on its access surface; it is not
+wrapped in another content card. No new imagery or animation is needed.
+An inactive/draft program is not described as ready for participants even if
+its PETA module is configured; the existing QR component retains its activation
+warning and program lifecycle behavior.
+
+Current admin evidence: eight `peta-workspace-*` desktop/mobile captures in
+`.impeccable/review/`. A scoped inline review and mechanical scan are complete;
+these isolated content previews do not claim a real admin login, deployed API
+authorization test, security certification or psychometric validation.
+
 This is a record of the implemented PETA surface, updated on 30 October 2026.
 It applies to `/client/program/peta`, the PETA entry in `/client/program`,
 `/peta`, `/peta/mulai`, `/peta/hasil`, and the content of `/admin/peta`.

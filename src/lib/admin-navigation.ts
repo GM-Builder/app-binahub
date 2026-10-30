@@ -82,7 +82,7 @@ export const ADMIN_NAVIGATION: AdminNavigationGroup[] = [
       { href: "/admin/programs/tests", label: "Form Program", shortLabel: "Form", description: "Pre-test, Post-test, BinaInsight, dan statistik respons.", icon: FileQuestion },
       { href: "/admin/lep", label: "Evaluasi Program", shortLabel: "LEP", description: "Form evaluasi dan hasil program.", icon: BookOpenCheck },
       { href: "/admin/tbos", label: "T-BOS", shortLabel: "T-BOS", description: "Observasi perilaku tim.", icon: Trophy },
-      { href: "/admin/peta", label: "PETA — Pemetaan Tabiat", shortLabel: "PETA", description: "Modul program, QR akses peserta, dan hasil pribadi berizin.", icon: ClipboardCheck },
+      { href: "/admin/peta", label: "PETA", shortLabel: "PETA", description: "Pemetaan Tabiat: peserta, QR program, dan hasil sesuai izin peninjauan.", icon: ClipboardCheck },
     ],
   },
   {

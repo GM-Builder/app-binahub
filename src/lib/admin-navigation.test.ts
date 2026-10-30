@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { ADMIN_NAV_ITEMS, findAdminNavigation } from "./admin-navigation";
 
 describe("admin navigation", () => {
+  it("keeps PETA identifiable without a truncated sidebar label or ambiguous permission wording", () => {
+    const peta = findAdminNavigation("/admin/peta").item;
+    expect(peta.label).toBe("PETA");
+    expect(peta.description).toContain("Pemetaan Tabiat");
+    expect(peta.description).not.toContain("berizin");
+  });
   it("memiliki URL kanonis yang unik", () => {
     const hrefs = ADMIN_NAV_ITEMS.map((item) => item.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);

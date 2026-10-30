@@ -171,6 +171,12 @@ const HELP_TIPS: Record<string, string[]> = {
     "Tab mengubah sudut analisis, sedangkan PDF Grup dan Data CSV mengunduh hasil pada konteks yang sedang dipilih.",
     "Tambah Tim dan Tugaskan Observer menyiapkan struktur pelaksanaan sebelum observasi dimulai.",
   ],
+  "/admin/peta": [
+    "Pilih program di bagian atas. Bagian Peserta menampilkan pengisian yang sudah dimulai, bukan seluruh peserta terdaftar.",
+    "Buka Pengaturan untuk menyiapkan PETA, lalu Akses peserta untuk membagikan QR atau tautan program yang sama.",
+    "Lihat hasil peserta hanya tersedia bagi admin pendamping sesuai izin peserta. Kembali ke daftar mempertahankan pencarian dan filter Anda.",
+    "Kelola peserta memuat bantuan akses, pencabutan akses dan penghapusan data. Tindakan berisiko tetap memerlukan konfirmasi.",
+  ],
 };
 
 export function HelpSidebar({ currentPath }: { currentPath: string }) {

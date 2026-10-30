@@ -6,6 +6,37 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Admin workspace revision · 30 October 2026 · v0.50.0
+
+Operate mode: owner requests friction reduction in existing PETA administration,
+not a new instrument, consent policy, public journey or report format. Preserve
+the navy/Jakarta admin shell and API contracts. One program picker scopes the
+participants, QR and settings; participant management is the default. A lone
+program is selected automatically; an explicit valid program_id takes precedence.
+Use three native button views: Peserta, Akses peserta, Pengaturan. The participant
+list uses a three-column desktop layout and a two-column identity/progress mobile
+layout with actions below. Search/status filters are local to the loaded records.
+Counts explicitly describe at most 100 loaded submissions, not all enrolled people.
+The server's canReadResult remains authoritative; false never offers a result
+button. Results open in a named participant view, and Back restores list focus
+and its retained program/search/status. Risky actions sit inside a native details
+disclosure with existing confirmations. Legacy pilot and audit remain in settings.
+QR uses ProgramShareCard without changing its behavior, with min-width fixes scoped
+to this workspace. No new raster, palette, motion, SQL or env is introduced.
+
+Source and finish review: 31 scoped unit tests (including navigation), 12 desktop/mobile synthetic browser
+cases, ESLint, TypeScript and a successful Next production build. Eight captures
+`peta-workspace-{participants,access,settings,result}-{desktop,mobile}.png` were
+inspected in a batched pass; QR overflow was fixed and the confirmation pass passed
+at 320/390/768/1024px. The scoped detector reported no findings. This is a local
+inline finish review, not an independent pentest or proof of production access.
+The shared brand font is now self-hosted under the unchanged CSP; two additional
+real Next build loopback checks render synthetic reports and load the font with
+no external requests, page errors or CSP violations. Admin shell guide/navigation
+copy is aligned to the new workflow; other admin surfaces remain unchanged.
+Final functional guards distinguish a configured PETA module from an inactive
+program and confirm before discarding edited settings on a program change.
+
 ## Review wording revision · 30 October 2026
 
 User confirms review remains optional and only the assigned admin (currently the

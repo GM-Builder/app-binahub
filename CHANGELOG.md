@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.50.0] - 2026-10-30
+
+- Rapikan admin PETA menjadi Peserta, Akses peserta dan Pengaturan dengan satu
+  pilihan program. Daftar peserta menjadi tampilan utama, dilengkapi pencarian,
+  filter status, ringkasan pengisian dan penjelasan izin yang jelas.
+- Buka hasil pada tampilan khusus dengan identitas peserta; tombol kembali
+  mempertahankan pilihan program, pencarian dan filter. Tindakan cabut akses/
+  hapus data disimpan dalam Kelola peserta dan tetap memerlukan konfirmasi.
+- QR memakai komponen program yang sama; pengaturan dan riwayat pilot lama
+  tetap tersedia. Pengisian, perhitungan, izin, API, SQL dan env tidak diubah.
+- Ganti import font Google eksternal yang diblokir CSP dengan aset Plus Jakarta
+  Sans lokal beserta lisensinya. Font tetap sama; style-src/font-src tidak dibuka
+  ke Google atau sumber lain. Tidak mengubah hasil, izin, API, SQL atau env.
+- Tambah regresi sumber font/CSP dan pemeriksaan browser pada build produksi
+  untuk font same-origin, request eksternal dan laporan PETA sintetis.
+
 ## [0.49.2] - 2026-10-30
 
 - Perjelas izin peninjauan PETA sebagai pendampingan program oleh admin yang
