@@ -2,6 +2,49 @@ import {test,expect} from '@playwright/test';
 import {makePetaSession,petaSyntheticReport} from '../src/test/fixtures/peta';
 test.skip(process.env.PLAYWRIGHT_PETA_PREVIEW!=='1','Synthetic loopback only');
 const ws='a3115319-1922-471e-bce7-8239ac25e0c0';
+
+test('program entry uses participant auth, private consent details, immediate Next and finite motion',async({page},info)=>{
+ const phone=info.project.name.includes('mobile'),device=phone?'mobile':'desktop';await page.setViewportSize({width:phone?390:1440,height:phone?844:1000});
+ const s=makePetaSession();s.answers[s.blocks[0].id]={most:'A',least:'B'};
+ let resume=false,finish:()=>void=()=>{};const delayed=new Promise<void>(r=>{finish=r;});
+ await page.route('**/api/**',async route=>{
+  const req=route.request(),path=new URL(req.url()).pathname;
+  expect(req.headers()['authorization']).toBe('Bearer synthetic-preview-not-a-credential');
+  if(path.endsWith('/program'))return route.fulfill({json:{success:true,hasSession:resume,invitation:{workspaceName:'Program sintetis',privacyReference:'INTERNAL_REFERENCE_NEVER_RENDER',retentionMonths:12,consultantAccess:true,consentVersion:'peta-privacy-v1',purpose:'start',expiresAt:null}}});
+  if(path.endsWith('/program/start')||path.endsWith('/program/resume')){resume=true;return route.fulfill({json:{success:true,session:s,csrfToken:'c'.repeat(64)}});}
+  if(path.endsWith('/answer')){const body=req.postDataJSON();await delayed;s.answers[body.blockId]={most:body.most,least:body.least};s.revision++;return route.fulfill({json:{success:true,session:s}});}
+  return route.fulfill({json:{success:true,session:s,csrfToken:'c'.repeat(64)}});
+ });
+ await page.goto('/?peta-program');await expect(page.getByRole('heading',{name:'Sebelum memulai'})).toBeVisible();
+ await expect(page.getByText('INTERNAL_REFERENCE_NEVER_RENDER')).toHaveCount(0);await expect(page.getByText(/peta-privacy-v1/)).toHaveCount(0);
+ await page.getByText('Penggunaan data dan hasil Anda',{exact:true}).click();await expect(page.getByText(/satu tahun sejak Anda mulai/)).toBeVisible();await page.screenshot({path:'.impeccable/review/peta-program-privacy-'+device+'.png',fullPage:true});await page.getByText('Penggunaan data dan hasil Anda',{exact:true}).click();
+ await page.screenshot({path:'.impeccable/review/peta-program-consent-'+device+'.png',fullPage:true});
+ await page.getByLabel(/Saya telah membaca/).check();await page.getByRole('button',{name:'Saya setuju dan lanjutkan'}).click();
+ await expect(page.getByRole('heading',{name:'Situasi sintetis 2',exact:true})).toBeVisible();await page.getByRole('radio').nth(0).check();await page.getByRole('radio').nth(3).check();
+ await page.getByRole('button',{name:'Lanjut',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Situasi sintetis 3',exact:true})).toBeVisible();await expect(page.getByRole('status')).toContainText('latar belakang');
+ const step=page.locator('[data-peta-question]');expect(await step.evaluate(el=>getComputedStyle(el).animationDuration)).toBe('0.2s');
+ await page.screenshot({path:'.impeccable/review/peta-program-question-'+device+'.png',fullPage:true});
+ await page.getByRole('button',{name:'Sebelumnya',exact:true}).click();await expect(page.getByRole('radio').nth(0)).toBeChecked();await expect(page.getByRole('radio').nth(3)).toBeChecked();
+ finish();await expect(page.getByRole('status')).toHaveText('Semua jawaban tersimpan.');
+ await page.emulateMedia({reducedMotion:'reduce'});expect(await step.evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
+ for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+});
+
+test('program admin reuses the existing QR/card, module setup and participant-code management',async({page},info)=>{
+ const phone=info.project.name.includes('mobile'),device=phone?'mobile':'desktop';await page.setViewportSize({width:phone?390:1440,height:phone?844:1000});
+ const actions:unknown[]=[];
+ const dashboard={sourceReady:true,programs:[{id:ws,title:'Program PETA sintetis',code:'PETA-TEST-2026',status:'active',petaEnabled:true}],workspaces:[{id:ws,name:'Program PETA sintetis',programId:ws,consultantAccess:true,privacyReference:'Acuan internal sintetis'}],invitations:[],sessions:[{id:makePetaSession().id,workspaceId:ws,programId:ws,participantCode:'PETA-SYNTHETIC',participantName:'Peserta sintetis',status:'submitted',completedBlocks:24,submittedAt:petaSyntheticReport.submittedAt,retentionUntil:petaSyntheticReport.retentionUntil,canReadResult:false,instrumentVersion:'1.0.0-pilot',consentVersion:'peta-privacy-v1',consentedAt:petaSyntheticReport.submittedAt,reviewConsent:false}],audit:[]};
+ await page.route('**/api/**',route=>{if(route.request().method()==='GET')return route.fulfill({json:{success:true,...dashboard}});actions.push(route.request().postDataJSON());return route.fulfill({json:{success:true,id:ws}});});
+ await page.goto('/?peta-admin&program_id='+ws);await expect(page.getByRole('combobox',{name:'Program',exact:true})).toHaveValue(ws);
+ const qr=page.getByRole('img',{name:'QR code akses program Program PETA sintetis'});await expect(qr).toBeVisible();await expect(page.getByText('PETA-TEST-2026',{exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Kelola kode peserta'})).toHaveAttribute('href','/admin/engagements/access-codes?engagement_id='+ws);
+ await expect(page.getByRole('button',{name:'Pulihkan akses',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Buka hasil berizin'})).toHaveCount(0);
+ await page.getByLabel(/Saya memastikan hak penggunaan/).check();await page.getByRole('button',{name:'Simpan pengaturan PETA'}).click();await expect.poll(()=>actions.length).toBe(1);expect(actions[0]).toMatchObject({programId:ws,privacyReference:'Acuan internal sintetis'});
+ await expect(page.getByRole('button',{name:'Download PNG'})).toBeEnabled();
+ await page.screenshot({path:'.impeccable/review/peta-program-admin-'+device+'.png',fullPage:true});
+ for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+});
 test('invitation, consent, practice, 24 required pairs, review and two-chart report',async({page,baseURL},info)=>{
  test.setTimeout(120000);expect(baseURL).toMatch(/^http:\/\/127\.0\.0\.1:/);const phone=info.project.name.includes('mobile'),device=phone?'mobile':'desktop';await page.setViewportSize({width:phone?390:1440,height:phone?844:1000});
  const s=makePetaSession();let submits=0;const saves:string[]=[];
@@ -19,7 +62,7 @@ test('invitation, consent, practice, 24 required pairs, review and two-chart rep
  for(let i=0;i<24;i++){await expect(page.getByRole('heading',{level:1,name:'Situasi sintetis '+(i+1),exact:true})).toBeVisible();await page.getByRole('radio').nth(0).check();await page.getByRole('radio').nth(3).check();if(i===0){await page.screenshot({path:'.impeccable/review/peta-question-'+device+'.png',fullPage:true});}
   await page.getByRole('button',{name:i===23?'Tinjau jawaban':'Lanjut',exact:true}).click();
  }
- await expect(page.getByRole('heading',{name:'Ringkasan 24 situasi'})).toBeVisible();expect(submits).toBe(0);expect(saves.length).toBeGreaterThanOrEqual(24);await expect(page.getByRole('button',{name:'Kirim dan lihat hasil'})).toBeDisabled();await page.screenshot({path:'.impeccable/review/peta-review-'+device+'.png',fullPage:true});await page.getByLabel('Saya memahami bahwa pilihan akan terkunci setelah dikirim.').check();await page.getByRole('button',{name:'Kirim dan lihat hasil'}).click();
+ await expect(page.getByRole('heading',{name:'Ringkasan 24 situasi'})).toBeVisible();expect(submits).toBe(0);await expect.poll(()=>saves.length).toBeGreaterThanOrEqual(24);await expect(page.getByRole('button',{name:'Kirim dan lihat hasil'})).toBeDisabled();await page.screenshot({path:'.impeccable/review/peta-review-'+device+'.png',fullPage:true});await page.getByLabel('Saya memahami bahwa pilihan akan terkunci setelah dikirim.').check();await page.getByRole('button',{name:'Kirim dan lihat hasil'}).click();
  await expect(page.getByRole('heading',{name:'Peta preferensi perilaku kerja Anda'})).toBeFocused();await expect(page.getByRole('table',{name:'Rincian angka pilihan'})).toBeVisible();await expect(page.getByRole('img')).toHaveCount(3);expect(submits).toBe(1);await page.screenshot({path:'.impeccable/review/peta-result-'+device+'.png',fullPage:true});
  for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);}
 });
@@ -33,5 +76,5 @@ test('admin sees scoped progress and explicit source/permission boundaries',asyn
  const phone=info.project.name.includes('mobile');await page.setViewportSize({width:phone?390:1440,height:1000});const actions:string[]=[];
  const dashboard={sourceReady:true,workspaces:[{id:ws,name:'Ruang sintetis',consultantAccess:true,privacyReference:'Kebijakan sintetis'}],invitations:[{id:ws,workspaceId:ws,participantCode:'PETA-SYNTHETIC',purpose:'start',expiresAt:'2026-12-01T00:00:00Z',status:'used'}],sessions:[{id:makePetaSession().id,workspaceId:ws,participantCode:'PETA-SYNTHETIC',status:'submitted',completedBlocks:24,submittedAt:petaSyntheticReport.submittedAt,retentionUntil:petaSyntheticReport.retentionUntil,canReadResult:true,instrumentVersion:'1.0.0-pilot',consentVersion:'peta-privacy-v1',consentedAt:petaSyntheticReport.submittedAt,reviewConsent:true}],audit:[{id:'1',workspaceId:ws,participantCode:'PETA-SYNTHETIC',event:'participant_result_opened',createdAt:'2026-10-29T04:00:00Z',adminAction:false}]};
  await page.route('**/api/**',route=>{if(route.request().method()==='GET')return route.fulfill({json:{success:true,...dashboard}});const body=route.request().postDataJSON();actions.push(body.action||'invite');if(body.action==='result')return route.fulfill({json:{success:true,report:petaSyntheticReport}});return route.fulfill({json:{success:true,invitationPath:'/peta#invite='+'a'.repeat(64),expiresAt:'2026-12-01T00:00:00Z'}});});
-  await page.goto('/?peta-admin');await expect(page.getByText('PETA-SYNTHETIC · Selesai')).toBeVisible();await expect(page.getByText(/Instrumen 1.0.0-pilot · Persetujuan peta-privacy-v1/)).toBeVisible();await page.getByRole('combobox',{name:'Ruang',exact:true}).selectOption(ws);await page.getByRole('textbox',{name:'Kode peserta',exact:true}).fill('PETA-NEW');await page.getByRole('button',{name:'Buat tautan undangan'}).click();await expect(page.getByRole('heading',{name:'Tautan pribadi siap dibagikan'})).toBeVisible();await page.getByRole('button',{name:'Tutup tautan'}).click();await page.getByText('Riwayat akses dan tindakan',{exact:true}).click();await expect(page.getByRole('heading',{name:'Peserta membuka hasil'})).toBeVisible();await page.screenshot({path:'.impeccable/review/peta-admin-'+(phone?'mobile':'desktop')+'.png',fullPage:true});await page.getByRole('button',{name:'Buka hasil berizin'}).click();await expect(page.getByRole('heading',{name:'Peta preferensi perilaku kerja Anda'})).toBeFocused();expect(actions).toContain('result');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.goto('/?peta-admin');await expect(page.getByText('PETA-SYNTHETIC · Selesai')).toBeVisible();await expect(page.getByText(/Instrumen 1.0.0-pilot · Persetujuan peta-privacy-v1/)).toBeVisible();await page.getByText('Undangan pilot lama',{exact:true}).click();await page.getByRole('combobox',{name:'Ruang',exact:true}).selectOption(ws);await page.getByRole('textbox',{name:'Kode peserta',exact:true}).fill('PETA-NEW');await page.getByRole('button',{name:'Buat tautan undangan'}).click();await expect(page.getByRole('heading',{name:'Tautan pribadi siap dibagikan'})).toBeVisible();await page.getByRole('button',{name:'Tutup tautan'}).click();await page.getByText('Riwayat akses dan tindakan',{exact:true}).click();await expect(page.getByRole('heading',{name:'Peserta membuka hasil'})).toBeVisible();await page.screenshot({path:'.impeccable/review/peta-admin-'+(phone?'mobile':'desktop')+'.png',fullPage:true});await page.getByRole('button',{name:'Buka hasil berizin'}).click();await expect(page.getByRole('heading',{name:'Peta preferensi perilaku kerja Anda'})).toBeFocused();expect(actions).toContain('result');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });

@@ -15,7 +15,7 @@ interface ProgramPreview {
   status: string;
   startDate: string | null;
   endDate: string | null;
-  modules: Array<"tbos" | "lep" | "binainsight" | "pre_test" | "post_test">;
+  modules: Array<"tbos" | "lep" | "binainsight" | "pre_test" | "post_test" | "peta">;
   available: boolean;
 }
 
@@ -247,6 +247,7 @@ export default function ClientAccessPage() {
                     <div className="mt-2 flex flex-wrap gap-2">
                       {program.modules.includes("lep") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-amber-400" /> LEP · Evaluasi Program</span>}
                       {program.modules.includes("tbos") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><Gamepad2 className="h-3.5 w-3.5 text-amber-400" /> T-BOS · Observasi Perilaku</span>}
+                      {program.modules.includes("peta") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-amber-400" /> PETA · Pemetaan Tabiat</span>}
                       {program.modules.includes("binainsight") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><BarChart3 className="h-3.5 w-3.5 text-amber-400" /> BinaInsight · Diagnostik Performa</span>}
                       {program.modules.includes("pre_test") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-amber-400" /> Pre-test</span>}
                       {program.modules.includes("post_test") && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold"><ClipboardCheck className="h-3.5 w-3.5 text-amber-400" /> Post-test</span>}

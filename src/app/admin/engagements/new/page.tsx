@@ -88,6 +88,7 @@ function CreateEngagementContent() {
             {title} untuk {organizationName} telah dibuat. Peserta baru mendaftar dengan kode program dan nama, lalu menerima kode peserta pribadi untuk akses berikutnya.
           </p>
           {createdProgramId && <div className="mt-6"><ProgramShareCard programId={createdProgramId} code={code.trim().toUpperCase()} title={title} status={status} /></div>}
+          {enabledModules.includes('peta')&&<Link href={`/admin/peta?program_id=${encodeURIComponent(createdProgramId)}`} className="mt-5 inline-flex min-h-11 items-center rounded-lg border border-[#0B2C6B]/20 px-4 text-sm font-semibold text-[#0B2C6B]">Siapkan PETA untuk program ini</Link>}
           <p className="mt-5 text-xs leading-5 text-[#4A4C54]/60">
             Anggota dan kapten tim T-BOS diisi oleh fasilitator ketika tim pertama kali tiba di salah satu pos.
           </p>

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.49.0] - 2026-10-30
+
+- PETA menjadi modul program: gunakan QR/kode program, pendaftaran dan kode
+  peserta pribadi yang sudah ada. Admin menyiapkan PETA dari program tanpa
+  membuat kegiatan atau kode undangan kedua; QR memakai komponen berbagi lama.
+- Petunjuk pengisian dan batasan hasil menggantikan informasi teknis di awal.
+  Penggunaan data dapat dibuka; acuan internal/ID versi tidak ditampilkan ke peserta.
+- Lanjut/Sebelumnya berpindah langsung dengan transisi singkat; antrean simpan
+  serial menjaga revisi, perubahan terbaru dan percobaan ulang. Pengiriman akhir
+  menunggu penyimpanan. Kegagalan tidak menghapus pilihan atau mengklaim tersimpan.
+- Hasil pribadi tetap terikat identitas peserta; izin konsultan tetap terpisah.
+  Data pilot lama dipertahankan tanpa pemindahan otomatis. Tidak mengubah soal,
+  pemetaan, skor atau program nyata. Memerlukan SQL77 lalu API0.46.0 sebelum app.
+- Menyertakan pemeriksaan UI navigasi layanan website dari rilis website0.2.45.
+  Pengujian lokal bukan bukti deployment atau sertifikasi keamanan produksi.
+
 ## [0.48.0] - 2026-10-29
 
 - Modul PETA terpisah: undangan privat, persetujuan, latihan,24situasi,

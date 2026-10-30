@@ -1,3 +1,3 @@
 import {AdminShell} from '@/components/admin-shell';
 import {PetaAdmin} from '@/components/peta-admin';
-export default function Page(){return <AdminShell eyebrow="Pemetaan diri" title="PETA — Pemetaan Tabiat" description="Undangan peserta, pengisian, hasil berizin, dan kendali data pilot."><PetaAdmin/></AdminShell>;}
+export default function Page(){return <AdminShell eyebrow="" title="PETA — Pemetaan Tabiat" description="Modul program, QR akses peserta, pengisian dan hasil pribadi berizin."><PetaAdmin/></AdminShell>;}

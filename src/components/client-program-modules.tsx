@@ -9,6 +9,7 @@ export type ClientProgramModule = { key: ProgramModuleKey; enabled: boolean; cli
 
 const JOURNEY_ORDER: Record<ProgramModuleKey, number> = {
   binainsight: 0,
+  peta: 0.5,
   pre_test: 1,
   tbos: 2,
   post_test: 3,
@@ -57,7 +58,13 @@ export function ClientProgramModules({ modules }: { modules: ClientProgramModule
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        {enabledModules.map((module) => module.key === "lep" ? (
+        {enabledModules.map((module) => module.key === "peta" ? (
+          <article key={module.key} className="rounded-2xl border border-[#0B2C6B]/10 bg-white p-5 sm:p-6">
+            <h3 className="text-lg font-bold text-[#0B2C6B]">PETA — Pemetaan Tabiat</h3>
+            <p className="mt-2 text-sm leading-6 text-[#405675]">Refleksikan kecenderungan perilaku Anda melalui 24 situasi. Jawaban dan hasil terhubung dengan identitas peserta Anda dalam program ini.</p>
+            {module.clientAvailable?<Link href="/client/program/peta" className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-900 px-4 text-xs font-bold text-white">{module.completed?'Lihat hasil PETA':'Buka PETA'}<ArrowRight className="h-4 w-4" aria-hidden="true"/></Link>:<p className="mt-4 text-sm text-[#405675]">Penyelenggara belum membuka akses PETA. Hubungi penyelenggara jika Anda memerlukan bantuan.</p>}
+          </article>
+        ) : module.key === "lep" ? (
           <Link key={module.key} href="/client/lep" className="group relative overflow-hidden rounded-2xl border border-[#0B2C6B]/10 bg-white p-5 shadow-[0_18px_55px_-44px_rgba(11,44,107,0.45)] transition hover:-translate-y-0.5 hover:border-[#D9A441]/70 hover:shadow-[0_24px_60px_-40px_rgba(11,44,107,0.55)] sm:p-6">
             <div className="absolute right-0 top-0 h-28 w-28 translate-x-9 -translate-y-9 rounded-full bg-[#FFF4D8]" />
             <div className="relative">

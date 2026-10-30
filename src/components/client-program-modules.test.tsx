@@ -3,6 +3,14 @@ import { describe, expect, it } from "vitest";
 import { ClientProgramModules } from "./client-program-modules";
 
 describe("ClientProgramModules", () => {
+  it('opens PETA only when the backend confirms program access is ready',()=>{
+    const {rerender}=render(<ClientProgramModules modules={[{key:'peta',enabled:true,clientAvailable:false}]}/>);
+    expect(screen.queryByRole('link',{name:'Buka PETA'})).not.toBeInTheDocument();
+    rerender(<ClientProgramModules modules={[{key:'peta',enabled:true,clientAvailable:true}]}/>);
+    expect(screen.getByRole('link',{name:'Buka PETA'})).toHaveAttribute('href','/client/program/peta');
+    rerender(<ClientProgramModules modules={[{key:'peta',enabled:true,clientAvailable:true,completed:true}]}/>);
+    expect(screen.getByRole('link',{name:'Lihat hasil PETA'})).toHaveAttribute('href','/client/program/peta');
+  });
   it("shows only modules enabled for the program", () => {
     render(<ClientProgramModules modules={[{ key: "lep", enabled: true, clientAvailable: true }]} />);
     expect(screen.getAllByText("LEP")).toHaveLength(2);

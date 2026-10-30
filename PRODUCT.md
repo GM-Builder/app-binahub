@@ -50,8 +50,15 @@ the participant journey and daily admin operations simple.
   remain pending; public/paid RM delivery remains disabled.
 - Consultant review, optional evaluation/export, and deletion are distinct
   purposes even when presented through one privacy entry.
-- PETA is a separate invitation-only behavioral-preference pilot at `/peta`,
-  managed by workspace owners at `/admin/peta`. Participant results are private;
+- PETA is an invitation-only behavioral-preference pilot within existing programs
+  (owner confirmation, 30 October 2026). Admin enables the PETA program module and
+  configures it at `/admin/peta`; participants use the existing program QR/code,
+  registration/personal participant code, then `/client/program/peta`. Shared
+  program entry never grants another participant's result. Legacy `/peta` pilot
+  invitations remain supported; existing records are not automatically relinked.
+  Participant instructions lead, internal policy/version references stay out of
+  public copy, and Next advances immediately with serial background saving.
+  Final submission waits for confirmed saves. Participant results are private;
   an assigned consultant needs separate participant permission. The owner sets
   storage to one year from initial consent (29 October 2026). It uses private
   immutable source, deterministic MOST/LEAST/NET counts and no AI/PE50:50 formula.

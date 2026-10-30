@@ -5,3 +5,10 @@
 @media(forced-colors:active){.primary,.secondary,.panel{border:1px solid CanvasText}.progress{forced-color-adjust:auto}.selector input:disabled{opacity:1}}
 .progress{appearance:none;border:0;background:#e6edf6;border-radius:4px;overflow:hidden}.progress::-webkit-progress-bar{background:#e6edf6}.progress::-webkit-progress-value{background:#0b2c6b}.progress::-moz-progress-bar{background:#0b2c6b}.textButton:disabled{opacity:.45;cursor:not-allowed;text-decoration:none}.intro h1:focus,.reportHeader h1:focus,.reportHeader h2:focus{outline:none}
 .adminForm input::placeholder,.adminForm textarea::placeholder{color:#405779;opacity:1}
+.instructions{list-style:decimal;padding-left:22px;font-size:14px;line-height:1.8;color:#405779;margin-block:20px}.instructions li+li{margin-top:8px}
+.privacyDetails{margin-top:20px;border-block:1px solid #dce4ef;padding-block:8px}.privacyDetails summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;cursor:pointer;color:#0b2c6b;font-size:14px;font-weight:600}.privacyDetails summary::-webkit-details-marker{display:none}.privacyDetails summary svg{flex:none}.privacyDetails[open] summary svg{transform:rotate(180deg)}.privacyDetails summary:focus-visible{outline:2px solid #2e66c9;outline-offset:3px}.privacyDetails p{margin-block:12px}.privacyDetails a{text-decoration:underline;text-underline-offset:3px}
+.questionStep{animation:peta-step-forward 200ms cubic-bezier(.16,1,.3,1) both}.questionStep[data-direction=back]{animation-name:peta-step-back}
+@keyframes peta-step-forward{from{opacity:.65;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes peta-step-back{from{opacity:.65;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.questionStep{animation:none}}
+.programAccess{min-width:0}.programAccess>h2{font-size:20px;font-weight:600;line-height:1.4;margin-bottom:12px}.programAccess>p{font-size:14px;line-height:1.8;color:#405779}.programAccess>section{margin-top:20px}

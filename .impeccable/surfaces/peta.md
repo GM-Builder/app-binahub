@@ -6,6 +6,30 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Current direction contract · 30 October 2026
+
+THESIS: PETA belongs to an existing program; participants enter through its
+shared QR/code and retain their own private identity and result.
+OWN-WORLD: Preserve the existing BinaHub program shell, share-card QR, Jakarta,
+navy/ice, native controls and 760px questionnaire. No new identity or raster.
+STORY: Admin creates/selects a program and enables PETA. Participants register
+or return with their personal participant code, read plain instructions and a
+short disclaimer, consent, practise, and complete 24 situations.
+FIRST VIEWPORT: Instructions lead. Plain result-purpose and privacy summaries
+remain discoverable; internal policy references/version IDs are not rendered.
+Admin selects a real program rather than creating another independent activity.
+FORM: User-confirmed local extension, code-led, no comp or concept seed. Next/
+Back switch immediately with a finite 200ms transform/opacity transition; a
+serial background queue preserves revisions/latest edits and truthful status.
+Only final submission waits for confirmed saves. Reduced motion is instant.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+review, verdict and scoped design record. Root architecture DESIGN stays intact.
+
+The original standalone invitation flow is retained for existing pilot records,
+not for new program creation. Never auto-link/migrate old records to a guessed
+program, change the real protected program, disclose mapping keys, turn shared
+program access into result access, or silently expand consultant permissions.
+
 Operate for invitations, consent, practice and answers; Read for results. Adult
 invited professionals. Owner approves the proposed dedicated /peta module,
 participant results, separately disclosed consultant access, and one-year
@@ -57,12 +81,25 @@ gates. No production SQL, real invitation, email or cleanup is executed here.
 
 ## Implemented design record
 
-The source-grounded PETA design boundary is `docs/peta-design.md`. It records the
-inherited palette/type, 760px task column, native choice controls, complete review,
-fixed-axis charts, exact zero-width bars, visible control states and admin metadata.
-It does not replace the root architecture document or create a global sidecar.
+Updated 30 October 2026. The source-grounded PETA design boundary is
+`docs/peta-design.md`. It records the inherited palette/type and 760px task column,
+program module entry and reused `ProgramShareCard` QR/code, participant identity,
+instructions-first consent, native privacy disclosure with a visible rotating
+chevron, and immediate question navigation with a finite 200ms transition
+(instant for reduced motion). Serial in-memory saves report actual state; final
+submission waits for confirmation. Complete review, fixed-axis charts, exact
+zero-width bars, private result access and separate consultant permission remain.
+It does not replace the root architecture document or create a global sidecar,
+global token, raster asset, or new image-provenance record. Existing pilot records
+and their invitation UI remain separate from program-bound records.
 
-All twelve latest synthetic captures were checked for this record:
-`.impeccable/review/peta-{welcome,consent,question,review,result,admin}-{desktop,mobile}.png`.
+The current finish review uses eight synthetic captures:
+`.impeccable/review/peta-program-{consent,privacy,question,admin}-{desktop,mobile}.png`.
+The privacy disclosure's visible-chevron finding was resolved and the scoped
+review passed. The twelve earlier captures remain historical evidence:
+`.impeccable/review/peta-{welcome,consent,question,review,result,admin}-{desktop,mobile}.png`;
+their original consent/admin screens are not current program-entry evidence.
 Participant captures include the inherited header. Admin captures show isolated
-preview content; the actual AdminShell inheritance is checked in source.
+preview content; actual `AdminShell` inheritance is checked in route source.
+Synthetic browser results and screenshots do not establish a live API, production
+authorization, security certification, or psychometric validation.
