@@ -75,10 +75,14 @@ See the API repo's `docs/peta-activation.md` for the exact sequence:
 3. Set the matching `PETA_ENCRYPTION_KEY` privately on API hosting. Do not paste it
    in chat, frontend variables, GitHub, logs or browser source.
 4. Deploy API and app; verify the admin source gate and same-origin cookie flow.
-5. API0.45.1 provides a daily Vercel Cron at19UTC/02WIB for PETA only. Set the
+5. API 0.45.2 provides an owner-approved monthly Vercel Cron on the first day
+   at 00:00 UTC / 07:00 WIB for PETA only. Set the
    API Production `CRON_SECRET` (at least32characters), deploy, confirm Cron Jobs
    are enabled and verify an actual invocation/log. No new SQL is needed for
    this scheduler after SQL76. See the API guide for retry/backlog monitoring.
+   Access still expires at one year; physical deletion normally waits up to
+   31 days for the next successful monthly run. An offline secret generator is
+   available in the API repo; its private output must not be uploaded.
 6. Approve privacy/content
    rights and complete the pre-live security/UX checklist before real invitations.
 
