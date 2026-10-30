@@ -75,7 +75,11 @@ See the API repo's `docs/peta-activation.md` for the exact sequence:
 3. Set the matching `PETA_ENCRYPTION_KEY` privately on API hosting. Do not paste it
    in chat, frontend variables, GitHub, logs or browser source.
 4. Deploy API and app; verify the admin source gate and same-origin cookie flow.
-5. Schedule and test the authenticated retention worker. Approve privacy/content
+5. API0.45.1 provides a daily Vercel Cron at19UTC/02WIB for PETA only. Set the
+   API Production `CRON_SECRET` (at least32characters), deploy, confirm Cron Jobs
+   are enabled and verify an actual invocation/log. No new SQL is needed for
+   this scheduler after SQL76. See the API guide for retry/backlog monitoring.
+6. Approve privacy/content
    rights and complete the pre-live security/UX checklist before real invitations.
 
 SQL 75 is the separate Relationship Management source and does not install PETA.
