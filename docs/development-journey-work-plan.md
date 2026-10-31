@@ -1,5 +1,12 @@
 # Rencana kerja: diagnosis sampai pengembangan berkelanjutan
 
+> **Status kerja terkini — 31 Oktober 2026:** lihat
+> [kesiapan operasional lintas platform](production-readiness-2026-10-31.md).
+> Uraian bertanggal 19–22 Oktober di bawah adalah riwayat rancangan, bukan status
+> runtime terbaru. SPIN sudah mempunyai pengisian, laporan, email dan checklist
+> meeting; RM sudah mempunyai uji internal 27SR/13SJT dengan gabungan modul 50:50
+> sementara; PETA sudah menjadi modul program. Pembayaran tetap Coming soon.
+
 Disetujui pengguna pada **19 Oktober 2026**; diperbarui pada **22 Oktober 2026**
 setelah penelaahan paket CEO dan meeting 20 Oktober. Target 21 Oktober menjadi
 checkpoint bagian yang lulus verifikasi, bukan janji seluruh scope baru sudah
