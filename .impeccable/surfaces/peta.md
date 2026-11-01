@@ -6,6 +6,21 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## PDF hierarchy refinement - 1 November2026 - API0.47.1
+
+Owner requests typographic hierarchy, consistent leading and balanced PDF spacing,
+the original BinaHub logo, and removal of the group admin-companion/internal label.
+This is a Read refinement in the sibling API renderer; web UI/scoring/permissions
+are untouched. Embed the exact app full-logo.png wordmark and local Inter weights,
+not a text approximation or the API's existing square mark. Use the22/20/14pt
+title hierarchy, stable native font leading, meaning-based block spacing and
+right-aligned numeric columns. Keep the full logo and separately aligned page
+count/privacy footer on each page. Group classification wording changes only in
+the PDF; confidentiality and review/retention guards remain. The detailed current
+record is `binahub-api/docs/peta-pdf-design.md`. Both two-page synthetic examples
+were rasterized and inspected; layout assertions cover37 long-name participants.
+No browser surface or user choices changed, and no SQL/env change is required.
+
 ## Private report downloads - 1 November2026 - app0.51.0
 
 Owner requests individual/group PDFs, then explicitly selects INTERNAL admin
@@ -23,7 +38,7 @@ The PDF uses two concise A4 pages for the individual example and a group summary
 plus automatically paginated matrix with repeating headers. Exact figures and
 fixed-scale vector charts stay readable; numbered privacy footers and the CEO
 disclaimer remain. Technical versions/IDs and storage-until copy are not restored.
-Standard PDF base fonts require no external font fetch; the web font is unchanged.
+Embedded local fonts require no external fetch; the web font is unchanged.
 
 Finish:47 frontend tests,88 API PETA tests and2 desktop/mobile browser cases pass.
 Four web captures `.impeccable/review/peta-pdf-{individual,group}-{desktop,mobile}.png`

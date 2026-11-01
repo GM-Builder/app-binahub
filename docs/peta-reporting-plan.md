@@ -2,6 +2,12 @@
 
 ## Implemented - 1 November2026 - app0.51.0 / API0.47.0 / SQL80
 
+Presentation update in API0.47.1: original BinaHub wordmark, embedded Inter fonts,
+stable leading, balanced spacing, right-aligned numeric columns and separate
+footer labels/page numbers. Remove the PDF's group admin-companion/internal label
+without changing internal audience or access guards. No new SQL/env or frontend
+delivery change. See the API's `docs/peta-pdf-design.md` for current print details.
+
 The owner chooses **internal admin group reports first**. This supersedes the
 MVP-off group plan below; it does not authorize anonymous employer reporting,
 company access, automatic sharing, facilitator notes or a new consent policy.
