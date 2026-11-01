@@ -6,6 +6,35 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Private report downloads - 1 November2026 - app0.51.0
+
+Owner requests individual/group PDFs, then explicitly selects INTERNAL admin
+group reports first. This is an Operate/Read extension of the current navy/Jakarta
+workspace, not a new visual identity or change to PETA scoring/consent. Add a
+plain download button to the participant result and named admin result view;
+use a fourth **Laporan grup** view under the same program selector, including
+retained history. One workspace per report, explicit prepare/refresh action,
+full server coverage/exclusions, descriptive tie-preserving patterns and an
+alphabetical matrix with native overflow on mobile. Show empty/loading/retry/
+download states, explain internal-only handling, and recheck eligibility on export.
+No ranking, automatic sharing/email, public PDF link, AI or extra data entry.
+
+The PDF uses two concise A4 pages for the individual example and a group summary
+plus automatically paginated matrix with repeating headers. Exact figures and
+fixed-scale vector charts stay readable; numbered privacy footers and the CEO
+disclaimer remain. Technical versions/IDs and storage-until copy are not restored.
+Standard PDF base fonts require no external font fetch; the web font is unchanged.
+
+Finish:47 frontend tests,88 API PETA tests and2 desktop/mobile browser cases pass.
+Four web captures `.impeccable/review/peta-pdf-{individual,group}-{desktop,mobile}.png`
+were inspected, with overflow checks at320/768/1024. The detector found no issues.
+Both synthetic two-page PDFs were rasterized and inspected; layout regression
+tests cover every numbered footer, repeated headers, long names/37 members,
+ties, zeros and an explicit >500-results rejection without silent truncation.
+One renderer-specific numeric line-height inheritance issue was fixed rather
+than shipping invisible page numbers. Production deployment/access is not proven
+by these local checks. See `docs/peta-reporting-plan.md` for SQL80 and boundaries.
+
 ## Complete pre-start guidance · 1 November 2026 · app0.50.4
 
 The owner asks to ADD the explicit most/least guidance, not reduce the pre-start

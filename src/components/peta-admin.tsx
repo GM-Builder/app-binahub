@@ -6,6 +6,8 @@ import {ArrowLeft, ArrowRight, ChevronDown, Copy, RefreshCw, Search} from 'lucid
 import {supabase} from '@/lib/supabase';
 import {petaDate, petaRequest, type PetaReportData} from '@/lib/peta';
 import {PetaReport} from './peta-report';
+import {PetaPDFDownload} from './peta-pdf-download';
+import {PetaGroupReport} from './peta-group-report';
 import {ProgramShareCard} from './program-share-card';
 import styles from './peta-admin.module.css';
 
@@ -15,9 +17,9 @@ type Invitation = {id:string; workspaceId:string; participantCode:string; purpos
 type Session = {id:string; workspaceId:string; participantCode:string; participantName?:string|null; programId?:string|null; status:string; completedBlocks:number; retentionUntil:string; submittedAt:string|null; canReadResult:boolean; instrumentVersion:string; consentVersion:string; consentedAt:string; reviewConsent:boolean};
 type AccessEvent = {id:string; workspaceId:string; participantCode:string|null; event:string; createdAt:string; adminAction:boolean};
 type Dashboard = {sourceReady:boolean; programs?:Program[]; workspaces:Workspace[]; invitations:Invitation[]; sessions:Session[]; audit:AccessEvent[]; counts?:{total:number;inProgress:number;submitted:number};total?:number;page?:number;pageSize?:number};
-type View = 'participants'|'access'|'settings';
+type View = 'participants'|'access'|'settings'|'reports';
 const statusText:Record<string,string> = {invited:'Belum dimulai', used:'Sudah digunakan', expired:'Kedaluwarsa', revoked:'Akses dicabut', in_progress:'Sedang diisi', submitted:'Selesai'};
-const eventText:Record<string,string> = {workspace_created:'Pengaturan dibuat', invitation_created:'Undangan dibuat', consented:'Persetujuan peserta dicatat', access_recovered:'Akses peserta dipulihkan', submitted:'Jawaban akhir dikirim', participant_result_opened:'Peserta membuka hasil', consultant_result_opened:'Admin pendamping membuka hasil peserta', recovery_issued_after_verification:'Tautan pemulihan dibuat setelah verifikasi', invitation_revoked:'Undangan dicabut', revoke:'Akses sesi dicabut', erase:'Data sesi dihapus', retention_erased:'Data melewati masa simpan dihapus'};
+const eventText:Record<string,string> = {workspace_created:'Pengaturan dibuat', invitation_created:'Undangan dibuat', consented:'Persetujuan peserta dicatat', access_recovered:'Akses peserta dipulihkan', submitted:'Jawaban akhir dikirim', participant_result_opened:'Peserta membuka hasil', consultant_result_opened:'Admin pendamping membuka hasil peserta', participant_pdf_requested:'Peserta meminta PDF individu', admin_individual_pdf_requested:'Admin meminta PDF individu', admin_group_report_opened:'Admin membuka laporan grup', admin_group_pdf_requested:'Admin meminta PDF grup', recovery_issued_after_verification:'Tautan pemulihan dibuat setelah verifikasi', invitation_revoked:'Undangan dicabut', revoke:'Akses sesi dicabut', erase:'Data sesi dihapus', retention_erased:'Data melewati masa simpan dihapus'};
 async function adminRequest<T>(path='', input?:unknown) {
   const {data} = await supabase.auth.getSession();
   if (!data.session) throw Error('Sesi admin berakhir. Silakan masuk kembali.');
@@ -151,7 +153,7 @@ export function PetaAdmin() {
 
   if (opened) return <div className={styles.admin}>
     <button className={styles.back} onClick={() => {returnToList.current = true; setOpened(null); setSuccess('');}}><ArrowLeft size={16} aria-hidden="true"/>Kembali ke daftar peserta</button>
-    <div className={styles.resultIdentity}><h2>Hasil {opened.session.participantName || opened.session.participantCode}</h2><p>Ditinjau sebagai admin pendamping, sesuai izin peserta.</p></div>
+    <div className={styles.resultIdentity}><h2>Hasil {opened.session.participantName || opened.session.participantCode}</h2><p>Ditinjau sebagai admin pendamping, sesuai izin peserta.</p><PetaPDFDownload target={{kind:'individual',sessionId:opened.session.id}}/></div>
     {messages}<PetaReport report={opened.report} headingLevel={2}/>
   </div>;
 
@@ -172,8 +174,9 @@ export function PetaAdmin() {
       {!data.sourceReady && <div className={styles.warning}><strong>PETA belum siap menerima pengisian baru.</strong><p>Konfigurasi sistem perlu diperiksa. Data yang sudah ada tetap dapat dikelola.</p><details><summary>Detail untuk pengelola sistem</summary><p>Periksa sumber terenkripsi, kunci runtime API, SQL 76/76B dan SQL 77 sesuai panduan PETA.</p></details></div>}
       {program && <div className={styles.programContext}><div><h2>{program.title}</h2><p>{ready ? programOpen ? 'PETA siap digunakan. Bagikan akses program atau pantau pengisian peserta.' : 'Pengaturan PETA siap. Aktifkan program agar peserta dapat masuk.' : !program.petaEnabled ? 'Modul PETA belum diaktifkan pada program ini.' : 'Selesaikan pengaturan PETA sebelum membagikan akses peserta.'}</p></div><span className={ready && programOpen ? styles.badgeReady : styles.badge}>{ready ? programOpen ? 'Siap digunakan' : 'Program belum aktif' : 'Perlu pengaturan'}</span></div>}
       <nav className={styles.views} aria-label="Pengelolaan PETA">
-        {([{id:'participants', label:'Peserta'}, {id:'access', label:'Akses peserta'}, {id:'settings', label:'Pengaturan'}] as const).filter(item => scope === 'active' || item.id !== 'access').map(item => <button key={item.id} type="button" aria-pressed={view === item.id} onClick={() => {setView(item.id); setSuccess('');}}>{item.label}</button>)}
+        {([{id:'participants', label:'Peserta'}, {id:'reports', label:'Laporan grup'}, {id:'access', label:'Akses peserta'}, {id:'settings', label:'Pengaturan'}] as const).filter(item => scope === 'active' || item.id !== 'access').map(item => <button key={item.id} type="button" aria-pressed={view === item.id} onClick={() => {setView(item.id); setSuccess('');}}>{item.label}</button>)}
       </nav>
+      {view === 'reports' && <PetaGroupReport key={workspaceId||'none'} workspaceId={workspaceId}/>}
       {view === 'participants' && <section className={styles.participants} aria-labelledby="peta-participants-title" aria-busy={loading}>
         <div className={styles.sectionHeading}><div><h2 ref={listHeading} tabIndex={-1} id="peta-participants-title">Pengisian peserta</h2><p>{scope === 'history' ? 'Pilih program untuk meninjau pengisian dan hasil peserta yang tersimpan.' : 'Peserta muncul setelah menyetujui penggunaan data dan memulai PETA.'}</p></div>{scope === 'active' && <button className={styles.secondary} onClick={() => setView('access')}>Bagikan akses<ArrowRight size={15} aria-hidden="true"/></button>}</div>
         <dl className={styles.counts} aria-label="Ringkasan pengisian"><div><dt>Pengisian tercatat</dt><dd>{counts.total}</dd></div><div><dt>Sedang diisi</dt><dd>{counts.inProgress}</dd></div><div><dt>Selesai</dt><dd>{counts.submitted}</dd></div></dl>

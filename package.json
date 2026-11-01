@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.50.4",
+  "version": "0.51.0",
   "private": true,
   "scripts": {
     "dev": "next dev",

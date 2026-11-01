@@ -1,4 +1,75 @@
-# PETA reporting: current access and proposed extension
+# PETA reports and private PDF export
+
+## Implemented - 1 November2026 - app0.51.0 / API0.47.0 / SQL80
+
+The owner chooses **internal admin group reports first**. This supersedes the
+MVP-off group plan below; it does not authorize anonymous employer reporting,
+company access, automatic sharing, facilitator notes or a new consent policy.
+SQL79's shared access for all verified BinaHub admins remains in effect.
+
+### Where to find it
+
+- Participant result → **Unduh PDF individu**.
+- Admin → PETA → choose program → **Lihat hasil peserta** → **Unduh PDF individu**.
+- Admin → PETA → choose exactly one program → **Laporan grup** →
+  **Siapkan laporan grup** → inspect coverage → **Unduh PDF grup**.
+- Finished/disabled programs and old standalone pilot spaces remain available
+  through **Riwayat program**. Different programs are never combined.
+
+Individual PDF contains the same deterministic narrative, two fixed-scale
+NET (-24..+24) and paired MOST/LEAST (0..24) vector charts, exact figures,
+dimension explanations and three reflection prompts. Identity is server-provided.
+No technical version/ID, storage/contact footer, quality flags, keys or raw answers.
+
+Group PDF contains coverage/exclusions, counts of highest within-person NET
+dimensions, tie/all-four-balanced counts, discussion prompts and an alphabetical
+named MOST/LEAST/NET matrix. Two/three-way ties count in each related dimension;
+all-four-balanced patterns are separate. Totals need not equal included people.
+This is not a normative score, team type, ability measurement or ranking.
+
+### Inclusion and export boundaries
+
+SQL80 reads all records in one workspace, independent of dashboard pagination,
+search and status filters. Include only submitted results within original
+retention, optional review consent true, and a non-null snapshotted reviewer.
+Count unfinished, restricted and revoked/expired/unavailable records without
+returning their scores/names. Never rewrite declined consent. Zero eligible
+results has an empty state and no PDF. >500 eligible results is explicitly
+rejected, never silently truncated. History does not extend retention.
+
+This is a named **internal** report, not anonymized. BinaHub review permission
+does not imply permission to send it to an employer. External reporting still
+requires policy, minimum group size and small-group/filter privacy safeguards.
+
+Every export rechecks scoped participant credentials/live program identity or
+the verified admin role and current result permission. SQL functions remain
+service-role only. Bodies contain only session/workspace IDs, not caller scores
+or actor identity. Schemas strip private fields. Attachments are no-store,
+noindex and nosniff; filenames have no names/tokens. Separate20/hour export
+budget per credential/admin. Audit events record requests, not proof of browser
+file saving. No AI, email, public link or durable server PDF store is used.
+
+Downloaded copies remain on the device and cannot be revoked or erased by the
+retention worker; admins must manage confidential copies under their policy.
+Original one-year database retention is unchanged.
+
+Apply `binahub-api/supabase/migrations/0080_peta_pdf_reports.sql` after SQL79,
+then deploy API0.47.0 before app0.51.0. Owner confirms SQL80 applied on
+1 November2026. No new environment variable or scheduler is required.
+Validation uses synthetic data only, not production participants or CEO keys.
+
+Verification:88 API PETA tests,47 scoped frontend tests and two desktop/mobile
+browser cases passed. SQL80 is exercised twice for idempotency in local PGlite;
+tests cover shared admins, declined consent, revocation/expiry, history, coverage
+beyond20 rows, >500 rejection, fresh program identity, malformed stored reports
+and no private fields. The 37-member PDF layout test checks repeated headers,
+participant presence and row bounds; every numbered footer has actual text lines.
+Two synthetic PDFs and four web captures were opened for visual review. Scoped
+lint/type checks and production builds are release checks, not an independent
+pentest, live deployment proof or psychometric validation. API lint retains one
+pre-existing unused `ProposalPDF` warning in `pdf-service.tsx`; no error.
+
+## Historical plan - superseded by the implemented increment above
 
 Updated31 October2026 (app0.50.1 / API0.46.3 / SQL78). User asks how admin/facilitators can review participants and
 produce individual/group reports like T-BOS. This file is a plan, not an activated

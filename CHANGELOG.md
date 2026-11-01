@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.51.0] - 2026-11-01
+
+- Tambahkan unduh PDF individu pada hasil peserta dan peninjauan admin PETA,
+  serta tab Laporan grup untuk satu program/ruang pilot yang dipilih.
+- Cakupan menghitung semua hasil yang memenuhi syarat, bukan halaman/filter
+  daftar peserta. Tampilkan alasan pengecualian, pola seri/berimbang dan matriks
+  MOST/LEAST/NET alfabetis, bukan peringkat kemampuan. Skor tetap tidak berubah.
+- Grup hanya untuk internal admin pendamping, sesuai konfirmasi pemilik.
+  Izin opsional, status dan masa simpan diperiksa ulang saat ekspor. Tidak ada
+  distribusi perusahaan, email otomatis, atau penyimpanan PDF di server.
+- Memerlukan API0.47.0 dan SQL80 setelah SQL79. Tidak ada env baru.
+
 ## [0.50.2] - 2026-10-31
 
 - Tambal CVE-2026-118764 / GHSA-g3hv-75wg-m249 dengan minimatch resmi11.0.1

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {ArrowLeft,ArrowRight,Check,ChevronDown} from 'lucide-react';
 import {DiagnosisShell} from './diagnosis-shell';
 import {PetaReport} from './peta-report';
+import {PetaPDFDownload} from './peta-pdf-download';
 import {petaParticipantRequest,PetaRequestError,validPetaPair,type PetaPair,type PetaSession,type PetaInvitation,type PetaBlock,type PetaReportData} from '@/lib/peta';
 import {PetaAnswerSync,type PetaSaveState} from '@/lib/peta-answer-sync';
 import styles from './peta.module.css';
@@ -133,7 +134,7 @@ export function PetaJourney({resultOnly=false,programMode=false}:{resultOnly?:bo
     <p className={styles.status} role="status">{saveLabels[saveState]}</p><p className={styles.fine}>Anda dapat mengubah pilihan dengan menekan tombol Sebelumnya sebelum mengirim.</p>
    </section>}
    {phase==='review'&&session&&<section className={styles.panel}><h2>Ringkasan 24 situasi</h2><p>{completed} dari 24 situasi lengkap. Periksa kembali pilihan Anda sebelum mengirim.</p><p className={styles.status} role="status">{saveLabels[saveState]}</p><ol className={styles.reviewList}>{session.blocks.map((b,i)=><li key={b.id}><div className={styles.reviewContent}><h3>{i+1}. {b.context}</h3><dl className={styles.reviewChoices}><div><dt>Paling sesuai</dt><dd>{b.options.find(option=>option.code===answers[b.id]?.most)?.text||'Belum dipilih'}</dd></div><div><dt>Paling tidak sesuai</dt><dd>{b.options.find(option=>option.code===answers[b.id]?.least)?.text||'Belum dipilih'}</dd></div></dl></div><button className={styles.textButton} disabled={busy} aria-label={'Ubah situasi '+(i+1)} onClick={()=>{setIndex(i);setPhase('questions');setConfirm(false);setDirection('back');}}>Ubah</button></li>)}</ol><label className={styles.check}><input type="checkbox" checked={confirm} disabled={busy} onChange={e=>setConfirm(e.target.checked)}/><span>Saya memahami bahwa pilihan akan terkunci setelah dikirim.</span></label><div className={styles.actions}><button className={styles.textButton} disabled={busy} onClick={()=>setPhase('questions')}>Kembali</button><button className={styles.primary} disabled={busy||!confirm||completed!==24} onClick={()=>void submit()}>{busy?'Memastikan jawaban dan menyiapkan hasil…':'Kirim dan lihat hasil'}<Check size={16} aria-hidden="true"/></button></div></section>}
-   {phase==='result'&&report&&<PetaReport report={report}/>}
+   {phase==='result'&&report&&<><div className={styles.pdfAction}><PetaPDFDownload target={{kind:'participant',programMode}}/></div><PetaReport report={report}/></>}
    <p className={styles.help}>Bantuan pengisian: <a href="mailto:admin@binahub.id" className={styles.textButton}>admin@binahub.id</a>.{phase!=='consent'&&' Hasil PETA digunakan untuk refleksi dan pengembangan diri.'}</p>
   </div>
  </div></DiagnosisShell>;

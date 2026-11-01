@@ -3,6 +3,7 @@ export type PetaPair={most:PetaChoice|null;least:PetaChoice|null};
 export type PetaBlock={id:string;order:number;context:string;options:{id:string;code:PetaChoice;text:string}[]};
 export type PetaSession={id:string;status:'in_progress'|'submitted';revision:number;participantCode:string;instrumentVersion:string;retentionUntil:string;submittedAt:string|null;reviewConsent:boolean;privacyReference:string;consentVersion:string;blocks:PetaBlock[];answers:Record<string,PetaPair>};
 export type PetaReportData={result:{instrumentVersion:string;method:string;rows:{dimension:'D'|'I'|'S'|'C';most:number;least:number;net:number}[];topDimensions:string[];topIsTied:boolean;closeTopScores:boolean};participantCode:string;submittedAt:string;retentionUntil:string};
+export type PetaGroupReportData={workspaceId:string;programName:string;audience:'internal_admin';issuedAt:string;counts:{total:number;included:number;unfinished:number;restricted:number;unavailable:number};members:{participantName:string|null;report:PetaReportData}[]};
 export type PetaInvitation={workspaceName:string;privacyReference?:string;retentionMonths:number;consultantAccess:boolean;consentVersion:string;purpose:'start'|'resume';expiresAt:string|null};
 export class PetaRequestError extends Error{constructor(message:string,public code:string,public status:number){super(message);}}
 export async function petaRequest<T>(path:string,method='GET',input?:unknown,headers:Record<string,string>={}):Promise<T>{
