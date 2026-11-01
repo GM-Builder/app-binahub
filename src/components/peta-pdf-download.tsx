@@ -3,7 +3,8 @@ import {useEffect,useId,useRef,useState} from 'react';
 import {Download} from 'lucide-react';
 import styles from './peta-pdf-download.module.css';
 
-type Target={kind:'participant';programMode:boolean}|{kind:'individual';sessionId:string}|{kind:'group';workspaceId:string};
+// PETA exports belong to the admin workspace; participant results are view-only.
+type Target={kind:'individual';sessionId:string}|{kind:'group';workspaceId:string};
 export function PetaPDFDownload({target,disabled=false}:{target:Target;disabled?:boolean}){
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false);
  const mounted=useRef(true),controller=useRef<AbortController|null>(null),id=useId();
@@ -13,16 +14,12 @@ export function PetaPDFDownload({target,disabled=false}:{target:Target;disabled?
   setBusy(true);setError('');setDone(false);
   const abort=new AbortController();controller.current=abort;
   try{
-   const headers:Record<string,string>={};
-   if(target.kind!=='participant'||target.programMode){
-    const {supabase}=await import('@/lib/supabase');const {data}=await supabase.auth.getSession();
-    if(!data.session)throw Error('Sesi berakhir. Silakan masuk kembali sebelum mengunduh.');
-    headers.Authorization='Bearer '+data.session.access_token;
-   }
-   const path=target.kind==='participant'?'result/pdf':`admin/reports/${target.kind}/pdf`;
-   const input=target.kind==='participant'?undefined:target.kind==='individual'?{sessionId:target.sessionId}:{workspaceId:target.workspaceId};
-   if(input)headers['Content-Type']='application/json';
-   const response=await fetch(new URL('/api/peta/'+path,window.location.origin),{method:input?'POST':'GET',credentials:'include',cache:'no-store',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(60000)]),headers,...(input?{body:JSON.stringify(input)}:{})});
+   const {supabase}=await import('@/lib/supabase');const {data}=await supabase.auth.getSession();
+   if(!data.session)throw Error('Sesi berakhir. Silakan masuk kembali sebelum mengunduh.');
+   const headers={'Content-Type':'application/json',Authorization:'Bearer '+data.session.access_token};
+   const path=`admin/reports/${target.kind}/pdf`;
+   const input=target.kind==='individual'?{sessionId:target.sessionId}:{workspaceId:target.workspaceId};
+   const response=await fetch(new URL('/api/peta/'+path,window.location.origin),{method:'POST',credentials:'include',cache:'no-store',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(60000)]),headers,body:JSON.stringify(input)});
    if(!response.ok){const payload=await response.json().catch(()=>null);throw Error(payload?.error||'PDF belum dapat dibuat. Coba unduh kembali.');}
    if(!response.headers.get('content-type')?.toLowerCase().startsWith('application/pdf'))throw Error('Berkas PDF belum tersedia. Coba unduh kembali.');
    const blob=await response.blob();if(!blob.size)throw Error('PDF kosong. Coba unduh kembali.');

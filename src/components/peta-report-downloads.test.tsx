@@ -3,9 +3,10 @@ import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
 import {PetaPDFDownload} from './peta-pdf-download';
 import {PetaGroupReport} from './peta-group-report';
 import {petaSyntheticReport} from '@/test/fixtures/peta';
-vi.mock('@/lib/supabase',()=>({supabase:{auth:{getSession:async()=>({data:{session:{access_token:'synthetic-admin-token'}}})}}}));
+const auth=vi.hoisted(()=>({getSession:vi.fn()}));
+vi.mock('@/lib/supabase',()=>({supabase:{auth}}));
 const group={workspaceId:'test-workspace',programName:'Program sintetis',audience:'internal_admin',issuedAt:petaSyntheticReport.submittedAt,counts:{total:25,included:22,unfinished:1,restricted:1,unavailable:1},members:Array.from({length:22},(_,i)=>({participantName:'Sintetis '+i,report:{...petaSyntheticReport,participantCode:'SYNTHETIC-'+i}}))};
-beforeEach(()=>{vi.stubGlobal('fetch',vi.fn());});
+beforeEach(()=>{vi.stubGlobal('fetch',vi.fn());auth.getSession.mockResolvedValue({data:{session:{access_token:'synthetic-admin-token'}}});});
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.unstubAllGlobals();});
 describe('PETA private PDF controls',()=>{
  it('waits for an explicit click, uses authenticated server IDs only, and does not generate scores in the browser',async()=>{
@@ -18,9 +19,14 @@ describe('PETA private PDF controls',()=>{
  });
  it('refuses a success page or JSON masquerading as a PDF and offers retry',async()=>{
   vi.mocked(fetch).mockResolvedValue(new Response('<html>not a PDF</html>',{status:200,headers:{'Content-Type':'text/html'}}));
-  render(<PetaPDFDownload target={{kind:'participant',programMode:false}}/>);fireEvent.click(screen.getByRole('button'));
+  render(<PetaPDFDownload target={{kind:'individual',sessionId:'session-a'}}/>);fireEvent.click(screen.getByRole('button'));
   expect(await screen.findByRole('alert')).toHaveTextContent('Berkas PDF belum tersedia');
-  expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toEqual({});
+  expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toEqual({'Content-Type':'application/json',Authorization:'Bearer synthetic-admin-token'});
+ });
+ it('never requests an admin PDF after the login session expires',async()=>{
+  auth.getSession.mockResolvedValue({data:{session:null}});
+  render(<PetaPDFDownload target={{kind:'individual',sessionId:'session-a'}}/>);fireEvent.click(screen.getByRole('button'));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Sesi berakhir');expect(fetch).not.toHaveBeenCalled();
  });
  it('downloads a protected blob without putting credentials in its URL or storing a report',async()=>{
   const create=vi.fn(()=> 'blob:synthetic');Object.defineProperty(URL,'createObjectURL',{configurable:true,value:create});Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:vi.fn()});

@@ -1,5 +1,25 @@
 # PETA reports and private PDF export
 
+## Admin-only export - 1 November2026 - app0.51.1 / API0.47.2
+
+Owner restricts all PETA PDF exports to verified admins. This supersedes the
+participant download introduced below. Remove the download action from legacy,
+program and result-only participant journeys; keep the full on-screen report.
+Remove the API participant `result/pdf` route, not just its UI button. The only
+PDF routes are admin individual/group POSTs with fresh role/permission checks.
+Participant cookies or program bearer credentials do not grant admin exports.
+No SQL/env change: the old database PDF helper is service-role-only and no longer
+called by any HTTP handler. Deploy API0.47.2 with app0.51.1. Existing downloaded
+files cannot be revoked. Browser print/save is outside the app's export controls.
+
+Verification:52 scoped frontend tests,91 API PETA tests and two synthetic
+desktop/mobile browser cases pass. Checks cover all four participant entry
+variants, missing download actions/requests, removed HTTP methods even with
+participant credentials, retained admin exports and expired/revoked access.
+Participant/admin captures were inspected together; no layout changes beyond
+the removed action. Scoped lint, type checks and both production builds pass;
+the UI detector reports no findings. This is not a live deployment or pentest.
+
 ## Implemented - 1 November2026 - app0.51.0 / API0.47.0 / SQL80
 
 Presentation update in API0.47.1: original BinaHub wordmark, embedded Inter fonts,
@@ -15,7 +35,7 @@ SQL79's shared access for all verified BinaHub admins remains in effect.
 
 ### Where to find it
 
-- Participant result → **Unduh PDF individu**.
+- Participant result → read the report on screen only; no PDF download.
 - Admin → PETA → choose program → **Lihat hasil peserta** → **Unduh PDF individu**.
 - Admin → PETA → choose exactly one program → **Laporan grup** →
   **Siapkan laporan grup** → inspect coverage → **Unduh PDF grup**.
@@ -47,12 +67,12 @@ This is a named **internal** report, not anonymized. BinaHub review permission
 does not imply permission to send it to an employer. External reporting still
 requires policy, minimum group size and small-group/filter privacy safeguards.
 
-Every export rechecks scoped participant credentials/live program identity or
-the verified admin role and current result permission. SQL functions remain
+Every export rechecks the verified admin role and current result permission.
+SQL functions remain
 service-role only. Bodies contain only session/workspace IDs, not caller scores
 or actor identity. Schemas strip private fields. Attachments are no-store,
 noindex and nosniff; filenames have no names/tokens. Separate20/hour export
-budget per credential/admin. Audit events record requests, not proof of browser
+budget per admin. Audit events record requests, not proof of browser
 file saving. No AI, email, public link or durable server PDF store is used.
 
 Downloaded copies remain on the device and cannot be revoked or erased by the

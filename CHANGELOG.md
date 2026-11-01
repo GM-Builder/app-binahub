@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.51.1] - 2026-11-01
+
+- Batasi ekspor PDF PETA untuk admin saja. Hapus tombol unduh di seluruh alur
+  peserta (program, undangan lama dan halaman hasil), beserta varian unduhan
+  peserta pada komponen. Peserta tetap dapat membaca hasil/chart di layar.
+- Admin tetap dapat mengunduh PDF individu dan grup sesuai izin peninjauan.
+  Memerlukan API0.47.2 yang menghapus endpoint PDF peserta. Tidak ada SQL/env
+  baru, perubahan skor, persetujuan atau masa simpan.
+
 ## [0.51.0] - 2026-11-01
 
 - Tambahkan unduh PDF individu pada hasil peserta dan peninjauan admin PETA,

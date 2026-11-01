@@ -6,6 +6,23 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Admin-only PDF export - 1 November2026 - app0.51.1 / API0.47.2
+
+Owner removes PDF downloads from all participant journeys, including legacy,
+program and result-only entry. Keep the existing report/charts, focus, identity
+and navigation intact; remove the download action and its unused spacing rule.
+Admin individual/group downloads remain in the existing workspace, with the
+same consent/retention guards. API removes the participant PDF route too, not
+merely its button. This supersedes the participant-download instructions below;
+no redesign, scoring/consent change, new asset, SQL or environment variable.
+
+Finish:52 frontend tests,91 API PETA tests and two desktop/mobile browser cases
+pass; participant result and admin individual captures were inspected together.
+No participant button/request remains; admin individual/group downloads succeed
+and permission-denial still offers retry. Scoped lint/type checks and both
+production builds pass; the scoped UI detector returns no findings. No live
+production access or independent security certification is implied.
+
 ## PDF hierarchy refinement - 1 November2026 - API0.47.1
 
 Owner requests typographic hierarchy, consistent leading and balanced PDF spacing,

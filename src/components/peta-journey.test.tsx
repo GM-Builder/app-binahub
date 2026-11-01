@@ -3,10 +3,20 @@ import {render,screen,fireEvent,waitFor,cleanup,within} from '@testing-library/r
 import {PetaJourney,PetaSelector} from './peta-journey';
 import {PetaReport} from './peta-report';
 import {makePetaSession,petaSyntheticReport} from '@/test/fixtures/peta';
+vi.mock('@/lib/supabase',()=>({supabase:{auth:{getSession:async()=>({data:{session:{access_token:'synthetic-participant-token'}}})}}}));
 const response=(body:unknown,status=200)=>Promise.resolve(new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}}));
 beforeEach(()=>{window.history.replaceState(null,'','/peta');vi.stubGlobal('fetch',vi.fn());});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 describe('PETA participant UX',()=>{
+ it.each([{programMode:false,resultOnly:false},{programMode:false,resultOnly:true},{programMode:true,resultOnly:false},{programMode:true,resultOnly:true}])('keeps results readable without any PDF export for participant entry %j',async props=>{
+  const session={...makePetaSession(),status:'submitted',revision:24,submittedAt:petaSyntheticReport.submittedAt};
+  vi.mocked(fetch).mockImplementation(url=>String(url).endsWith('/result')?response({success:true,report:petaSyntheticReport}):String(url).endsWith('/program')?response({success:true,hasSession:true}):response({success:true,session,csrfToken:'synthetic'}));
+  render(<PetaJourney {...props}/>);
+  expect(await screen.findByRole('heading',{name:'Peta preferensi perilaku kerja Anda'})).toBeVisible();
+  expect(screen.getByRole('table',{name:'Rincian angka pilihan'})).toBeVisible();expect(screen.getAllByRole('img')).toHaveLength(3);
+  expect(screen.queryByRole('button',{name:/unduh|pdf/i})).not.toBeInTheDocument();expect(document.querySelector('a[download]')).not.toBeInTheDocument();
+  expect(vi.mocked(fetch).mock.calls.every(([url])=>!String(url).includes('/pdf'))).toBe(true);
+ });
  it.each([1,2] as const)('omits the storage/contact footer from reports at heading level %s without changing the report',headingLevel=>{
   const before=JSON.stringify(petaSyntheticReport);render(<PetaReport report={petaSyntheticReport} headingLevel={headingLevel}/>);
   expect(screen.queryByText(/Hasil tersimpan sampai|Untuk permintaan terkait data atau pendampingan/)).not.toBeInTheDocument();

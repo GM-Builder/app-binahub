@@ -3,7 +3,7 @@ import {makePetaSession,petaSyntheticReport} from '../src/test/fixtures/peta';
 test.skip(process.env.PLAYWRIGHT_PETA_PREVIEW!=='1','Synthetic loopback only');
 const ws='a3115319-1922-471e-bce7-8239ac25e0c0';
 
-test('PETA private PDF controls and internal group report work on desktop and mobile',async({page},info)=>{
+test('PETA PDFs are admin-only while participant results stay readable on desktop and mobile',async({page},info)=>{
  const device=info.project.name.includes('mobile')?'mobile':'desktop';
  await page.setViewportSize({width:device==='mobile'?390:1440,height:device==='mobile'?844:1000});
  const session={...makePetaSession(),status:'submitted',revision:24,submittedAt:petaSyntheticReport.submittedAt};
@@ -20,14 +20,24 @@ test('PETA private PDF controls and internal group report work on desktop and mo
   }
   if(path.endsWith('/reports/group')){expect(request.postDataJSON()).toEqual({workspaceId:ws});return route.fulfill({json:{success:true,report:group}});}
   if(path.endsWith('/session-action'))return route.fulfill({json:{success:true,report:petaSyntheticReport}});
+  if(path.endsWith('/program'))return route.fulfill({json:{success:true,hasSession:true}});
+  if(path.endsWith('/program/resume'))return route.fulfill({json:{success:true,session,csrfToken:'synthetic'}});
   if(path.endsWith('/session'))return route.fulfill({json:{success:true,session,csrfToken:'synthetic'}});
   if(path.endsWith('/result'))return route.fulfill({json:{success:true,report:petaSyntheticReport}});
   return route.fulfill({json:{success:true,...dashboard}});
  });
- await page.goto('/?peta');await expect(page.getByRole('button',{name:'Unduh PDF individu'})).toBeVisible();
- const own=page.waitForEvent('download');await page.getByRole('button',{name:'Unduh PDF individu'}).click();expect((await own).suggestedFilename()).toBe('peta-individu.pdf');
- await page.screenshot({path:'.impeccable/review/peta-pdf-individual-'+device+'.png',fullPage:true});
+ for(const entry of ['/?peta','/?peta-program']){
+  await page.goto(entry);await expect(page.getByRole('heading',{name:'Peta preferensi perilaku kerja Anda'})).toBeVisible();
+  await expect(page.getByRole('table',{name:'Rincian angka pilihan'})).toBeVisible();await expect(page.getByRole('button',{name:/unduh|pdf/i})).toHaveCount(0);await expect(page.locator('a[download]')).toHaveCount(0);
+ }
+ expect(exports).toEqual([]);
+ await page.screenshot({path:'.impeccable/review/peta-view-only-participant-'+device+'.png',fullPage:true});
  await page.goto('/?peta-admin');await expect(page.getByRole('combobox',{name:'Program',exact:true})).toHaveValue(ws);
+ await page.getByRole('button',{name:'Lihat hasil peserta'}).click();
+ await expect(page.getByRole('button',{name:'Unduh PDF individu'})).toBeVisible();
+ const individual=page.waitForEvent('download');await page.getByRole('button',{name:'Unduh PDF individu'}).click();expect((await individual).suggestedFilename()).toBe('peta-individu.pdf');
+ await page.screenshot({path:'.impeccable/review/peta-pdf-admin-individual-'+device+'.png',fullPage:true});
+ await page.getByRole('button',{name:'Kembali ke daftar peserta'}).click();
  await page.getByRole('button',{name:'Laporan grup',exact:true}).click();await page.getByRole('button',{name:'Siapkan laporan grup'}).click();
  await expect(page.getByRole('button',{name:'Unduh PDF grup'})).toBeVisible();await expect(page.getByRole('row')).toHaveCount(5);
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Unduh PDF grup'}).click();expect((await download).suggestedFilename()).toBe('peta-grup-internal.pdf');
@@ -35,7 +45,7 @@ test('PETA private PDF controls and internal group report work on desktop and mo
  for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  deny=true;await page.getByRole('button',{name:'Unduh PDF grup'}).click();await expect(page.getByRole('alert')).toHaveText('Hasil tidak tersedia atau izin telah berubah.');
  await expect(page.getByRole('button',{name:'Unduh PDF grup'})).toBeEnabled();
- expect(exports).toEqual(['/api/peta/result/pdf','/api/peta/admin/reports/group/pdf','/api/peta/admin/reports/group/pdf']);
+ expect(exports).toEqual(['/api/peta/admin/reports/individual/pdf','/api/peta/admin/reports/group/pdf','/api/peta/admin/reports/group/pdf']);
 });
 
 test('complete PETA instructions retain the introduction, full guidance and optional consent',async({page},info)=>{
