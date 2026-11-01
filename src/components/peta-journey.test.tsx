@@ -20,6 +20,32 @@ describe('PETA participant UX',()=>{
   expect(screen.getByRole('checkbox',{name:/Saya mengizinkan tim admin BinaHub/})).not.toBeChecked();
   fireEvent.click(screen.getByText('Penggunaan data dan hasil Anda'));expect(screen.getByText(/hasil dapat ditinjau oleh tim admin BinaHub sebagai pendamping program/)).toBeVisible();
  });
+ it('adds explicit most/least instructions without losing the introduction, full guidance or disclaimer',async()=>{
+  window.history.replaceState(null,'','/peta#invite='+'a'.repeat(64));
+  vi.mocked(fetch).mockImplementation(()=>response({success:true,invitation:{workspaceName:'Synthetic',privacyReference:'Internal reference',retentionMonths:12,consultantAccess:true,consentVersion:'peta-privacy-v1',purpose:'start',expiresAt:null}}));
+  render(<PetaJourney/>);await screen.findByRole('heading',{name:'Sebelum memulai'});
+  expect(screen.getByText(/PETA \(Pemetaan Tabiat\) membantu Anda mengenali kecenderungan/)).toBeVisible();
+  expect(screen.getByText(/Anda akan menanggapi 24 situasi kerja/)).toBeVisible();
+  const instructions=screen.getByRole('heading',{name:'Petunjuk pengisian'}).nextElementSibling!;
+  expect(instructions.tagName).toBe('OL');expect(instructions.children).toHaveLength(5);
+  expect(within(instructions as HTMLElement).getByText('Kolom 1 — Paling sesuai:')).toBeVisible();
+  expect(within(instructions as HTMLElement).getByText('Kolom 2 — Paling tidak sesuai:')).toBeVisible();
+  expect(within(instructions as HTMLElement).getByText(/Tidak ada jawaban benar atau salah/)).toBeVisible();
+  expect(within(instructions as HTMLElement).getByText('Sebelumnya')).toBeVisible();
+  expect(within(instructions as HTMLElement).getByText('Kirim dan lihat hasil')).toBeVisible();
+  expect(screen.getByText(/Latihan tidak dihitung dalam hasil dan tidak disimpan/)).toBeVisible();
+  expect(screen.getAllByText('Hasil merupakan kecenderungan pribadi/tabiat, bukan ukuran kemampuan/kompetensi.')).toHaveLength(1);
+  expect(document.body.textContent).not.toMatch(/Internal reference|peta-privacy-v1|1\.0\.0-pilot|30 menit|delapan jam/);
+  expect(vi.mocked(fetch).mock.calls).toHaveLength(1);
+ });
+ it('does not promise another practice step on a legacy recovery invitation',async()=>{
+  window.history.replaceState(null,'','/peta#invite='+'a'.repeat(64));
+  vi.mocked(fetch).mockImplementation(()=>response({success:true,invitation:{workspaceName:'Synthetic',retentionMonths:12,consultantAccess:true,consentVersion:'peta-privacy-v1',purpose:'resume',expiresAt:null}}));
+  render(<PetaJourney/>);await screen.findByRole('heading',{name:'Sebelum memulai'});
+  expect(screen.queryByText(/Anda akan mencoba satu situasi latihan/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('checkbox',{name:/Saya mengizinkan tim admin/})).not.toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Pulihkan akses'})).toBeDisabled();
+ });
  it('prevents most/least duplication with labelled native radios',()=>{const block=makePetaSession().blocks[0],change=vi.fn();render(<PetaSelector block={block} pair={{most:'A',least:null}} onChange={change}/>);expect(screen.getByRole('radio',{name:'Paling tidak sesuai dengan saya: '+block.options[0].text})).toBeDisabled();fireEvent.click(screen.getByRole('radio',{name:'Paling tidak sesuai dengan saya: '+block.options[1].text}));expect(change).toHaveBeenCalledWith({most:'A',least:'B'});});
  it('moves to the next situation while the answer request is still pending',async()=>{
   const s=makePetaSession();s.answers[s.blocks[0].id]={most:'A',least:'B'};let finish!:(value:Response)=>void;

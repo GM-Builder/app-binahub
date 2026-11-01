@@ -6,6 +6,29 @@ related_targets: [src/components/peta-report.tsx, src/components/peta-admin.tsx,
 ---
 # PETA invitation pilot
 
+## Complete pre-start guidance · 1 November 2026 · app0.50.4
+
+The owner asks to ADD the explicit most/least guidance, not reduce the pre-start
+page to only those two instructions. Keep the introduction/purpose of PETA and
+24-situation/four-statement format, a complete five-step ordered guide with two
+nested column explanations, honest-answer guidance, Back/review/finalization,
+and the unscored practice explanation for new invitations. Put the CEO-approved
+preference-not-competence disclaimer once in its notice. Merge duplicate purpose
+copy in the surrounding header/footer; do not restore technical policy/version/
+session-timeout bullets. Retain the separate privacy disclosure and unchanged
+unchecked consent controls. Native list semantics and existing navy/Jakarta,
+760px task layout are preserved. No backend, source, scoring, SQL or env changes.
+
+35 scoped Vitest tests and two synthetic browser tests passed. Desktop1440 and
+mobile390 full-page captures at `.impeccable/review/peta-instructions-complete-*`
+were inspected together; the same tests passed overflow checks at320/768/1024px.
+The inherited screenshot/Playwright launcher is retained and now forwards CLI
+filters so this copy pass does not need an unrelated whole-product browser run.
+Scoped ESLint, TypeScript and the Next16.4.2 production build passed; the scoped
+mechanical detector reported no findings. Production deployment is not verified
+by these local checks. The first sandboxed Vitest launch could not rename its
+temporary cache; the unchanged suite passed when rerun with normal local access.
+
 ## Shared admin access · 31 October 2026
 
 Owner explicitly replaces the creator-only admin scope with access for all verified

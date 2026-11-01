@@ -6,6 +6,14 @@ or psychometrically validated product. Nothing in this release activates payment
 
 ## Access and daily use
 
+Pre-start copy update, 1 November 2026 (app0.50.4): the full PETA introduction,
+24-situation/four-statement format, complete five-step guide and initial unscored
+practice explanation are shown together. The explicit column1 most/column2 least
+instructions are additions within the guide, not replacements for it. Duplicated
+purpose copy is merged; the CEO disclaimer appears once. Privacy disclosure,
+optional review consent and required processing consent are unchanged. No API,
+SQL or environment update is needed for this frontend-only increment.
+
 1. Admin creates/selects an existing program and enables its **PETA** module in
    the program settings. Other module selections remain unchanged.
 2. Open **Program & Produk → PETA** (`/admin/peta`, optionally with `program_id`).

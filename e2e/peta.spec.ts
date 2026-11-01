@@ -3,6 +3,35 @@ import {makePetaSession,petaSyntheticReport} from '../src/test/fixtures/peta';
 test.skip(process.env.PLAYWRIGHT_PETA_PREVIEW!=='1','Synthetic loopback only');
 const ws='a3115319-1922-471e-bce7-8239ac25e0c0';
 
+test('complete PETA instructions retain the introduction, full guidance and optional consent',async({page},info)=>{
+ const phone=info.project.name.includes('mobile'),device=phone?'mobile':'desktop';
+ await page.setViewportSize({width:phone?390:1440,height:phone?844:1000});
+ const requests:string[]=[];
+ await page.route('**/api/**',route=>{
+  requests.push(new URL(route.request().url()).pathname);
+  return route.fulfill({json:{success:true,hasSession:false,invitation:{workspaceName:'Program sintetis',privacyReference:'INTERNAL_REFERENCE_NEVER_RENDER',retentionMonths:12,consultantAccess:true,consentVersion:'peta-program-privacy-v1',purpose:'start',expiresAt:null}}});
+ });
+ await page.goto('/?peta-program');
+ const panel=page.getByRole('heading',{name:'Sebelum memulai'}).locator('..');
+ await expect(panel.getByText(/PETA \(Pemetaan Tabiat\) membantu Anda mengenali kecenderungan/)).toBeVisible();
+ await expect(panel.getByText(/Anda akan menanggapi 24 situasi kerja/)).toBeVisible();
+ await expect(panel.locator('ol > li')).toHaveCount(5);await expect(panel.locator('ol ul > li')).toHaveCount(2);
+ for(const text of ['Kolom 1 — Paling sesuai:','Kolom 2 — Paling tidak sesuai:','Sebelumnya','Kirim dan lihat hasil'])await expect(panel.getByText(text,{exact:true})).toBeVisible();
+ await expect(panel.getByText(/Tidak ada jawaban benar atau salah/)).toBeVisible();
+ await expect(panel.getByText(/Latihan tidak dihitung dalam hasil dan tidak disimpan/)).toBeVisible();
+ await expect(panel.getByText('Hasil merupakan kecenderungan pribadi/tabiat, bukan ukuran kemampuan/kompetensi.',{exact:true})).toHaveCount(1);
+ await expect(page.getByText(/INTERNAL_REFERENCE_NEVER_RENDER|peta-program-privacy-v1|1\.0\.0-pilot/)).toHaveCount(0);
+ await expect(panel.getByRole('checkbox',{name:/Saya mengizinkan tim admin/})).not.toBeChecked();
+ await expect(panel.getByRole('button',{name:'Saya setuju dan lanjutkan'})).toBeDisabled();
+ await page.screenshot({path:'.impeccable/review/peta-instructions-complete-'+device+'.png',fullPage:true});
+ await panel.getByText('Penggunaan data dan hasil Anda',{exact:true}).click();
+ await expect(panel.getByText(/satu tahun sejak Anda mulai/)).toBeVisible();
+ await panel.getByRole('checkbox',{name:/Saya telah membaca/}).check();
+ await expect(panel.getByRole('button',{name:'Saya setuju dan lanjutkan'})).toBeEnabled();
+ expect(requests).toHaveLength(1);
+ for(const width of [320,768,1024]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+});
+
 test('program entry uses participant auth, private consent details, immediate Next and finite motion',async({page},info)=>{
  const phone=info.project.name.includes('mobile'),device=phone?'mobile':'desktop';await page.setViewportSize({width:phone?390:1440,height:phone?844:1000});
  const s=makePetaSession();s.answers[s.blocks[0].id]={most:'A',least:'B'};

@@ -85,9 +85,19 @@ try{
  window.history.replaceState(null,'','/peta#invite='+'a'.repeat(64));
  globalThis.fetch=()=>response({invitation:{workspaceName:'Synthetic',retentionMonths:12,consultantAccess:true,consentVersion:'peta-privacy-v1',purpose:'start',expiresAt:null}});
  render(React.createElement(PetaJourney));await screen.findByRole('heading',{name:'Sebelum memulai'});
+ assert(screen.getByText(/PETA \(Pemetaan Tabiat\) membantu Anda mengenali kecenderungan/));
+ assert(screen.getByText(/Anda akan menanggapi 24 situasi kerja/));
+ const instructions=screen.getByRole('heading',{name:'Petunjuk pengisian'}).nextElementSibling;
+ assert.equal(instructions.tagName,'OL');assert.equal(instructions.children.length,5);
+ assert(within(instructions).getByText('Kolom 1 — Paling sesuai:'));
+ assert(within(instructions).getByText('Kolom 2 — Paling tidak sesuai:'));
+ assert(within(instructions).getByText(/Tidak ada jawaban benar atau salah/));
+ assert(screen.getByText(/Latihan tidak dihitung dalam hasil dan tidak disimpan/));
+ assert.equal(screen.getAllByText('Hasil merupakan kecenderungan pribadi/tabiat, bukan ukuran kemampuan/kompetensi.').length,1);
+ assert(!document.body.textContent.includes('1.0.0-pilot'));
  assert.equal(screen.getByRole('checkbox',{name:/Saya mengizinkan tim admin BinaHub/}).checked,false);
  assert.equal(screen.getByRole('button',{name:/Saya setuju dan lanjutkan/}).disabled,true);
- cleanup();passed('participant review consent remains separate, optional and unchecked');
+ cleanup();passed('complete introduction/instructions/disclaimer coexist with separate unchecked consent');
 
  window.history.replaceState(null,'','/admin/peta');
  const dashboard={sourceReady:true,programs:[{id:'program',title:'Synthetic program',code:'SYN',status:'active',petaEnabled:true}],workspaces:[{id:'workspace',programId:'program',name:'Synthetic program',consultantAccess:true,privacyReference:'Synthetic internal policy'}],invitations:[],audit:[],sessions:[{id:'session',workspaceId:'workspace',participantCode:'SYN',status:'submitted',completedBlocks:24,canReadResult:true,reviewConsent:true,retentionUntil:report.retentionUntil,submittedAt:report.submittedAt,consentedAt:report.submittedAt,instrumentVersion:'1.0.0-pilot',consentVersion:'peta-privacy-v1'}]};
