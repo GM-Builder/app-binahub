@@ -1,6 +1,6 @@
 'use client';
 import { useCallback,useEffect,useRef,useState } from 'react';
-import { ArrowRight,RefreshCw,Search } from 'lucide-react';
+import { ArrowRight,RefreshCw } from 'lucide-react';
 import { apiFetch } from '@/lib/api-fetch';
 import { SpinReport } from '@/components/spin-report';
 import { type SpinReport as Report } from '@/lib/spin-client';
@@ -8,7 +8,8 @@ import { spinLabel,type SpinAnswers,type SpinDefinition } from '@/lib/spin-form'
 import { SpinMeetingChecklist } from './spin-meeting-checklist';
 import { SpinMeetingCreate } from './spin-meeting-create';
 import type { MeetingChecklist } from '../_lib/spin-meeting';
-type RecordRow={id:string;status:string;contact:{name:string;company:string;email:string};submitted_at:string;error_code?:string;has_source?:boolean;meeting_status?:string|null};
+import { SpinInbox, type SpinInboxRow } from './spin-inbox';
+type RecordRow=SpinInboxRow;
 type Detail=RecordRow&{summary:Record<string,string>;answers:SpinAnswers;internal_report:Record<string,unknown>|null;report:Report|null;marketing_consent:boolean;attempts:number};
 type Delivery={id:string;status:string;attempts:number;sent_at:string|null;provider_id:string|null};
 const labels:Record<string,string>={draft:'Draft',queued:'Dalam antrean',processing:'Menyusun laporan',ready:'Laporan tersedia',failed:'Perlu penanganan',pending:'Menunggu pengiriman',sending:'Mengirim',sent:'Terkirim',uncertain:'Perlu rekonsiliasi'};
@@ -18,13 +19,38 @@ export function SpinPanel({initialSearch='',onUnsavedChange}:{initialSearch?:str
  const [creating,setCreating]=useState(false),[tab,setTab]=useState<'meeting'|'report'>('meeting'),[meetingReady,setMeetingReady]=useState(true),[debouncedSearch,setDebouncedSearch]=useState(initialSearch);
  const unsaved=useRef(false),detailHeading=useRef<HTMLHeadingElement>(null);
  const [selectedRow,setSelectedRow]=useState<RecordRow|null>(null);
+ const [listError,setListError]=useState(''),[loadedKey,setLoadedKey]=useState(''),[inboxReload,setInboxReload]=useState(0);
+ const normalizedSearch=search.trim(),requestKey=JSON.stringify([page,normalizedSearch,reload,inboxReload]);
+ const listLoading=loading||normalizedSearch!==debouncedSearch.trim()||loadedKey!==requestKey;
  const onDirty=useCallback((dirty:boolean)=>{unsaved.current=dirty;onUnsavedChange?.(dirty);},[onUnsavedChange]);
  const onSaved=useCallback((value:MeetingChecklist)=>{setRows(current=>current.map(row=>row.id===value.id?{...row,meeting_status:value.status}:row));},[]);
  const mayLeave=()=>!unsaved.current||window.confirm('Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?');
  useEffect(()=>{const timer=setTimeout(()=>setDebouncedSearch(search),300);return()=>clearTimeout(timer);},[search]);
- useEffect(()=>{let active=true;const controller=new AbortController();
- void Promise.resolve().then(async()=>{if(active){setLoading(true);setError('');}let response=await apiFetch('/api/admin/discovery/meetings?page='+page+'&search='+encodeURIComponent(debouncedSearch),{signal:controller.signal,cache:'no-store'});const ready=response.ok;if(!ready&&(response.status===404||response.status===503))response=await apiFetch('/api/admin/discovery?page='+page,{signal:controller.signal,cache:'no-store'});if(active)setMeetingReady(ready);return response;}).then(async r=>{const body=await r.json();if(!r.ok)throw new Error(body.error);if(active){setRows(body.records);setTotal(body.total);}})
- .catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;controller.abort();};},[page,reload,debouncedSearch]);
+ useEffect(()=>{
+  if(normalizedSearch!==debouncedSearch.trim())return;
+  let active=true,timedOut=false,failureMessage='';const controller=new AbortController();
+  const timeout=setTimeout(()=>{if(!active)return;timedOut=true;controller.abort();setRows([]);setTotal(0);setLoadedKey(requestKey);setListError('Memuat daftar terlalu lama. Periksa koneksi, lalu coba lagi.');setLoading(false);},20000);
+  void Promise.resolve().then(async()=>{
+   if(!active)return;
+   setLoading(true);setListError('');
+   const query='page='+page+'&search='+encodeURIComponent(normalizedSearch);
+   let response=await apiFetch('/api/admin/discovery/meetings?'+query,{signal:controller.signal,cache:'no-store'});
+   if(!active||timedOut)return;
+   const ready=response.ok;
+   if(!ready&&(response.status===404||response.status===503))response=await apiFetch('/api/admin/discovery?'+query,{signal:controller.signal,cache:'no-store'});
+   if(!response.ok){failureMessage=response.status===401||response.status===403?'Sesi admin tidak tersedia. Silakan masuk kembali.':response.status===429?'Terlalu banyak permintaan. Tunggu sebentar, lalu coba lagi.':'Daftar kebutuhan belum dapat dimuat. Silakan coba lagi.';throw new Error(failureMessage);}
+   const body=await response.json();
+   if(!ready&&normalizedSearch&&body.searchApplied!==true){failureMessage='Pencarian arsip memerlukan pembaruan API. Perbarui API, lalu coba lagi.';throw new Error(failureMessage);}
+   if(!Array.isArray(body.records)||!Number.isSafeInteger(body.total)||body.total<0)throw new Error('Respons daftar belum dapat dibaca. Silakan coba lagi.');
+   if(!active||timedOut)return;
+   setMeetingReady(ready);
+   const lastPage=Math.max(0,Math.ceil(body.total/20)-1);
+   if(page>lastPage){setPage(lastPage);return;}
+   setRows(body.records);setTotal(body.total);setLoadedKey(requestKey);
+  }).catch(()=>{if(active){setRows([]);setTotal(0);setLoadedKey(requestKey);setListError(timedOut?'Memuat daftar terlalu lama. Periksa koneksi, lalu coba lagi.':failureMessage||'Daftar kebutuhan belum dapat dimuat. Periksa koneksi atau sesi admin, lalu coba lagi.');}})
+  .finally(()=>{clearTimeout(timeout);if(active)setLoading(false);});
+  return()=>{active=false;clearTimeout(timeout);controller.abort();};
+ },[page,reload,inboxReload,normalizedSearch,debouncedSearch,requestKey]);
  useEffect(()=>{if(!selected)return;let active=true;const controller=new AbortController();
  void Promise.resolve().then(async()=>{if(active){setDetail(null);setError('');}
  if(selectedRow?.has_source===false){if(active){setDetail({...selectedRow,summary:{},answers:{},internal_report:null,report:null,marketing_consent:false,attempts:0});setJobs([]);setDefinition(null);}return;}
@@ -32,14 +58,13 @@ export function SpinPanel({initialSearch='',onUnsavedChange}:{initialSearch?:str
  .catch(e=>{if(active)setError(e.message);});return()=>{active=false;controller.abort();};},[selected,selectedRow,reload]);
  useEffect(()=>{if(detail)detailHeading.current?.focus();},[detail]);
  function open(row:RecordRow){if(mayLeave()){setSelectedRow(row);setSelected(row.id);setMessage('');setCreating(false);setTab(meetingReady?'meeting':'report');}}
- function created(value:MeetingChecklist){const row:RecordRow={id:value.id,contact:value.contact,status:'meeting',submitted_at:value.updated_at||new Date().toISOString(),has_source:false,meeting_status:value.status};setRows(current=>[row,...current].slice(0,20));setTotal(current=>current+1);open(row);}
+ function created(value:MeetingChecklist){const row:RecordRow={id:value.id,contact:value.contact,status:'meeting',submitted_at:value.updated_at||new Date().toISOString(),has_source:false,meeting_status:value.status};setReload(x=>x+1);open(row);}
  async function retry(){if(lock.current||!selected)return;lock.current=true;setBusy(true);setError('');try{const r=await apiFetch('/api/admin/discovery/'+selected+'/retry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'process_pending'})});const b=await r.json();if(!r.ok)throw new Error(b.error);setMessage(b.message);setReload(x=>x+1);}catch(e){setError(e instanceof Error?e.message:'Permintaan gagal.');}finally{lock.current=false;setBusy(false);}}
- const visible=meetingReady?rows:rows.filter(r=>(r.contact.name+' '+r.contact.company+' '+r.contact.email).toLowerCase().includes(search.toLowerCase()));
  return <section className="space-y-5"><header className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-xl font-semibold tracking-tight text-slate-950">Kebutuhan program</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Lihat pengisian klien dan lengkapi kebutuhan saat konsultasi, dalam satu tempat.</p></div><div className="flex flex-wrap gap-2"><a href="/discovery" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-[#0B2C6B]">Buka formulir<ArrowRight size={15} aria-hidden="true"/></a><button type="button" disabled={!meetingReady} onClick={()=>{if(mayLeave()){setSelected('');setSelectedRow(null);setCreating(true);}}} className="min-h-11 rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white disabled:opacity-50">Mulai checklist</button></div></header>
  {!meetingReady&&<p role="status" className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">Pengisian dan laporan tetap dapat dilihat. Checklist meeting tersedia setelah pembaruan API dan database diterapkan.</p>}
  {creating&&<SpinMeetingCreate onCreated={created} onCancel={()=>setCreating(false)}/>}
  {error&&<div role="alert" className="text-sm leading-6 text-red-700">{error}<button onClick={()=>setReload(x=>x+1)} className="ml-3 min-h-11 font-semibold underline">Coba lagi</button></div>}{message&&<p role="status" className="text-sm leading-6 text-slate-600">{message}</p>}
- <div className="grid items-start gap-5 xl:grid-cols-[300px_minmax(0,1fr)]"><section className="min-w-0 rounded-2xl border border-slate-200 bg-white"><div className="border-b border-slate-200 p-4"><label className="flex items-center gap-2"><Search size={16} aria-hidden="true" className="text-slate-600"/><input type="search" maxLength={150} aria-label={meetingReady?'Cari klien atau perusahaan':'Cari di halaman ini'} placeholder={meetingReady?'Cari klien atau perusahaan':'Cari di halaman ini'} value={search} onChange={e=>{setSearch(e.target.value);setPage(0);}} className="min-h-11 min-w-0 flex-1 rounded-lg bg-slate-50 px-3 text-sm placeholder:text-slate-600"/></label><p className="mt-2 text-xs text-slate-600">{total} pengisian dan checklist tercatat</p></div>{loading?<p role="status" className="p-5 text-sm text-slate-600">Memuat pengisian…</p>:visible.length?<ul className="divide-y divide-slate-100">{visible.map(r=><li key={r.id}><button type="button" onClick={()=>open(r)} aria-pressed={selected===r.id} className={'w-full p-4 text-left transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#0B2C6B] '+(selected===r.id?'bg-blue-50/70':'')}><p className="break-words text-sm font-semibold text-slate-950">{r.contact.company}</p><p className="mt-1 break-words text-xs leading-5 text-slate-600">{r.contact.name} · {r.contact.email}</p><p className="mt-2 text-xs font-semibold text-[#0B2C6B]">{r.meeting_status==='completed'?'Meeting selesai':r.meeting_status==='in_progress'?'Checklist sedang dilengkapi':'Siap untuk konsultasi'}</p><p className="mt-1 text-xs leading-5 text-slate-600">{r.has_source===false?'Checklist oleh admin':labels[r.status]||r.status} · {new Date(r.submitted_at).toLocaleDateString('id-ID')}</p></button></li>)}</ul>:<div className="p-5"><h3 className="text-sm font-semibold">Belum ada pengisian yang cocok</h3><p className="mt-2 text-xs leading-6 text-slate-600">Bagikan formulir, ubah pencarian, atau mulai checklist saat meeting. Draft klien yang belum dikirim tidak ditampilkan.</p></div>}<div className="flex items-center justify-between gap-2 border-t border-slate-200 px-4"><button disabled={page===0||loading} onClick={()=>setPage(p=>p-1)} className="min-h-11 text-xs font-semibold disabled:opacity-40">Sebelumnya</button><span className="text-xs tabular-nums">{page+1}</span><button disabled={(page+1)*20>=total||loading} onClick={()=>setPage(p=>p+1)} className="min-h-11 text-xs font-semibold disabled:opacity-40">Berikutnya</button></div></section>
+ <div className="grid items-start gap-5 xl:grid-cols-[320px_minmax(0,1fr)]"><SpinInbox rows={rows} total={total} page={page} search={search} loading={listLoading} error={listError} selected={selected} meetingReady={meetingReady} onSearch={value=>{setSearch(value);setPage(0);}} onPage={setPage} onOpen={open} onRetry={()=>setInboxReload(x=>x+1)}/>
  <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">{!selected?<div className="py-12"><h3 className="text-lg font-semibold text-slate-950">Buka kebutuhan klien sebelum meeting</h3><p className="mt-3 text-sm leading-7 text-slate-600">Pilih pengisian klien untuk melihat jawaban dan melanjutkan bagian yang belum diisi. Klien belum mengisi? Gunakan “Mulai checklist”.</p></div>:!detail?<p role="status" className="py-12 text-sm text-slate-600">Memuat konteks klien…</p>:<><header className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-5"><div><h3 ref={detailHeading} tabIndex={-1} className="text-lg font-semibold text-slate-950 focus:outline-none">{detail.contact.company}</h3><p className="mt-1 break-words text-sm leading-6 text-slate-600">{detail.contact.name} · {detail.contact.email}</p><p className="mt-2 text-xs text-slate-600">{selectedRow?.has_source===false?'Checklist dimulai oleh admin':'Status laporan: '+(labels[detail.status]||detail.status)}</p></div><button disabled={busy} onClick={()=>{if(mayLeave())setReload(x=>x+1);}} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold"><RefreshCw size={14} aria-hidden="true"/>Perbarui</button></header>
  {meetingReady&&<nav aria-label="Tampilan kebutuhan klien" className="mt-4 flex flex-wrap gap-2">{(['meeting','report'] as const).filter(value=>value!=='report'||selectedRow?.has_source!==false).map(value=><button type="button" key={value} aria-pressed={tab===value} onClick={()=>{if(value===tab||mayLeave())setTab(value);}} className={'min-h-11 rounded-xl px-4 text-sm font-semibold '+(tab===value?'bg-[#0B2C6B] text-white':'text-slate-700 hover:bg-slate-50')}>{value==='meeting'?'Checklist meeting':'Pengisian & laporan klien'}</button>)}</nav>}
  {meetingReady&&tab==='meeting'?<SpinMeetingChecklist key={selected+':'+reload} id={selected} onSaved={onSaved} onDirty={onDirty}/>:<>

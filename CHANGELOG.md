@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.51.3] - 2026-11-02
+
+- Correct recommendation inbox archive fallback: send search to the server,
+  instead of filtering only the current 20 rows. Require API0.47.7 search
+  capability for searched archive results; never label an old unfiltered response
+  as matching results. The main meeting inbox continues to use its existing RPC.
+- Show server totals, ranges, page counts, distinct empty/error states and retry.
+  Reset search to page one, recover shrinking result sets, cancel obsolete
+  requests and time out after20 seconds. List-only retry preserves the selected
+  meeting editor and unsaved notes. Keep pagination visible with a bounded list.
+- Add mocked UI/browser regressions and exclude temporary PDF QA output from
+  lint. Preserve admin appearance, scoring, permission, AI and email behavior.
+  Deploy API first. No SQL/env, scheduler activation or production processing.
+
 ## [0.51.2] - 2026-11-02
 
 - Lengkapi panel Operations existing dengan kesiapan database, empat antrean

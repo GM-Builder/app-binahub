@@ -26,7 +26,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
-| R07 | Pagination/pencarian server, prioritas tugas admin | PETA selesai lokal; daftar lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
+| R07 | Pagination/pencarian server, prioritas tugas admin | PETA dan inbox rekomendasi selesai lokal; daftar diagnosis/CRM lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
@@ -226,3 +226,39 @@ bukan daftar status runtime terkini.
 - R06 belum menutup monitoring resource hosting, DB/antrean AMS, workflow/event
   lain atau alarm eksternal. Infrastruktur/channel yang tertunda tidak menghalangi
   pekerjaan read-only/pagination R07 dan penyiapan proposal-review R08 berikutnya.
+
+### Batch7 - 2 November2026: standar PDF lintas produk
+
+- API0.47.6 dan AMS root0.11.4/web0.10.4 menyelaraskan PDF diagnosis organisasi,
+  proposal, rekomendasi, T-BOS, kuesioner program dan CV dengan identitas cetak
+  PETA: logo asli, font lokal, margin, hierarki, pemisahan halaman dan footer.
+- PDF PETA tetap hanya untuk admin. Skor, laporan sumber, izin, katalog/harga
+  dan arsip lampiran yang sudah dibekukan tidak diubah. Tidak ada SQL/env baru.
+- Dua contoh baru memakai fixture sintetis: T-BOS3 tim/30 anggota dan diagnosis
+  organisasi49 pertanyaan. Keduanya tidak memanggil AI/email atau data produksi.
+
+### Batch8 - 2 November2026: R07 inbox kebutuhan program
+
+- App0.51.3/API0.47.7 menutup cacat jalur cadangan inbox rekomendasi: sebelumnya
+  pencarian hanya memfilter20 record yang sudah dimuat, meski total seluruh arsip.
+  Kini filter kontak dijalankan server sebelum hitung total dan pilih halaman.
+  Primary inbox meeting tetap RPC existing, mencakup checklist admin.
+- Karakter khusus dicari sebagai teks literal, bukan pola regex atau ekspresi
+  filter. Batas150 karakter/20 record, auth/rate limit, submitted-only dan DTO
+  ringkas tetap. Tidak mengirim jawaban atau laporan dalam respons daftar.
+- Jumlah/rentang/halaman jelas; pencarian kembali ke halaman pertama. Request lama
+  dibatalkan/diabaikan, timeout20 detik dan retry tersedia. Catatan meeting tidak
+  di-remount saat retry daftar. Halaman di luar rentang pulih setelah data berubah.
+- Daftar dibatasi tinggi agar pagination dan detail tetap dekat pada desktop/mobile.
+  Styling admin existing dipertahankan. Error tidak menampilkan hasil lama atau
+  nol sehat. API lama yang belum mendukung pencarian arsip ditolak secara jelas.
+- Deploy API sebelum app. Tidak ada SQL/env baru, scheduler, pengiriman,
+  perubahan instrumen/skor/izin/retensi, atau pemrosesan program PFA2026.
+- R07 belum mencakup seluruh daftar diagnosis, inquiry, CRM dan AMS; jangan
+  menandai audit pagination lintas sistem selesai. R03 tetap ditunda sesuai
+  permintaan pemilik sampai migrasi Vercel BinaHub + Pro.
+- Bukti lokal:924 tes API lulus/2 visual existing skip; suite app434 lulus,
+  lalu11 regresi inbox final lulus termasuk transport yang mengabaikan abort.
+  Lint/types/build kedua repo serta18 pemeriksaan Chromium desktop/390/320px
+  lulus. Detector tidak menemukan masalah; batas visual diperiksa dalam dua
+  putaran. Ini bukan bukti runtime produksi atau pentest Strix.
