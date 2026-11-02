@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.51.2] - 2026-11-02
+
+- Lengkapi panel Operations existing dengan kesiapan database, empat antrean
+  laporan dan aktivitas pemroses. Bedakan data tidak tersedia, worker belum
+  tercatat, proses tertunda/melewati lease, dan pekerjaan yang perlu ditinjau.
+- Pertahankan tampilan admin; desktop memakai tabel, mobile ringkasan per antrean.
+  Refresh manual/60detik/foreground, timeout dan pembatalan request; respons lama
+  tidak menimpa hasil baru. Kesalahan tidak mempertahankan status sehat lama.
+- Tambahkan kontrak DTO, regresi UI dan preview/browser test sintetis tanpa
+  layanan nyata. Memerlukan API0.47.5 dan SQL81 yang dikonfirmasi pemilik.
+- Alarm hanya dashboard. Tidak ada env baru, email/WhatsApp otomatis, aktivasi
+  scheduler, perubahan instrumen, izin peserta atau masa simpan.
+
 ## [0.51.1] - 2026-11-01
 
 - Batasi ekspor PDF PETA untuk admin saja. Hapus tombol unduh di seluruh alur

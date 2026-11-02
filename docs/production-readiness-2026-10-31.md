@@ -25,7 +25,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R03 | Scheduler dan pemulihan seluruh antrean | Pro + Cron disetujui; aktivasi menunggu migrasi ke workspace BinaHub | Kontrak pemanggilan terautentikasi, retry terbatas, bukti heartbeat; migrasi dan Pro aktif pada tujuan diverifikasi |
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
-| R06 | Kesiapan layanan dan alarm | Berikutnya | Pisahkan liveness/readiness; antrean terlambat/worker mati terlihat, kanal alarm disetujui |
+| R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
 | R07 | Pagination/pencarian server, prioritas tugas admin | PETA selesai lokal; daftar lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
@@ -194,3 +194,35 @@ bukan daftar status runtime terkini.
   Strix baru; source/test/push bukan bukti deployment produksi telah memakai patch.
 - Berikutnya R06: pisahkan bukti liveness/readiness dan visibilitas antrean;
   pengiriman alarm tetap menunggu kanal/penerima yang disetujui.
+
+### Batch 6 - 2 November2026: monitoring laporan R06
+
+- API0.47.5 / app0.51.2: liveness publik tidak mengklaim dependensi siap.
+  Overview/readiness probe admin-only membaca4 antrean utama dan heartbeat terbaru,
+  tanpa kontak, jawaban, ID peserta, hasil/PDF, pemanggilan AI atau pengiriman.
+- SQL81 menambah ringkasan read-only dan satu baris aktivitas recovery terbaru;
+  UUID run mencegah penyelesaian lama menimpa run baru. Pemilik melaporkan SQL81
+  berhasil dijalankan. Belum ada inspeksi langsung data/runtime produksi.
+- Catat pemanggilan endpoint recovery dan kegagalan parsial. Telemetry gagal
+  tidak menghentikan recovery existing; overview tidak pernah memanggil worker.
+  Proses gagal/uncertain tetap perlu rekonsiliasi, bukan otomatis dikirim ulang.
+- Panel Operations existing mempertahankan identitas visual admin. Tabel desktop
+  menjadi ringkasan per antrean di mobile; warning global dapat ditutup, dan
+  perubahan bukti memunculkannya kembali. Bukti unavailable/stale tidak menjadi
+  nol/hijau. Timeout, abort dan hasil terlambat diuji.
+- AMS root0.11.3/web0.10.3 memperbaiki pembanding versi API0.10.1 yang usang dan
+  mengoreksi klaim status publik menjadi pemeriksaan dasar. API AMS tetap0.11.2;
+  database, antrean dan keberhasilan AI/email tidak dibuktikan halaman publik.
+- Tidak ada env baru, aktivasi scheduler, outreach, email/WhatsApp alarm, perubahan
+  instrumen/izin/retensi atau pemrosesan program PFA2026. Jadwal retensi PETA bulanan
+  tetap terpisah; pemulihan rutin menunggu migrasi Vercel + Pro.
+- Cakupan, semantik HEAD/GET, ambang dan langkah validasi deployment:
+  `binahub-api/docs/service-health-2026-11-02.md`. Ini bukan pentest Strix.
+- Bukti lokal:895 tes API lulus/2 visual existing skip,424 tes app lulus,
+  3 kontrak status AMS dan10 pemeriksaan Chromium desktop/mobile lulus.
+  Lint/types dan build API/app/web AMS lulus; satu warning ProposalPDF API lama
+  tetap ada. Tidak ada tes provider berbayar atau login/pengisian produksi.
+  Pemeriksaan visual mengikuti tampilan admin existing; detector0 temuan.
+- R06 belum menutup monitoring resource hosting, DB/antrean AMS, workflow/event
+  lain atau alarm eksternal. Infrastruktur/channel yang tertunda tidak menghalangi
+  pekerjaan read-only/pagination R07 dan penyiapan proposal-review R08 berikutnya.
