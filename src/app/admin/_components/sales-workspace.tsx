@@ -25,8 +25,10 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
   const [clientType, setClientType] = useState<"assessment" | "inquiry" | "discovery">("assessment");
   const [discoverySearch, setDiscoverySearch] = useState("");
   const pendingMeeting = useRef(false);
+  const pendingInquiry = useRef(false);
+  const onInquiryDirty = useCallback((dirty: boolean) => { pendingInquiry.current = dirty; }, []);
   const onMeetingDirty = useCallback((dirty: boolean) => { pendingMeeting.current = dirty; }, []);
-  const mayLeaveMeeting = () => !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
+  const mayLeaveMeeting = () => pendingInquiry.current ? window.confirm('Ada perubahan inquiry yang belum tersimpan. Tetap tinggalkan inquiry ini?') : !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
   const changeView = (next: SalesView) => { if (next === view || mayLeaveMeeting()) { setView(next); setFilter("all"); setLimit(12); } };
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [inquiryId, setInquiryId] = useState<string | null>(null);
@@ -67,7 +69,7 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
     {view === "clients" && <>
       <div className="flex flex-wrap gap-2">{(["assessment", "inquiry", "discovery"] as const).map((type) => <button type="button" key={type} aria-pressed={clientType === type} onClick={() => { if (type === clientType || mayLeaveMeeting()) setClientType(type); }} className={`min-h-11 rounded-xl px-4 text-xs font-semibold ${clientType === type ? "bg-[#0B2C6B] text-white" : "bg-white text-slate-600"}`}>{type === "assessment" ? "Self Diagnostic & proposal" : type === "discovery" ? "Discovery organisasi" : "Inquiry masuk"}</button>)}</div>
       {clientType === "discovery" && <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">Memuat kebutuhan program…</p>}><SpinPanel initialSearch={discoverySearch} onUnsavedChange={onMeetingDirty} /></Suspense>}
-      {clientType === "assessment" ? <AssessmentPanel serverMode initialDetailTab={detailTab} data={data} records={records} query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employees} setEmployeeRange={setEmployees} minScore={minScore} setMinScore={setMinScore} expandedId={assessmentId} setExpandedId={setAssessmentId} onAction={onAction} onRefresh={onRefresh} /> : clientType === "inquiry" ? <InquiriesPanel key={inquiryId} initialSelectedId={inquiryId} inquiries={data.inquiries} onAction={onAction} onRefresh={onRefresh} /> : null}
+      {clientType === "assessment" ? <AssessmentPanel serverMode initialDetailTab={detailTab} data={data} records={records} query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employees} setEmployeeRange={setEmployees} minScore={minScore} setMinScore={setMinScore} expandedId={assessmentId} setExpandedId={setAssessmentId} onAction={onAction} onRefresh={onRefresh} /> : clientType === "inquiry" ? <InquiriesPanel serverMode onUnsavedChange={onInquiryDirty} key={inquiryId} initialSelectedId={inquiryId} inquiries={data.inquiries} onAction={onAction} onRefresh={onRefresh} /> : null}
     </>}
     {view === "pipeline" && <PipelinePanel data={data} onAction={onAction} onRefresh={onRefresh} />}
     {view === "meetings" && <MeetingsPanel bookings={data.calendarBookings || []} onOpenChecklist={booking => { setDiscoverySearch(booking.attendeeEmail); setClientType("discovery"); setView("clients"); }} />}

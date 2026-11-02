@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.51.5] - 2026-11-03
+
+- Read the main Inquiry inbox independently of the capped general dashboard.
+  Search the entire archive before 20-row pagination; show server totals,
+  filtered metrics and complete source/status choices. Sales and legacy admin
+  Inquiry entries use the same reader. Existing CRM priority summaries remain
+  limited to their dashboard coverage; this is not a full CRM pagination rewrite.
+- Load one complete detail on demand. Keep selected filters through errors,
+  preserve local notes/replies across retries and refreshes, warn before closing
+  unsaved work and retain the separate human-review/send confirmation gates.
+  Match the server's trimming after a successful reply review.
+- Separate loading, empty and unavailable states, timeout slow reads, ignore
+  stale responses and recover out-of-range pages. Keep mobile drawer navigation,
+  prevent competing focus traps during confirmation and preserve admin styling.
+- Add synthetic component and desktop/tablet/mobile browser regressions.
+  Requires API 0.47.9 and SQL83 (owner confirmed applied); no new env, worker,
+  scheduler, AI/email activation, scoring, consent or retention changes.
+
 ## [0.51.4] - 2026-11-02
 
 - Move the organization diagnosis admin page off the general dashboard payload.

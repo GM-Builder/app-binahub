@@ -570,6 +570,7 @@ export function AdminDrawer({
   onClose,
   maxWidth = "max-w-3xl",
   closeDisabled = false,
+  focusSuspended = false,
 }: {
   title: string;
   eyebrow?: string;
@@ -577,11 +578,12 @@ export function AdminDrawer({
   onClose: () => void;
   maxWidth?: string;
   closeDisabled?: boolean;
+  focusSuspended?: boolean;
 }) {
-  const dialogRef = useDialogFocus<HTMLDivElement>(onClose, closeDisabled);
+  const dialogRef = useDialogFocus<HTMLDivElement>(onClose, closeDisabled, !focusSuspended);
   const titleId = useId();
   return (
-    <div className="fixed inset-0 z-[55] flex justify-end bg-slate-950/35 backdrop-blur-[2px]">
+    <div inert={focusSuspended} className="fixed inset-0 z-[55] flex justify-end bg-slate-950/35 backdrop-blur-[2px]">
       <button type="button" disabled={closeDisabled} className="min-w-0 flex-1 cursor-default" onClick={onClose} aria-label="Tutup panel detail" />
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`flex h-full w-[min(100%,48rem)] ${maxWidth} flex-col overflow-hidden border-l border-slate-200 bg-white shadow-[-24px_0_70px_-38px_rgba(7,27,61,0.5)]`}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-white px-5 py-4 sm:px-6">

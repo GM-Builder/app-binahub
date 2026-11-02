@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.51.4",
+  "version": "0.51.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,6 +14,7 @@
     "test:service-health:ui": "node scripts/test-service-health-ui.mjs",
     "test:spin-inbox:ui": "node scripts/test-spin-inbox-ui.mjs",
     "test:assessment-inbox:ui": "node scripts/test-assessment-inbox-ui.mjs",
+    "test:inquiry-inbox:ui": "node scripts/test-inquiry-inbox-ui.mjs",
     "test:peta:revision": "node scripts/test-peta-revision-ui.mjs",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",

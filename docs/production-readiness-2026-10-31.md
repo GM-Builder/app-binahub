@@ -26,7 +26,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
-| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi dan diagnosis tim/org selesai kode; inquiry/CRM lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
+| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org dan inbox inquiry selesai kode; CRM lain/AMS menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
@@ -291,3 +291,35 @@ bukan daftar status runtime terkini.
 - Ini bukan bukti runtime/izin/deployment produksi atau pentest Strix. R07 belum
   menutup inquiry/CRM/AMS dan prioritas lintas sistem. R03 scheduler tetap ditunda
   sampai migrasi Vercel BinaHub+Pro; tidak ada aktivitas program PFA2026.
+
+### Batch 10 - 3 November 2026: R07 inbox Inquiry
+
+- App 0.51.5/API 0.47.9 memisahkan halaman Inquiry dari dashboard yang dibatasi
+  100 data. Pencarian literal mencakup nama/email/WhatsApp/pesan/sumber/status di
+  seluruh arsip, sebelum filter dan pagination 20 baris. Ringkasan mengikuti
+  filter; opsi sumber/status mencakup seluruh arsip. Entry penjualan/admin lama
+  juga memakai reader baru, tetapi ringkasan prioritas CRM lain belum dirombak.
+- SQL83 adalah fungsi baca service_role-only dan indeks urutan waktu/ID.
+  Pemilik melaporkan berhasil dijalankan. Tidak ada env baru. Daftar mengirim
+  pratinjau pesan maksimal 500 karakter, bukan catatan/draf/modul lengkap.
+  Detail lengkap hanya dimuat untuk satu ID yang dibuka; admin/rate limit/input
+  diperiksa server. Error tidak membuka diagnostik database atau menjadi nol.
+- UI membedakan loading, kosong dan gagal; timeout 20 detik, stale/late-response
+  guard, retry list/detail terpisah, reset halaman saat filter berubah, dan
+  pemulihan halaman di luar rentang. Draft/catatan lokal tidak di-remount saat
+  refresh/retry; penutupan dengan perubahan meminta konfirmasi. Perlindungan
+  ini bukan penyimpanan draft permanen atau penguncian edit lintas admin.
+- Konfirmasi kirim dan review manusia tetap wajib. Fokus drawer ditangguhkan
+  selama dialog konfirmasi agar keyboard tidak ditangkap dua dialog. Indikator
+  due menyamai status penghentian/jeda serta aturan 2/7/14 hari existing; bukan
+  bukti worker aktif atau izin melewati kebijakan pengiriman.
+- Bukti lokal: 986 tes API lulus/2 visual existing skip; suite app 463 lulus,
+  disusul 22 regresi terarah final termasuk trim balasan. Lint/types dan build
+  app/API lulus. SQL diuji dengan lebih 1.000 record sintetis;
+  40 pemeriksaan Chromium pada 1440/1024/390/320px lulus memakai API mock dan
+  seluruh mutasi diblokir. Detector tidak menemukan masalah. Bukti ini bukan
+  runtime produksi, provider delivery, pentest Strix atau jaminan tanpa celah.
+- Deploy API sebelum app. Tidak mengubah instrumen/skor/izin/retensi/harga,
+  menjalankan AI/email/cleanup/SQL produksi, atau menyentuh PFA2026. Scheduler
+  tetap ditunda sampai migrasi workspace Vercel BinaHub + Pro. R07 CRM/AMS dan
+  R08 meeting → draf proposal masih menjadi pekerjaan berikutnya.

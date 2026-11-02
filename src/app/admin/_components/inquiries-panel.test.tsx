@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { InquiryRecord } from "../_lib/types";
 import { InquiriesPanel } from "./inquiries-panel";
+vi.mock('@/lib/api-fetch', () => ({ apiFetch: vi.fn() }));
 
 function inquiry(overrides: Partial<InquiryRecord> = {}): InquiryRecord {
   return {

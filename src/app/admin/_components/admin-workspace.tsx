@@ -175,7 +175,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
           {section === "Self Diagnostic" && <AssessmentPanel serverMode data={data} records={filteredAssessments} query={query} setQuery={setQuery} category={assessmentCategory} setCategory={setAssessmentCategory} employeeRange={assessmentEmployeeRange} setEmployeeRange={setAssessmentEmployeeRange} minScore={assessmentMinScore} setMinScore={setAssessmentMinScore} expandedId={expandedId} setExpandedId={setExpandedId} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Meeting" && <MeetingsPanel bookings={data.calendarBookings || []} />}
           {section === "Kontak & Leads" && <ContactsPanel contacts={data.contacts} onAction={adminRequest} onRefresh={refreshDashboard} />}
-          {section === "Inquiry Masuk" && <InquiriesPanel inquiries={data.inquiries} onAction={adminRequest} onRefresh={refreshDashboard} />}
+          {section === "Inquiry Masuk" && <InquiriesPanel serverMode inquiries={data.inquiries} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Sales Pipeline" && <details className="mt-6 rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-medium text-slate-500">Status sistem & operasional</summary><div className="mt-4"><ObservabilityPanel onAction={adminRequest} compact /></div></details>}
         </div>
       )}

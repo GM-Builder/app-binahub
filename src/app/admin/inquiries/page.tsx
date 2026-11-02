@@ -1,2 +1,2 @@
-import { AdminWorkspace } from "../_components/admin-workspace";
-export default function AdminInquiriesPage() { return <AdminWorkspace section="Inquiry Masuk" />; }
+import { InquiryInbox } from '../_components/inquiry-inbox';
+export default function AdminInquiriesPage() { return <InquiryInbox />; }
