@@ -24,7 +24,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R02 | Satu jalur deployment website, CI yang benar | Selesai lokal; deployment belum diverifikasi | Workflow non-destruktif, quality script tersedia, build Next sesuai konfigurasi Hostinger |
 | R03 | Scheduler dan pemulihan seluruh antrean | Pro + Cron disetujui; aktivasi menunggu migrasi ke workspace BinaHub | Kontrak pemanggilan terautentikasi, retry terbatas, bukti heartbeat; migrasi dan Pro aktif pada tujuan diverifikasi |
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
-| R05 | Minimisasi data AI lintas jalur | Berikutnya | Kontak tidak dikirim tanpa kebutuhan; tes prompt dengan data sintetis |
+| R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Berikutnya | Pisahkan liveness/readiness; antrean terlambat/worker mati terlihat, kanal alarm disetujui |
 | R07 | Pagination/pencarian server, prioritas tugas admin | PETA selesai lokal; daftar lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
@@ -165,3 +165,32 @@ bukan daftar status runtime terkini.
   khusus admin, hasil peserta tetap di layar. Catatan pendamping masih terpisah.
 - Pekerjaan berikutnya R05: minimisasi data AI lintas jalur. R03 tetap menunggu
   migrasi Vercel BinaHub + Pro; R06 masih memerlukan keputusan kanal alarm.
+
+### Batch 5 - 2 November2026: R05 batas data AI
+
+- API0.47.4 memakai referensi identitas/kontak sementara per panggilan dan
+  personalisasi lokal untuk diagnosis tim, proposal, korespondensi, lead,
+  project/undangan dan chat. URL privat/pola kredensial dihapus, query/hash
+  konteks chat tidak dikirim. Referensi rusak ditolak sebelum hasil diteruskan.
+- Matching project dan AMS0.11.2 hanya memakai kualifikasi/ref sementara;
+  nama/email/ID asli dipasang dari server. Evidence lead tidak menserialisasi
+  record nested tak dikenal. Harga, skor deterministik dan alur kirim tetap.
+- SPIN tetap proyeksi kebutuhan terkonfirmasi; wording PE tetap hanya anchor,
+  tanpa identitas/konteks/jawaban/skor peserta. PETA tidak diubah.
+- Pengecualian tercatat: parsing CV dan impor profil profesional masih dapat
+  memerlukan identitas. Pola redaksi bukan DLP/anonymization: nama/alamat di teks
+  bebas, format tersamarkan dan data dalam gambar tidak dijamin terhapus.
+  Helper vision tidak ditemukan dipanggil pada source yang ditinjau; penggunaan
+  baru perlu kontrak data sendiri. Kebijakan retensi provider belum diverifikasi.
+- API:877 tes sintetis lulus/2 visual existing skip; AMS:4 tes privasi baru,
+  16 kontrak dan self-test managed/fallback lulus. Tes memakai mock/loopback,
+  bukan kuota AI, database produksi atau email nyata. Lint/types/build API dan
+  build API/web AMS lulus; warning ProposalPDF lama tidak terkait patch ini.
+- CI mencakup regresi baru. Tidak ada SQL/env baru, pembayaran aktif, perubahan
+  izin/retensi atau aktivasi worker. R03 tetap menunggu migrasi Vercel + Pro.
+- Scope teknis dan langkah verifikasi deployment ada pada dokumen
+  `binahub-api/docs/ai-data-boundaries-2026-11-02.md` dan
+  `binahub-platform/docs/AI-DATA-BOUNDARIES-2026-11-02.md`. Tidak ada pentest
+  Strix baru; source/test/push bukan bukti deployment produksi telah memakai patch.
+- Berikutnya R06: pisahkan bukti liveness/readiness dan visibilitas antrean;
+  pengiriman alarm tetap menunggu kanal/penerima yang disetujui.
