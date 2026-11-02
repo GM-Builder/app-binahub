@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Download, Eye, FileText, LoaderCircle, PauseCircle, PlayCircle, Search, SlidersHorizontal, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from '@/lib/api-fetch';
 import {
   AdminNotice,
   AdminSelect,
@@ -18,6 +19,7 @@ import type { AssessmentDocumentType, AssessmentRecord, CatalogModule, CatalogPr
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { QUESTIONS } from "@/app/insight/questions";
 import { assessmentLabel, dueFollowUp, matchesQueue, needsAttention, profileLabel, proposalState, type AssessmentDetailTab, type AssessmentQueue } from "../_lib/assessment-presentation";
+import { useAssessmentInbox } from '../_lib/use-assessment-inbox';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value);
@@ -122,8 +124,10 @@ export function AssessmentPanel({
   onAction,
   onRefresh,
   initialDetailTab = "summary",
+  serverMode = false,
+  refreshToken = 0,
 }: {
-  data: DashboardData;
+  data?: Pick<DashboardData, 'assessments' | 'answerDistribution'>;
   records: AssessmentRecord[];
   query: string;
   setQuery: (value: string) => void;
@@ -138,9 +142,9 @@ export function AssessmentPanel({
   onAction: (url: string, init?: RequestInit) => Promise<unknown>;
   onRefresh: () => Promise<void>;
   initialDetailTab?: AssessmentDetailTab;
+  serverMode?: boolean;
+  refreshToken?: number;
 }) {
-  const categories = uniqueOptions(data.assessments, (item) => item.category);
-  const employeeRanges = uniqueOptions(data.assessments, (item) => item.employees);
   const [actionError, setActionError] = useState("");
   const [actionId, setActionId] = useState<string | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -164,18 +168,39 @@ export function AssessmentPanel({
   const [actionSuccess, setActionSuccess] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(20);
   const [selectedDistributionQuestion, setSelectedDistributionQuestion] = useState<number | null>(null);
+  const inbox = useAssessmentInbox({ enabled: serverMode, search: query, category, employees: employeeRange, minScore, queue, sort, selectedId: expandedId, refreshToken });
+  const categories = serverMode ? Array.from(new Set([...(inbox.facets?.categories || []), ...(category === 'Semua' ? [] : [category])])) : uniqueOptions(data?.assessments || [], (item) => item.category);
+  const employeeRanges = serverMode ? Array.from(new Set([...(inbox.facets?.employees || []), ...(employeeRange === 'Semua' ? [] : [employeeRange])])) : uniqueOptions(data?.assessments || [], (item) => item.employees);
+  const reloadInbox = inbox.refresh;
+  const refreshRecords = useCallback(async () => { if (serverMode) reloadInbox(); else await onRefresh(); }, [serverMode, reloadInbox, onRefresh]);
+  const [distribution, setDistribution] = useState<DashboardData['answerDistribution'] | null>(null);
+  const [distributionLoading, setDistributionLoading] = useState(false);
+  const [distributionError, setDistributionError] = useState('');
+  const distributionLock = useRef(false);
+  const distributionRows = serverMode ? distribution || [] : data?.answerDistribution || [];
+  const loadDistribution = async () => {
+    if (!serverMode || distributionLock.current) return;
+    distributionLock.current = true; setDistributionLoading(true); setDistributionError('');
+    try {
+      const response = await apiFetch('/api/admin/assessments/inbox?distribution=1', { cache: 'no-store', signal: AbortSignal.timeout(20000) });
+      const body = await response.json();
+      if (!response.ok || !body.success || !Array.isArray(body.answerDistribution)) throw new Error('Pola jawaban belum dapat dimuat. Silakan coba lagi.');
+      setDistribution(body.answerDistribution);
+    } catch { setDistributionError('Pola jawaban belum dapat dimuat. Periksa koneksi, lalu coba lagi.'); }
+    finally { distributionLock.current = false; setDistributionLoading(false); }
+  };
 
-  const hasProcessingProposal = records.some((record) => !record.proposalSentAt && ["Diminta", "Sedang Disusun"].includes(record.proposalStatus));
+  const hasProcessingProposal = (serverMode ? inbox.data?.records || [] : records).some((record) => !record.proposalSentAt && ["Diminta", "Sedang Disusun"].includes(record.proposalStatus));
   useEffect(() => {
-    if (!hasProcessingProposal) return;
+    if (!hasProcessingProposal || confirmAction || builderId) return;
     let refreshing = false;
     const interval = window.setInterval(() => {
       if (refreshing || document.visibilityState !== "visible") return;
       refreshing = true;
-      void onRefresh().catch(() => undefined).finally(() => { refreshing = false; });
-    }, 10_000);
+      void refreshRecords().catch(() => undefined).finally(() => { refreshing = false; });
+    }, serverMode ? 30_000 : 10_000);
     return () => window.clearInterval(interval);
-  }, [hasProcessingProposal, onRefresh]);
+  }, [hasProcessingProposal, refreshRecords, serverMode, confirmAction, builderId]);
 
   const requestAssessmentDocument = async (record: AssessmentRecord, type: AssessmentDocumentType) => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -253,7 +278,7 @@ export function AssessmentPanel({
         method: "POST",
         body: JSON.stringify({ id: record.id, action }),
       });
-      await onRefresh();
+      await refreshRecords();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Tindakan belum berhasil. Silakan coba lagi.");
@@ -322,7 +347,7 @@ export function AssessmentPanel({
         }),
       });
       setBuilderId(null);
-      await onRefresh();
+      await refreshRecords();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal membuat draft proposal.");
@@ -340,7 +365,7 @@ export function AssessmentPanel({
         method: "POST",
         body: JSON.stringify({ assessmentId: record.id, decision, note: approvalNotes[record.id] || "" }),
       });
-      await onRefresh();
+      await refreshRecords();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal menyimpan keputusan proposal.");
@@ -389,7 +414,7 @@ export function AssessmentPanel({
         method: "POST",
         body: JSON.stringify({ assessmentId: record.id, channel, level }),
       });
-      await onRefresh();
+      await refreshRecords();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Pengingat belum berhasil dikirim.");
@@ -408,7 +433,7 @@ export function AssessmentPanel({
         method: "PATCH",
         body: JSON.stringify({ id: record.id, assessmentStatus, proposalStatus }),
       });
-      await onRefresh();
+      await refreshRecords();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal memperbarui status Self Diagnostic.");
@@ -431,7 +456,7 @@ export function AssessmentPanel({
           followUpPaused: !record.followUpPaused,
         }),
       });
-      await onRefresh();
+      await refreshRecords();
       setActionSuccess("Perubahan tersimpan. Status klien sudah diperbarui.");
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Gagal mengubah jeda follow up Self Diagnostic.");
@@ -441,14 +466,15 @@ export function AssessmentPanel({
   };
 
 
-  const filtered = records.filter((record) => matchesQueue(record, queue)).sort((a, b) => {
+  const localFiltered = records.filter((record) => matchesQueue(record, queue)).sort((a, b) => {
     if (sort === "attention") {
       const priority = Number(needsAttention(b)) - Number(needsAttention(a));
       if (priority) return priority;
     }
     return (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0);
   });
-  const selected = filtered.find((record) => record.id === expandedId) || filtered[0];
+  const filtered = serverMode ? inbox.data?.records || [] : localFiltered;
+  const selected = serverMode ? inbox.record : localFiltered.find((record) => record.id === expandedId) || localFiltered[0];
   const record = selected;
   const state = record ? proposalState(record) : { manual: false, processing: false, reconcile: false, failed: false, sent: false, review: false, label: "" };
   const hasManualDraft = state.manual;
@@ -457,7 +483,8 @@ export function AssessmentPanel({
   const showManualApproval = hasManualDraft && record?.proposalGateStatus === "pending_approval";
   const proposalCanSend = !state.sent && !deliveryProtected && hasManualDraft && ["approved", "clear"].includes(record?.proposalGateStatus || "") && !record?.proposalDraft?.isSimulation;
   const busy = Boolean(actionId);
-  const showingDetail = Boolean(expandedId && filtered.some((record) => record.id === expandedId));
+  const showingDetail = serverMode ? Boolean(expandedId) : Boolean(expandedId && filtered.some((record) => record.id === expandedId));
+  useEffect(() => { if (serverMode && expandedId && record?.id === expandedId) detailHeadingRef.current?.focus({ preventScroll: true }); }, [serverMode, expandedId, record?.id]);
   const resetFilters = () => {
     setQuery(""); setCategory("Semua"); setEmployeeRange("Semua"); setMinScore("0");
     setQueue("all"); setVisibleLimit(20); setExpandedId(null);
@@ -497,7 +524,7 @@ export function AssessmentPanel({
           <button key={id} type="button" aria-pressed={queue === id} onClick={() => { setQueue(id); setExpandedId(null); setVisibleLimit(20); }}
             className={`rounded-2xl border p-4 text-left transition sm:p-5 ${queue === id ? "border-[#0B2C6B] bg-[#0B2C6B] text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"}`}>
             <div className="flex items-center justify-between gap-2"><span className="text-xs font-medium sm:text-sm">{label}</span><Icon size={16} className="shrink-0 opacity-60" aria-hidden="true" /></div>
-            <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">{records.filter((record) => matchesQueue(record, id)).length}</p>
+            <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">{serverMode ? inbox.data?.counts[id]?.toLocaleString('id-ID') ?? '—' : records.filter((record) => matchesQueue(record, id)).length}</p>
             <p className="mt-2 text-[11px] leading-4 opacity-70">{hint}</p>
           </button>
         ))}
@@ -507,18 +534,18 @@ export function AssessmentPanel({
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative min-w-0 flex-1">
             <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-            <input type="search" aria-label="Cari Self Diagnostic" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama, perusahaan, atau email…"
-              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm outline-none focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10" />
+            <input type="search" maxLength={150} aria-label="Cari Self Diagnostic" value={query} onChange={(event) => { setQuery(event.target.value); if (serverMode) setExpandedId(null); }} placeholder="Cari nama, perusahaan, atau email…"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-base outline-none focus:border-[#0B2C6B] focus:ring-2 focus:ring-[#0B2C6B]/10 sm:text-sm" />
           </div>
           <button type="button" onClick={() => exportCsv("binahub-assessments.csv", filtered.map((item) => ({ name: item.name, email: item.email, company: item.company, role: item.role, employees: item.employees, category: item.category, overallScore: item.overallScore, assessmentStatus: item.assessmentStatus, proposalStatus: item.proposalStatus, createdAt: item.createdAt })))}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"><Download size={16} aria-hidden="true" /> Ekspor CSV</button>
+            disabled={serverMode && (inbox.loading || Boolean(inbox.error) || !filtered.length)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"><Download size={16} aria-hidden="true" /> {serverMode ? 'Ekspor halaman CSV' : 'Ekspor CSV'}</button>
         </div>
         <details className="mt-3">
           <summary className="w-fit cursor-pointer list-none text-xs font-medium text-slate-600"><span className="flex items-center gap-2"><SlidersHorizontal size={14} aria-hidden="true" /> Filter lanjutan{category !== "Semua" || employeeRange !== "Semua" || minScore !== "0" ? " · Aktif" : ""}</span></summary>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <label className="text-xs text-slate-500">Kategori<div className="mt-1"><AdminSelect ariaLabel="Kategori Self Diagnostic" value={category} onChange={setCategory} options={[["Semua", "Semua kategori"], ...categories.map((item) => [item, item] as [string, string])]} /></div></label>
-            <label className="text-xs text-slate-500">Ukuran perusahaan<div className="mt-1"><AdminSelect ariaLabel="Ukuran perusahaan" value={employeeRange} onChange={setEmployeeRange} options={[["Semua", "Semua ukuran"], ...employeeRanges.map((item) => [item, item] as [string, string])]} /></div></label>
-            <label className="text-xs text-slate-500">Skor diagnosis minimum<div className="mt-1"><AdminSelect ariaLabel="Skor diagnosis minimum" value={minScore} onChange={setMinScore} options={[["0", "Semua skor"], ["50", "50 atau lebih"], ["70", "70 atau lebih"], ["85", "85 atau lebih"]]} /></div></label>
+            <label className="text-xs text-slate-500">Kategori<div className="mt-1"><AdminSelect ariaLabel="Kategori Self Diagnostic" value={category} onChange={value => { setCategory(value); if (serverMode) setExpandedId(null); }} options={[["Semua", "Semua kategori"], ...categories.map((item) => [item, item] as [string, string])]} /></div></label>
+            <label className="text-xs text-slate-500">Ukuran perusahaan<div className="mt-1"><AdminSelect ariaLabel="Ukuran perusahaan" value={employeeRange} onChange={value => { setEmployeeRange(value); if (serverMode) setExpandedId(null); }} options={[["Semua", "Semua ukuran"], ...employeeRanges.map((item) => [item, item] as [string, string])]} /></div></label>
+            <label className="text-xs text-slate-500">Skor diagnosis minimum<div className="mt-1"><AdminSelect ariaLabel="Skor diagnosis minimum" value={minScore} onChange={value => { setMinScore(value); if (serverMode) setExpandedId(null); }} options={[["0", "Semua skor"], ["50", "50 atau lebih"], ["70", "70 atau lebih"], ["85", "85 atau lebih"]]} /></div></label>
           </div>
         </details>
         {(query || category !== "Semua" || employeeRange !== "Semua" || minScore !== "0" || queue !== "all") && <button type="button" onClick={resetFilters} className="mt-3 text-xs font-medium text-[#0B2C6B] underline underline-offset-4">Hapus semua filter</button>}
@@ -527,13 +554,15 @@ export function AssessmentPanel({
       <div className="grid items-start gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
         <section ref={clientListRef} aria-label="Daftar klien Self Diagnostic" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white ${showingDetail ? "hidden xl:block" : ""}`}>
           <div className="border-b border-slate-100 p-4">
-            <div className="mb-3 flex items-center justify-between gap-2"><h2 className="text-sm font-semibold text-slate-900">Daftar klien</h2><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs tabular-nums text-slate-600">{filtered.length}</span></div>
+            <div className="mb-3 flex items-center justify-between gap-2"><h2 className="text-sm font-semibold text-slate-900">Daftar klien</h2><span role="status" className="rounded-full bg-slate-100 px-2.5 py-1 text-xs tabular-nums text-slate-600">{serverMode ? inbox.loading ? 'Memuat…' : inbox.error ? 'Belum tersedia' : inbox.data?.total.toLocaleString('id-ID') : filtered.length}</span></div>
             <AdminSelect ariaLabel="Urutkan Self Diagnostic" value={sort} onChange={setSort} options={[["latest", "Terbaru dahulu"], ["attention", "Perlu perhatian dahulu"]]} />
           </div>
-          <div className="max-h-[760px] overflow-y-auto">
-            {filtered.slice(0, visibleLimit).map((record) => {
+          <div aria-busy={serverMode && inbox.loading} className="max-h-[min(60svh,760px)] overflow-y-auto">
+            {serverMode && inbox.loading && <p role="status" className="p-5 text-sm leading-6 text-slate-600">Memuat diagnosis dari seluruh arsip…</p>}
+            {serverMode && inbox.error && <div className="p-5"><p role="alert" className="text-sm leading-6 text-red-700">{inbox.error}</p><button type="button" onClick={inbox.retryList} className="mt-2 min-h-11 text-sm font-semibold text-[#0B2C6B] underline">Coba muat daftar lagi</button></div>}
+            {(serverMode ? filtered : filtered.slice(0, visibleLimit)).map((record) => {
               const state = proposalState(record);
-              const active = selected?.id === record.id;
+              const active = (serverMode ? inbox.targetId : selected?.id) === record.id;
               return <button type="button" key={record.id} id={`${tabId}-client-${record.id}`} aria-pressed={active} aria-label={`Buka Self Diagnostic ${record.name}, ${record.company}`} onClick={() => selectClient(record.id)}
                 className={`block w-full border-b border-slate-100 border-l-[3px] p-4 text-left transition last:border-b-0 ${active ? "border-l-[#0B2C6B] bg-[#F1F5FB]" : "border-l-transparent hover:bg-slate-50"}`}>
                 <div className="flex items-start gap-3">
@@ -544,14 +573,13 @@ export function AssessmentPanel({
                 <span className="mt-2 flex flex-wrap justify-between gap-1 text-[10px] text-slate-500"><span>{formatDate(record.createdAt)}</span><span>Skor diagnosis {record.overallScore}</span></span>
               </button>;
             })}
-            {!filtered.length && <div className="p-5"><EmptyState title="Tidak ada Self Diagnostic yang cocok" description="Coba kata kunci atau filter lain." action={{ label: "Hapus filter", onClick: resetFilters }} /></div>}
+            {!filtered.length && !(serverMode && (inbox.loading || inbox.error)) && <div className="p-5"><EmptyState title="Tidak ada Self Diagnostic yang cocok" description={serverMode ? 'Pencarian mencakup seluruh arsip. Coba kata kunci atau filter lain.' : 'Coba kata kunci atau filter lain.'} action={{ label: "Hapus filter", onClick: resetFilters }} /></div>}
           </div>
-          {filtered.length > visibleLimit && <button type="button" onClick={() => setVisibleLimit((value) => value + 20)} className="w-full border-t border-slate-100 p-4 text-xs font-semibold text-[#0B2C6B]">Tampilkan lebih banyak</button>}
-          <p className="border-t border-slate-100 p-4 text-[11px] leading-5 text-slate-500">Menampilkan data Self Diagnostic yang dimuat, bukan total historis.</p>
+          {serverMode ? <nav aria-label="Halaman diagnosis tim organisasi" className="border-t border-slate-100 p-3 text-sm text-slate-600"><p className="text-center tabular-nums">{inbox.loading || inbox.error ? '—' : `${inbox.data?.total ? inbox.page * 20 + 1 : 0}–${Math.min((inbox.page + 1) * 20, inbox.data?.total || 0)} dari ${inbox.data?.total.toLocaleString('id-ID')}`}</p><div className="mt-1 flex items-center justify-between gap-1"><button type="button" disabled={!inbox.page || inbox.loading || Boolean(inbox.error)} onClick={() => inbox.setPage(inbox.page - 1)} className="min-h-11 rounded-lg px-1 font-semibold text-[#0B2C6B] focus-visible:outline-2 disabled:opacity-40">Sebelumnya</button><span className="tabular-nums">{inbox.loading || inbox.error ? '…' : `${inbox.page + 1} / ${Math.max(1, Math.ceil((inbox.data?.total || 0) / 20))}`}</span><button type="button" disabled={(inbox.page + 1) * 20 >= (inbox.data?.total || 0) || inbox.loading || Boolean(inbox.error)} onClick={() => inbox.setPage(inbox.page + 1)} className="min-h-11 rounded-lg px-1 font-semibold text-[#0B2C6B] focus-visible:outline-2 disabled:opacity-40">Berikutnya</button></div></nav> : <>{filtered.length > visibleLimit && <button type="button" onClick={() => setVisibleLimit((value) => value + 20)} className="w-full border-t border-slate-100 p-4 text-xs font-semibold text-[#0B2C6B]">Tampilkan lebih banyak</button>}<p className="border-t border-slate-100 p-4 text-[11px] leading-5 text-slate-500">Menampilkan data Self Diagnostic yang dimuat, bukan total historis.</p></>}
         </section>
 
         <section aria-label="Detail Self Diagnostic" className={`min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${!showingDetail ? "hidden xl:block" : ""}`}>
-          {!record ? <div className="p-8"><EmptyState title="Belum ada klien untuk ditampilkan" description="Hapus filter untuk melihat Self Diagnostic yang tersedia." /></div> : <>
+          {serverMode && (inbox.detailLoading || inbox.detailError) ? <div className="p-5 sm:p-8"><button type="button" onClick={() => setExpandedId(null)} className="mb-4 min-h-11 text-sm text-[#0B2C6B] underline xl:hidden">Kembali ke daftar klien</button>{inbox.detailError ? <><p role="alert" className="text-sm leading-6 text-red-700">{inbox.detailError}</p><button type="button" onClick={inbox.retryDetail} className="mt-3 min-h-11 font-semibold text-[#0B2C6B] underline">Coba muat detail lagi</button></> : <p role="status" className="text-sm text-slate-600">Memuat detail diagnosis…</p>}</div> : !record ? <div className="p-8"><EmptyState title="Belum ada klien untuk ditampilkan" description="Hapus filter untuk melihat Self Diagnostic yang tersedia." /></div> : <>
               <header className="p-5 sm:p-6">
                 <button type="button" onClick={() => returnToClientList(record.id)} className="mb-4 flex min-h-10 items-center gap-2 text-xs font-medium text-slate-600 xl:hidden"><ArrowLeft size={16} /> Kembali ke daftar klien</button>
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -839,14 +867,14 @@ export function AssessmentPanel({
             </>}
         </section>
       </div>
-      <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-800">Pola jawaban seluruh Self Diagnostic</summary><p className="mt-2 text-xs leading-5 text-slate-500">Ringkasan data yang dimuat. Grafik ini tidak mengikuti filter daftar klien.</p><div className="mt-4">      <Panel title="Distribusi jawaban" action="Persentase jawaban 4–5">
-        {data.answerDistribution.length === 0 ? (
+      <details onToggle={event => { if (serverMode && event.currentTarget.open && !distribution && !distributionLoading) void loadDistribution(); }} className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-800">Pola jawaban seluruh Self Diagnostic</summary><p className="mt-2 text-xs leading-5 text-slate-500">{serverMode ? 'Ringkasan seluruh arsip diagnosis. Grafik ini tidak mengikuti filter daftar klien.' : 'Ringkasan data yang dimuat. Grafik ini tidak mengikuti filter daftar klien.'}</p><div className="mt-4">      <Panel title="Distribusi jawaban" action="Persentase jawaban 4–5">
+        {distributionLoading ? <p role="status" className="text-sm text-slate-600">Memuat pola jawaban…</p> : distributionError ? <div><p role="alert" className="text-sm text-red-700">{distributionError}</p><button type="button" onClick={() => void loadDistribution()} className="min-h-11 text-sm font-semibold text-[#0B2C6B] underline">Coba muat pola lagi</button></div> : distributionRows.length === 0 ? (
           <EmptyState title="Belum ada distribusi jawaban" description="Grafik akan muncul setelah Self Diagnostic pertama berhasil disubmit." />
         ) : (
           <>
             <div className="overflow-x-auto pb-2" aria-label="Distribusi jawaban per pertanyaan">
               <div className="flex min-w-max items-end gap-2 px-1 pt-2">
-              {data.answerDistribution.map((item) => {
+              {distributionRows.map((item) => {
                 const summary = answerSummary(item);
                 return (
                   <button type="button" key={String(item.question)} onClick={() => setSelectedDistributionQuestion(Number(String(item.question).replace(/\D/g, "")))} className="group flex w-5 shrink-0 flex-col items-center text-center" aria-label={`Lihat isi ${summary.label}: ${summary.percent}% menjawab 4 atau 5 dari ${summary.total} respons`}>

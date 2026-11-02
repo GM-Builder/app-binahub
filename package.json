@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.51.3",
+  "version": "0.51.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,6 +13,7 @@
     "test:dependencies": "node --test tools/minimatch-compat.test.mjs",
     "test:service-health:ui": "node scripts/test-service-health-ui.mjs",
     "test:spin-inbox:ui": "node scripts/test-spin-inbox-ui.mjs",
+    "test:assessment-inbox:ui": "node scripts/test-assessment-inbox-ui.mjs",
     "test:peta:revision": "node scripts/test-peta-revision-ui.mjs",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",

@@ -26,7 +26,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
-| R07 | Pagination/pencarian server, prioritas tugas admin | PETA dan inbox rekomendasi selesai lokal; daftar diagnosis/CRM lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
+| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi dan diagnosis tim/org selesai kode; inquiry/CRM lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
@@ -262,3 +262,32 @@ bukan daftar status runtime terkini.
   Lint/types/build kedua repo serta18 pemeriksaan Chromium desktop/390/320px
   lulus. Detector tidak menemukan masalah; batas visual diperiksa dalam dua
   putaran. Ini bukan bukti runtime produksi atau pentest Strix.
+
+### Batch9 - 2 November2026: R07 diagnosis tim/organisasi
+
+- App0.51.4/API0.47.8: halaman utama diagnosis tidak lagi menunggu payload
+  dashboard umum. Inbox server juga dipakai dari workspace penjualan dan entry
+  admin lama. Daftar20 record; detail satu klien dibaca terpisah dan baru
+  memuat jawaban/narasi/rekomendasi. Normalizer existing dipakai bersama.
+- SQL82 melakukan pencarian literal, filter kategori/ukuran/skor/antrean dan
+  pengurutan sebelum pagination. Hitungan kartu mengikuti semua filter kecuali
+  pilihan antrean; opsi kategori/ukuran berasal dari seluruh arsip. Fungsi lain
+  hanya mengirim49 hitungan agregat saat bagian pola jawaban dibuka.
+- SQL82 tidak menulis jawaban/skor/laporan, tidak mengirim atau memproses antrean.
+  Fungsi dibatasi service_role; API memeriksa admin, rate limit, input, no-store
+  dan error aman. Pemilik melaporkan SQL82 berhasil dijalankan. Tidak ada env baru.
+- Query/rentang/total jelas, perubahan dan penghapusan filter kembali halaman1,
+  error berbeda dari kosong, timeout20detik, abort/late-response guard dan retry
+  list/detail terpisah. Filter dipertahankan saat error; CSV menyebut cakupan
+  halaman aktif. Di mobile daftar/detail bergantian, bukan ditumpuk.
+- Proposal/PDF/email/follow-up tetap memakai aksi existing dengan konfirmasi.
+  Refresh server30detik hanya saat proses terlihat dan tidak sedang meninjau
+  konfirmasi/menyusun draf. Tidak ada kirim otomatis akibat membuka daftar/tab.
+- Bukti lokal:956 tes API lulus/2 visual existing skip; suite app450 lulus,
+  termasuk15 regresi inbox final.32 pemeriksaan Chromium pada1440/1024/
+  390/320px lulus (API dimock, seluruh aksi mutasi diblokir), termasuk pencarian
+  arsip, filter, konfirmasi, gagal/pulih/kosong. SQL diuji pada lebih1000 record
+  sintetis dengan PostgreSQL in-memory. Lint/types dan build lulus; detector0.
+- Ini bukan bukti runtime/izin/deployment produksi atau pentest Strix. R07 belum
+  menutup inquiry/CRM/AMS dan prioritas lintas sistem. R03 scheduler tetap ditunda
+  sampai migrasi Vercel BinaHub+Pro; tidak ada aktivitas program PFA2026.

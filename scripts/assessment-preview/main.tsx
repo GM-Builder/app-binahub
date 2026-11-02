@@ -36,7 +36,7 @@ function Preview() {
     <div className="border-b border-slate-200 bg-white px-5 py-3 text-xs text-slate-500">Preview lokal · Data contoh · Tidak terhubung ke API atau email</div>
     <main className="mx-auto max-w-[1440px] p-5 sm:p-8">
       <header className="mb-7"><p className="text-xs font-medium text-slate-500">Hubungan klien</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Assessment klien</h1><p className="mt-3 text-sm text-slate-500">Pahami kebutuhan klien, pantau proposal, dan kelola tindak lanjut dalam satu tempat.</p></header>
-      <AssessmentPanel data={data} records={records.filter((record) => (!query || `${record.name} ${record.company} ${record.email}`.toLowerCase().includes(query.toLowerCase())) && (category === "Semua" || record.category === category) && (employeeRange === "Semua" || record.employees === employeeRange) && record.overallScore >= Number(minScore))}
+      <AssessmentPanel serverMode={new URLSearchParams(location.search).has('assessment-inbox')} data={data} records={records.filter((record) => (!query || `${record.name} ${record.company} ${record.email}`.toLowerCase().includes(query.toLowerCase())) && (category === "Semua" || record.category === category) && (employeeRange === "Semua" || record.employees === employeeRange) && record.overallScore >= Number(minScore))}
         query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employeeRange} setEmployeeRange={setEmployeeRange} minScore={minScore} setMinScore={setMinScore} expandedId={expandedId} setExpandedId={setExpandedId}
         onRefresh={async () => {}} onAction={async (_url, init) => {
           if (init?.body) {

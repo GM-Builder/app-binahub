@@ -1,4 +1,4 @@
-import type { AssessmentRecord } from "./types";
+import type { AssessmentListRow } from './assessment-inbox';
 
 export type AssessmentQueue = "all" | "attention" | "processing" | "sent";
 export type AssessmentDetailTab = "summary" | "proposal" | "documents" | "followup";
@@ -8,7 +8,7 @@ const resultProposalStops = new Set(["Diminta", "Sedang Disusun", "Gagal Otomati
 const proposalStops = new Set(["Revisi", "Lanjut Diskusi", "Deal", "Lost", "Closed"]);
 
 /** Mirrors the assessment follow-up eligibility rules in the API. */
-export function dueFollowUp(record: AssessmentRecord, channel: "result" | "proposal", now = Date.now()): number | null {
+export function dueFollowUp(record: AssessmentListRow, channel: "result" | "proposal", now = Date.now()): number | null {
   const current = channel === "result" ? record.resultFollowUpLevel || 0 : record.proposalFollowUpLevel || 0;
   if (record.followUpPaused || current >= (channel === "result" ? 3 : 1)) return null;
   if (channel === "result" && (resultStops.has(record.assessmentStatus) || resultProposalStops.has(record.proposalStatus))) return null;
@@ -19,7 +19,7 @@ export function dueFollowUp(record: AssessmentRecord, channel: "result" | "propo
   return elapsed >= [0, 2, 7, 14][next] ? next : null;
 }
 
-export function proposalState(record: AssessmentRecord) {
+export function proposalState(record: AssessmentListRow) {
   const manual = Boolean(record.proposalDraft?.proposal && !record.proposalDraft.automatic);
   const sent = Boolean(record.proposalSentAt) || record.proposalStatus === "Terkirim";
   const processing = !sent && !manual && record.proposalStatus === "Sedang Disusun";
@@ -31,13 +31,13 @@ export function proposalState(record: AssessmentRecord) {
   return { manual, sent, processing, reconcile, failed, review, label };
 }
 
-export function needsAttention(record: AssessmentRecord) {
+export function needsAttention(record: AssessmentListRow) {
   const state = proposalState(record);
   return !state.sent && (state.failed || state.reconcile || state.review || record.proposalStatus === "Diminta")
     || dueFollowUp(record, "result") !== null || dueFollowUp(record, "proposal") !== null;
 }
 
-export function matchesQueue(record: AssessmentRecord, queue: AssessmentQueue) {
+export function matchesQueue(record: AssessmentListRow, queue: AssessmentQueue) {
   if (queue === "attention") return needsAttention(record);
   if (queue === "processing") return proposalState(record).processing;
   if (queue === "sent") return proposalState(record).sent;

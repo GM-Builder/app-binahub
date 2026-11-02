@@ -1,2 +1,2 @@
-import { AdminWorkspace } from "../_components/admin-workspace";
-export default function AdminAssessmentsPage() { return <AdminWorkspace section="Self Diagnostic" />; }
+import { OrganizationAssessments } from '../_components/organization-assessments';
+export default function AdminAssessmentsPage() { return <OrganizationAssessments />; }

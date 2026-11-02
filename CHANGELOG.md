@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.51.4] - 2026-11-02
+
+- Move the organization diagnosis admin page off the general dashboard payload.
+  Search, category/employee/score filters, queue counts and sorting now use a
+  server-wide20-row inbox; load a single full record only when opened. Use the
+  same server inbox inside the sales workspace and legacy admin entry point.
+- Preserve existing proposal/document/follow-up actions and confirmation gates.
+  Show accurate total/ranges, separate unavailable/empty states, request timeout,
+  cancellation, late-response guards and scoped retries. Changing or clearing
+  filters always resets page one; selected filters survive a failed read.
+- Keep mobile list/detail navigation, desktop split view and bounded list height.
+  Label CSV as the current page; load the49-question aggregate only on demand.
+  Pause background refresh during confirmations/draft editing; server refresh
+  checks every30seconds only while processing is visible.
+- Add synthetic UI/browser regressions. Requires API0.47.8 and SQL82 (owner
+  confirmed applied). No env, scoring/consent changes, AI/email or scheduler work.
+
 ## [0.51.3] - 2026-11-02
 
 - Correct recommendation inbox archive fallback: send search to the server,

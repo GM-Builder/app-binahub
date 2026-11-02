@@ -172,7 +172,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
           {section === "Client & Delivery" && <ClientDeliveryPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Operations Control" && <OperationsControlPanel onAction={adminRequest} />}
           {section === "Automation Center" && <SmartCenterPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
-          {section === "Self Diagnostic" && <AssessmentPanel data={data} records={filteredAssessments} query={query} setQuery={setQuery} category={assessmentCategory} setCategory={setAssessmentCategory} employeeRange={assessmentEmployeeRange} setEmployeeRange={setAssessmentEmployeeRange} minScore={assessmentMinScore} setMinScore={setAssessmentMinScore} expandedId={expandedId} setExpandedId={setExpandedId} onAction={adminRequest} onRefresh={refreshDashboard} />}
+          {section === "Self Diagnostic" && <AssessmentPanel serverMode data={data} records={filteredAssessments} query={query} setQuery={setQuery} category={assessmentCategory} setCategory={setAssessmentCategory} employeeRange={assessmentEmployeeRange} setEmployeeRange={setAssessmentEmployeeRange} minScore={assessmentMinScore} setMinScore={setAssessmentMinScore} expandedId={expandedId} setExpandedId={setExpandedId} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Meeting" && <MeetingsPanel bookings={data.calendarBookings || []} />}
           {section === "Kontak & Leads" && <ContactsPanel contacts={data.contacts} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Inquiry Masuk" && <InquiriesPanel inquiries={data.inquiries} onAction={adminRequest} onRefresh={refreshDashboard} />}
