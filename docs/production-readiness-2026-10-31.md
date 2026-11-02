@@ -8,8 +8,9 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 
 - Tidak mengubah instrumen/rubrik CEO, izin peserta, hasil historis atau harga
   yang sudah disahkan. Bobot tampilan 50:50 tetap sementara.
-- Pembayaran, produk RM publik, LE/WBR dan laporan grup PETA tetap tertutup
-  sampai keputusan produk/komersial yang diperlukan tersedia.
+- Pembayaran, produk RM publik dan LE/WBR tetap tertutup sampai keputusan
+  produk/komersial tersedia. PDF PETA individu/grup internal kini disetujui dan
+  tersedia khusus admin; distribusi perusahaan/anonim tetap belum diaktifkan.
 - Tidak mengirim email nyata, memakai kuota AI, mengaktifkan outreach, menerapkan
   SQL atau melakukan restore/cleanup produksi tanpa koordinasi khusus.
 - Program nyata PFA2026 dan seluruh relasinya tidak disentuh.
@@ -19,7 +20,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 
 | ID | Pekerjaan | Status awal | Bukti selesai yang diperlukan |
 | --- | --- | --- | --- |
-| R01 | Patch dependensi API dan AMS | API dipatch/diuji lokal; AMS berikutnya | Lockfile diperbarui, audit dependensi dan regresi lulus; versi produksi diverifikasi terpisah |
+| R01 | Patch dependensi API dan AMS | Selesai kode/regresi: API0.47.3, AMS0.11.1/web0.10.2; produksi belum diverifikasi | Audit penuh/runtime0, lockfile dan build/regresi lulus; versi deployment perlu diverifikasi terpisah |
 | R02 | Satu jalur deployment website, CI yang benar | Selesai lokal; deployment belum diverifikasi | Workflow non-destruktif, quality script tersedia, build Next sesuai konfigurasi Hostinger |
 | R03 | Scheduler dan pemulihan seluruh antrean | Pro + Cron disetujui; aktivasi menunggu migrasi ke workspace BinaHub | Kontrak pemanggilan terautentikasi, retry terbatas, bukti heartbeat; migrasi dan Pro aktif pada tujuan diverifikasi |
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
@@ -27,7 +28,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R06 | Kesiapan layanan dan alarm | Berikutnya | Pisahkan liveness/readiness; antrean terlambat/worker mati terlihat, kanal alarm disetujui |
 | R07 | Pagination/pencarian server, prioritas tugas admin | PETA selesai lokal; daftar lain menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
-| R09 | PDF/catatan pendamping PETA individu | Direncanakan | Snapshot dan izin diperiksa server; PDF tidak membuka hasil peserta lain; grup tetap off |
+| R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
 | R11 | Backup/restore dan baseline migrasi | Menunggu validasi operator | Pemulihan terisolasi DB + Storage + kunci; satu pemilik migrasi; tidak replay SQL lama |
 | R12 | Produk berbayar individu | Menunggu CEO/gateway | Aturan/report/entitlement dan pembayaran sandbox lolos sebelum checkout aktif |
@@ -38,7 +39,7 @@ Waktu migrasi ke workspace Vercel BinaHub dan aktivasi Pro/scheduler (arah Pro +
 sudah disetujui; akun tujuan belum dibuat); kanal/penerima alarm; aturan SJT RM per kompetensi dan
 interpretasinya; keputusan akhir bobot, masa akses/retake/refund berbayar;
 instrumen LE/WBR; ketentuan pajak/biaya tambahan/custom; format proposal custom
-final; otorisasi/format PDF PETA dan kebijakan kelompok; standar layanan dan
+final; kebijakan pembagian laporan PETA ke pihak luar; standar layanan dan
 indikator hasil program. Katalog SPIN31 dan izin penggunaan AI tidak ditanyakan ulang.
 
 ## Catatan pelaksanaan
@@ -138,3 +139,29 @@ bukan daftar status runtime terkini.
 - Tidak ada SQL/env, perubahan UI/skor, aktivasi scheduler atau data produksi.
   Verifikasi deployment Hostinger dan rescan tetap terpisah dari keberhasilan
   lokal/push. Detail: [patch minimatch](minimatch-security-patch-2026-10-31.md).
+
+### Batch 4 - 2 November2026: tuntaskan R01 API/AMS
+
+- API0.47.3 menutup16 peringatan development minimatch. Audit npm penuh dan
+  runtime sama-sama0;859 regresi sintetis serta3 kontrak matcher lulus,2 tes
+  visual existing dilewati. Lint/type/build lulus dengan satu warning lama
+  ProposalPDF. Tidak mengubah logika runtime, hasil atau izin.
+- AMS0.11.1/web0.10.2 menyelesaikan patch31Oktober yang masih belum dicommit,
+  termasuk validasi Zod4 yang menjaga default CV dan record metadata file.
+  Dependensi tooling tambahan ditambal; audit penuh/runtime9 menjadi0 advisori.
+- 16 kontrak dependency/validasi/API, self-test fallback LapakVIP→OpenRouter,
+  signed managed routing tanpa bypass, lint, tipe API dan build web/API lulus.
+  Semua memakai data sintetis/mock, tidak memakai kuota AI atau data produksi.
+- Versi pnpm proyek9.15.0 dipakai lewat Corepack; tidak mengganti pnpm global.
+  Frozen lockfile lulus. CI baru mengaktifkan versi tepat, memeriksa advisori
+  development dan menjalankan regresi/build tanpa secret produksi.
+- Patch matcher memakai engine resmi, bukan menonaktifkan rule atau menekan
+  advisori. FlatCompat Next15 memakai entry CommonJS yang didukung. Kontrak
+  tooling Node dipisahkan dari penemuan tes Vitest API.
+- Ini menutup pekerjaan kode R01, bukan bukti deployment. Tidak ada SQL/env,
+  migrasi, email nyata, aktivasi scheduler atau perubahan program PFA2026.
+  Tidak ada pentest Strix baru terhadap produksi; audit0 bukan klaim bebas celah.
+- PDF PETA yang dikerjakan1November dicatat pada R09: individu dan grup internal
+  khusus admin, hasil peserta tetap di layar. Catatan pendamping masih terpisah.
+- Pekerjaan berikutnya R05: minimisasi data AI lintas jalur. R03 tetap menunggu
+  migrasi Vercel BinaHub + Pro; R06 masih memerlukan keputusan kanal alarm.
