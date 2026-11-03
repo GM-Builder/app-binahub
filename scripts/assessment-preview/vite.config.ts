@@ -6,6 +6,8 @@ export default defineConfig({
   root: path.resolve(__dirname),
   publicDir: path.resolve(__dirname, '../../public'),
   plugins: [react()],
+  // Public URL only; preview never imports production .env or credentials.
+  define: { 'process.env.NEXT_PUBLIC_SITE_URL': JSON.stringify('https://app.binahub.id') },
   resolve: { alias: [
     { find: 'next/image', replacement: path.resolve(__dirname, 'mock-image.tsx') },
     { find: "next/link", replacement: path.resolve(__dirname, "mock-link.tsx") },

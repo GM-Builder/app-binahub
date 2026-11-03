@@ -29,11 +29,13 @@ export function SalesWorkspace({ data, onAction, onRefresh, serverMode=false, re
   const pendingMeeting = useRef(false);
   const pendingInquiry = useRef(false);
   const pendingPipeline = useRef(false);
+  const pendingCampaign = useRef(false);
+  const onCampaignDirty = useCallback((dirty: boolean) => { pendingCampaign.current = dirty; }, []);
   const [pipelineId,setPipelineId]=useState<string|null>(null);
   const onPipelineDirty=useCallback((dirty:boolean)=>{pendingPipeline.current=dirty;},[]);
   const onInquiryDirty = useCallback((dirty: boolean) => { pendingInquiry.current = dirty; }, []);
   const onMeetingDirty = useCallback((dirty: boolean) => { pendingMeeting.current = dirty; }, []);
-  const mayLeaveMeeting = () => pendingPipeline.current ? window.confirm('Ada perubahan peluang yang belum tersimpan. Tetap tinggalkan peluang ini?') : pendingInquiry.current ? window.confirm('Ada perubahan inquiry yang belum tersimpan. Tetap tinggalkan inquiry ini?') : !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
+  const mayLeaveMeeting = () => pendingCampaign.current ? window.confirm('Ada pilihan penerima atau isian kampanye yang belum dikirim. Tetap tinggalkan kampanye ini?') : pendingPipeline.current ? window.confirm('Ada perubahan peluang yang belum tersimpan. Tetap tinggalkan peluang ini?') : pendingInquiry.current ? window.confirm('Ada perubahan inquiry yang belum tersimpan. Tetap tinggalkan inquiry ini?') : !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
   const changeView = (next: SalesView) => { if (next === view || mayLeaveMeeting()) { setView(next); setFilter("all"); setLimit(12); } };
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [inquiryId, setInquiryId] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function SalesWorkspace({ data, onAction, onRefresh, serverMode=false, re
     else if (task.view === "clients") { setClientType("assessment"); setAssessmentId(task.recordId); setDetailTab(task.detail || "summary"); setQuery(""); setCategory("Semua"); setEmployees("Semua"); setMinScore("0"); }
   };
   return <div className="space-y-5">
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+    <section hidden={view === 'inbound' || view === 'outbound'} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">Workspace penjualan</p><h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">Dari percakapan pertama hingga kesepakatan</h2><p className="mt-2 text-sm leading-6 text-slate-500">Lihat prioritas, buka konteks klien, lalu ambil langkah berikutnya dari sini.</p></div>
         <button type="button" onClick={() => changeView("outbound")} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#0B2C6B] px-4 text-sm font-semibold text-white"><Send size={16} /> Mulai kampanye email</button>
@@ -79,7 +81,7 @@ export function SalesWorkspace({ data, onAction, onRefresh, serverMode=false, re
       {!serverMode&&visible.length > limit && <button type="button" onClick={() => setLimit((value) => value + 12)} className="mt-3 min-h-11 w-full rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Tampilkan berikutnya ({visible.length - limit})</button>}
       </>}
     </section>}
-    {(view === "inbound" || view === "outbound") && <AcquisitionControlPanel key={view} initialView={view} embedded onAction={onAction} />}
+    {(view === "inbound" || view === "outbound") && <AcquisitionControlPanel key={view} initialView={view} embedded onAction={onAction} onUnsavedChange={onCampaignDirty} />}
     {view === "clients" && <>
       <div className="flex flex-wrap gap-2">{(["assessment", "inquiry", "discovery"] as const).map((type) => <button type="button" key={type} aria-pressed={clientType === type} onClick={() => { if (type === clientType || mayLeaveMeeting()) setClientType(type); }} className={`min-h-11 rounded-xl px-4 text-xs font-semibold ${clientType === type ? "bg-[#0B2C6B] text-white" : "bg-white text-slate-600"}`}>{type === "assessment" ? "Self Diagnostic & proposal" : type === "discovery" ? "Discovery organisasi" : "Inquiry masuk"}</button>)}</div>
       {clientType === "discovery" && <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">Memuat kebutuhan program…</p>}><SpinPanel initialSearch={discoverySearch} onUnsavedChange={onMeetingDirty} /></Suspense>}

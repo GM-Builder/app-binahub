@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OutboundEmailPanel, type OutboundEmailResponse } from "./outbound-email-panel";
 const campaign = { id: "campaign-one", source_id: "manual", name: "Demo email", channel: "email", status: "approved" };
@@ -11,25 +11,65 @@ const refresh = vi.fn(async () => {});
 const setup = vi.fn();
 const renderPanel = (batches: Array<{ id: string; campaign_id: string; import_key: string; status: string; valid_rows: number; invalid_rows: number; duplicate_rows: number; suppressed_rows: number }> = []) => render(<OutboundEmailPanel onAction={action} onRefresh={refresh} sources={[source]} campaigns={[campaign]} batches={batches} onSetup={setup} />);
 beforeEach(() => { action.mockReset(); action.mockImplementation(async (_url, init) => init?.method ? { success: true, message: "Email masuk antrean" } : structuredClone(fixture)); refresh.mockClear(); setup.mockClear(); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 const go = (name: string) => fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${name}$`) }));
 describe("guided outbound workspace", () => {
+  it('preserves recipients across steps and language changes, without sending on navigation', async () => {
+    renderPanel(); await screen.findByRole('checkbox', { name: 'Pilih rina@example.com' });
+    expect(screen.getByRole('button', { name: 'Lanjut ke email' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih rina@example.com' })); go('Lanjut ke email'); go('Lanjut ke tinjauan');
+    expect(screen.getByRole('region', { name: 'Tinjauan pengiriman' })).toHaveTextContent('rina@example.com');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Bahasa email' }), { target: { value: 'en' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Tinjau & kirim' })).toBeEnabled());
+    go('Ubah penerima'); expect(screen.getByRole('checkbox', { name: 'Pilih rina@example.com' })).toBeChecked();
+    expect(action.mock.calls.filter(([, init]) => init?.method)).toHaveLength(0);
+  });
+  it('disables stale sending on failed refresh, retains selection and recovers in place', async () => {
+    renderPanel(); await screen.findByRole('checkbox', { name: 'Pilih rina@example.com' });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih rina@example.com' })); go('Lanjut ke email'); go('Lanjut ke tinjauan');
+    action.mockRejectedValueOnce(new Error('Data belum tersedia')); go('Perbarui'); await screen.findByRole('alert');
+    expect(screen.queryByRole('button', { name: 'Tinjau & kirim' })).not.toBeInTheDocument();
+    go('Coba muat kampanye lagi'); await screen.findByRole('button', { name: 'Tinjau & kirim' });
+    expect(screen.getByRole('region', { name: 'Tinjauan pengiriman' })).toHaveTextContent('rina@example.com');
+  });
+  it('warns before replacing a campaign with selected recipients', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<OutboundEmailPanel onAction={action} onRefresh={refresh} sources={[source]} campaigns={[campaign, { ...campaign, id: 'two', name: 'Kampanye kedua' }]} batches={[]} onSetup={setup} />);
+    await screen.findByRole('checkbox', { name: 'Pilih rina@example.com' }); fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih rina@example.com' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Kampanye email' }), { target: { value: 'two' } });
+    expect(confirm).toHaveBeenCalledOnce(); expect(screen.getByRole('combobox', { name: 'Kampanye email' })).toHaveValue(campaign.id); confirm.mockRestore();
+  });
+  it('does not open another campaign creation flow when leaving selected recipients is declined', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderPanel(); await screen.findByRole('checkbox', { name: 'Pilih rina@example.com' });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pilih rina@example.com' })); go('Buat kampanye');
+    expect(confirm).toHaveBeenCalledOnce(); expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); confirm.mockRestore();
+  });
+  it('times out hung reads without displaying an empty target list and can retry', async () => {
+    vi.useFakeTimers(); action.mockImplementation(() => new Promise(() => {})); renderPanel();
+    await act(async () => { await vi.advanceTimersByTimeAsync(20001); }); expect(screen.getByRole('alert')).toHaveTextContent('terlalu lama');
+    expect(screen.queryByText('Belum ada target. Tambahkan daftar Anda untuk mulai.')).not.toBeVisible();
+    action.mockResolvedValue(structuredClone(fixture)); await act(async () => go('Coba muat kampanye lagi'));
+    expect(screen.getByRole('checkbox', { name: 'Pilih rina@example.com' })).toBeVisible();
+  });
   it("shows a guided empty setup, not a confusing discovery interface", () => {
     render(<OutboundEmailPanel onAction={action} onRefresh={refresh} sources={[]} campaigns={[]} batches={[]} onSetup={setup} />);
     fireEvent.click(screen.getByRole("button", { name: "Siapkan kampanye" }));
     fireEvent.click(screen.getByRole("button", { name: "Siapkan sumber data" }));
-    expect(setup).toHaveBeenCalledOnce(); expect(action).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Nama daftar' })).toBeVisible();
+    expect(setup).not.toHaveBeenCalled(); expect(action).not.toHaveBeenCalled();
   });
   it("loads readable recipients and locks blocked targets", async () => {
     renderPanel(); await screen.findByText("rina@example.com · Contoh");
     expect(screen.getByRole("checkbox", { name: "Pilih adi@example.com" })).toBeDisabled();
     expect(screen.queryByText("AI Lead Agent")).not.toBeInTheDocument();
   });
-  it("shows recipients and preview together; a test is optional and sending needs confirmation", async () => {
+  it("guides one step at a time; a test is optional and sending needs confirmation", async () => {
     renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih rina@example.com" })); go("Email & pengiriman");
-    expect(screen.getByRole("button", { name: "Tinjau & kirim" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih rina@example.com" })); go("Lanjut ke email");
+    expect(screen.queryByRole("button", { name: "Tinjau & kirim" })).not.toBeInTheDocument();
     expect(screen.getByTitle("Preview email kampanye")).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Kirim email uji ke saya · opsional'));
     fireEvent.click(screen.getByRole("button", { name: "Kirim email uji" }));
     expect(action.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
     const dialog = screen.getByRole("dialog"); expect(dialog).toHaveTextContent("admin@example.com");
@@ -39,7 +79,7 @@ describe("guided outbound workspace", () => {
   it("keeps an error visible and the same request key when retrying", async () => {
     action.mockImplementation(async (_url, init) => { if (init?.method) throw new Error("Koneksi terputus"); return { ...fixture, testSent: true }; });
     renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih rina@example.com" })); go("Email & pengiriman");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih rina@example.com" })); go("Lanjut ke email"); go('Lanjut ke tinjauan');
     fireEvent.click(screen.getByRole("button", { name: "Tinjau & kirim" }));
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Konfirmasi pengiriman" }));
     await screen.findByText("Koneksi terputus");
@@ -64,7 +104,7 @@ describe("guided outbound workspace", () => {
   });
   it("never labels provider acceptance as inbox delivery", async () => {
     action.mockResolvedValue({ ...fixture, deliveries: [{ id: "sent", name: "Rina", email: "rina@example.com", kind: "initial", status: "sent", error_message: null, created_at: "2026-10-06T03:00:00Z" }] });
-    renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" }); go("Aktivitas");
+    renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" }); go("Hasil");
     expect(screen.getByText("Diterima penyedia email")).toBeInTheDocument();
     expect(screen.getByText(/bukan jaminan masuk inbox/)).toBeInTheDocument();
   });
@@ -72,7 +112,7 @@ describe("guided outbound workspace", () => {
     let resolvePost: (value: unknown) => void = () => {};
     action.mockImplementation(async (_url, init) => init?.method ? await new Promise((resolve) => { resolvePost = resolve; }) : { ...fixture, testSent: true });
     renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih rina@example.com" })); go("Email & pengiriman");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Pilih rina@example.com" })); go("Lanjut ke email"); go('Lanjut ke tinjauan');
     fireEvent.click(screen.getByRole("button", { name: "Tinjau & kirim" }));
     const button = within(screen.getByRole("dialog")).getByRole("button", { name: "Konfirmasi pengiriman" });
     fireEvent.click(button); fireEvent.click(button);
@@ -101,7 +141,8 @@ describe("guided outbound workspace", () => {
     expect(within(dialog).getByRole("button", { name: "Setujui daftar" })).toBeDisabled();
   });
   it("sets up a campaign entirely here without launching a worker or changing follow-up", async () => {
-    renderPanel(); await screen.findByRole("button", { name: "Atur pengiriman" });
+    renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" });
+    fireEvent.click(screen.getByText(/Pengaturan lanjutan ·/));
     fireEvent.click(screen.getByRole("button", { name: "Atur pengiriman" }));
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent("tidak mengaktifkan follow-up");
@@ -115,7 +156,8 @@ describe("guided outbound workspace", () => {
   });
   it("lets an admin pause without activation approval and shows save conflicts", async () => {
     action.mockImplementation(async (_url, init) => { if (init?.method === "PATCH") throw new Error("Pengaturan sudah berubah"); return fixture; });
-    renderPanel(); await screen.findByRole("button", { name: "Atur pengiriman" });
+    renderPanel(); await screen.findByRole("checkbox", { name: "Pilih rina@example.com" });
+    fireEvent.click(screen.getByText(/Pengaturan lanjutan ·/));
     fireEvent.click(screen.getByRole("button", { name: "Atur pengiriman" }));
     const dialog = screen.getByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Dijeda" }));

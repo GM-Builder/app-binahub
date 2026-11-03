@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.51.10] - 2026-11-03
+
+- Simplify outbound email into Penerima → Email → Tinjau → Hasil. Only one
+  step is shown at a time; preserve recipient selections across back/forward
+  and language changes. Keep approved templates, optional self-test and explicit
+  final send confirmation. Navigation itself never sends or activates anything.
+- Prepare a reusable, explicitly approved manual source inside campaign creation
+  rather than sending new admins through technical governance menus. Do not
+  infer consent, lawful basis, retention or owners. Existing advanced source,
+  campaign, prospect research and queue controls remain available.
+- Add a compact inbound campaign registry and guided link creation using the
+  existing campaign API. Generate tracking for supported public destinations;
+  separate sharing from response inspection. Do not invent legacy destinations,
+  send newsletters, place ads or imply sample analytics are all-time totals.
+- Guard unfinished recipient work on campaign/workspace switches, prevent stale
+  sends after failed reads, retry saved-state refresh without creating another
+  campaign, and preserve error/empty distinction. Keep incumbent admin styling
+  and responsive layouts; add component and synthetic browser regressions.
+- App-only release; no new SQL, env or API deployment required. No real email,
+  AI usage, scheduler activation, instrument or historical result changes.
+  Campaign archives still use existing bounded samples; full server pagination
+  remains separate work, not silently declared complete by this UI change.
+
 ## [0.51.9] - 2026-11-03
 
 - Read consultation archive and details independently of the capped dashboard.

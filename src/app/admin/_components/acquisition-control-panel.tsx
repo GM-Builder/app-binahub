@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, BarChart3, CheckCircle2, FileCheck2, Inbox, MoreHorizontal, Plus, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { AdminInput, AdminModal, AdminSelect, AdminTextarea, FieldLabel } from "./shared";
 import { LeadAgentPanel } from "./lead-agent-panel";
-import { InboundAttributionPanel } from "./inbound-attribution-panel";
+import { InboundCampaignsPanel } from './inbound-campaigns-panel';
 import { ControlledOutboundPanel } from "./controlled-outbound-panel";
 import { OutboundEmailPanel } from "./outbound-email-panel";
 import { prospectsFromCsv, validateImportedProspects } from "../_lib/prospect-import";
@@ -67,7 +67,7 @@ function MoreActions({ label, children }: { label: string; children: React.React
 
 const menuActionClass = "flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#0B2C6B] disabled:cursor-not-allowed disabled:opacity-40";
 
-export function AcquisitionControlPanel({ onAction, initialView = "overview", embedded = false }: { onAction: AdminAction; initialView?: WorkspaceView; embedded?: boolean }) {
+export function AcquisitionControlPanel({ onAction, initialView = "overview", embedded = false, onUnsavedChange }: { onAction: AdminAction; initialView?: WorkspaceView; embedded?: boolean; onUnsavedChange?: (dirty: boolean) => void }) {
   const [data, setData] = useState<AcquisitionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,14 +79,21 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
   const [reviewBatch, setReviewBatch] = useState<Batch | null>(null);
   const [reviewForm, setReviewForm] = useState({ decision: "approved", note: "" });
   const [view, setView] = useState<WorkspaceView>(initialView);
+  const requestSequence = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (rethrow = false) => {
+    const sequence = ++requestSequence.current;
     setLoading(true); setError("");
-    try { setData(await onAction("/api/admin/acquisition") as AcquisitionResponse); }
-    catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Gagal memuat kontrol akuisisi."); }
-    finally { setLoading(false); }
+    try {
+      const result = await onAction('/api/admin/acquisition', { cache: 'no-store' }) as AcquisitionResponse;
+      if (!Array.isArray(result.sources) || !Array.isArray(result.campaigns) || !Array.isArray(result.batches) || !Array.isArray(result.prospects)) throw new Error('Daftar kampanye belum lengkap. Coba muat kembali.');
+      if (sequence === requestSequence.current) setData(result);
+    }
+    catch (loadError) { if (sequence === requestSequence.current) setError(loadError instanceof Error ? loadError.message : "Gagal memuat kontrol akuisisi."); if (rethrow) throw loadError; }
+    finally { if (sequence === requestSequence.current) setLoading(false); }
   }, [onAction]);
-  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+  useEffect(() => { void Promise.resolve().then(() => load()); return () => { requestSequence.current += 1; }; }, [load]);
+  const refreshCampaigns = useCallback(async () => { await load(true); }, [load]);
 
   const sources = useMemo(() => data?.sources || [], [data]);
   const campaigns = useMemo(() => data?.campaigns || [], [data]);
@@ -155,6 +162,7 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
   const review = (batch: Batch) => { setReviewBatch(batch); setReviewForm({ decision: "approved", note: "" }); setModal("review"); };
 
   if (loading && !data) return <div role="status" aria-live="polite" className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Memuat kontrol akuisisi…</div>;
+  if (error && !data) return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><p>{error}</p><p className="mt-2">Daftar kampanye belum tersedia, bukan berarti kosong.</p><button type="button" onClick={() => void load()} className={`${secondaryButton} mt-4`}>Coba muat kampanye lagi</button></div>;
   if (data && !data.phase5Ready) return <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">Kontrol akuisisi belum tersedia. Hubungi tim teknis bila status ini tetap muncul.</div>;
 
   const stagedBatches = batches.filter((item) => item.status === "staged");
@@ -223,9 +231,9 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
       </aside>
     </div>}
 
-    {view === "inbound" && <InboundAttributionPanel onAction={onAction} />}
+    {view === "inbound" && <InboundCampaignsPanel sources={sources} campaigns={campaigns} onAction={onAction} onRefresh={refreshCampaigns} onSetup={() => setView('governance')} />}
     {view === "outbound" && <div className="space-y-5">
-      <OutboundEmailPanel onAction={onAction} onRefresh={load} sources={sources} campaigns={campaigns} batches={batches}
+      <OutboundEmailPanel onAction={onAction} onRefresh={refreshCampaigns} sources={sources} campaigns={campaigns} batches={batches} onUnsavedChange={onUnsavedChange}
         onSetup={() => setView("governance")} />
       <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-600">Pencarian prospek & uji tautan lanjutan</summary><div className="mt-5 space-y-5"><LeadAgentPanel onAction={onAction} onOpenBatch={() => setView("governance")} /><ControlledOutboundPanel onAction={onAction} /></div></details>
     </div>}

@@ -1,6 +1,6 @@
 {
   "name": "app-binahub",
-  "version": "0.51.9",
+  "version": "0.51.10",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -19,6 +19,7 @@
     "test:pipeline-inbox:ui": "node scripts/test-pipeline-inbox-ui.mjs",
     "test:sales-priorities:ui": "node scripts/test-sales-priorities-ui.mjs",
     "test:meetings-inbox:ui": "node scripts/test-meetings-inbox-ui.mjs",
+    "test:campaigns:ui": "node scripts/test-campaigns-simple-ui.mjs",
     "test:peta:revision": "node scripts/test-peta-revision-ui.mjs",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",

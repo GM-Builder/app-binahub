@@ -23,7 +23,6 @@ export function OutboundSettingsDialog({ settings, myEmail, campaignName, setupB
     if (saveLock.current) return;
     const allowedEmails = form.recipientMode === "restricted" ? [...new Set(emails.split(/[\s,;]+/).map((email) => email.trim().toLowerCase()).filter(Boolean))] : [];
     if (allowedEmails.length > 50 || allowedEmails.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || (form.enabled && form.recipientMode === "restricted" && !allowedEmails.length)) {
-      setError("Saisissez…");
       setError("Isi 1–50 alamat email yang valid untuk uji terbatas."); return;
     }
     saveLock.current = true; setBusy(true); setError("");

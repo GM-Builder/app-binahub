@@ -481,3 +481,58 @@ bukan daftar status runtime terkini.
   cleanup, mengubah instrumen/skor/izin/retensi, atau memutasi program PFA2026.
   Scheduler tetap pending migrasi Vercel + Pro.
 - Batch berikutnya: arsip kampanye, lalu integrasi/arsip AMS sesuai R07/R10.
+
+### Batch 15 - 3 November 2026: penyederhanaan operasional kampanye
+
+- Pemilik memprioritaskan kemudahan admin inbound/outbound, bukan menambah
+  newsletter atau pengiriman promosi ke kontak lama. App 0.51.10 menyederhanakan
+  alur yang sudah ada. Warna, font, kontrol dan pola admin dipertahankan sesuai
+  mode Operate Impeccable; ini bukan penggantian identitas visual BinaHub.
+- Outbound menjadi empat langkah nyata: Penerima, Email, Tinjau, Hasil. Hanya
+  langkah aktif yang ditampilkan; pilihan tetap saat kembali atau mengganti
+  bahasa. Fokus/navigasi mengantar ke langkah berikutnya. Persetujuan daftar,
+  pemeriksaan penerima, template yang disahkan, email uji opsional, dan dialog
+  konfirmasi terakhir tetap berlaku. Mengganti langkah tidak mengirim email.
+- Asal daftar outbound baru dapat disiapkan di dalam modal pembuatan kampanye.
+  Kunci sumber dibuat otomatis, tetapi dasar penggunaan, retensi, pemilik/legal,
+  pemberitahuan privasi, catatan dan persetujuan tetap diisi admin berwenang.
+  Tidak memilih lawful basis, mengasumsikan consent, atau menetapkan masa simpan
+  untuk pengguna. Sumber yang disetujui dapat dipakai admin berikutnya melalui
+  API existing; ini tidak mengubah RBAC atau mengesahkan semua alamat email.
+- Inbound memisahkan daftar kampanye dari pembacaan respons. Form ringkas memakai
+  aksi campaign existing untuk sumber inbound yang sudah siap; penanggung jawab
+  ditawarkan dari sesi admin dan dapat diperiksa. Kode/UTM dibuat otomatis,
+  tujuan dibatasi ke landing rekomendasi yang sudah memiliki pelacakan dan
+  diagnosis tim/org. Tidak menebak tautan kampanye lama atau menawarkan tautan
+  dari sumber yang belum disetujui/aktif. Tautan disalin untuk dibagikan di luar
+  sistem, bukan mengirim email/memasang iklan. Tujuan katalog langsung tidak
+  ditawarkan karena bukti pelacakan pada app belum setara jalur tersebut.
+- Data/sumber/status kampanye, riset prospek, uji tautan dan kontrol antrean tetap
+  tersedia melalui pengaturan lanjutan. Ringkasan CRM tidak mendominasi layar
+  kampanye. Rincian kunjungan inbound menggunakan pengungkapan bertahap.
+- Pilihan/isian outbound dijaga saat berpindah kampanye/tab workspace atau
+  meninggalkan halaman. Ini bukan draf permanen atau concurrency lock antar-admin.
+  Read campaign/response mempunyai cancellation, late-response guard dan timeout;
+  pengiriman stale ditahan saat gagal/berganti bahasa. Retry setelah penyimpanan
+  berhasil memanggil pembukaan/refresh, bukan otomatis membuat kampanye lain.
+  Penyiapan sumber juga memeriksa kembali kunci sumber yang sama setelah koneksi
+  putus. Request key/konfirmasi pengiriman, settings version dan gate server
+  existing tidak dihapus. Antrean lama tidak otomatis diulang.
+- Batas arsip tetap jelas: target/delivery hingga 500 terbaru; inbound hingga
+  100 kunjungan, 500 aktivitas dan 300 hubungan kontak. Ringkasan analitik seluruh
+  sampel tidak mengikuti pencarian, bukan orang unik atau total sepanjang waktu.
+  Full server-side campaign pagination R07 tetap belum selesai; penyederhanaan
+  UI tidak menghapus batas itu atau mengklaim seluruh kesiapan produksi selesai.
+- Bukti lokal: 557 tes app/91 file lulus; 48 skenario Chromium di 1440/1024/390/
+  320px lulus memakai API in-memory. Semua writes nyata dan jaringan luar diblokir;
+  termasuk pembuatan sumber/kampanye serta send yang hanya mengubah fixture.
+  Dua putaran desktop/mobile diinspeksi, detector terarah 0 temuan. Lint,
+  TypeScript dan build produksi lulus. Kegagalan preview awal karena konfigurasi
+  domain publik Vite diperbaiki tanpa memuat env/kredensial produksi.
+  Ini bukan bukti runtime auth/database, inbox delivery, pelacakan lintas-domain
+  produksi, pentest Strix atau pengujian pengguna nyata dengan admin baru.
+- Panduan operasional: `docs/campaigns-admin-guide.md`. Tidak ada SQL/env baru,
+  perubahan API, AI/email/outreach/scheduler/cleanup produksi, atau perubahan
+  instrumen/skor/izin peserta/hasil historis/PFA2026. Scheduler tetap pending
+  migrasi workspace Vercel BinaHub + Pro. Rilis ini hanya app; tidak memerlukan
+  deploy API baru. Berikutnya tetap pagination arsip kampanye dan integrasi AMS.

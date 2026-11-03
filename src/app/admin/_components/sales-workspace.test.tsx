@@ -5,13 +5,22 @@ import { pipelineInboxFixture } from '@/test/fixtures/pipeline-inbox';
 vi.mock('@/lib/api-fetch',()=>({apiFetch:vi.fn(()=>{throw new Error('Legacy sales preview must not request server priorities');})}));
 vi.mock("./assessment-panel", () => ({ AssessmentPanel: (props: { expandedId: string; initialDetailTab: string }) => <p>Self Diagnostic {props.expandedId} · {props.initialDetailTab}</p> }));
 vi.mock("./inquiries-panel", () => ({ InquiriesPanel: (props: { initialSelectedId: string }) => <p>Inquiry {props.initialSelectedId}</p> }));
-vi.mock("./acquisition-control-panel", () => ({ AcquisitionControlPanel: (props: { initialView: string }) => <p>Kampanye {props.initialView}</p> }));
+vi.mock("./acquisition-control-panel", () => ({ AcquisitionControlPanel: (props: { initialView: string; onUnsavedChange?: (dirty: boolean) => void }) => <div><p>Kampanye {props.initialView}</p><button type="button" onClick={() => props.onUnsavedChange?.(true)}>Pilih penerima uji</button><button type="button" onClick={() => props.onUnsavedChange?.(false)}>Batalkan penerima uji</button></div> }));
 vi.mock("./pipeline-panel", () => ({ PipelinePanel: ({initialSelectedId,onUnsavedChange}:{initialSelectedId?:string;onUnsavedChange?:(dirty:boolean)=>void}) => <div><p>Peluang penjualan {initialSelectedId}</p><button type="button" onClick={()=>onUnsavedChange?.(true)}>Ubah peluang uji</button><button type="button" onClick={()=>onUnsavedChange?.(false)}>Selesai menyimpan peluang</button></div> }));
 vi.mock("./meetings-panel", () => ({ MeetingsPanel: () => <p>Booking konsultasi</p> }));
 vi.mock("./spin-panel", () => ({ SpinPanel: ({onUnsavedChange}:{onUnsavedChange?:(value:boolean)=>void}) => <div><p>Checklist aktif</p><button onClick={()=>onUnsavedChange?.(true)}>Ubah checklist</button><button onClick={()=>onUnsavedChange?.(false)}>Selesaikan simpan</button></div> }));
 import { SalesWorkspace } from "./sales-workspace";
 afterEach(cleanup);
 describe("unified sales workspace", () => {
+  it('guards an unfinished campaign when leaving the outer workspace tabs', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<SalesWorkspace data={assessmentDashboard([])} onAction={vi.fn()} onRefresh={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Outbound' })); fireEvent.click(screen.getByRole('button', { name: 'Pilih penerima uji' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Inbound' })); expect(confirm).toHaveBeenCalledOnce();
+    expect(screen.getByText('Kampanye outbound')).toBeVisible(); expect(screen.queryByText('Kampanye inbound')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Batalkan penerima uji' })); fireEvent.click(screen.getByRole('button', { name: 'Inbound' }));
+    expect(screen.getByText('Kampanye inbound')).toBeVisible(); confirm.mockRestore();
+  });
   it('opens the exact overdue opportunity and protects its unsaved changes from outer navigation',()=>{
     const confirm=vi.spyOn(window,'confirm').mockReturnValue(false),action=vi.fn();
     const data=assessmentDashboard([]);data.pipelineLeads=[pipelineInboxFixture({id:'selected-opportunity',nextActionDueAt:'2020-01-01T03:00:00Z'})];
