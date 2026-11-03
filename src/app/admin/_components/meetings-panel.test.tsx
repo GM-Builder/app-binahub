@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock('@/lib/api-fetch', () => ({ apiFetch: vi.fn() }));
 import type { CalendarBookingRecord } from "../_lib/types";
 import { MeetingsPanel } from "./meetings-panel";
 
@@ -37,7 +38,7 @@ describe("MeetingsPanel", () => {
     expect(screen.getAllByText("Dewi Pratama").length).toBeGreaterThan(0);
     expect(screen.queryByText("Raka Putra")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /Dibatalkan/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Tidak terlaksana/ }));
     expect(screen.getByText("Raka Putra")).toBeVisible();
     expect(screen.getAllByText("Dewi Pratama")).toHaveLength(1);
   });

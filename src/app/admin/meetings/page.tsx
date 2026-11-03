@@ -1,2 +1,2 @@
-import { AdminWorkspace } from "../_components/admin-workspace";
-export default function AdminMeetingsPage() { return <AdminWorkspace section="Meeting" />; }
+import { MeetingsInbox } from '../_components/meetings-inbox';
+export default function AdminMeetingsPage() { return <MeetingsInbox />; }

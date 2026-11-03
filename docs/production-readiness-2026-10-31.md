@@ -26,7 +26,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
-| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org, inquiry, Kontak & Leads, pipeline dan prioritas CRM selesai kode; arsip konsultasi/kampanye dan AMS masih ditinjau | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
+| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org, inquiry, Kontak & Leads, pipeline, prioritas CRM dan konsultasi selesai kode; arsip kampanye dan AMS masih ditinjau | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
@@ -441,3 +441,42 @@ bukan daftar status runtime terkini.
   instrumen/skor/izin/retensi/harga, atau menyentuh PFA2026. Scheduler tetap
   ditunda sampai migrasi workspace Vercel BinaHub + Pro. Deploy API sebelum app
   setelah operator mengonfirmasi SQL86; tidak ada env baru.
+
+### Batch 14 - 3 November 2026: R07 arsip konsultasi
+
+- App 0.51.9/API 0.47.13: halaman utama Konsultasi tidak lagi menunggu dashboard
+  umum yang membatasi 200 booking. Entry embedded/legacy memakai reader yang
+  sama. SQL87 mencari/filter seluruh arsip sebelum pagination 20 jadwal dengan
+  urutan stabil; ringkasan, jumlah tab, dan agenda terdekat mencakup seluruh
+  arsip, tidak mengikuti filter pencarian. Detail dibaca terpisah dengan UUID.
+- Hari ini dan tanggal/jam ditampilkan konsisten dalam WIB; zona waktu asal
+  booking diberi label terpisah di detail. Agenda yang lewat tidak dianggap
+  selesai tanpa status completed. Hari ini mencakup agenda lewat hari ini,
+  tanpa pembatalan atau slot lama. Tidak terlaksana memuat cancelled/rejected/
+  no_show. Semua dan Perlu ditinjau menjaga data tanpa waktu/status dikenal
+  tetap dapat ditemukan. Waktu selesai sebelum mulai juga perlu ditinjau.
+- Dalam satu provider/series, slot lama masuk Riwayat berdasarkan created_at
+  (UUID sebagai tie-breaker), bukan updated_at yang berubah saat reschedule.
+  Ini proyeksi read-only, bukan koreksi status atau sinkronisasi ke Cal.com.
+  Tautan ruang hanya ditawarkan untuk slot mendatang yang tidak diganti dan
+  URL HTTPS valid tanpa kredensial. Payload provider tidak dikirim; URL ruang,
+  penyelenggara, dan alasan pembatalan hanya dimuat pada detail terpilih.
+- Loading, error, missing migration, dan kosong dibedakan tanpa angka nol palsu
+  atau tautan detail stale. Filter tetap saat gagal; debounce, reset/clamp page,
+  timeout 20 detik, cancellation/late-response guard, dan retry detail terpisah.
+  Semua reader admin-only, rate-limited, no-store dan fungsi SQL service-role-only.
+- Bukti lokal: suite app 530 lulus, disusul 14 tes komponen konsultasi lulus
+  termasuk dua regresi tambahan pemisahan error daftar/detail dan respons
+  terlambat. Suite API 1.112 lulus/2 visual existing skip. SQL87 diuji pada
+  >1.000 booking sintetis di PostgreSQL terisolasi, termasuk batas hari WIB,
+  lineage, literal search, role denial dan tidak berubahnya sumber.
+  40 pemeriksaan Chromium pada 1440/1024/390/320px lulus dengan API mock serta
+  seluruh writes/jaringan luar diblokir. Dua batch desktop/mobile diinspeksi;
+  detector terarah 0 temuan (percobaan awal berhenti karena opsi format salah).
+  Lint, TypeScript dan build produksi app/API lulus. Ini bukan runtime produksi,
+  pengujian sinkronisasi Cal.com/provider delivery atau pentest Strix.
+- SQL87 diminta kepada operator; konfirmasi penerapan masih ditunggu sebelum
+  push. Deploy API sebelum app setelah SQL87 berhasil. Tidak ada env baru,
+  SQL produksi/AI/email/outreach/cleanup, perubahan instrumen/skor/izin/retensi,
+  atau mutasi program PFA2026. Scheduler tetap pending migrasi Vercel + Pro.
+- Batch berikutnya: arsip kampanye, lalu integrasi/arsip AMS sesuai R07/R10.

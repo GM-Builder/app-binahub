@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.51.9] - 2026-11-03
+
+- Read consultation archive and details independently of the capped dashboard.
+  Search/filter the entire archive before stable 20-row pagination; separate
+  global counts and next agenda from filtered results. Preserve admin styling.
+- Use WIB consistently for today and displayed dates, labelling the original
+  booking timezone separately. Past agenda is not inferred to be completed.
+  Keep replaced slots in history and undated/unknown-status records in review.
+- Add All and Review views, bounded reads, cancellation/late-response guards,
+  independent detail retries, page reset/clamp and explicit migration/error
+  states without stale room links or false zero counts. Only valid HTTPS rooms
+  for upcoming, non-replaced slots are offered. No scheduling mutations.
+- Add SQL/API/component and four-viewport synthetic browser regressions.
+  Requires API 0.47.13/SQL87; no new env. Campaign and AMS archives remain next;
+  scheduler activation stays pending the owner's Vercel migration.
+
 ## [0.51.8] - 2026-11-03
 
 - Read CRM priorities independently of the capped general dashboard, including
