@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assessmentDashboard, assessmentFixture } from "@/test/fixtures/assessment-admin";
 import { pipelineInboxFixture } from '@/test/fixtures/pipeline-inbox';
+vi.mock('@/lib/api-fetch',()=>({apiFetch:vi.fn(()=>{throw new Error('Legacy sales preview must not request server priorities');})}));
 vi.mock("./assessment-panel", () => ({ AssessmentPanel: (props: { expandedId: string; initialDetailTab: string }) => <p>Self Diagnostic {props.expandedId} · {props.initialDetailTab}</p> }));
 vi.mock("./inquiries-panel", () => ({ InquiriesPanel: (props: { initialSelectedId: string }) => <p>Inquiry {props.initialSelectedId}</p> }));
 vi.mock("./acquisition-control-panel", () => ({ AcquisitionControlPanel: (props: { initialView: string }) => <p>Kampanye {props.initialView}</p> }));

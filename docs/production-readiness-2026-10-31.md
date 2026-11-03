@@ -26,7 +26,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
-| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org, inquiry, Kontak & Leads dan pipeline selesai kode; prioritas CRM lintas sumber/AMS menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
+| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org, inquiry, Kontak & Leads, pipeline dan prioritas CRM selesai kode; arsip konsultasi/kampanye dan AMS masih ditinjau | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
@@ -399,3 +399,45 @@ bukan daftar status runtime terkini.
   R07 selesai. Build produksi, lint dan tipe app/API lulus; detector UI 0 temuan.
 - Deploy API sebelum app. Batch berikutnya: prioritas CRM lintas sumber,
   kemudian sisa pagination/integrasi AMS sesuai daftar kesiapan.
+
+### Batch 13 - 3 November 2026: R07 prioritas CRM lintas sumber
+
+- App 0.51.8/API 0.47.12: entry utama Akuisisi & penjualan tidak menunggu
+  dashboard umum. SQL86 memproyeksikan tugas dari seluruh inquiry, diagnosis
+  tim/org/proposal dan peluang lewat tenggat sebelum search/filter/pagination
+  20 tugas. Ringkasan seluruh arsip terpisah dari filter daftar; bukan jumlah
+  orang unik, performa kampanye atau seluruh pekerjaan admin/discovery.
+- Urutan proposal review/rekonsiliasi, balasan awal, hasil belum tercatat,
+  peluang lewat tenggat lalu reminder dipertahankan. Satu tindakan utama per
+  diagnosis; source-qualified ID dan tujuan detail mencegah tab/jenis ID salah.
+  Pengiriman hasil yang belum tercatat tetap tugas periksa hasil, bukan reminder.
+  Balasan berstatus sent tanpa timestamp diarahkan untuk diperiksa, bukan
+  disimpulkan belum dikirim. Tidak ada perubahan status saat membaca.
+- Reminder memakai 2/7/14 hari dari delivery awal (proposal satu reminder), jeda,
+  closed/handled status, booking requested/confirmed/rescheduled, completed
+  legacy, event/claim cap tiga pesan, klaim next channel/level dan suppression.
+  Pencocokan ID relasi ditambah penghentian email nonkosong trim/case existing
+  yang konservatif; shared mailbox dapat membuat task tidak ditawarkan. Ini
+  tidak menggabungkan identitas atau mengubah policy sending. API tetap mengecek
+  settings/jam kerja/template/approval/claim sebelum aksi nyata. Antrean bukan
+  izin kirim, bukti worker aktif atau kepastian semua kegiatan telah selesai.
+- Detail tetap reader inquiry/diagnosis/pipeline yang ada; draf inquiry dan
+  form peluang/checklist meeting tetap dilindungi saat keluar. Tab konsultasi
+  entry utama mengarahkan ke halaman sumber existing; arsip konsultasi di sana
+  masih memakai cap dashboard dan perlu batch tersendiri. Entry legacy dengan
+  payload booking tetap dapat menampilkannya inline. Tidak memuat semua data
+  dashboard hanya untuk mengisi ringkasan prioritas.
+- Loading/error/missing migration/empty dibedakan, tanpa stale action atau nol
+  palsu; timeout 20 detik, cancellation/late-response guard, page reset/clamp,
+  serta retry. SQL86/endpoint read-only service_role/admin/rate-limit/no-store.
+  DTO tidak memuat form/answers/report narrative, reply body atau proposal draft.
+- Bukti lokal: 1.083 tes API lulus/2 visual existing skip, 511 tes app lulus;
+  SQL terisolasi dengan >1.000 data sintetis; 44 pemeriksaan Chromium pada
+  1440/1024/390/320px lulus dengan API mock serta writes/jaringan luar diblokir.
+  Detector UI 0 temuan; build produksi, lint dan tipe app/API lulus. SQL86
+  menunggu konfirmasi operator sebelum push API/app.
+  Ini bukan runtime produksi, delivery provider atau pentest Strix.
+- Tidak menjalankan SQL produksi, AI/email/outreach/scheduler/cleanup, mengubah
+  instrumen/skor/izin/retensi/harga, atau menyentuh PFA2026. Scheduler tetap
+  ditunda sampai migrasi workspace Vercel BinaHub + Pro. Deploy API sebelum app
+  setelah operator mengonfirmasi SQL86; tidak ada env baru.

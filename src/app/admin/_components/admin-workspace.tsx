@@ -167,7 +167,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
           {section === "Overview" && <div className="mb-6"><SalesFunnel data={data} /></div>}
           {section !== "Acquisition Control" && section !== "Sales Pipeline" && <ObservabilityPanel onAction={adminRequest} compact={section !== "Operations Control"} />}
           {section === "Overview" && <Overview data={data} />}
-          {section === "Acquisition Control" && <SalesWorkspace data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
+          {section === "Acquisition Control" && <SalesWorkspace serverMode data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Sales Pipeline" && <PipelinePanel serverMode data={data} onAction={adminRequest} onRefresh={refreshPipelineDashboard} />}
           {section === "Client & Delivery" && <ClientDeliveryPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Operations Control" && <OperationsControlPanel onAction={adminRequest} />}

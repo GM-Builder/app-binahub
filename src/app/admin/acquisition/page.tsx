@@ -1,2 +1,2 @@
-import { AdminWorkspace } from "../_components/admin-workspace";
-export default function AdminAcquisitionPage() { return <AdminWorkspace section="Acquisition Control" />; }
+import { SalesInbox } from '../_components/sales-inbox';
+export default function AdminAcquisitionPage() { return <SalesInbox/>; }

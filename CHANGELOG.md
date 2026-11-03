@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.51.8] - 2026-11-03
+
+- Read CRM priorities independently of the capped general dashboard, including
+  archive-wide inquiry replies, diagnosis/proposal review, due reminders and
+  overdue pipeline actions. Search/filter before 20-task pagination; keep global
+  summary counts distinct from filtered results. Counts are tasks, not people.
+- Open the correct source ID and proposal/summary/follow-up view. Retain existing
+  detail readers and unsaved inquiry, pipeline and meeting navigation guards.
+  Main CRM consultation navigation points to the existing consultation page;
+  it never invents an empty booking list from a missing dashboard payload.
+- Distinguish loading, missing SQL86, read failure and true empty results. Hide
+  stale actions while refreshing, ignore late responses, time out hung reads,
+  reset pages when filters change and clamp invalidated pages. Preserve the
+  incumbent admin design and mobile task list.
+- Reminder candidates honor existing delivery anchors/2-7-14-day schedule,
+  explicit pauses and closed states, complete booking/lead history, suppression,
+  event/claim caps and already-claimed next levels. This is review guidance,
+  never authorization to send, worker activation or proof of delivery.
+- Add SQL/API/component and four-viewport synthetic browser regressions.
+  Requires API 0.47.12 and SQL86; no new env or send/scoring/consent/retention
+  changes. Discovery, campaign, consultation and AMS archives remain separately
+  scoped; this does not claim all admin lists or scheduler work are complete.
+
 ## [0.51.7] - 2026-11-03
 
 - Move the main Sales Pipeline off the general dashboard payload. Search/filter
