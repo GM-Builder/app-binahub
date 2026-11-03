@@ -26,7 +26,7 @@ Setiap bagian membedakan kode, tes sintetis, deployment dan bukti produksi.
 | R04 | AI SPIN gagal → retry/needs-review, bukan selesai kosong | Kode dan regresi lokal selesai di API0.46.3; produksi belum diverifikasi | Jawaban/snapshot tetap, retry tidak menggandakan email; tes outage dan pulih |
 | R05 | Minimisasi data AI lintas jalur | Selesai kode/proyeksi aktif API0.47.4/AMS0.11.2; pengecualian dicatat, produksi belum diverifikasi | Kontak terstruktur/pola dibatasi; CV/impor profil bertujuan khusus tetap memiliki data identitas; bukan anonim penuh |
 | R06 | Kesiapan layanan dan alarm | Monitoring laporan API/admin selesai kode; alarm eksternal, AMS DB/antrean dan aktivasi scheduler belum | Liveness/readiness terpisah;4 antrean laporan dan heartbeat tampil; cakupan/unknown jelas, kanal alarm tetap perlu keputusan |
-| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org dan inbox inquiry selesai kode; CRM lain/AMS menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
+| R07 | Pagination/pencarian server, prioritas tugas admin | PETA, rekomendasi, diagnosis tim/org, inquiry dan Kontak & Leads selesai kode; pipeline/prioritas CRM/AMS menyusul | Data lama dapat ditemukan; total berasal dari server; tampilan mobile dan izin tetap benar |
 | R08 | Meeting → draf proposal yang ditinjau | Berikutnya | Revisi meeting terpisah dari hasil klien; isi/harga dari sumber yang disahkan; tidak otomatis mengirim |
 | R09 | PDF/catatan pendamping PETA individu | PDF individu/grup internal khusus admin selesai; catatan pendamping belum | App0.51.1/API0.47.2/SQL80; izin dan retensi diperiksa server; tidak ada distribusi perusahaan/anonim |
 | R10 | Integrasi AMS, handoff, evaluasi dan pesanan ulang | Direncanakan | Bukti identitas/program, revoke/retry idempoten, pesanan ulang tidak disimpulkan dari label |
@@ -323,3 +323,42 @@ bukan daftar status runtime terkini.
   menjalankan AI/email/cleanup/SQL produksi, atau menyentuh PFA2026. Scheduler
   tetap ditunda sampai migrasi workspace Vercel BinaHub + Pro. R07 CRM/AMS dan
   R08 meeting → draf proposal masih menjadi pekerjaan berikutnya.
+
+### Batch 11 - 3 November 2026: R07 Kontak & Leads
+
+- App 0.51.6/API 0.47.10: halaman Kontak & Leads tidak menunggu dashboard umum
+  atau subset 100 inquiry. Reader yang sama dipakai pada entry admin lama.
+  SQL84 menyusun proyeksi baca gabungan dari lead, inquiry, coach dan karyawan,
+  lalu mencari/filter/menghitung sebelum pagination 20 baris. Detail satu kontak
+  dibaca terpisah; daftar tidak mengirim notes/message atau row sumber penuh.
+- Identitas email dinormalisasi trim/case; telepon digit dipakai hanya jika
+  email tidak tersedia, lalu fallback jenis+ID. Ini mempertahankan arah merge
+  existing, bukan identity resolution transitive atau jaminan orang unik:
+  shared mailbox tetap dapat tampil bersama. Tidak ada penggabungan permanen
+  atau penghapusan sumber. Lead diutamakan; urutan/representatif timestamp+ID
+  deterministik. UUID sama pada jenis berbeda tidak membuka atau menulis salah
+  sumber. Konteks inquiry didahulukan untuk lead yang tergabung; notes lead
+  tetap milik lead, tidak diisi dari notes sumber sekunder.
+- Status ditampilkan dari data tersimpan, bukan kata 'proposal/client' dalam
+  notes atau umur kontak. Penyimpanan notes tanpa perubahan status menghilangkan
+  field status dari PATCH; nilai status eksplisit tetap divalidasi enum server.
+  UI mencatat pilihan status eksplisit dan mereset penandanya sesudah sukses,
+  sehingga refresh/perubahan status eksternal tidak otomatis dipulihkan ke nilai
+  lama. Ini bukan concurrency lock untuk notes atau transisi pipeline baru.
+- Loading, gagal dan kosong terpisah; timeout 20 detik, cancellation/late-response
+  guard, retry list/detail, filter tetap dan halaman di luar rentang pulih.
+  Notes lokal bertahan saat refresh gagal; tutup/reload memperingatkan perubahan
+  belum tersimpan. Kontak referensi tetap baca-saja; hanya lead dapat diedit.
+- Pemilik mengonfirmasi SQL84 berhasil. Fungsi baca service_role-only dan API
+  admin/rate limit/validasi/no-store dipertahankan; tidak ada env baru. Tidak
+  menjalankan AI/email/outreach, scheduler, cleanup atau mutasi program PFA2026;
+  skor, instrumen, izin peserta dan retensi tidak berubah.
+- Bukti lokal: 1.021 tes API lulus/2 visual existing skip; 479 tes app lulus,
+  termasuk 17 tes kontak terarah. SQL in-memory diuji dengan lebih 1.000 data
+  sintetis. 44 pemeriksaan Chromium 1440/1024/390/320px lulus dengan API mock,
+  semua writes/jaringan eksternal diblokir; detector 0. Ini bukan bukti produksi,
+  provider delivery, pentest Strix, atau pernyataan seluruh R07 selesai.
+- Lint, pemeriksaan tipe dan build produksi app/API lulus. Putaran konfirmasi
+  browser terakhir juga lulus; tidak ada pengiriman atau pengujian produksi.
+- Deploy API dahulu, lalu app. Pipeline/prioritas CRM dan AMS masih berikutnya;
+  scheduler tetap ditunda sampai migrasi workspace Vercel BinaHub + Pro.

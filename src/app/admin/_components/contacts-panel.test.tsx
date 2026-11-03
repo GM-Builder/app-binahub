@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ContactRecord } from "../_lib/types";
 import { ContactsPanel } from "./contacts-panel";
+vi.mock('@/lib/api-fetch',()=>({apiFetch:vi.fn()}));
 
 function contact(overrides: Partial<ContactRecord> = {}): ContactRecord {
   return {

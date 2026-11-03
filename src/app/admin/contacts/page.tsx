@@ -1,2 +1,2 @@
-import { AdminWorkspace } from "../_components/admin-workspace";
-export default function AdminContactsPage() { return <AdminWorkspace section="Kontak & Leads" />; }
+import { ContactInbox } from '../_components/contact-inbox';
+export default function AdminContactsPage() { return <ContactInbox />; }

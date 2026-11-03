@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.51.6] - 2026-11-03
+
+- Move Kontak & Leads off the general dashboard payload to a server-wide,
+  20-row contact inbox. Search/filter/count after a read-only identity projection
+  of leads, inquiries, coaches and employees. Load context and notes only for
+  the opened contact; preserve lead-only editing and reference-only contacts.
+- Show stored status instead of guessing Client/follow-up from notes or age.
+  Preserve legacy status options; a notes-only save omits status. Only an
+  explicit admin selection sends a status change, including after refreshes
+  or externally changed status. Do not merge or modify source identities.
+- Distinguish loading/empty/unavailable; retain filters and local notes through
+  read failures, timeout and stale-response cancellation. Keep mobile drawer
+  navigation, close/reload warnings for unsaved work, and page-range recovery.
+- Add synthetic SQL/API/component/browser verification. Requires API 0.47.10
+  and SQL84 (owner confirmed applied); no new env, scoring, consent, retention,
+  AI/email activation or scheduler work. Pipeline/priority/AMS remain separate.
+
 ## [0.51.5] - 2026-11-03
 
 - Read the main Inquiry inbox independently of the capped general dashboard.
