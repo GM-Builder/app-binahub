@@ -475,8 +475,9 @@ bukan daftar status runtime terkini.
   detector terarah 0 temuan (percobaan awal berhenti karena opsi format salah).
   Lint, TypeScript dan build produksi app/API lulus. Ini bukan runtime produksi,
   pengujian sinkronisasi Cal.com/provider delivery atau pentest Strix.
-- SQL87 diminta kepada operator; konfirmasi penerapan masih ditunggu sebelum
-  push. Deploy API sebelum app setelah SQL87 berhasil. Tidak ada env baru,
-  SQL produksi/AI/email/outreach/cleanup, perubahan instrumen/skor/izin/retensi,
-  atau mutasi program PFA2026. Scheduler tetap pending migrasi Vercel + Pro.
+- Pemilik mengonfirmasi SQL87 berhasil dijalankan pada 3 November 2026.
+  Urutan rilis: push API sebelum app; push bukan bukti deployment produksi.
+  Tidak ada env baru. Agen tidak menjalankan SQL produksi/AI/email/outreach/
+  cleanup, mengubah instrumen/skor/izin/retensi, atau memutasi program PFA2026.
+  Scheduler tetap pending migrasi Vercel + Pro.
 - Batch berikutnya: arsip kampanye, lalu integrasi/arsip AMS sesuai R07/R10.
