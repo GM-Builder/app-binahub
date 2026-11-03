@@ -29,6 +29,7 @@ import { AdminDrawer, AdminInput, AdminSelect, AdminTextarea } from "./shared";
 import { AssessmentBrief, ClientJourneyTimeline } from "./client-journey";
 import { buildClientJourney } from "../_lib/client-journey";
 import { proposalState } from "../_lib/assessment-presentation";
+import type { PipelineDetailContext } from '../_lib/use-pipeline-inbox';
 
 export function PipelineDrawer({
   lead,
@@ -37,13 +38,25 @@ export function PipelineDrawer({
   onAction,
   onRefresh,
   onSaved,
+  context,
+  historyPage = 0,
+  historyLoading = false,
+  historyError = '',
+  onHistoryPage,
+  onUnsavedChange,
 }: {
   lead: PipelineLeadRecord;
-  data: DashboardData;
+  data?: DashboardData;
   onClose: () => void;
   onAction: (url: string, init?: RequestInit) => Promise<unknown>;
   onRefresh: () => Promise<void>;
   onSaved: (message: string) => void;
+  context?: PipelineDetailContext;
+  historyPage?: number;
+  historyLoading?: boolean;
+  historyError?: string;
+  onHistoryPage?: (page:number) => void;
+  onUnsavedChange?: (dirty:boolean) => void;
 }) {
   const [form, setForm] = useState(() => formFromLead(lead));
   const [editing, setEditing] = useState(false);
@@ -54,6 +67,7 @@ export function PipelineDrawer({
   const [discard, setDiscard] = useState(false);
   const dirty = JSON.stringify(form) !== JSON.stringify(formFromLead(lead));
   const errors = validatePipelineForm(form);
+  useEffect(()=>{onUnsavedChange?.(dirty || saving);return()=>onUnsavedChange?.(false);},[dirty,saving,onUnsavedChange]);
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -67,7 +81,7 @@ export function PipelineDrawer({
     if (dirty) setDiscard(true);
     else onClose();
   };
-  const journey = useMemo(() => buildClientJourney(data, { leadId: lead.id }), [data, lead.id]);
+  const journey = useMemo(() => buildClientJourney(data || {pipelineLeads:[lead],opportunityActivities:context?.activities}, { leadId: lead.id }), [data,lead,context?.activities]);
   const { assessments, meetings } = journey;
   const save = async () => {
     if (busy.current || errors.length || !dirty) return;
@@ -200,20 +214,30 @@ export function PipelineDrawer({
             key={key}
             onClick={() => setTab(key)}
             aria-pressed={tab === key}
+            aria-label={key==='history' ? `Riwayat ${context ? context.activityTotal : journey.events.length}` : label}
             className={`flex min-h-11 items-center gap-1.5 border-b-2 text-xs font-semibold ${tab === key ? "border-[#0B2C6B] text-[#0B2C6B]" : "border-transparent text-slate-500"}`}
           >
             {key === "history" && <History size={13} />}
             {label}
             {key === "history" && (
-              <span className="text-[10px] text-slate-400">
-                {journey.events.length}
+              <span className="text-[10px] text-slate-400">{' '}
+                {context ? context.activityTotal : journey.events.length}
               </span>
             )}
           </button>
         ))}
       </div>
       {tab === "history" ? (
-        <ClientJourneyTimeline key={lead.id} events={journey.events} />
+        <div className="space-y-4">
+          {context && <p className="text-xs leading-5 text-slate-600">Riwayat perubahan peluang. Riwayat diagnosis, konsultasi, dan pelaksanaan tersedia pada menu terkait.</p>}
+          {historyLoading ? <p role="status" className="py-6 text-sm text-slate-600">Memuat riwayat peluang…</p> : historyError ? <div role="alert" className="space-y-3 text-sm text-rose-800"><p>{historyError}</p><button type="button" className="min-h-11 rounded-lg border px-3" onClick={()=>onHistoryPage?.(historyPage)}>Coba lagi</button></div>
+            : <ClientJourneyTimeline key={`${lead.id}:${historyPage}`} events={context ? journey.events.filter(event=>event.id.startsWith('opportunity:')) : journey.events} />}
+          {context && <nav aria-label="Halaman riwayat peluang" className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4 text-xs">
+            <span>{context.activityTotal} aktivitas · Halaman {historyPage+1}</span>
+            <div className="flex gap-2"><button type="button" disabled={historyLoading||historyPage===0} onClick={()=>onHistoryPage?.(historyPage-1)} className="min-h-11 rounded-lg border px-3 disabled:opacity-40">Sebelumnya</button>
+              <button type="button" disabled={historyLoading||(historyPage+1)*20>=context.activityTotal} onClick={()=>onHistoryPage?.(historyPage+1)} className="min-h-11 rounded-lg border px-3 disabled:opacity-40">Berikutnya</button></div>
+          </nav>}
+        </div>
       ) : (
         <div className="space-y-5">
           {!editing ? (
@@ -294,15 +318,15 @@ export function PipelineDrawer({
                   {lead.leadTimeZone || "Belum tercatat"}
                 </p>
               </section>
-              <section className="rounded-xl border border-slate-200 p-4">
+              {!context && <section className="rounded-xl border border-slate-200 p-4">
                 <AssessmentBrief assessment={journey.brief} />
-              </section>
+              </section>}
               <section className="rounded-xl border border-slate-200 p-4">
                 <h3 className="text-xs font-semibold text-slate-800">
                   Self Diagnostic & konsultasi
                 </h3>
                 <p className="mt-2 text-xs leading-5 text-slate-500">
-                  {assessments.length} Self Diagnostic terhubung · {meetings.length}{" "}
+                  {context?.assessments ?? assessments.length} Self Diagnostic terhubung · {context?.meetings ?? meetings.length}{" "}
                   konsultasi terhubung
                 </p>
                 {assessments.map((assessment) => (
@@ -314,7 +338,7 @@ export function PipelineDrawer({
                   </p>
                 ))}
                 <div className="mt-3 flex flex-wrap gap-3">
-                  {lead.opportunityStage==='won'&&<Link href={`/admin/clients?lead=${encodeURIComponent(lead.id)}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white">{data.clientAccounts?.some(account=>account.sourceLeadId===lead.id)?'Buka akun & pelaksanaan':'Siapkan serah terima'}<ArrowUpRight size={13} aria-hidden="true"/></Link>}
+                  {lead.opportunityStage==='won'&&<Link href={`/admin/clients?lead=${encodeURIComponent(lead.id)}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#0B2C6B] px-3 text-xs font-semibold text-white">{context?.accountId || data?.clientAccounts?.some(account=>account.sourceLeadId===lead.id)?'Buka akun & pelaksanaan':'Siapkan serah terima'}<ArrowUpRight size={13} aria-hidden="true"/></Link>}
                   <Link
                     href="/admin/assessments"
                     className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-[#0B2C6B]"

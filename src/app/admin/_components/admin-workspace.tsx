@@ -168,7 +168,7 @@ function AdminWorkspaceContent({ section }: { section: AdminWorkspaceSection }) 
           {section !== "Acquisition Control" && section !== "Sales Pipeline" && <ObservabilityPanel onAction={adminRequest} compact={section !== "Operations Control"} />}
           {section === "Overview" && <Overview data={data} />}
           {section === "Acquisition Control" && <SalesWorkspace data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
-          {section === "Sales Pipeline" && <PipelinePanel data={data} onAction={adminRequest} onRefresh={refreshPipelineDashboard} />}
+          {section === "Sales Pipeline" && <PipelinePanel serverMode data={data} onAction={adminRequest} onRefresh={refreshPipelineDashboard} />}
           {section === "Client & Delivery" && <ClientDeliveryPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}
           {section === "Operations Control" && <OperationsControlPanel onAction={adminRequest} />}
           {section === "Automation Center" && <SmartCenterPanel data={data} onAction={adminRequest} onRefresh={refreshDashboard} />}

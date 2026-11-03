@@ -1,15 +1,26 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { assessmentDashboard, assessmentFixture } from "@/test/fixtures/assessment-admin";
+import { pipelineInboxFixture } from '@/test/fixtures/pipeline-inbox';
 vi.mock("./assessment-panel", () => ({ AssessmentPanel: (props: { expandedId: string; initialDetailTab: string }) => <p>Self Diagnostic {props.expandedId} · {props.initialDetailTab}</p> }));
 vi.mock("./inquiries-panel", () => ({ InquiriesPanel: (props: { initialSelectedId: string }) => <p>Inquiry {props.initialSelectedId}</p> }));
 vi.mock("./acquisition-control-panel", () => ({ AcquisitionControlPanel: (props: { initialView: string }) => <p>Kampanye {props.initialView}</p> }));
-vi.mock("./pipeline-panel", () => ({ PipelinePanel: () => <p>Peluang penjualan</p> }));
+vi.mock("./pipeline-panel", () => ({ PipelinePanel: ({initialSelectedId,onUnsavedChange}:{initialSelectedId?:string;onUnsavedChange?:(dirty:boolean)=>void}) => <div><p>Peluang penjualan {initialSelectedId}</p><button type="button" onClick={()=>onUnsavedChange?.(true)}>Ubah peluang uji</button><button type="button" onClick={()=>onUnsavedChange?.(false)}>Selesai menyimpan peluang</button></div> }));
 vi.mock("./meetings-panel", () => ({ MeetingsPanel: () => <p>Booking konsultasi</p> }));
 vi.mock("./spin-panel", () => ({ SpinPanel: ({onUnsavedChange}:{onUnsavedChange?:(value:boolean)=>void}) => <div><p>Checklist aktif</p><button onClick={()=>onUnsavedChange?.(true)}>Ubah checklist</button><button onClick={()=>onUnsavedChange?.(false)}>Selesaikan simpan</button></div> }));
 import { SalesWorkspace } from "./sales-workspace";
 afterEach(cleanup);
 describe("unified sales workspace", () => {
+  it('opens the exact overdue opportunity and protects its unsaved changes from outer navigation',()=>{
+    const confirm=vi.spyOn(window,'confirm').mockReturnValue(false),action=vi.fn();
+    const data=assessmentDashboard([]);data.pipelineLeads=[pipelineInboxFixture({id:'selected-opportunity',nextActionDueAt:'2020-01-01T03:00:00Z'})];
+    render(<SalesWorkspace data={data} onAction={action} onRefresh={vi.fn()}/>);
+    fireEvent.click(screen.getByRole('button',{name:'Buka peluang'}));expect(screen.getByText('Peluang penjualan selected-opportunity')).toBeVisible();
+    fireEvent.click(screen.getByRole('button',{name:'Ubah peluang uji'}));fireEvent.click(screen.getByRole('button',{name:'Inbound'}));
+    expect(confirm).toHaveBeenCalled();expect(screen.queryByText('Kampanye inbound')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'Selesai menyimpan peluang'}));fireEvent.click(screen.getByRole('button',{name:'Inbound'}));
+    expect(screen.getByText('Kampanye inbound')).toBeVisible();expect(action).not.toHaveBeenCalled();confirm.mockRestore();
+  });
   it("protects dirty or failed saves from all outer tabs and allows leaving after save", async () => {
     const confirm=vi.spyOn(window,"confirm").mockReturnValue(false);
     render(<SalesWorkspace data={assessmentDashboard([])} onAction={vi.fn()} onRefresh={vi.fn()} />);

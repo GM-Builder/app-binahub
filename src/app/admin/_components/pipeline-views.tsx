@@ -117,11 +117,13 @@ export function PipelineColumn({
   leads,
   now,
   onOpen,
+  totals,
 }: {
   stage: PipelineStage;
   leads: PipelineLeadRecord[];
   now: number;
   onOpen: (lead: PipelineLeadRecord) => void;
+  totals?: {total:number;value:number;valued:number};
 }) {
   const [limit, setLimit] = useState(12);
   return (
@@ -133,10 +135,10 @@ export function PipelineColumn({
             {STAGE_LABELS[stage]}
           </h3>
           <span className="rounded-md bg-slate-200/60 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-            {leads.length}
+            {totals?.total ?? leads.length}
           </span>
           <span className="ml-auto text-[11px] font-medium text-slate-500">
-            {leads.length > 0 &&
+            {totals ? totals.total>0 && totals.valued===0 ? 'Belum dinilai' : compactRupiah(totals.value) : leads.length > 0 &&
             leads.every((lead) => lead.opportunityValue == null)
               ? "Belum dinilai"
               : compactRupiah(
@@ -165,9 +167,9 @@ export function PipelineColumn({
             ))
         ) : (
           <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 text-center text-xs leading-5 text-slate-500">
-            Belum ada peluang
+            {totals?.total ? 'Tidak ada kartu di halaman ini' : 'Belum ada peluang'}
             <br />
-            di tahap ini.
+            {totals?.total ? 'Buka halaman lain atau filter tahap.' : 'di tahap ini.'}
           </div>
         )}
       </div>

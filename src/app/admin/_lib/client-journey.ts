@@ -30,7 +30,7 @@ function newestFirst(a: { createdAt: string }, b: { createdAt: string }) {
 
 /** Read-only projection of authorized dashboard records, never identity matching by email. */
 export function buildClientJourney(
-  data: DashboardData,
+  data: Partial<Pick<DashboardData,'pipelineLeads'|'clientAccounts'|'deliveryProjects'|'assessments'|'calendarBookings'|'opportunityActivities'|'clientActivities'>>,
   scope: { leadId?: string | null; accountId?: string | null },
 ) {
   const leadIds = new Set<string>();

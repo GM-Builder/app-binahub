@@ -36,6 +36,8 @@ import {
 import { AdminSearch, AdminSelect, EmptyState } from "./shared";
 import { PipelineColumn, PipelineList } from "./pipeline-views";
 import { PipelineDrawer } from "./pipeline-drawer";
+import { PipelineRemoteDrawer } from './pipeline-remote-drawer';
+import { usePipelineInbox } from '../_lib/use-pipeline-inbox';
 
 export {
   isLikelyTestLead,
@@ -54,10 +56,18 @@ export function PipelinePanel({
   data,
   onAction,
   onRefresh,
+  serverMode = false,
+  refreshToken,
+  initialSelectedId,
+  onUnsavedChange,
 }: {
-  data: DashboardData;
+  data?: DashboardData;
   onAction: (url: string, init?: RequestInit) => Promise<unknown>;
   onRefresh: () => Promise<void>;
+  serverMode?: boolean;
+  refreshToken?: number;
+  initialSelectedId?: string | null;
+  onUnsavedChange?: (dirty:boolean) => void;
 }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -75,16 +85,18 @@ export function PipelinePanel({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showTests, setShowTests] = useState(false);
   const [selected, setSelected] = useState<PipelineLeadRecord | null>(null);
+  const [selectedId, setSelectedId] = useState<string|null>(initialSelectedId || null);
   const [notice, setNotice] = useState("");
+  const inbox = usePipelineInbox({enabled:serverMode,search,view,priority,owner,source,stage:stageFilter,sort,tests:showTests,refreshToken});
   const allLeads = useMemo(
-    () => data.pipelineLeads || [],
-    [data.pipelineLeads],
+    () => data?.pipelineLeads || [],
+    [data?.pipelineLeads],
   );
   const leads = useMemo(
     () => allLeads.filter((lead) => showTests || !isLikelyTestLead(lead)),
     [allLeads, showTests],
   );
-  const owners = useMemo(
+  const localOwners = useMemo(
     () =>
       [
         ...new Set(
@@ -95,19 +107,21 @@ export function PipelinePanel({
       ].sort(),
     [leads],
   );
-  const sources = useMemo(
+  const localSources = useMemo(
     () => [...new Set(leads.map((lead) => lead.source || ""))].sort(),
     [leads],
   );
+  const owners = serverMode ? [...new Set([...(inbox.facets?.owners || []),...(owner!=='all'&&owner!=='unassigned'?[owner]:[])])] : localOwners;
+  const sources = serverMode ? [...new Set([...(inbox.facets?.sources || []),...(source!=='all'?[source]:[])])] : localSources;
   const active = leads.filter((lead) => isActiveStage(lead.opportunityStage));
-  const counts = {
+  const counts = serverMode ? inbox.data?.counts || {all:0,attention:0,overdue:0,unassigned:0,paused:0} : {
     all: active.length,
     attention: active.filter((lead) => leadNeedsAttention(lead, now)).length,
     overdue: active.filter((lead) => isOverdue(lead, now)).length,
     unassigned: active.filter((lead) => !lead.opportunityOwner?.trim()).length,
     paused: active.filter((lead) => lead.outreachPaused).length,
   };
-  const views = {
+  const views = serverMode ? inbox.data?.views || {active:0,won:0,lost:0,review:0} : {
     active: active.length,
     won: leads.filter((lead) => lead.opportunityStage === "won").length,
     lost: leads.filter((lead) => lead.opportunityStage === "lost").length,
@@ -116,11 +130,11 @@ export function PipelinePanel({
         !STAGES.includes(lead.opportunityStage as (typeof STAGES)[number]),
     ).length,
   };
-  const pipelineValue = active.reduce(
+  const pipelineValue = serverMode ? inbox.data?.counts.value || 0 : active.reduce(
     (sum, lead) => sum + (lead.opportunityValue || 0),
     0,
   );
-  const filtered = useMemo(() => {
+  const localFiltered = useMemo(() => {
     const keyword = search.trim().toLocaleLowerCase("id-ID");
     const result = leads.filter((lead) => {
       const inView =
@@ -168,6 +182,10 @@ export function PipelinePanel({
       );
     return sortPipelineLeads(result, now);
   }, [leads, now, owner, priority, search, sort, source, stageFilter, view]);
+  const filtered = serverMode ? inbox.data?.records || [] : localFiltered;
+  const total = serverMode ? inbox.data?.total || 0 : filtered.length;
+  const displayNow = serverMode && inbox.data ? Date.parse(inbox.data.snapshotAt) : now;
+  const openLead = (lead:PipelineLeadRecord) => serverMode ? setSelectedId(lead.id) : setSelected(lead);
   const filterCount =
     Number(owner !== "all") +
     Number(source !== "all") +
@@ -193,9 +211,9 @@ export function PipelinePanel({
     setPriority(next);
   };
   const resetKey = `${view}|${search}|${owner}|${source}|${priority}|${stageFilter}|${sort}|${showTests}`;
-  const coverage = data.salesFunnelCoverage;
+  const coverage = data?.salesFunnelCoverage;
   const unavailable =
-    coverage?.loadError || coverage?.stageDataAvailable === false;
+    serverMode ? !inbox.data : coverage?.loadError || coverage?.stageDataAvailable === false;
   const partial =
     coverage && coverage.total != null && coverage.total > coverage.loaded;
 
@@ -218,7 +236,11 @@ export function PipelinePanel({
           </button>
         </div>
       )}
-      {unavailable ? (
+      {serverMode && inbox.loading ? <p role="status" className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Memuat pipeline…</p> : serverMode && inbox.error ? (
+        <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p>{inbox.error}</p><button type="button" onClick={inbox.refresh} className="mt-3 min-h-11 rounded-lg border border-amber-300 px-3 font-semibold">Coba lagi</button>
+        </div>
+      ) : unavailable ? (
         <div
           role="alert"
           className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
@@ -226,7 +248,7 @@ export function PipelinePanel({
           Data pipeline belum dapat dimuat secara lengkap. Perbarui halaman
           untuk mencoba kembali; angka di bawah bukan total penjualan.
         </div>
-      ) : partial ? (
+      ) : !serverMode && partial ? (
         <p
           role="status"
           className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"
@@ -243,7 +265,7 @@ export function PipelinePanel({
           {
             label: "Nilai peluang aktif",
             value: compactRupiah(pipelineValue),
-            description: `${active.length} peluang · ${active.filter((lead) => lead.opportunityValue != null).length} memiliki nilai`,
+            description: unavailable ? 'Ringkasan belum tersedia' : `${counts.all} peluang · ${serverMode ? inbox.data?.counts.valued : active.filter((lead) => lead.opportunityValue != null).length} memiliki nilai`,
             icon: CircleDollarSign,
             filter: "all",
             tone: "text-[#0B2C6B] bg-[#EDF2FB]",
@@ -336,7 +358,7 @@ export function PipelinePanel({
                 ["active", "Aktif"],
                 ["won", "Berhasil"],
                 ["lost", "Tidak lanjut"],
-                ...(views.review ? [["review", "Perlu ditinjau"]] : []),
+                ...(views.review || view==='review' ? [["review", "Perlu ditinjau"]] : []),
               ] as [PipelineView, string][]
             ).map(([key, label]) => (
               <button
@@ -508,7 +530,7 @@ export function PipelinePanel({
                 >
                   {key === "paused" ? <Pause size={11} /> : null}
                   {label}
-                  <span className="opacity-70">
+                  <span className="opacity-70">{' '}
                     {unavailable ? "—" : counts[key]}
                   </span>
                 </button>
@@ -537,7 +559,7 @@ export function PipelinePanel({
                     (stage) =>
                       [
                         stage,
-                        `${STAGE_LABELS[stage]} (${active.filter((lead) => lead.opportunityStage === stage).length})`,
+                        `${STAGE_LABELS[stage]} (${unavailable ? '—' : serverMode ? inbox.data?.stages[stage]?.total || 0 : active.filter((lead) => lead.opportunityStage === stage).length})`,
                       ] as [string, string],
                   ),
                 ]}
@@ -547,14 +569,14 @@ export function PipelinePanel({
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 border-y border-slate-100 bg-slate-50/70 px-4 py-2.5 text-[11px] text-slate-500 sm:px-5">
           <p role="status" aria-live="polite">
-            {unavailable
+            <span>{unavailable
               ? "Data belum tersedia"
-              : `${filtered.length} peluang ditampilkan`}
+              : serverMode ? `${total ? inbox.page*20+1 : 0}–${Math.min((inbox.page+1)*20,total)} dari ${total} peluang` : `${filtered.length} peluang ditampilkan`}</span>
             <span className="mx-2 text-slate-300">·</span>
             {unavailable
               ? "—"
               : compactRupiah(
-                  filtered.reduce(
+                  serverMode ? inbox.data?.totalValue || 0 : filtered.reduce(
                     (sum, lead) => sum + (lead.opportunityValue || 0),
                     0,
                   ),
@@ -568,7 +590,7 @@ export function PipelinePanel({
         {unavailable ? (
           <EmptyState
             title="Pipeline belum tersedia"
-            description="Gunakan tombol Perbarui pada halaman untuk memuat ulang data."
+            description={inbox.loading ? 'Sedang memuat daftar dan total peluang.' : 'Gunakan tombol Perbarui pada halaman untuk memuat ulang data.'}
           />
         ) : !filtered.length ? (
           <div className="py-8">
@@ -613,8 +635,9 @@ export function PipelinePanel({
                   leads={filtered.filter(
                     (lead) => lead.opportunityStage === stage,
                   )}
-                  now={now}
-                  onOpen={setSelected}
+                  now={displayNow}
+                  onOpen={openLead}
+                  totals={serverMode ? inbox.data?.stages[stage] || {total:0,value:0,valued:0} : undefined}
                 />
               ))}
             </div>
@@ -623,11 +646,19 @@ export function PipelinePanel({
           <PipelineList
             key={resetKey}
             leads={filtered}
-            now={now}
-            onOpen={setSelected}
+            now={displayNow}
+            onOpen={openLead}
             cardsOnly={layout === "board"}
           />
         )}
+        {serverMode && inbox.data && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-4 sm:px-5">
+          <p className="max-w-xl text-xs leading-5 text-slate-600">Total dihitung dari seluruh arsip. Papan dan daftar menampilkan maksimal 20 peluang per halaman. Ringkasan atas mencakup semua status aktif, tanpa filter pencarian.</p>
+          <nav aria-label="Halaman pipeline" className="flex items-center gap-3 text-xs">
+            <button type="button" disabled={inbox.page===0} onClick={()=>inbox.setPage(inbox.page-1)} className="min-h-11 rounded-lg border border-slate-200 px-3 font-semibold disabled:opacity-40">Sebelumnya</button>
+            <span>Halaman {inbox.page+1} dari {Math.max(1,Math.ceil(total/20))}</span>
+            <button type="button" disabled={(inbox.page+1)*20>=total} onClick={()=>inbox.setPage(inbox.page+1)} className="min-h-11 rounded-lg border border-slate-200 px-3 font-semibold disabled:opacity-40">Berikutnya</button>
+          </nav>
+        </div>}
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 text-[11px] text-slate-500 sm:px-5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           Posisi peluang saat ini, bukan tingkat konversi
@@ -638,7 +669,7 @@ export function PipelinePanel({
           )}
         </div>
       </section>
-      <details className="group rounded-2xl border border-slate-200/80 bg-white">
+      {!serverMode && data && <details className="group rounded-2xl border border-slate-200/80 bg-white">
         <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs font-semibold text-slate-700 marker:hidden sm:px-5">
           <span className="flex items-center gap-2">
             <MailWarning size={16} className="text-slate-400" />
@@ -667,8 +698,10 @@ export function PipelinePanel({
             </div>
           ))}
         </div>
-      </details>
-      {selected && (
+      </details>}
+      {serverMode && selectedId && <PipelineRemoteDrawer key={selectedId} id={selectedId} onClose={()=>setSelectedId(null)} onAction={onAction}
+        onRefresh={async()=>{inbox.refresh();await onRefresh();}} onSaved={setNotice} onUnsavedChange={onUnsavedChange}/>}
+      {!serverMode && selected && data && (
         <PipelineDrawer
           key={selected.id}
           lead={selected}

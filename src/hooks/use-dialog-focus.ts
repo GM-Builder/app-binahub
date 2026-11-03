@@ -22,7 +22,7 @@ export function useDialogFocus<T extends HTMLElement>(onClose: () => void, close
     const focusable = () => Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
       .filter((element) => !element.matches(":disabled"));
     const preferred = dialog.querySelector<HTMLElement>("[data-autofocus]");
-    window.setTimeout(() => (preferred || focusable()[0])?.focus(), 0);
+    const focusTimer = window.setTimeout(() => (preferred || focusable()[0])?.focus(), 0);
     document.body.style.overflow = "hidden";
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -36,7 +36,12 @@ export function useDialogFocus<T extends HTMLElement>(onClose: () => void, close
       if (!elements.length) return;
       const first = elements[0];
       const last = elements[elements.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      // Disabling/removing the focused control during async work may move focus to body.
+      // The next Tab must still stay inside the active dialog.
+      if (!dialog.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -48,6 +53,7 @@ export function useDialogFocus<T extends HTMLElement>(onClose: () => void, close
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      window.clearTimeout(focusTimer);
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };

@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.51.7] - 2026-11-03
+
+- Move the main Sales Pipeline off the general dashboard payload. Search/filter
+  the complete archive before 20-row pagination, deterministic sorting and exact
+  stage/value totals. Summary cards explicitly cover all active opportunities;
+  board/list stage totals describe the current filters, not just visible cards.
+- Fetch fresh opportunity detail by ID before editing. Page scoped opportunity
+  history independently; count linked diagnoses, bookings and accounts by their
+  stored IDs. Do not imply a capped dashboard journey is a complete history.
+  Existing mutation and human send gates remain unchanged.
+- Keep loading, empty, migration failure and unavailable states distinct; retain
+  filters, guard stale/late responses, time out hung reads and recover invalidated
+  page ranges. Preserve unsaved edits through history paging/list refresh and
+  warn before closing or leaving the sales workspace. Restore focus even after
+  asynchronous controls become disabled; cancel unmounted focus timers.
+- Use the reader from embedded/legacy pipeline entries and open the exact
+  opportunity selected from a CRM priority task. Cross-source CRM priorities
+  still depend on dashboard coverage and remain a separate follow-up batch.
+- SQL85 owner-confirmed applied; requires API 0.47.11, no new env. Synthetic
+  SQL/API/component and four-viewport browser tests; no production writes,
+  AI/email activation, participant/scoring/retention or scheduler changes.
+
 ## [0.51.6] - 2026-11-03
 
 - Move Kontak & Leads off the general dashboard payload to a server-wide,

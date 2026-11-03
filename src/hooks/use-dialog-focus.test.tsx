@@ -47,4 +47,21 @@ describe("dialog focus safety", () => {
     view.unmount();
     expect(document.body.style.overflow).not.toBe("hidden");
   });
+  it('recaptures focus after an async control is disabled or removed',()=>{
+    vi.useFakeTimers();
+    render(<><button type="button">Outside</button><Dialog onClose={vi.fn()}/></>);
+    vi.runOnlyPendingTimers();
+    screen.getByRole('button',{name:'Outside'}).focus();
+    fireEvent.keyDown(document,{key:'Tab'});
+    expect(screen.getByRole('button',{name:'Tutup'})).toHaveFocus();
+    screen.getByRole('button',{name:'Outside'}).focus();
+    fireEvent.keyDown(document,{key:'Tab',shiftKey:true});
+    expect(screen.getByRole('button',{name:'Riwayat'})).toHaveFocus();
+  });
+  it('cancels delayed initial focus if the drawer unmounts before it runs',()=>{
+    vi.useFakeTimers();
+    const outside=document.createElement('button');document.body.append(outside);outside.focus();
+    const view=render(<Dialog onClose={vi.fn()}/>);view.unmount();
+    vi.runOnlyPendingTimers();expect(outside).toHaveFocus();outside.remove();
+  });
 });

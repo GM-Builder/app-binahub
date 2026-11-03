@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock('@/lib/api-fetch',()=>({apiFetch:vi.fn(()=>{throw new Error('Legacy pipeline must not request server inbox');})}));
 import type { DashboardData, PipelineLeadRecord } from "../_lib/types";
 import {
   PipelinePanel,

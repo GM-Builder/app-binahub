@@ -1,2 +1,2 @@
-import { AdminWorkspace } from "../_components/admin-workspace";
-export default function AdminPipelinePage() { return <AdminWorkspace section="Sales Pipeline" />; }
+import { PipelineInbox } from '../_components/pipeline-inbox';
+export default function AdminPipelinePage() { return <PipelineInbox/>; }

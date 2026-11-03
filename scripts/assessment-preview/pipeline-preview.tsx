@@ -22,6 +22,7 @@ export function PipelinePreview() {
           </p>
         </header>
         <PipelinePanel
+          serverMode={new URLSearchParams(location.search).has('pipeline-inbox')}
           data={data}
           onRefresh={async () => {}}
           onAction={async (_url, init) => {

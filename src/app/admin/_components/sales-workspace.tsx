@@ -26,9 +26,12 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
   const [discoverySearch, setDiscoverySearch] = useState("");
   const pendingMeeting = useRef(false);
   const pendingInquiry = useRef(false);
+  const pendingPipeline = useRef(false);
+  const [pipelineId,setPipelineId]=useState<string|null>(null);
+  const onPipelineDirty=useCallback((dirty:boolean)=>{pendingPipeline.current=dirty;},[]);
   const onInquiryDirty = useCallback((dirty: boolean) => { pendingInquiry.current = dirty; }, []);
   const onMeetingDirty = useCallback((dirty: boolean) => { pendingMeeting.current = dirty; }, []);
-  const mayLeaveMeeting = () => pendingInquiry.current ? window.confirm('Ada perubahan inquiry yang belum tersimpan. Tetap tinggalkan inquiry ini?') : !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
+  const mayLeaveMeeting = () => pendingPipeline.current ? window.confirm('Ada perubahan peluang yang belum tersimpan. Tetap tinggalkan peluang ini?') : pendingInquiry.current ? window.confirm('Ada perubahan inquiry yang belum tersimpan. Tetap tinggalkan inquiry ini?') : !pendingMeeting.current || window.confirm("Ada perubahan checklist yang belum tersimpan. Tetap tinggalkan sesi ini?");
   const changeView = (next: SalesView) => { if (next === view || mayLeaveMeeting()) { setView(next); setFilter("all"); setLimit(12); } };
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [inquiryId, setInquiryId] = useState<string | null>(null);
@@ -45,6 +48,7 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
   const open = (task: SalesTask) => {
     if (!mayLeaveMeeting()) return;
     setView(task.view);
+    if(task.view==='pipeline')setPipelineId(task.recordId);
     if (task.kind === "inquiry" || task.kind === "followup" && !task.detail) { setClientType("inquiry"); setInquiryId(task.recordId); }
     else if (task.view === "clients") { setClientType("assessment"); setAssessmentId(task.recordId); setDetailTab(task.detail || "summary"); setQuery(""); setCategory("Semua"); setEmployees("Semua"); setMinScore("0"); }
   };
@@ -71,7 +75,7 @@ export function SalesWorkspace({ data, onAction, onRefresh }: { data: DashboardD
       {clientType === "discovery" && <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-600">Memuat kebutuhan program…</p>}><SpinPanel initialSearch={discoverySearch} onUnsavedChange={onMeetingDirty} /></Suspense>}
       {clientType === "assessment" ? <AssessmentPanel serverMode initialDetailTab={detailTab} data={data} records={records} query={query} setQuery={setQuery} category={category} setCategory={setCategory} employeeRange={employees} setEmployeeRange={setEmployees} minScore={minScore} setMinScore={setMinScore} expandedId={assessmentId} setExpandedId={setAssessmentId} onAction={onAction} onRefresh={onRefresh} /> : clientType === "inquiry" ? <InquiriesPanel serverMode onUnsavedChange={onInquiryDirty} key={inquiryId} initialSelectedId={inquiryId} inquiries={data.inquiries} onAction={onAction} onRefresh={onRefresh} /> : null}
     </>}
-    {view === "pipeline" && <PipelinePanel data={data} onAction={onAction} onRefresh={onRefresh} />}
+    {view === "pipeline" && <PipelinePanel serverMode initialSelectedId={pipelineId} onUnsavedChange={onPipelineDirty} data={data} onAction={onAction} onRefresh={onRefresh} />}
     {view === "meetings" && <MeetingsPanel bookings={data.calendarBookings || []} onOpenChecklist={booking => { setDiscoverySearch(booking.attendeeEmail); setClientType("discovery"); setView("clients"); }} />}
   </div>;
 }
