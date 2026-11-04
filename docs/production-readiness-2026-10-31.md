@@ -536,3 +536,40 @@ bukan daftar status runtime terkini.
   instrumen/skor/izin peserta/hasil historis/PFA2026. Scheduler tetap pending
   migrasi workspace Vercel BinaHub + Pro. Rilis ini hanya app; tidak memerlukan
   deploy API baru. Berikutnya tetap pagination arsip kampanye dan integrasi AMS.
+
+### Batch 16 - 4 November 2026: arsip kampanye
+
+- App 0.51.11/API 0.47.14 menambah entry Arsip kampanye yang tidak bergantung
+  pada dashboard/daftar operasional. SQL88 mencari/filter sebelum pagination
+  20 catatan dan jumlah eksak; urutan timestamp + UUID stabil. Status selesai,
+  sumber yang dijeda dan status lama tetap dapat ditemukan. Ringkasan lingkup
+  sebelum filter dibedakan dari jumlah cocok; bukan snapshot yang dibekukan.
+- Penerima, pengiriman, impor, audit admin, kunjungan dan aktivitas kunjungan
+  dibaca terpisah dengan scope UUID. Kunjungan memakai bukti UTM sentuhan pertama
+  secara eksak (kode, sumber/media bila dikonfigurasi), bukan sentuhan terakhir.
+  UTM yang dipakai ulang bisa cocok pada beberapa kampanye; bukan orang unik
+  atau bukti kausal konversi. Satu perjalanan dihitung sekali meski banyak event.
+- SQL service-role-only dan GET admin/rate-limit/no-store. DTO mengecualikan
+  raw_data/config sumber, metadata event, isi email, token/tautan bertanda tangan,
+  error dan ID provider. Status diterima provider bukan inbox; email uji terpisah.
+  Reader tidak mengubah approval/izin, audience, antrean atau retensi.
+- UI memakai pola admin existing; loading/error/SQL88/empty dibedakan. Filter
+  tetap saat retry/kembali; page reset/clamp, debounce, timeout 20 detik,
+  cancellation/late response dan guard pilihan penerima saat membuka arsip.
+  Maksimum 10.001 halaman per pencarian dinyatakan; perinci filter untuk hasil
+  di atas batas itu. Tidak memulihkan data yang telah dihapus karena retensi.
+- Batas daftar operasional legacy (target/delivery 500; analitik inbound sampel
+  100/500/300) tetap dinyatakan dan tidak menjadi total arsip. Pengiriman tetap
+  memakai safety gate existing; reader baru tidak membuka pengiriman ke data
+  tambahan. Pagination sumber/governance legacy bukan klaim selesai batch ini.
+- Bukti lokal: 564 tes app; 1.142 tes API lulus/6 skip existing; 29 tes baru
+  SQL/API (termasuk >1.000 data sintetis pada beberapa arsip) dan 7 komponen.
+  Lint/TypeScript/build app/API lulus. 40 skenario Chromium di 1440/1024/390/320
+  lulus; dua putaran visual desktop/mobile, detector terarah 0 temuan. Mock
+  in-memory memblokir writes nyata/jaringan luar. Ini bukan runtime produksi,
+  live deliverability, uji pelacakan lintas domain atau pentest Strix.
+- SQL88 telah disiapkan untuk operator, konfirmasi produksi masih ditunggu.
+  Urutan rilis SQL88 → API → app. Tidak ada env baru. Scheduler tetap pending
+  migrasi akun Vercel BinaHub + Pro; tidak menjalankan email/AI/cleanup produksi,
+  mengubah instrumen/skor/izin/retensi atau menyentuh PFA2026. AMS berikutnya;
+  pemilik juga meminta perapihan website-prod dengan Unslop setelah batch ini.

@@ -10,6 +10,7 @@ import { InquiryPreview } from './inquiry-preview';
 import { ContactPreview } from './contact-preview';
 import { SalesPrioritiesPreview } from './sales-priorities-preview';
 import { MeetingsPreview } from './meetings-preview';
+import { CampaignArchivePreview } from './campaign-archive-preview';
 import { RMPreparation } from "@/components/rm-preparation";
 import {PetaJourney} from '@/components/peta-journey';
 import {PetaAdmin} from '@/components/peta-admin';
@@ -58,6 +59,6 @@ function Preview() {
 }
 
 const mode = new URLSearchParams(window.location.search);
-createRoot(document.getElementById("root")!).render(mode.has('meetings-inbox') ? <MeetingsPreview/> : mode.has('sales-priorities') ? <SalesPrioritiesPreview/> : mode.has('contact-inbox') ? <ContactPreview/> : mode.has('inquiry-inbox') ? <InquiryPreview/> : mode.has('monitoring') ? <HealthPreview/> : mode.has("phone")
+createRoot(document.getElementById("root")!).render(mode.has('campaign-archive') ? <CampaignArchivePreview/> : mode.has('meetings-inbox') ? <MeetingsPreview/> : mode.has('sales-priorities') ? <SalesPrioritiesPreview/> : mode.has('contact-inbox') ? <ContactPreview/> : mode.has('inquiry-inbox') ? <InquiryPreview/> : mode.has('monitoring') ? <HealthPreview/> : mode.has("phone")
   ? <div className="min-h-screen bg-slate-100 p-5"><iframe title="Preview ponsel" src={mode.has("funnel") ? "/?funnel&screen=phone" : mode.has("outbound") ? "/?outbound&screen=phone" : "/?screen=phone"} style={{ width: 390, height: 844, border: "1px solid #cbd5e1", borderRadius: 16, background: "white" }} /></div>
   : mode.has('peta-admin')?<main className="mx-auto max-w-6xl p-5 sm:p-8"><h1 className="mb-5 text-2xl font-semibold">PETA · Pengelolaan sintetis</h1><PetaAdmin/></main>:mode.has('peta-program')?<PetaJourney programMode/>:mode.has('peta')?<PetaJourney/>:mode.has("rm-review") ? <main className="mx-auto max-w-6xl p-5 sm:p-8"><h1 className="mb-5 text-2xl font-semibold">Review RM · Data sintetis</h1><RMPreparation/></main> : mode.has("spin") ? <SpinPreview /> : mode.has("journey") ? <ClientJourneyPreview /> : mode.has("pipeline") ? <PipelinePreview /> : mode.has("funnel") ? <FunnelPreview /> : mode.has("outbound") || mode.has("sales") ? <OutboundPreview /> : mode.has("proposal") ? <ProposalBook view={previewView} downloadUrl="#preview-only" /> : <Preview />);

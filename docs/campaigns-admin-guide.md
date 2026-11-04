@@ -72,4 +72,29 @@ UI ini memakai layanan yang sudah ada. Daftar target dan pengiriman masing-masin
 masih memuat hingga 500 data terbaru. Analitik inbound masih memuat hingga 100
 kunjungan, 500 aktivitas, dan 300 hubungan kontak terbaru. Ringkasan analitik
 mencakup sampel yang dimuat, tidak mengikuti pencarian, bukan jumlah orang unik,
-dan bukan total sepanjang waktu. Pagination arsip server tetap pekerjaan terpisah.
+dan bukan total sepanjang waktu. Batas tersebut hanya untuk layar operasional;
+gunakan **Arsip kampanye** untuk mencari riwayat yang lebih lama.
+
+## Membaca arsip kampanye
+
+1. Dari Inbound atau Outbound, pilih **Arsip kampanye**. Jika masih memilih
+   penerima, simpan/selesaikan pekerjaan atau periksa peringatan sebelum keluar.
+2. Cari nama, kode, sumber, atau penanggung jawab. Filter asal dan status tersedia;
+   kampanye selesai dan sumber yang dijeda tetap dapat ditemukan.
+3. Pilih **Buka riwayat**. Outbound memiliki Pengiriman email, Daftar penerima,
+   Riwayat impor dan Aktivitas admin. Kunjungan inbound dibaca terpisah; pilih
+   **Lihat aktivitas** untuk urutannya. Gunakan halaman berikutnya untuk data lama.
+4. Jumlah seluruh lingkup berasal dari server sebelum filter; jumlah yang cocok
+   mengikuti pencarian/status. Tanggal/jam memakai WIB. Perubahan admin lain dapat
+   mengubah daftar di antara pembacaan; ini bukan snapshot arsip yang dibekukan.
+
+Arsip hanya membaca. Status valid atau izin tercatat bukan persetujuan kirim baru.
+“Diterima penyedia email” bukan bukti inbox. Kunjungan dicocokkan ke UTM pertama
+yang tercatat (kampanye, sumber dan media yang dikonfigurasi), bukan sentuhan
+terakhir. UTM yang digunakan ulang bisa cocok dengan beberapa kampanye; catatan
+kunjungan bukan jumlah orang unik atau bukti kausal hasil kampanye.
+
+SQL88 dan API 0.47.14 diperlukan. Jika belum tersedia, halaman menampilkan kendala,
+bukan nol palsu. Tiap halaman memuat 20 catatan; jika hasil melampaui 10.001
+halaman, persempit pencarian. Riwayat yang sudah dihapus sesuai kebijakan retensi
+tidak dipulihkan atau diperpanjang oleh reader ini.

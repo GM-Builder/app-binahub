@@ -5,6 +5,7 @@ import { ArrowRight, BarChart3, CheckCircle2, FileCheck2, Inbox, MoreHorizontal,
 import { AdminInput, AdminModal, AdminSelect, AdminTextarea, FieldLabel } from "./shared";
 import { LeadAgentPanel } from "./lead-agent-panel";
 import { InboundCampaignsPanel } from './inbound-campaigns-panel';
+import { CampaignArchivePanel } from './campaign-archive-panel';
 import { ControlledOutboundPanel } from "./controlled-outbound-panel";
 import { OutboundEmailPanel } from "./outbound-email-panel";
 import { prospectsFromCsv, validateImportedProspects } from "../_lib/prospect-import";
@@ -16,7 +17,7 @@ type Campaign = { id: string; source_id: string; campaign_code: string; name: st
 type Batch = { id: string; source_id: string; campaign_id: string | null; import_key: string; file_name: string | null; status: string; total_rows: number; valid_rows: number; invalid_rows: number; duplicate_rows: number; suppressed_rows: number; promoted_rows: number; created_at: string };
 type Prospect = { id: string; batch_id: string; name: string; email: string; company: string | null; validation_status: string; validation_reasons: string[] };
 type AcquisitionResponse = { success: boolean; phase5Ready: boolean; sources: Source[]; campaigns: Campaign[]; batches: Batch[]; prospects: Prospect[] };
-type WorkspaceView = "overview" | "inbound" | "outbound" | "governance";
+type WorkspaceView = "overview" | "inbound" | "outbound" | "governance" | "archive";
 
 const buttonClass = "inline-flex items-center gap-2 rounded-xl bg-[#0B2C6B] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50";
 const secondaryButton = "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700";
@@ -43,6 +44,7 @@ const WORKSPACE_VIEWS: Array<{ id: WorkspaceView; label: string; description: st
   { id: "inbound", label: "Inbound", description: "Website, sosial, dan iklan" },
   { id: "outbound", label: "Outbound", description: "Prospek terkontrol" },
   { id: "governance", label: "Data & kampanye", description: "Sumber, kampanye, dan batch" },
+  { id: "archive", label: "Arsip kampanye", description: "Cari seluruh riwayat" },
 ];
 
 function AcquisitionMetric({ label, value, note, tone = "navy" }: { label: string; value: number; note: string; tone?: "navy" | "green" | "gold" }) {
@@ -80,6 +82,11 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
   const [reviewForm, setReviewForm] = useState({ decision: "approved", note: "" });
   const [view, setView] = useState<WorkspaceView>(initialView);
   const requestSequence = useRef(0);
+  const workflowDirty = useRef(false);
+  const reportDirty = useCallback((dirty: boolean) => { workflowDirty.current = dirty; onUnsavedChange?.(dirty); }, [onUnsavedChange]);
+  const openArchive = () => {
+    if (!workflowDirty.current || window.confirm('Pilihan penerima atau isian belum dikirim. Tetap buka arsip kampanye?')) setView('archive');
+  };
 
   const load = useCallback(async (rethrow = false) => {
     const sequence = ++requestSequence.current;
@@ -161,15 +168,18 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
   };
   const review = (batch: Batch) => { setReviewBatch(batch); setReviewForm({ decision: "approved", note: "" }); setModal("review"); };
 
-  if (loading && !data) return <div role="status" aria-live="polite" className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Memuat kontrol akuisisi…</div>;
-  if (error && !data) return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><p>{error}</p><p className="mt-2">Daftar kampanye belum tersedia, bukan berarti kosong.</p><button type="button" onClick={() => void load()} className={`${secondaryButton} mt-4`}>Coba muat kampanye lagi</button></div>;
-  if (data && !data.phase5Ready) return <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">Kontrol akuisisi belum tersedia. Hubungi tim teknis bila status ini tetap muncul.</div>;
+  if (view === 'archive') return <CampaignArchivePanel onAction={onAction} onBack={() => setView(initialView === 'archive' ? 'overview' : initialView)} />;
+  const archiveButton = <button type="button" onClick={openArchive} className={`${secondaryButton} min-h-11`}>Arsip kampanye</button>;
+  if (loading && !data) return <div className="space-y-4">{archiveButton}<div role="status" aria-live="polite" className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Memuat kontrol akuisisi…</div></div>;
+  if (error && !data) return <div className="space-y-4">{archiveButton}<div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"><p>{error}</p><p className="mt-2">Daftar kampanye belum tersedia, bukan berarti kosong.</p><button type="button" onClick={() => void load()} className={`${secondaryButton} mt-4`}>Coba muat kampanye lagi</button></div></div>;
+  if (data && !data.phase5Ready) return <div className="space-y-4">{archiveButton}<div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">Kontrol akuisisi belum tersedia. Hubungi tim teknis bila status ini tetap muncul.</div></div>;
 
   const stagedBatches = batches.filter((item) => item.status === "staged");
   const activeCampaigns = campaigns.filter((item) => item.status === "active");
   const excludedProspects = prospects.filter((item) => ["invalid", "duplicate", "suppressed", "excluded"].includes(item.validation_status));
 
   return <div className="space-y-5">
+    {embedded && <div className="flex justify-end">{archiveButton}</div>}
     {error && <div role="alert" aria-live="assertive" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
     {view !== "outbound" && !embedded && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
@@ -191,8 +201,8 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
       </div>
     </section>}
 
-    {!embedded && <nav aria-label="Bagian kontrol akuisisi" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-slate-100/70 p-1 sm:grid-cols-4">
-      {WORKSPACE_VIEWS.map((item) => <button key={item.id} type="button" onClick={() => setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={`min-h-11 min-w-0 rounded-xl px-4 py-3 text-left transition ${view === item.id ? "bg-white text-[#0B2C6B] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-800"}`}>
+    {!embedded && <nav aria-label="Bagian kontrol akuisisi" className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200 bg-slate-100/70 p-1 sm:grid-cols-5">
+      {WORKSPACE_VIEWS.map((item) => <button key={item.id} type="button" onClick={() => item.id === 'archive' ? openArchive() : setView(item.id)} aria-current={view === item.id ? "page" : undefined} className={`min-h-11 min-w-0 rounded-xl px-4 py-3 text-left transition ${view === item.id ? "bg-white text-[#0B2C6B] shadow-sm" : "text-slate-500 hover:bg-white/60 hover:text-slate-800"}`}>
         <span className="block text-xs font-semibold">{item.label}</span>
         <span className="mt-0.5 hidden text-[10px] text-slate-400 lg:block">{item.description}</span>
       </button>)}
@@ -233,7 +243,7 @@ export function AcquisitionControlPanel({ onAction, initialView = "overview", em
 
     {view === "inbound" && <InboundCampaignsPanel sources={sources} campaigns={campaigns} onAction={onAction} onRefresh={refreshCampaigns} onSetup={() => setView('governance')} />}
     {view === "outbound" && <div className="space-y-5">
-      <OutboundEmailPanel onAction={onAction} onRefresh={refreshCampaigns} sources={sources} campaigns={campaigns} batches={batches} onUnsavedChange={onUnsavedChange}
+      <OutboundEmailPanel onAction={onAction} onRefresh={refreshCampaigns} sources={sources} campaigns={campaigns} batches={batches} onUnsavedChange={reportDirty}
         onSetup={() => setView("governance")} />
       <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold text-slate-600">Pencarian prospek & uji tautan lanjutan</summary><div className="mt-5 space-y-5"><LeadAgentPanel onAction={onAction} onOpenBatch={() => setView("governance")} /><ControlledOutboundPanel onAction={onAction} /></div></details>
     </div>}

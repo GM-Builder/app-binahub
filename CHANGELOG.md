@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.51.11] - 2026-11-04
+
+- Add a read-only campaign archive, independent of capped operational lists.
+  Search/filter the server archive with stable 20-row pages and scope-wide counts.
+  Include completed campaigns and paused sources; preserve filters when returning.
+- Read scoped recipient, email delivery, import, audit and first-touch inbound
+  history separately. Paginate journey events on demand; keep email tests distinct
+  and do not equate provider acceptance with inbox delivery or UTM with identity.
+- Keep the existing guided send workflow, approvals and queue safety controls.
+  Archive access warns before abandoning unfinished recipient work. Timeout,
+  cancellation, stale-response, unavailable/empty and SQL88 errors remain distinct.
+- Requires API 0.47.14 and SQL88 before rollout. No new env, production email,
+  scheduler, scoring, consent or retention changes. Operational sample limits
+  remain explicit; this archive does not expand the sending audience.
+
 ## [0.51.10] - 2026-11-03
 
 - Simplify outbound email into Penerima → Email → Tinjau → Hasil. Only one
